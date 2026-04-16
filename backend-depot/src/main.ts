@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  console.log('Backend URL:', process.env.BACKEND_URL);
 
   // CORS : autorise le frontend React à appeler le backend
   app.enableCors({
