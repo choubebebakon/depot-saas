@@ -1,0 +1,763 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS EXISTANTS
+// ============================================================
+
+enum StatutAbonnement {
+  TRIAL
+  ACTIVE
+  GRACE      // ← NOUVEAU : 48h après expiration
+  READ_ONLY  // ← NOUVEAU : bloqué en écriture
+  EXPIRED
+}
+
+enum PlanAbonnement {
+  MENSUEL
+  ANNUEL
+}
+
+enum RoleUser {
+  PATRON
+  GERANT
+  CAISSIER
+  MAGASINIER
+  COMMERCIAL
+  COMPTABLE
+}
+
+enum StatutVente {
+  PAYE
+  ATTENTE
+  ANNULE
+}
+
+enum TypeMouvement {
+  ENTREE
+  SORTIE
+  SORTIE_VENTE
+  SORTIE_GRATUITE
+  TRANSFERT_SORTIE
+  TRANSFERT_ENTREE
+  AJUSTEMENT_INVENTAIRE
+  CASSE_AVARIE
+  RETOUR_CLIENT
+}
+
+// ============================================================
+// NOUVEAUX ENUMS
+// ============================================================
+
+enum TypeMouvementCaisse {
+  ENCAISSEMENT_VENTE
+  ENCAISSEMENT_DETTE
+  DECAISSEMENT_DEPENSE
+  DECAISSEMENT_VIDES
+  FOND_INITIAL
+  AJUSTEMENT
+}
+enum TypeMaintenance {
+  VIDANGE
+  PNEU
+  FREINS
+  CARBURANT
+  REPARATION
+  REVISION
+  AUTRE
+}
+
+enum StatutMaintenance {
+  PLANIFIE
+  EFFECTUE
+  ANNULE
+}
+
+model MaintenanceTricycle {
+  id          String            @id @default(uuid())
+  type        TypeMaintenance
+  statut      StatutMaintenance @default(PLANIFIE)
+  description String
+  cout        Float             @default(0)
+  kilometrage Float?            // km au compteur
+  photoUrl    String?
+  dateEffectue DateTime?
+  datePlanifie DateTime?
+  createdAt   DateTime          @default(now())
+
+  tricycleId String
+  tenantId   String
+
+  tricycle Tricycle @relation(fields: [tricycleId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tricycleId])
+  @@index([tenantId])
+}
+
+model ConsommationCarburant {
+  id          String   @id @default(uuid())
+  litres      Float
+  prixLitre   Float
+  montantTotal Float
+  kilometrage Float?
+  nbTours     Int      @default(0) // nombre de tours effectués
+  createdAt   DateTime @default(now())
+
+  tricycleId String
+  tenantId   String
+
+  tricycle Tricycle @relation(fields: [tricycleId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tricycleId])
+  @@index([tenantId])
+}
+
+model Commission {
+  id          String   @id @default(uuid())
+  montant     Float
+  tauxApplique Float   // % appliqué
+  periode     String   // Ex: "2026-04"
+  estPayee    Boolean  @default(false)
+  datePaiement DateTime?
+  createdAt   DateTime @default(now())
+
+  userId   String
+  tenantId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periode])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model ParametreCommission {
+  id          String @id @default(uuid())
+  taux        Float  // % sur les ventes
+  description String @default("")
+  estActif    Boolean @default(true)
+  tenantId    String
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+enum ModePaiement {
+  CASH
+  ORANGE_MONEY
+  MTN_MOMO
+  CREDIT
+  MIXTE
+}
+
+enum StatutTournee {
+  OUVERTE
+  CLOTURE_COMMERCIALE  // cash remis, attente magasinier
+  VALIDEE              // magasinier a compté et validé
+  ANNULEE
+}
+
+enum StatutReception {
+  EN_COURS
+  VALIDEE
+  ANNULEE
+}
+
+enum TypeConsigne {
+  BOUTEILLE_33CL
+  BOUTEILLE_60CL
+  CASIER
+  PALETTE
+  PACK_EAU
+}
+
+enum StatutDette {
+  EN_COURS
+  PARTIELLEMENT_PAYEE
+  SOLDEE
+  EN_LITIGE
+}
+
+// ============================================================
+// MODELES EXISTANTS (inchangés + extensions)
+// ============================================================
+
+model Tenant {
+  id            String   @id @default(uuid())
+  nomEntreprise String
+  emailPatron   String?
+  telephone     String?
+  dateEssaiFin  DateTime?
+  estActif      Boolean  @default(true)
+  graceUntil    DateTime? // ← NOUVEAU : fin de la période de grâce
+
+  statutAbonnement StatutAbonnement @default(TRIAL)
+  dateExpiration   DateTime?
+  plan             PlanAbonnement?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations existantes
+  sites      Site[]
+  articles   Article[]
+  mouvements MouvementStock[]
+  users      User[]
+  ventes     Vente[]
+  paiements  PaiementSouscription[]
+
+  // Nouvelles relations
+  clients       Client[]
+  familles Famille[]
+  lots LotStock[]
+ maintenances        MaintenanceTricycle[]
+carburants          ConsommationCarburant[]
+commissions         Commission[]
+parametresCommission ParametreCommission[]
+  marques  Marque[]
+  fournisseurs  Fournisseur[]
+  receptions    ReceptionFournisseur[]
+  tournees      Tournee[]
+  tricycles     Tricycle[]
+  sessionsCaisse SessionCaisse[]
+  depenses      Depense[]
+  typesConsigne TypeConsigneConfig[]
+}
+
+model PaiementSouscription {
+  id           String   @id @default(uuid())
+  montant      Float
+  devise       String   @default("FCFA")
+  reference    String?
+  statut       String
+  datePaiement DateTime @default(now())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      RoleUser
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Nouvelles relations
+  ventesCreees    Vente[]          @relation("VenteCreateur")
+  commissions Commission[]
+  tourneesOuvertes Tournee[]
+  sessionsCaisse  SessionCaisse[]
+
+  @@index([tenantId])
+}
+
+model Site {
+  id          String @id @default(uuid())
+  nom         String
+  adresse     String
+  emplacement String
+  codePrefix  String @default("DEP") // ← NOUVEAU : pour la numérotation (FAC-AKW-...)
+  tenantId    String
+
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stocks     Stock[]
+  mouvements MouvementStock[]
+  ventes     Vente[]
+
+  // Nouvelles relations
+  receptions     ReceptionFournisseur[]
+ lots LotStock[]
+  tournees       Tournee[]
+  sessionsCaisse SessionCaisse[]
+  depenses       Depense[]
+
+  @@index([tenantId])
+}
+
+model Famille {
+  id       String @id @default(uuid())
+  nom      String // Ex: "Bière", "Jus", "Eau", "Soda"
+  emoji    String @default("📦") // Icône affichée dans l'UI
+  tenantId String
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  marques  Marque[]
+  articles Article[]
+
+  @@index([tenantId])
+}
+
+model Marque {
+  id        String @id @default(uuid())
+  nom       String // Ex: "SABC", "Source du Pays", "Guinness"
+  familleId String
+  tenantId  String
+
+  famille  Famille   @relation(fields: [familleId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  articles Article[]
+
+  @@index([familleId])
+  @@index([tenantId])
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  designation String   // Ex: "Castel Beer 65cl Bouteille"
+  format      String   @default("") // Ex: "65cl", "33cl", "1.5L", "Pack 6"
+  prixVente   Float
+  prixAchat   Float    @default(0)
+  seuilCritique Int    @default(0)
+  estConsigne Boolean  @default(false)
+
+  // ── Conversions ──────────────────────────────
+  uniteParCasier  Int @default(12)  // 12 bouteilles = 1 casier
+  uniteParPack    Int @default(6)   // 6 bouteilles = 1 pack
+  uniteParPalette Int @default(120) // 120 bouteilles = 1 palette (10 casiers)
+
+  // ── Relations catalogue ───────────────────────
+  familleId String?
+  marqueId  String?
+  tenantId  String
+  createdAt DateTime @default(now())
+
+  famille      Famille?         @relation(fields: [familleId], references: [id])
+  marque       Marque?          @relation(fields: [marqueId], references: [id])
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lots LotStock[]
+  stocks       Stock[]
+  mouvements   MouvementStock[]
+  lignesVentes LigneVente[]
+  lignesReception LigneReception[]
+  lignesChargement LigneChargement[]
+
+  @@index([tenantId])
+  @@index([familleId])
+  @@index([marqueId])
+}
+
+model Stock {
+  id       String @id @default(uuid())
+  quantite Int    @default(0)
+
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // NOUVEAU : stock dans un tricycle
+  tricycleId String?
+  tricycle   Tricycle? @relation(fields: [tricycleId], references: [id])
+
+  @@unique([articleId, siteId])
+  @@index([siteId])
+  @@index([articleId])
+}
+
+model LotStock {
+  id          String   @id @default(uuid())
+  quantite    Int      @default(0)
+  quantiteInitiale Int @default(0)
+  dlc         DateTime? // Date Limite de Consommation
+  numeroLot   String?   // Numéro de lot brasseur (optionnel)
+  createdAt   DateTime @default(now())
+
+  articleId   String
+  siteId      String
+  tenantId    String
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  site    Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([siteId])
+  @@index([tenantId])
+  @@index([dlc])
+}
+
+model MouvementStock {
+  id        String        @id @default(uuid())
+  type      TypeMouvement
+  quantite  Float
+  motif     String?
+  photoUrl  String?       // ← NOUVEAU : photo casse/avarie
+  createdAt DateTime      @default(now())
+
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // NOUVEAU : lien optionnel tournée
+  tourneeId String?
+  tournee   Tournee? @relation(fields: [tourneeId], references: [id])
+
+  @@index([tenantId])
+  @@index([siteId])
+  @@index([articleId])
+}
+
+model Vente {
+  id        String      @id @default(uuid())
+  reference String      @unique
+  total     Float
+  statut    StatutVente @default(ATTENTE)
+  date      DateTime    @default(now())
+  motifAnnulation String? // ← NOUVEAU : audit annulation
+
+  modePaiement ModePaiement @default(CASH) // ← NOUVEAU
+  montantCash  Float        @default(0)     // ← NOUVEAU
+  montantOM    Float        @default(0)     // ← NOUVEAU
+  montantMoMo  Float        @default(0)    // ← NOUVEAU
+  montantCredit Float       @default(0)    // ← NOUVEAU
+
+  tenantId  String
+  siteId    String
+  clientId  String?   // ← NOUVEAU : client optionnel
+  createurId String?  // ← NOUVEAU : qui a fait la vente
+  tourneeId  String?  // ← NOUVEAU : vente en tournée
+
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  site     Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  client   Client?      @relation(fields: [clientId], references: [id])
+  createur User?        @relation("VenteCreateur", fields: [createurId], references: [id])
+  tournee  Tournee?     @relation(fields: [tourneeId], references: [id])
+  lignes   LigneVente[]
+
+  // Consignes liées à la vente
+  mouvementsConsigne MouvementConsigne[]
+
+  @@index([tenantId])
+  @@index([siteId])
+  @@index([clientId])
+}
+
+model LigneVente {
+  id           String @id @default(uuid())
+  quantite     Int
+  prixUnitaire Float
+  remise       Float  @default(0) // ← NOUVEAU : remise en FCFA
+  total        Float
+
+  venteId   String
+  articleId String
+
+  vente   Vente   @relation(fields: [venteId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([venteId])
+  @@index([articleId])
+}
+
+// ============================================================
+// NOUVEAUX MODELES
+// ============================================================
+
+// --- CLIENTS & ARDOISE ---
+
+model Client {
+  id         String  @id @default(uuid())
+  nom        String
+  telephone  String?
+  adresse    String?
+  plafondCredit Float @default(0)  // 0 = pas de crédit autorisé
+  soldeCredit   Float @default(0)  // montant dû actuellement
+  tenantId   String
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ventes   Vente[]
+  dettes   DetteClient[]
+
+  // Portefeuille consignes client
+  portefeuilleConsignes PortefeuilleConsigne[]
+
+  @@index([tenantId])
+}
+
+model DetteClient {
+  id          String     @id @default(uuid())
+  montant     Float
+  montantPaye Float      @default(0)
+  statut      StatutDette @default(EN_COURS)
+  reference   String?    // référence facture liée
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  clientId  String
+  tenantId  String
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([tenantId])
+}
+
+// --- CONSIGNES / VIDES ---
+
+model TypeConsigneConfig {
+  id          String       @id @default(uuid())
+  type        TypeConsigne
+  valeurXAF   Float        // valeur de la consigne en FCFA
+  description String?
+  tenantId    String
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  mouvementsConsigne    MouvementConsigne[]
+  portefeuillesConsigne PortefeuilleConsigne[]
+
+  @@unique([tenantId, type])
+  @@index([tenantId])
+}
+
+model PortefeuilleConsigne {
+  id       String @id @default(uuid())
+  quantite Int    @default(0) // stock de vides chez le client
+
+  clientId        String
+  typeConsigneId  String
+
+  client        Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  typeConsigne  TypeConsigneConfig @relation(fields: [typeConsigneId], references: [id])
+
+  @@unique([clientId, typeConsigneId])
+}
+
+model MouvementConsigne {
+  id        String   @id @default(uuid())
+  quantite  Int
+  estSortie Boolean  // true = vides sortis, false = vides rendus
+  estRemboursementCash Boolean @default(false) // rendu sans achat en cash
+  montantRembourse Float @default(0)
+  motif     String?
+  createdAt DateTime @default(now())
+
+  typeConsigneId String
+  typeConsigne   TypeConsigneConfig @relation(fields: [typeConsigneId], references: [id])
+
+  venteId   String?
+  vente     Vente?  @relation(fields: [venteId], references: [id])
+
+  tenantId  String
+
+  @@index([tenantId])
+  @@index([venteId])
+}
+
+// --- FOURNISSEURS & RECEPTIONS ---
+
+model Fournisseur {
+  id        String   @id @default(uuid())
+  nom       String
+  telephone String?
+  solde     Float    @default(0) // dette envers fournisseur
+  tenantId  String
+  createdAt DateTime @default(now())
+
+  tenant     Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  receptions ReceptionFournisseur[]
+
+  @@index([tenantId])
+}
+
+model ReceptionFournisseur {
+  id        String          @id @default(uuid())
+  reference String          @unique
+  statut    StatutReception @default(EN_COURS)
+  modePaiement ModePaiement @default(CASH)
+  montantPaye Float         @default(0)
+  montantDette Float        @default(0)
+  motifAnnulation String?
+  createdAt DateTime        @default(now())
+
+  fournisseurId String
+  siteId        String
+  tenantId      String
+
+  fournisseur Fournisseur @relation(fields: [fournisseurId], references: [id])
+  site        Site        @relation(fields: [siteId], references: [id])
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lignes      LigneReception[]
+
+  @@index([tenantId])
+  @@index([siteId])
+}
+
+model LigneReception {
+  id              String @id @default(uuid())
+  quantiteCommandee Int  @default(0)
+  quantiteLivree   Int
+  quantiteGratuite Int   @default(0) // stock +gratuite, dette inchangée
+  prixAchatUnitaire Float
+
+  receptionId String
+  articleId   String
+
+  reception ReceptionFournisseur @relation(fields: [receptionId], references: [id], onDelete: Cascade)
+  article   Article              @relation(fields: [articleId], references: [id])
+
+  @@index([receptionId])
+}
+
+// --- TRICYCLES & TOURNEES ---
+
+model Tricycle {
+  id       String  @id @default(uuid())
+  nom      String  // ex: "Tricycle Alpha"
+  estLibre Boolean @default(true) // false si tournée en cours
+  tenantId String
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  maintenances   MaintenanceTricycle[]
+carburants     ConsommationCarburant[]
+  tournees Tournee[]
+  stocks   Stock[]
+
+  @@index([tenantId])
+}
+
+model Tournee {
+  id        String        @id @default(uuid())
+  reference String        @unique
+  statut    StatutTournee @default(OUVERTE)
+  dateOuverture DateTime  @default(now())
+  dateCloture   DateTime?
+
+  // Clôture commerciale
+  cashRemis     Float  @default(0)
+  omRemis       Float  @default(0)
+  momoRemis     Float  @default(0)
+  noteCloture   String?
+
+  // Validation magasinier
+  ecartStock    Float? // différence attendu vs compté
+  noteValidation String?
+
+  siteId       String
+  tricycleId   String
+  commercialId String
+  tenantId     String
+
+  site       Site     @relation(fields: [siteId], references: [id])
+  tricycle   Tricycle @relation(fields: [tricycleId], references: [id])
+  commercial User     @relation(fields: [commercialId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  lignesChargement LigneChargement[]
+  ventes           Vente[]
+  mouvements       MouvementStock[]
+
+  @@index([tenantId])
+  @@index([siteId])
+}
+
+model LigneChargement {
+  id               String @id @default(uuid())
+  quantiteChargee  Int
+  quantiteRetour   Int    @default(0) // retour en fin de tournée
+  quantiteVendue   Int    @default(0)
+
+  tourneeId String
+  articleId String
+
+  tournee Tournee @relation(fields: [tourneeId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id])
+
+  @@index([tourneeId])
+}
+
+// --- CAISSE & DEPENSES ---
+
+model SessionCaisse {
+  id           String    @id @default(uuid())
+  fondInitial  Float     @default(0)
+  fondFinal    Float?    // saisi à la clôture
+  ecart        Float?    // calculé automatiquement
+  motifEcart   String?
+  estOuverte   Boolean   @default(true)
+  dateOuverture DateTime @default(now())
+  dateCloture   DateTime?
+
+  siteId    String
+  userId    String
+  tenantId  String
+
+  site      Site    @relation(fields: [siteId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  mouvements MouvementCaisse[]
+
+  @@index([tenantId])
+  @@index([siteId])
+}
+
+model MouvementCaisse {
+  id        String               @id @default(uuid())
+  type      TypeMouvementCaisse
+  montant   Float
+  motif     String?
+  reference String?              // référence vente ou dépense liée
+  createdAt DateTime             @default(now())
+
+  sessionId String
+  session   SessionCaisse @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model Depense {
+  id        String   @id @default(uuid())
+  categorie String   // ex: "Carburant", "Salaire", "Loyer"
+  montant   Float
+  motif     String
+  photoUrl  String?
+  createdAt DateTime @default(now())
+
+  siteId   String
+  tenantId String
+
+  site   Site   @relation(fields: [siteId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([siteId])
+}
+
+model JournalAudit {
+  id           String   @id
+  tenantId     String
+  actorUserId  String?
+  actorEmail   String?
+  actorRole    String?
+  action       String
+  targetType   String
+  targetId     String?
+  reference    String?
+  description  String
+  metadataText String?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([action])
+}

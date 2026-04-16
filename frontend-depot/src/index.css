@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TEST VISUEL — supprime cette ligne après vérification */
+body {
+  @apply bg-blue-100;
+}
