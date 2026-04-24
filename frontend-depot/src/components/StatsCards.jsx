@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
-import { useSite } from '../contexts/SiteContext';
+import { useDepot } from '../contexts/DepotContext';
 
 export default function StatsCards() {
   const { tenantId } = useAuth();
-  const { siteId, siteActif } = useSite();
+  const { depotId, DépôtActif } = useDepot();
   const [stats, setStats] = useState({ caJour: 0, nbVentesJour: 0, articleStar: null });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!tenantId || !siteId) return;
+    if (!tenantId || !depotId) return;
 
     const fetchStats = async () => {
       try {
-        const res = await api.get('/ventes/stats', { params: { tenantId, siteId } });
+        const res = await api.get('/ventes/stats', { params: { tenantId, depotId } });
         setStats(res.data);
       } catch (err) {
         console.error('Erreur stats:', err);
@@ -27,12 +27,12 @@ export default function StatsCards() {
     fetchStats();
     window.addEventListener('refresh-stocks', fetchStats);
     return () => window.removeEventListener('refresh-stocks', fetchStats);
-  }, [tenantId, siteId]);
+  }, [tenantId, depotId]);
 
-  if (!siteId) {
+  if (!depotId) {
     return (
       <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-8 text-center text-slate-400 text-sm">
-        Sélectionnez un site pour afficher les statistiques.
+        Sélectionnez un Dépôt pour afficher les statistiques.
       </div>
     );
   }
@@ -52,7 +52,7 @@ export default function StatsCards() {
       valeur: `${(stats.caJour || 0).toLocaleString('fr-FR')} FCFA`,
       gradient: 'from-yellow-400 to-amber-600',
       shadow: 'shadow-amber-500/20',
-      emoji: '💰',
+      emoji: 'ðŸ’°',
     },
     {
       label: 'Ventes du Jour',
@@ -60,7 +60,7 @@ export default function StatsCards() {
       valeur: stats.nbVentesJour || 0,
       gradient: 'from-blue-500 to-sky-600',
       shadow: 'shadow-blue-500/20',
-      emoji: '🧾',
+      emoji: 'ðŸ§¾',
     },
     {
       label: 'Produit Star',
@@ -68,7 +68,7 @@ export default function StatsCards() {
       valeur: stats.articleStar?.designation || 'Aucun mouvement',
       gradient: 'from-indigo-500 to-violet-700',
       shadow: 'shadow-indigo-500/20',
-      emoji: '⭐',
+      emoji: 'â­',
     },
   ];
 
@@ -87,3 +87,7 @@ export default function StatsCards() {
     </div>
   );
 }
+
+
+
+

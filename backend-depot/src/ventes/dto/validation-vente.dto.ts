@@ -4,12 +4,20 @@ export class ValiderSortieVenteDto {
     @IsString()
     @IsNotEmpty()
     tenantId: string;
+
+    @IsString()
+    @IsNotEmpty()
+    depotId: string;
 }
 
 export class AnnulerVenteDto {
     @IsString()
     @IsNotEmpty()
     tenantId: string;
+
+    @IsString()
+    @IsNotEmpty()
+    depotId: string;
 
     @IsString()
     @IsNotEmpty()

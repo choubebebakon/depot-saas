@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { useOfflineSync } from '../hooks/useOfflineSync';
+import { generateId } from '../utils/offline';
 
-// ── Composant Badge Statut ──────────────────────────────────
+// â”€â”€ Composant Badge Statut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BadgeSolde({ solde, plafond }) {
     if (solde <= 0)
-        return <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">✓ Soldé</span>;
+        return <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">âœ“ Soldé</span>;
     const pct = plafond > 0 ? (solde / plafond) * 100 : 100;
     const couleur = pct >= 90 ? 'red' : pct >= 60 ? 'orange' : 'yellow';
     const classes = {
@@ -20,39 +23,43 @@ function BadgeSolde({ solde, plafond }) {
     );
 }
 
-// ── Modal Nouveau Client ────────────────────────────────────
+// â”€â”€ Modal Nouveau Client â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalNouveauClient({ tenantId, onSuccess, onClose }) {
     const [form, setForm] = useState({ nom: '', telephone: '', adresse: '', plafondCredit: 0 });
-    const [loading, setLoading] = useState(false);
-    const [erreur, setErreur] = useState('');
+    const queryClient = useQueryClient();
+    const { addToQueue } = useOfflineSync();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setErreur('');
-        try {
-            await api.post('/clients', { ...form, tenantId });
+    const createClientMutation = useMutation({
+        mutationFn: async (payload) => {
+            if (!navigator.onLine) {
+                await addToQueue('POST', '/clients', payload);
+                return { ...payload, status: 'QUEUED_OFFLINE' };
+            }
+            const res = await api.post('/clients', payload);
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['clients', tenantId]);
             onSuccess();
             onClose();
-        } catch (err) {
-            setErreur(err.response?.data?.message || 'Erreur lors de la création');
-        } finally {
-            setLoading(false);
         }
+    });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const payload = {
+            id: generateId(),
+            ...form,
+            tenantId
+        };
+        createClientMutation.mutate(payload);
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">👤 Nouveau Client</h3>
-
-                {erreur && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">
-                        {erreur}
-                    </div>
-                )}
-
+                <h3 className="text-white font-black text-xl mb-6">ðŸ‘¤ Nouveau Client</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom *</label>
@@ -93,17 +100,15 @@ function ModalNouveauClient({ tenantId, onSuccess, onClose }) {
                             onChange={e => setForm({ ...form, plafondCredit: Number(e.target.value) })}
                             className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500"
                         />
-                        <p className="text-slate-500 text-xs mt-1">0 = pas de crédit autorisé</p>
                     </div>
-
                     <div className="flex gap-3 pt-2">
                         <button type="button" onClick={onClose}
                             className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-all">
                             Annuler
                         </button>
-                        <button type="submit" disabled={loading}
+                        <button type="submit" disabled={createClientMutation.isLoading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? 'Création...' : 'Créer le client'}
+                            {createClientMutation.isLoading ? 'Création...' : 'Créer le client'}
                         </button>
                     </div>
                 </form>
@@ -112,45 +117,47 @@ function ModalNouveauClient({ tenantId, onSuccess, onClose }) {
     );
 }
 
-// ── Modal Paiement Ardoise ──────────────────────────────────
+// â”€â”€ Modal Paiement Ardoise â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
     const [montant, setMontant] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [erreur, setErreur] = useState('');
+    const queryClient = useQueryClient();
+    const { addToQueue } = useOfflineSync();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setErreur('');
-        try {
-            await api.patch(`/clients/${client.id}/payer`, {
-                montant: Number(montant),
-                tenantId,
-            });
+    const payerDetteMutation = useMutation({
+        mutationFn: async (payload) => {
+            if (!navigator.onLine) {
+                // Pour PATCH, on simule l'url avec id
+                await addToQueue('PATCH', `/clients/${client.id}/payer`, payload);
+                return { ...payload, status: 'QUEUED_OFFLINE' };
+            }
+            const res = await api.patch(`/clients/${client.id}/payer`, payload);
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['clients', tenantId]);
+            queryClient.invalidateQueries(['clients-stats', tenantId]);
             onSuccess();
             onClose();
-        } catch (err) {
-            setErreur(err.response?.data?.message || 'Erreur paiement');
-        } finally {
-            setLoading(false);
         }
+    });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        payerDetteMutation.mutate({
+            montant: Number(montant),
+            tenantId,
+        });
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">💳 Paiement Ardoise</h3>
+                <h3 className="text-white font-black text-xl mb-2">ðŸ’³ Paiement Ardoise</h3>
                 <p className="text-slate-400 text-sm mb-6">
                     Client : <strong className="text-white">{client.nom}</strong><br />
                     Dette actuelle : <strong className="text-red-400">{client.soldeCredit.toLocaleString('fr-FR')} FCFA</strong>
                 </p>
-
-                {erreur && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">
-                        {erreur}
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -169,7 +176,6 @@ function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
                         />
                     </div>
 
-                    {/* Boutons rapides */}
                     <div className="grid grid-cols-3 gap-2">
                         {[1000, 2000, 5000].map(val => (
                             <button key={val} type="button"
@@ -180,21 +186,20 @@ function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
                         ))}
                     </div>
 
-                    {/* Tout payer */}
                     <button type="button"
                         onClick={() => setMontant(client.soldeCredit.toString())}
                         className="w-full border border-dashed border-emerald-500/40 hover:border-emerald-500 text-emerald-400 text-sm font-bold py-2 rounded-xl transition-all">
-                        Tout régler — {client.soldeCredit.toLocaleString('fr-FR')} FCFA
+                        Tout régler â€” {client.soldeCredit.toLocaleString('fr-FR')} FCFA
                     </button>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 pt-2">
                         <button type="button" onClick={onClose}
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">
                             Annuler
                         </button>
-                        <button type="submit" disabled={loading || !montant}
+                        <button type="submit" disabled={payerDetteMutation.isLoading || !montant}
                             className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : 'Confirmer'}
+                            {payerDetteMutation.isLoading ? '...' : 'Confirmer'}
                         </button>
                     </div>
                 </form>
@@ -203,35 +208,39 @@ function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
     );
 }
 
-// ── Page Principale Clients ─────────────────────────────────
+// â”€â”€ Page Principale Clients â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ClientsPage() {
     const { tenantId } = useAuth();
-    const [clients, setClients] = useState([]);
-    const [stats, setStats] = useState({ totalDu: 0, nbClientsEnDette: 0 });
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [recherche, setRecherche] = useState('');
     const [modalNouvel, setModalNouvel] = useState(false);
     const [clientPaiement, setClientPaiement] = useState(null);
     const [filtreDetteOnly, setFiltreDetteOnly] = useState(false);
 
-    const fetchClients = useCallback(async () => {
-        if (!tenantId) return;
-        setLoading(true);
-        try {
-            const [resClients, resStats] = await Promise.all([
-                api.get('/clients', { params: { tenantId } }),
-                api.get('/clients/stats/ardoise', { params: { tenantId } }),
-            ]);
-            setClients(Array.isArray(resClients.data) ? resClients.data : []);
-            setStats(resStats.data);
-        } catch (err) {
-            console.error('Erreur clients:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [tenantId]);
+    const { data: clients = [], isLoading: loadingClients } = useQuery({
+        queryKey: ['clients', tenantId],
+        queryFn: async () => {
+            const res = await api.get('/clients', { params: { tenantId } });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        enabled: !!tenantId
+    });
 
-    useEffect(() => { fetchClients(); }, [fetchClients]);
+    const { data: stats = { totalDu: 0, nbClientsEnDette: 0 }, isLoading: loadingStats } = useQuery({
+        queryKey: ['clients-stats', tenantId],
+        queryFn: async () => {
+            const res = await api.get('/clients/stats/ardoise', { params: { tenantId } });
+            return res.data;
+        },
+        enabled: !!tenantId
+    });
+
+    const loading = loadingClients || loadingStats;
+
+    const refreshData = () => {
+        queryClient.invalidateQueries(['clients', tenantId]);
+        queryClient.invalidateQueries(['clients-stats', tenantId]);
+    };
 
     const clientsFiltres = clients.filter(c => {
         const matchRecherche = c.nom.toLowerCase().includes(recherche.toLowerCase()) ||
@@ -277,7 +286,7 @@ export default function ClientsPage() {
                 <input
                     value={recherche}
                     onChange={e => setRecherche(e.target.value)}
-                    placeholder="🔍 Rechercher par nom ou téléphone..."
+                    placeholder="ðŸ” Rechercher par nom ou téléphone..."
                     className="flex-1 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500"
                 />
                 <button
@@ -287,19 +296,17 @@ export default function ClientsPage() {
                             : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
                         }`}
                 >
-                    {filtreDetteOnly ? '⚠️ Avec dettes seulement' : 'Tous les clients'}
+                    {filtreDetteOnly ? 'âš ï¸ Avec dettes seulement' : 'Tous les clients'}
                 </button>
             </div>
 
             {/* Tableau clients */}
             <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
-                {loading ? (
-                    <div className="flex items-center justify-center h-48">
-                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    </div>
+                {loadingClients ? (
+                    <div className="flex items-center justify-center h-48 animate-pulse text-slate-500 text-sm">Chargement des clients...</div>
                 ) : clientsFiltres.length === 0 ? (
                     <div className="text-center py-16 text-slate-500">
-                        <p className="text-4xl mb-3">👤</p>
+                        <p className="text-4xl mb-3">ðŸ‘¤</p>
                         <p className="font-semibold">
                             {recherche ? 'Aucun client trouvé' : 'Aucun client encore'}
                         </p>
@@ -337,7 +344,7 @@ export default function ClientsPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-slate-400 text-sm">
-                                        {client.telephone || '—'}
+                                        {client.telephone || 'â€”'}
                                     </td>
                                     <td className="px-6 py-4 text-slate-400 text-sm">
                                         {client.plafondCredit > 0
@@ -356,7 +363,7 @@ export default function ClientsPage() {
                                                 onClick={() => setClientPaiement(client)}
                                                 className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
                                             >
-                                                💳 Encaisser
+                                                ðŸ’³ Encaisser
                                             </button>
                                         )}
                                     </td>
@@ -371,7 +378,7 @@ export default function ClientsPage() {
             {modalNouvel && (
                 <ModalNouveauClient
                     tenantId={tenantId}
-                    onSuccess={fetchClients}
+                    onSuccess={refreshData}
                     onClose={() => setModalNouvel(false)}
                 />
             )}
@@ -379,10 +386,14 @@ export default function ClientsPage() {
                 <ModalPaiement
                     client={clientPaiement}
                     tenantId={tenantId}
-                    onSuccess={fetchClients}
+                    onSuccess={refreshData}
                     onClose={() => setClientPaiement(null)}
                 />
             )}
         </div>
     );
 }
+
+
+
+

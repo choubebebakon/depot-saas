@@ -33,8 +33,8 @@ export class FournisseursController {
     @Get('receptions')
     findReceptions(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId: string,
     ) {
-        return this.service.findAllReceptions(tenantId, siteId);
+        return this.service.findAllReceptions(tenantId, depotId);
     }
 }

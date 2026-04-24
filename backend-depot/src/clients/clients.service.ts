@@ -7,14 +7,16 @@ export class ClientsService {
     constructor(private prisma: PrismaService) { }
 
     // Créer un client
-    async create(dto: CreateClientDto) {
+    async create(dto: any) {
         return this.prisma.client.create({
             data: {
+                id: dto.id || undefined,
                 nom: dto.nom,
                 telephone: dto.telephone,
                 adresse: dto.adresse,
                 plafondCredit: dto.plafondCredit ?? 0,
                 tenantId: dto.tenantId,
+                createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
             },
         });
     }
@@ -41,7 +43,7 @@ export class ClientsService {
                 ventes: {
                     orderBy: { date: 'desc' },
                     take: 20,
-                    include: { lignes: { include: { article: true } }, site: true },
+                    include: { lignes: { include: { article: true } }, depot: true },
                 },
                 dettes: { orderBy: { createdAt: 'desc' } },
             },

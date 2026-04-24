@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
-import { useSite } from '../contexts/SiteContext';
+import { useDepot } from '../contexts/DepotContext';
 
-// ── Modal Nouveau Fournisseur ───────────────────────────────
+// â”€â”€ Modal Nouveau Fournisseur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalNouveauFournisseur({ tenantId, onSuccess, onClose }) {
     const [form, setForm] = useState({ nom: '', telephone: '' });
     const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ function ModalNouveauFournisseur({ tenantId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">🏭 Nouveau Fournisseur</h3>
+                <h3 className="text-white font-black text-xl mb-6">ðŸ­ Nouveau Fournisseur</h3>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -56,8 +56,8 @@ function ModalNouveauFournisseur({ tenantId, onSuccess, onClose }) {
     );
 }
 
-// ── Modal Réception Camion ──────────────────────────────────
-function ModalReception({ tenantId, siteId, fournisseurs, articles, onSuccess, onClose }) {
+// â”€â”€ Modal Réception Camion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function ModalReception({ tenantId, depotId, fournisseurs, articles, onSuccess, onClose }) {
     const [fournisseurId, setFournisseurId] = useState('');
     const [modePaiement, setModePaiement] = useState('CASH');
     const [montantPaye, setMontantPaye] = useState(0);
@@ -76,12 +76,12 @@ function ModalReception({ tenantId, siteId, fournisseurs, articles, onSuccess, o
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!siteId) { setErreur('Sélectionnez un site dans le menu.'); return; }
+        if (!depotId) { setErreur('Sélectionnez un Dépôt dans le menu.'); return; }
         setLoading(true);
         setErreur('');
         try {
             await api.post('/fournisseurs/receptions', {
-                fournisseurId, siteId, tenantId, modePaiement,
+                fournisseurId, depotId, tenantId, modePaiement,
                 montantPaye: Number(montantPaye),
                 lignes: lignes.map(l => ({
                     articleId: l.articleId,
@@ -104,7 +104,7 @@ function ModalReception({ tenantId, siteId, fournisseurs, articles, onSuccess, o
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-2xl shadow-2xl my-4">
-                <h3 className="text-white font-black text-xl mb-6">🚛 Réception Fournisseur</h3>
+                <h3 className="text-white font-black text-xl mb-6">ðŸš› Réception Fournisseur</h3>
 
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
 
@@ -129,7 +129,7 @@ function ModalReception({ tenantId, siteId, fournisseurs, articles, onSuccess, o
                                         <span className="text-slate-400 text-xs font-bold">Article {i + 1}</span>
                                         {lignes.length > 1 && (
                                             <button type="button" onClick={() => setLignes(lignes.filter((_, idx) => idx !== i))}
-                                                className="text-red-400 hover:text-red-300 text-xs font-bold">✕ Retirer</button>
+                                                className="text-red-400 hover:text-red-300 text-xs font-bold">âœ• Retirer</button>
                                         )}
                                     </div>
                                     <select required value={ligne.articleId} onChange={e => updateLigne(i, 'articleId', e.target.value)}
@@ -145,7 +145,7 @@ function ModalReception({ tenantId, siteId, fournisseurs, articles, onSuccess, o
                                                 className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:border-indigo-500" />
                                         </div>
                                         <div>
-                                            <label className="text-slate-500 text-xs mb-1 block">Qté gratuite 🎁</label>
+                                            <label className="text-slate-500 text-xs mb-1 block">Qté gratuite ðŸŽ</label>
                                             <input type="number" min="0" value={ligne.quantiteGratuite}
                                                 onChange={e => updateLigne(i, 'quantiteGratuite', e.target.value)}
                                                 className="w-full bg-slate-700 border border-slate-600 text-emerald-400 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:border-emerald-500" />
@@ -210,7 +210,7 @@ function ModalReception({ tenantId, siteId, fournisseurs, articles, onSuccess, o
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? 'Validation...' : '✅ Valider la Réception'}
+                            {loading ? 'Validation...' : 'âœ… Valider la Réception'}
                         </button>
                     </div>
                 </form>
@@ -219,10 +219,10 @@ function ModalReception({ tenantId, siteId, fournisseurs, articles, onSuccess, o
     );
 }
 
-// ── Page Principale ─────────────────────────────────────────
+// â”€â”€ Page Principale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function FournisseursPage() {
     const { tenantId } = useAuth();
-    const { siteId } = useSite();
+    const { depotId } = useDepot();
     const [fournisseurs, setFournisseurs] = useState([]);
     const [receptions, setReceptions] = useState([]);
     const [articles, setArticles] = useState([]);
@@ -238,7 +238,7 @@ export default function FournisseursPage() {
         try {
             const [resF, resR, resA, resS] = await Promise.all([
                 api.get('/fournisseurs', { params: { tenantId } }),
-                api.get('/fournisseurs/receptions', { params: { tenantId, siteId } }),
+                api.get('/fournisseurs/receptions', { params: { tenantId, depotId } }),
                 api.get('/articles', { params: { tenantId } }),
                 api.get('/fournisseurs/stats', { params: { tenantId } }),
             ]);
@@ -251,7 +251,7 @@ export default function FournisseursPage() {
         } finally {
             setLoading(false);
         }
-    }, [tenantId, siteId]);
+    }, [tenantId, depotId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -270,7 +270,7 @@ export default function FournisseursPage() {
                     </button>
                     <button onClick={() => setModalReception(true)}
                         className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-                        🚛 Réceptionner
+                        ðŸš› Réceptionner
                     </button>
                 </div>
             </div>
@@ -293,7 +293,7 @@ export default function FournisseursPage() {
 
             {/* Onglets */}
             <div className="flex gap-2 mb-6">
-                {[['fournisseurs', '🏭 Fournisseurs'], ['receptions', '📦 Réceptions']].map(([id, label]) => (
+                {[['fournisseurs', 'ðŸ­ Fournisseurs'], ['receptions', 'ðŸ“¦ Réceptions']].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
                                 ? 'bg-indigo-600 border-indigo-500 text-white'
@@ -313,7 +313,7 @@ export default function FournisseursPage() {
                         </div>
                     ) : fournisseurs.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">🏭</p>
+                            <p className="text-4xl mb-3">ðŸ­</p>
                             <p className="font-semibold">Aucun fournisseur</p>
                             <button onClick={() => setModalNouvel(true)}
                                 className="mt-4 text-indigo-400 text-sm font-bold">+ Ajouter un fournisseur</button>
@@ -339,12 +339,12 @@ export default function FournisseursPage() {
                                                 <p className="text-white font-bold text-sm">{f.nom}</p>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-400 text-sm">{f.telephone || '—'}</td>
+                                        <td className="px-6 py-4 text-slate-400 text-sm">{f.telephone || 'â€”'}</td>
                                         <td className="px-6 py-4 text-slate-400 text-sm">{f._count?.receptions || 0}</td>
                                         <td className="px-6 py-4">
                                             {f.solde > 0
                                                 ? <span className="text-red-400 font-bold text-sm">{f.solde.toLocaleString('fr-FR')} FCFA</span>
-                                                : <span className="text-emerald-400 text-sm font-bold">✓ Soldé</span>}
+                                                : <span className="text-emerald-400 text-sm font-bold">âœ“ Soldé</span>}
                                         </td>
                                     </tr>
                                 ))}
@@ -359,10 +359,10 @@ export default function FournisseursPage() {
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                     {receptions.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">📦</p>
+                            <p className="text-4xl mb-3">ðŸ“¦</p>
                             <p className="font-semibold">Aucune réception enregistrée</p>
                             <button onClick={() => setModalReception(true)}
-                                className="mt-4 text-indigo-400 text-sm font-bold">🚛 Première réception</button>
+                                className="mt-4 text-indigo-400 text-sm font-bold">ðŸš› Première réception</button>
                         </div>
                     ) : (
                         <table className="w-full text-left">
@@ -370,7 +370,7 @@ export default function FournisseursPage() {
                                 <tr className="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-700">
                                     <th className="px-6 py-4">Référence</th>
                                     <th className="px-6 py-4">Fournisseur</th>
-                                    <th className="px-6 py-4">Site</th>
+                                    <th className="px-6 py-4">Dépôt</th>
                                     <th className="px-6 py-4">Payé</th>
                                     <th className="px-6 py-4">Dette</th>
                                     <th className="px-6 py-4">Date</th>
@@ -381,12 +381,12 @@ export default function FournisseursPage() {
                                     <tr key={r.id} className="hover:bg-slate-700/30 transition-colors">
                                         <td className="px-6 py-4 text-indigo-400 font-bold text-sm">{r.reference}</td>
                                         <td className="px-6 py-4 text-white font-semibold text-sm">{r.fournisseur?.nom}</td>
-                                        <td className="px-6 py-4 text-slate-400 text-sm">{r.site?.nom}</td>
+                                        <td className="px-6 py-4 text-slate-400 text-sm">{r.Dépôt?.nom}</td>
                                         <td className="px-6 py-4 text-emerald-400 font-bold text-sm">{r.montantPaye.toLocaleString('fr-FR')} FCFA</td>
                                         <td className="px-6 py-4">
                                             {r.montantDette > 0
                                                 ? <span className="text-red-400 font-bold text-sm">{r.montantDette.toLocaleString('fr-FR')} FCFA</span>
-                                                : <span className="text-emerald-400 text-sm">✓</span>}
+                                                : <span className="text-emerald-400 text-sm">âœ“</span>}
                                         </td>
                                         <td className="px-6 py-4 text-slate-400 text-sm">
                                             {new Date(r.createdAt).toLocaleDateString('fr-FR')}
@@ -405,7 +405,7 @@ export default function FournisseursPage() {
             )}
             {modalReception && (
                 <ModalReception
-                    tenantId={tenantId} siteId={siteId}
+                    tenantId={tenantId} depotId={depotId}
                     fournisseurs={fournisseurs} articles={articles}
                     onSuccess={fetchData} onClose={() => setModalReception(false)}
                 />
@@ -413,3 +413,7 @@ export default function FournisseursPage() {
         </div>
     );
 }
+
+
+
+

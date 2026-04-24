@@ -8,13 +8,14 @@ export class UsersService {
   constructor(private prisma: PrismaService) { }
 
   // Création d'un user avec mot de passe hashé automatiquement
-  async create(data: { email: string; password: string; role: RoleUser; tenantId: string }) {
+  async create(data: { email: string; password: string; role: RoleUser; tenantId: string; nom?: string }) {
     const hashedPassword = await bcrypt.hash(data.password, 12);
     return this.prisma.user.create({
       data: {
         email: data.email,
-        password: hashedPassword, // ✅ Toujours hashé
+        password: hashedPassword,
         role: data.role,
+        nom: data.nom,       // Nom affiché (ex: "Jean Dupont")
         tenantId: data.tenantId,
       },
     });
@@ -27,10 +28,26 @@ export class UsersService {
         id: true,
         email: true,
         role: true,
+        nom: true,
         tenantId: true,
         createdAt: true,
         // password exclu
       },
+    });
+  }
+
+  async findCommerciaux(tenantId: string) {
+    return this.prisma.user.findMany({
+      where: { tenantId, role: RoleUser.COMMERCIAL },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        nom: true,
+        tenantId: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { DepotScopeService } from '../common/depot-scope.service';
 import { PrismaService } from '../prisma.service';
 
 type AuditInput = {
     tenantId: string;
+    depotId?: string | null;
     actorUserId?: string | null;
     actorEmail?: string | null;
     actorRole?: string | null;
@@ -18,6 +20,7 @@ type AuditInput = {
 type AuditRow = {
     id: string;
     tenantId: string;
+    depotId: string | null;
     actorUserId: string | null;
     actorEmail: string | null;
     actorRole: string | null;
@@ -32,15 +35,19 @@ type AuditRow = {
 
 @Injectable()
 export class AuditService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly depotScope: DepotScopeService,
+    ) { }
 
     async logEvent(input: AuditInput) {
         await this.prisma.$executeRawUnsafe(
             `INSERT INTO "JournalAudit"
-            ("id", "tenantId", "actorUserId", "actorEmail", "actorRole", "action", "targetType", "targetId", "reference", "description", "metadataText", "createdAt")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+            ("id", "tenantId", "depotId", "actorUserId", "actorEmail", "actorRole", "action", "targetType", "targetId", "reference", "description", "metadataText", "createdAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())`,
             randomUUID(),
             input.tenantId,
+            input.depotId ?? this.depotScope.getDepotId(),
             input.actorUserId ?? null,
             input.actorEmail ?? null,
             input.actorRole ?? null,
@@ -60,10 +67,17 @@ export class AuditService {
             startDate?: string;
             endDate?: string;
             limit?: number;
+            depotId?: string | null;
         },
     ) {
         const conditions = [`"tenantId" = $1`];
         const params: any[] = [tenantId];
+        const depotId = filters?.depotId ?? this.depotScope.getDepotId();
+
+        if (depotId) {
+            params.push(depotId);
+            conditions.push(`"depotId" = $${params.length}`);
+        }
 
         if (filters?.action) {
             params.push(filters.action);

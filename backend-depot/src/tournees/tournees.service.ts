@@ -12,6 +12,14 @@ import {
 export class TourneesService {
     constructor(private prisma: PrismaService) { }
 
+    private requireDepotId(depotId?: string) {
+        if (!depotId) {
+            throw new BadRequestException('depotId est obligatoire pour isoler les tournees du depot actif.');
+        }
+
+        return depotId;
+    }
+
     // ── Tricycles ────────────────────────────────────────────
 
     async createTricycle(dto: CreateTricycleDto) {
@@ -27,7 +35,7 @@ export class TourneesService {
                 tournees: {
                     where: { statut: { in: ['OUVERTE', 'CLOTURE_COMMERCIALE'] } },
                     take: 1,
-                    include: { commercial: { select: { email: true } } },
+                    include: { commercial: { select: { email: true, nom: true } } },
                 },
             },
             orderBy: { nom: 'asc' },
@@ -60,15 +68,15 @@ export class TourneesService {
                 data: {
                     reference,
                     statut: 'OUVERTE',
-                    siteId: dto.siteId,
+                    depotId: dto.depotId,
                     tricycleId: dto.tricycleId,
                     commercialId: dto.commercialId,
                     tenantId: dto.tenantId,
                 },
                 include: {
                     tricycle: true,
-                    commercial: { select: { email: true, role: true } },
-                    site: true,
+                    commercial: { select: { email: true, role: true, nom: true } },
+                    depot: true,
                 },
             }),
             this.prisma.tricycle.update({
@@ -98,9 +106,9 @@ export class TourneesService {
                 // Vérifie le stock disponible au dépôt
                 const stock = await tx.stock.findUnique({
                     where: {
-                        articleId_siteId: {
+                        articleId_depotId: {
                             articleId: ligne.articleId,
-                            siteId: tournee.siteId,
+                            depotId: tournee.depotId,
                         },
                     },
                 });
@@ -145,7 +153,7 @@ export class TourneesService {
                         quantite: ligne.quantiteChargee,
                         motif: `Chargement tournée ${tournee.reference}`,
                         articleId: ligne.articleId,
-                        siteId: tournee.siteId,
+                        depotId: tournee.depotId,
                         tenantId: dto.tenantId,
                         tourneeId: dto.tourneeId,
                     },
@@ -156,8 +164,8 @@ export class TourneesService {
                 where: { id: dto.tourneeId },
                 include: {
                     lignesChargement: { include: { article: true } },
-                    commercial: { select: { email: true } },
-                    site: true,
+                    commercial: { select: { email: true, nom: true } },
+                    depot: true,
                     tricycle: true,
                 },
             });
@@ -226,9 +234,9 @@ export class TourneesService {
                 if (retour.quantiteRetour > 0) {
                     const stockDepot = await tx.stock.findUnique({
                         where: {
-                            articleId_siteId: {
+                            articleId_depotId: {
                                 articleId: retour.articleId,
-                                siteId: tournee.siteId,
+                                depotId: tournee.depotId,
                             },
                         },
                     });
@@ -242,7 +250,7 @@ export class TourneesService {
                         await tx.stock.create({
                             data: {
                                 articleId: retour.articleId,
-                                siteId: tournee.siteId,
+                                depotId: tournee.depotId,
                                 quantite: retour.quantiteRetour,
                             },
                         });
@@ -255,7 +263,7 @@ export class TourneesService {
                             quantite: retour.quantiteRetour,
                             motif: `Retour tournée ${tournee.reference}`,
                             articleId: retour.articleId,
-                            siteId: tournee.siteId,
+                            depotId: tournee.depotId,
                             tenantId: dto.tenantId,
                             tourneeId: dto.tourneeId,
                         },
@@ -279,9 +287,9 @@ export class TourneesService {
                 },
                 include: {
                     lignesChargement: { include: { article: true } },
-                    commercial: { select: { email: true } },
+                    commercial: { select: { email: true, nom: true } },
                     tricycle: true,
-                    site: true,
+                    depot: true,
                 },
             });
         });
@@ -289,17 +297,19 @@ export class TourneesService {
 
     // ── Lister tournées ──────────────────────────────────────
 
-    async findAll(tenantId: string, siteId?: string, statut?: string) {
+    async findAll(tenantId: string, depotId?: string, statut?: string) {
+        const selectedDepotId = this.requireDepotId(depotId);
+
         return this.prisma.tournee.findMany({
             where: {
                 tenantId,
-                ...(siteId ? { siteId } : {}),
+                depotId: selectedDepotId,
                 ...(statut ? { statut: statut as any } : {}),
             },
             include: {
-                commercial: { select: { email: true, role: true } },
+                commercial: { select: { email: true, role: true, nom: true } },
                 tricycle: true,
-                site: true,
+                depot: true,
                 lignesChargement: { include: { article: true } },
                 _count: { select: { ventes: true } },
             },
@@ -307,13 +317,15 @@ export class TourneesService {
         });
     }
 
-    async findOne(id: string, tenantId: string) {
+    async findOne(id: string, tenantId: string, depotId?: string) {
+        const selectedDepotId = this.requireDepotId(depotId);
+
         return this.prisma.tournee.findFirst({
-            where: { id, tenantId },
+            where: { id, tenantId, depotId: selectedDepotId },
             include: {
-                commercial: { select: { email: true, role: true } },
+                commercial: { select: { email: true, role: true, nom: true } },
                 tricycle: true,
-                site: true,
+                depot: true,
                 lignesChargement: { include: { article: true } },
                 ventes: {
                     include: { lignes: { include: { article: true } } },

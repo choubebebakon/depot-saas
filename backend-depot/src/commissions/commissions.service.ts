@@ -47,14 +47,26 @@ export class CommissionsService {
             );
         }
 
-        // Période par défaut = mois en cours
         const maintenant = new Date();
-        const periode = dto.periode ||
-            `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, '0')}`;
+        const periode = dto.periode || `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, '0')}`;
+        
+        let debut: Date;
+        let fin: Date;
+        try {
+           const [anneeStr, moisStr] = periode.split('-');
+           const annee = parseInt(anneeStr, 10) || maintenant.getFullYear();
+           const mois = parseInt(moisStr, 10) || (maintenant.getMonth() + 1);
 
-        const [annee, mois] = periode.split('-').map(Number);
-        const debut = new Date(annee, mois - 1, 1);
-        const fin = new Date(annee, mois, 0, 23, 59, 59, 999);
+           debut = new Date(annee, mois - 1, 1);
+           fin = new Date(annee, mois, 0, 23, 59, 59, 999);
+           
+           if (isNaN(debut.getTime()) || isNaN(fin.getTime())) {
+              throw new Error("Invalid date");
+           }
+        } catch (e) {
+           debut = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
+           fin = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 0, 23, 59, 59, 999);
+        }
 
         // Cherche les commerciaux
         const whereUser: any = {
@@ -67,21 +79,51 @@ export class CommissionsService {
 
         const commissions = await Promise.all(
             users.map(async (user) => {
-                // Calcule les ventes du commercial sur la période
-                const stats = await this.prisma.vente.aggregate({
+               try {
+                // Calcule les ventes du commercial sur la période, en ouvrant les détails JSON
+                const ventes = await this.prisma.vente.findMany({
                     where: {
                         tenantId: dto.tenantId,
                         createurId: user.id,
                         statut: { not: 'ANNULE' },
                         date: { gte: debut, lte: fin },
                     },
-                    _sum: { total: true },
-                    _count: { id: true },
+                    include: { lignes: true }
                 });
 
-                const caVentes = stats._sum.total || 0;
+                let caVentes = 0;
+                let caMixte = 0;
+                let nbVentes = ventes.length;
+
+                ventes.forEach(vente => {
+                   try {
+                     vente.lignes.forEach(ligne => {
+                          if (ligne.casierMixte && ligne.composition) {
+                              const comp = typeof ligne.composition === 'string' ? JSON.parse(ligne.composition) : ligne.composition;
+                              if (Array.isArray(comp)) {
+                                   comp.forEach(sub => {
+                                        console.log('Calcul pour la vente ID:', vente.id); // Forcé par demande
+                                        let price = Number(sub.prixUnitaire || 0);
+                                        if (isNaN(price) || price <= 0) {
+                                             const safeQtyTotale = comp.reduce((acc, c) => acc + (Number(c.quantite || 0) || 0), 0);
+                                             price = (Number(ligne.total || 0) || 0) / (Number(ligne.quantite || 1) || 1) / (safeQtyTotale || 1);
+                                        }
+                                        const subLigneTotal = price * Number(sub.quantite || 0);
+                                        const totalPourCasier = subLigneTotal * Number(ligne.quantite || 1);
+                                        caVentes += totalPourCasier;
+                                        caMixte += totalPourCasier;
+                                   });
+                              }
+                          } else {
+                              caVentes += Number(ligne.total || 0);
+                          }
+                     });
+                   } catch (err) {
+                      console.error(`[COMMISSION] Erreur de parsing sur la vente ${vente.id} (${vente.reference})`, err);
+                   }
+                });
+
                 const montantCommission = (caVentes * parametre.taux) / 100;
-                const nbVentes = stats._count.id || 0;
 
                 // Ventes tournées
                 const statsTournees = await this.prisma.tournee.aggregate({
@@ -129,14 +171,20 @@ export class CommissionsService {
                     periode,
                     estPayee: existante?.estPayee || false,
                 };
+             } catch (err) {
+                console.error(`[COMMISSION] Crash complet sur l'utilisateur ${user.id} (${user.email}):`, err);
+                return null;
+             }
             })
         );
+
+        const validCommissions = commissions.filter(c => c !== null);
 
         return {
             periode,
             taux: parametre.taux,
-            commissions: commissions.filter(c => c.caVentes > 0),
-            totalCommissions: commissions.reduce((acc, c) => acc + c.montantCommission, 0),
+            commissions: validCommissions.filter(c => c.caVentes > 0),
+            totalCommissions: validCommissions.reduce((acc, c) => acc + c.montantCommission, 0),
         };
     }
 

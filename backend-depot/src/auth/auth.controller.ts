@@ -9,14 +9,21 @@ import { Public } from './decorators/public.decorator';
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
-    // POST /auth/login → retourne le token JWT
+    // Inscription d'un nouveau dépôt (Public)
+    @Public()
+    @Post('register')
+    async register(@Body() registerDto: any) {
+        return this.authService.register(registerDto);
+    }
+
+    // Connexion existante (Public)
     @Public()
     @Post('login')
     async login(@Body() loginDto: LoginDto) {
         return this.authService.login(loginDto);
     }
 
-    // GET /auth/me → retourne l'utilisateur connecté (route protégée)
+    // Profil connecté (Protégé)
     @UseGuards(JwtAuthGuard)
     @Get('me')
     getProfile(@CurrentUser() user: any) {

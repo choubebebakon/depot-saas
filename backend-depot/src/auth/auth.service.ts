@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
+import { RoleUser } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -11,10 +12,49 @@ export class AuthService {
         private jwtService: JwtService,
     ) { }
 
+    async register(dto: any) {
+        const { nomEntreprise, email, password } = dto;
+
+        return this.prisma.$transaction(async (tx) => {
+            const tenant = await tx.tenant.create({
+                data: {
+                    nomEntreprise,
+                    estActif: true,
+                    statutAbonnement: 'TRIAL',
+                },
+            });
+
+            const depotPrincipal = await tx.depot.create({
+                data: {
+                    nom: 'Depot Principal',
+                    adresse: 'A renseigner',
+                    emplacement: 'Localisation par defaut',
+                    tenantId: tenant.id,
+                }
+            });
+
+            const hashedPassword = await bcrypt.hash(password, 12);
+            const user = await tx.user.create({
+                data: {
+                    email,
+                    password: hashedPassword,
+                    role: RoleUser.PATRON,
+                    tenantId: tenant.id,
+                    depotId: depotPrincipal.id,
+                },
+            });
+
+            return {
+                message: 'Compte cree avec succes',
+                tenantId: tenant.id,
+                email: user.email
+            };
+        });
+    }
+
     async login(loginDto: LoginDto) {
         const { email, password } = loginDto;
 
-        // 1. Chercher l'utilisateur par email
         const user = await this.prisma.user.findUnique({
             where: { email },
             include: { tenant: true },
@@ -24,23 +64,21 @@ export class AuthService {
             throw new UnauthorizedException('Email ou mot de passe incorrect');
         }
 
-        // 2. Vérifier le mot de passe (bcrypt)
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             throw new UnauthorizedException('Email ou mot de passe incorrect');
         }
 
-        // 3. Vérifier que le tenant est actif
         if (!user.tenant.estActif) {
             throw new UnauthorizedException('Compte suspendu. Contactez votre administrateur.');
         }
 
-        // 4. Générer le JWT avec les infos essentielles
         const payload = {
             sub: user.id,
             email: user.email,
             role: user.role,
             tenantId: user.tenantId,
+            depotId: user.depotId ?? undefined,
         };
 
         const token = this.jwtService.sign(payload);
@@ -52,13 +90,13 @@ export class AuthService {
                 email: user.email,
                 role: user.role,
                 tenantId: user.tenantId,
+                depotId: user.depotId ?? null,
                 nomEntreprise: user.tenant.nomEntreprise,
                 statutAbonnement: user.tenant.statutAbonnement,
             },
         };
     }
 
-    // Utilitaire pour créer un utilisateur avec mot de passe hashé
     async hashPassword(plainPassword: string): Promise<string> {
         return bcrypt.hash(plainPassword, 12);
     }

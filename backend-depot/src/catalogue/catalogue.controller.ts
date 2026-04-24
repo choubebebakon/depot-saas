@@ -68,8 +68,8 @@ export class CatalogueController {
     @Get('stocks-convertis')
     getStockConverti(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId?: string,
     ) {
-        return this.service.getStockConverti(tenantId, siteId);
+        return this.service.getStockConverti(tenantId, depotId);
     }
 }

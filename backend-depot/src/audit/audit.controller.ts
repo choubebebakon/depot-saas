@@ -11,12 +11,14 @@ export class AuditController {
     @Get('journal')
     getJournalPatron(
         @Query('tenantId') tenantId: string,
+        @Query('depotId') depotId?: string,
         @Query('action') action?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
         @Query('limit') limit?: string,
     ) {
         return this.auditService.getJournalPatron(tenantId, {
+            depotId,
             action,
             startDate,
             endDate,

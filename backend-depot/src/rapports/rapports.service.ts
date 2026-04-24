@@ -14,15 +14,19 @@ function getMonthRange(month?: string) {
 export class RapportsService {
     constructor(private readonly prisma: PrismaService) { }
 
-    async getTopProduitsParMarge(tenantId: string, siteId?: string, month?: string) {
+    private buildDepotFilter(depotId?: string) {
+        return depotId ? { depotId } : {};
+    }
+
+    async getTopProduitsParMarge(tenantId: string, depotId?: string, month?: string) {
         const { start, end } = getMonthRange(month);
 
         const ventes = await this.prisma.vente.findMany({
             where: {
                 tenantId,
+                ...this.buildDepotFilter(depotId),
                 statut: StatutVente.PAYE,
                 date: { gte: start, lt: end },
-                ...(siteId ? { siteId } : {}),
             },
             include: {
                 lignes: {
@@ -63,7 +67,7 @@ export class RapportsService {
             .slice(0, 5);
     }
 
-    async getPerformanceCommerciaux(tenantId: string, month?: string) {
+    async getPerformanceCommerciaux(tenantId: string, depotId?: string, month?: string) {
         const { start, end } = getMonthRange(month);
 
         const commerciaux = await this.prisma.user.findMany({
@@ -81,6 +85,7 @@ export class RapportsService {
         const ventes = await this.prisma.vente.findMany({
             where: {
                 tenantId,
+                ...this.buildDepotFilter(depotId),
                 statut: StatutVente.PAYE,
                 date: { gte: start, lt: end },
             },
@@ -94,6 +99,7 @@ export class RapportsService {
         const tournees = await this.prisma.tournee.findMany({
             where: {
                 tenantId,
+                ...this.buildDepotFilter(depotId),
                 dateOuverture: { gte: start, lt: end },
             },
             select: {
@@ -111,6 +117,7 @@ export class RapportsService {
         const casses = await this.prisma.mouvementStock.findMany({
             where: {
                 tenantId,
+                ...this.buildDepotFilter(depotId),
                 type: TypeMouvement.CASSE_AVARIE,
                 createdAt: { gte: start, lt: end },
                 tourneeId: { not: null },
@@ -197,15 +204,15 @@ export class RapportsService {
         return rows.sort((a, b) => b.scorePerformance - a.scorePerformance);
     }
 
-    async getPointMortMensuel(tenantId: string, siteId?: string, month?: string) {
+    async getPointMortMensuel(tenantId: string, depotId?: string, month?: string) {
         const { start, end } = getMonthRange(month);
 
         const ventes = await this.prisma.vente.findMany({
             where: {
                 tenantId,
+                ...this.buildDepotFilter(depotId),
                 statut: StatutVente.PAYE,
                 date: { gte: start, lt: end },
-                ...(siteId ? { siteId } : {}),
             },
             include: {
                 lignes: {
@@ -217,8 +224,8 @@ export class RapportsService {
         const depenses = await this.prisma.depense.aggregate({
             where: {
                 tenantId,
+                ...this.buildDepotFilter(depotId),
                 createdAt: { gte: start, lt: end },
-                ...(siteId ? { siteId } : {}),
             },
             _sum: { montant: true },
             _count: { id: true },

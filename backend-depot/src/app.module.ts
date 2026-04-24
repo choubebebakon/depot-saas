@@ -8,10 +8,11 @@ import { PrismaService } from './prisma.service';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { DepotScopeService } from './common/depot-scope.service';
 import { SaasGuard } from './common/guards/saas.guard';
 import { TenantsModule } from './tenants/tenants.module';
 import { ConsignesModule } from './consignes/consignes.module';
-import { SitesModule } from './sites/sites.module';
+import { DepotsModule } from './depots/depots.module';
 import { ArticlesModule } from './articles/articles.module';
 import { DlcModule } from './dlc/dlc.module';
 import { StocksModule } from './stocks/stocks.module';
@@ -26,13 +27,14 @@ import { ClientsModule } from './clients/clients.module';
 import { FournisseursModule } from './fournisseurs/fournisseurs.module';
 import { CaisseModule } from './caisse/caisse.module';
 import { TourneesModule } from './tournees/tournees.module';
+import { CommandesModule } from './commandes/commandes.module';
 
 @Module({
   imports: [
     AuthModule,
     TenantsModule,
     ConsignesModule,
-    SitesModule,
+    DepotsModule,
     MaintenanceModule,
     CommissionsModule,
     ArticlesModule,
@@ -49,11 +51,13 @@ import { TourneesModule } from './tournees/tournees.module';
     FournisseursModule,
     CaisseModule,
     TourneesModule,
+    CommandesModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     PrismaService,
+    DepotScopeService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: SaasGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

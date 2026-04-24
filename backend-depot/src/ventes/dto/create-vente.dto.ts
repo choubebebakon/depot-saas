@@ -5,6 +5,10 @@ import {
 import { Type } from 'class-transformer';
 
 export class LigneVenteDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @IsString()
   @IsNotEmpty()
   articleId: string;
@@ -17,6 +21,21 @@ export class LigneVenteDto {
   @IsNumber()
   @Min(0)
   remise?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  prixUnitaire?: number; // Prix validé par front-end (utile pour conditionnement)
+
+  @IsOptional()
+  @IsString()
+  conditionnementId?: string;
+
+  @IsOptional()
+  casierMixte?: boolean;
+
+  @IsOptional()
+  composition?: any; // JSON representation of the mixed crate
 }
 
 export enum ModePaiement {
@@ -30,7 +49,7 @@ export enum ModePaiement {
 export class CreateVenteDto {
   @IsString()
   @IsNotEmpty()
-  siteId: string;
+  depotId: string;
 
   @IsString()
   @IsNotEmpty()

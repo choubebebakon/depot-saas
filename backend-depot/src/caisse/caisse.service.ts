@@ -10,21 +10,21 @@ export class CaisseService {
     // ── Sessions Caisse ──────────────────────────────────────
 
     async ouvrirSession(dto: OuvrirCaisseDto) {
-        // Vérifie qu'il n'y a pas déjà une session ouverte sur ce site
+        // Vérifie qu'il n'y a pas déjà une session ouverte sur ce Depot
         const sessionExistante = await this.prisma.sessionCaisse.findFirst({
-            where: { siteId: dto.siteId, tenantId: dto.tenantId, estOuverte: true },
+            where: { depotId: dto.depotId, tenantId: dto.tenantId, estOuverte: true },
         });
 
         if (sessionExistante) {
             throw new BadRequestException(
-                'Une session de caisse est déjà ouverte sur ce site.',
+                'Une session de caisse est déjà ouverte sur ce Depot.',
             );
         }
 
         const session = await this.prisma.sessionCaisse.create({
             data: {
                 fondInitial: dto.fondInitial,
-                siteId: dto.siteId,
+                depotId: dto.depotId,
                 userId: dto.userId,
                 tenantId: dto.tenantId,
                 estOuverte: true,
@@ -77,9 +77,9 @@ export class CaisseService {
         });
     }
 
-    async getSessionActive(tenantId: string, siteId: string) {
+    async getSessionActive(tenantId: string, depotId: string) {
         return this.prisma.sessionCaisse.findFirst({
-            where: { tenantId, siteId, estOuverte: true },
+            where: { tenantId, depotId, estOuverte: true },
             include: {
                 mouvements: { orderBy: { createdAt: 'desc' } },
                 user: { select: { email: true, role: true } },
@@ -87,9 +87,9 @@ export class CaisseService {
         });
     }
 
-    async getHistorique(tenantId: string, siteId: string) {
+    async getHistorique(tenantId: string, depotId: string) {
         return this.prisma.sessionCaisse.findMany({
-            where: { tenantId, siteId },
+            where: { tenantId, depotId },
             include: {
                 _count: { select: { mouvements: true } },
                 user: { select: { email: true } },
@@ -101,20 +101,22 @@ export class CaisseService {
 
     // ── Dépenses ─────────────────────────────────────────────
 
-    async createDepense(dto: CreateDepenseDto) {
+    async createDepense(dto: any) {
         // Trouve la session active
         const session = await this.prisma.sessionCaisse.findFirst({
-            where: { siteId: dto.siteId, tenantId: dto.tenantId, estOuverte: true },
+            where: { depotId: dto.depotId, tenantId: dto.tenantId, estOuverte: true },
         });
 
         const depense = await this.prisma.depense.create({
             data: {
+                id: dto.id || undefined,
                 categorie: dto.categorie,
                 montant: dto.montant,
                 motif: dto.motif,
-                siteId: dto.siteId,
+                depotId: dto.depotId,
                 tenantId: dto.tenantId,
                 photoUrl: dto.photoUrl,
+                createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
             },
         });
 
@@ -127,6 +129,7 @@ export class CaisseService {
                     motif: `${dto.categorie} — ${dto.motif}`,
                     reference: depense.id,
                     sessionId: session.id,
+                    createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
                 },
             });
         }
@@ -134,8 +137,8 @@ export class CaisseService {
         return depense;
     }
 
-    async getDepenses(tenantId: string, siteId: string, dateDebut?: string, dateFin?: string) {
-        const where: any = { tenantId, siteId };
+    async getDepenses(tenantId: string, depotId: string, dateDebut?: string, dateFin?: string) {
+        const where: any = { tenantId, depotId };
 
         if (dateDebut || dateFin) {
             where.createdAt = {};
@@ -155,41 +158,48 @@ export class CaisseService {
 
     // ── Résumé caisse du jour ────────────────────────────────
 
-    async getResume(tenantId: string, siteId: string) {
+    async getResume(tenantId: string, depotId: string) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         // Ventes du jour en cash
         const ventesJour = await this.prisma.vente.aggregate({
             where: {
-                tenantId, siteId,
+                tenantId,
+                depotId,
                 date: { gte: today },
                 statut: StatutVente.PAYE,
             },
-            _sum: { montantCash: true, montantOM: true, montantMoMo: true, montantCredit: true, total: true },
-            _count: { id: true },
+            _sum: {
+                montantCash: true,
+                montantOM: true,
+                montantMoMo: true,
+                montantCredit: true,
+                total: true,
+            },
+            _count: { _all: true },
         });
 
         // Dépenses du jour
         const depensesJour = await this.prisma.depense.aggregate({
-            where: { tenantId, siteId, createdAt: { gte: today } },
+            where: { tenantId, depotId, createdAt: { gte: today } },
             _sum: { montant: true },
-            _count: { id: true },
+            _count: { _all: true },
         });
 
         // Session active
-        const sessionActive = await this.getSessionActive(tenantId, siteId);
+        const sessionActive = await this.getSessionActive(tenantId, depotId);
 
         return {
-            ventesTotal: ventesJour._sum.total || 0,
-            ventesCash: ventesJour._sum.montantCash || 0,
-            ventesOM: ventesJour._sum.montantOM || 0,
-            ventesMoMo: ventesJour._sum.montantMoMo || 0,
-            ventesCredit: ventesJour._sum.montantCredit || 0,
-            nbVentes: ventesJour._count.id || 0,
-            depensesTotal: depensesJour._sum.montant || 0,
-            nbDepenses: depensesJour._count.id || 0,
-            soldeNet: (ventesJour._sum.montantCash || 0) - (depensesJour._sum.montant || 0),
+            ventesTotal: ventesJour._sum?.total || 0,
+            ventesCash: ventesJour._sum?.montantCash || 0,
+            ventesOM: ventesJour._sum?.montantOM || 0,
+            ventesMoMo: ventesJour._sum?.montantMoMo || 0,
+            ventesCredit: ventesJour._sum?.montantCredit || 0,
+            nbVentes: ventesJour._count?._all || 0,
+            depensesTotal: depensesJour._sum?.montant || 0,
+            nbDepenses: depensesJour._count?._all || 0,
+            soldeNet: (ventesJour._sum?.montantCash || 0) - (depensesJour._sum?.montant || 0),
             sessionActive: !!sessionActive,
             sessionId: sessionActive?.id || null,
             fondInitial: sessionActive?.fondInitial || 0,

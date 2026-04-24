@@ -1,19 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 
-// ── Labels lisibles pour les types ─────────────────────────
+// â”€â”€ Labels lisibles pour les types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const LABELS_TYPES = {
-    BOUTEILLE_33CL: { label: 'Bouteille 33cl', emoji: '🍺', defaut: 100 },
-    BOUTEILLE_60CL: { label: 'Bouteille 60/65cl', emoji: '🍺', defaut: 150 },
-    CASIER: { label: 'Casier', emoji: '📦', defaut: 1200 },
-    PALETTE: { label: 'Palette', emoji: '🏗️', defaut: 4000 },
-    PACK_EAU: { label: "Pack d'eau", emoji: '💧', defaut: 0 },
+    BOUTEILLE_33CL: { label: 'Bouteille 33cl', emoji: 'ðŸº', defaut: 100 },
+    BOUTEILLE_60CL: { label: 'Bouteille 60/65cl', emoji: 'ðŸº', defaut: 150 },
+    CASIER: { label: 'Casier', emoji: 'ðŸ“¦', defaut: 1200 },
+    PALETTE: { label: 'Palette', emoji: 'ðŸ—ï¸', defaut: 4000 },
+    PACK_EAU: { label: "Pack d'eau", emoji: 'ðŸ’§', defaut: 0 },
 };
 
 const TYPES_DISPONIBLES = Object.keys(LABELS_TYPES);
 
-// ── Modal Configuration Type Consigne ──────────────────────
+// â”€â”€ Modal Configuration Type Consigne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalConfigType({ tenantId, typesExistants, onSuccess, onClose }) {
     const typesManquants = TYPES_DISPONIBLES.filter(
         t => !typesExistants.find(e => e.type === t)
@@ -45,8 +45,8 @@ function ModalConfigType({ tenantId, typesExistants, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
-                <p className="text-4xl mb-3">✅</p>
-                <p className="text-white font-bold mb-4">Tous les types de consignes sont déjà configurés !</p>
+                <p className="text-4xl mb-3">âœ…</p>
+                <p className="text-white font-bold mb-4">Tous les types de consignes sont déjÃ  configurés !</p>
                 <button onClick={onClose} className="bg-slate-800 text-slate-300 font-bold py-3 px-6 rounded-xl">Fermer</button>
             </div>
         </div>
@@ -56,7 +56,7 @@ function ModalConfigType({ tenantId, typesExistants, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">⚙️ Configurer un Type</h3>
+                <h3 className="text-white font-black text-xl mb-2">âš™ï¸ Configurer un Type</h3>
                 <p className="text-slate-400 text-sm mb-6">
                     Définit la valeur de consigne en FCFA pour chaque emballage
                 </p>
@@ -119,7 +119,7 @@ function ModalConfigType({ tenantId, typesExistants, onSuccess, onClose }) {
     );
 }
 
-// ── Modal Modifier Valeur ───────────────────────────────────
+// â”€â”€ Modal Modifier Valeur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalModifierValeur({ typeConsigne, tenantId, onSuccess, onClose }) {
     const [valeur, setValeur] = useState(typeConsigne.valeurXAF);
     const [loading, setLoading] = useState(false);
@@ -143,7 +143,7 @@ function ModalModifierValeur({ typeConsigne, tenantId, onSuccess, onClose }) {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
                 <h3 className="text-white font-black text-xl mb-6">
-                    ✏️ Modifier {label?.emoji} {label?.label}
+                    âœï¸ Modifier {label?.emoji} {label?.label}
                 </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -168,7 +168,7 @@ function ModalModifierValeur({ typeConsigne, tenantId, onSuccess, onClose }) {
     );
 }
 
-// ── Modal Rendu Sans Achat ──────────────────────────────────
+// â”€â”€ Modal Rendu Sans Achat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onClose }) {
     const [form, setForm] = useState({
         clientId: '',
@@ -206,10 +206,10 @@ function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onCl
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-emerald-500/30 rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
-                <p className="text-5xl mb-4">✅</p>
+                <p className="text-5xl mb-4">âœ…</p>
                 <h3 className="text-white font-black text-xl mb-2">Rendu enregistré !</h3>
                 <p className={`font-bold text-lg mb-2 ${resultat.mode === 'CASH' ? 'text-emerald-400' : 'text-indigo-400'}`}>
-                    {resultat.mode === 'CASH' ? '💵' : '📋'} {resultat.mode}
+                    {resultat.mode === 'CASH' ? 'ðŸ’µ' : 'ðŸ“‹'} {resultat.mode}
                 </p>
                 <p className="text-slate-400 text-sm mb-6">{resultat.message}</p>
                 <button onClick={onClose}
@@ -224,7 +224,7 @@ function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onCl
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">🔄 Rendu Sans Achat</h3>
+                <h3 className="text-white font-black text-xl mb-2">ðŸ”„ Rendu Sans Achat</h3>
                 <p className="text-slate-400 text-sm mb-6">
                     Le client rend des vides sans acheter. Choisir le mode de compensation.
                 </p>
@@ -284,7 +284,7 @@ function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onCl
                                         ? 'bg-indigo-600 border-indigo-500 text-white'
                                         : 'bg-slate-800 border-slate-600 text-slate-400'
                                     }`}>
-                                <p className="text-xl mb-1">📋</p>
+                                <p className="text-xl mb-1">ðŸ“‹</p>
                                 <p className="font-bold text-sm">Avoir</p>
                                 <p className="text-xs opacity-70">Crédit sur prochaine commande</p>
                             </button>
@@ -294,7 +294,7 @@ function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onCl
                                         ? 'bg-emerald-600 border-emerald-500 text-white'
                                         : 'bg-slate-800 border-slate-600 text-slate-400'
                                     }`}>
-                                <p className="text-xl mb-1">💵</p>
+                                <p className="text-xl mb-1">ðŸ’µ</p>
                                 <p className="font-bold text-sm">Cash</p>
                                 <p className="text-xs opacity-70">Remboursement immédiat</p>
                             </button>
@@ -303,7 +303,7 @@ function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onCl
 
                     {form.estRemboursementCash && montantEstime > 0 && (
                         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-sm text-emerald-400 font-bold text-center">
-                            💵 Remettre {montantEstime.toLocaleString('fr-FR')} FCFA en cash au client
+                            ðŸ’µ Remettre {montantEstime.toLocaleString('fr-FR')} FCFA en cash au client
                         </div>
                     )}
 
@@ -315,7 +315,7 @@ function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onCl
                                     ? 'bg-emerald-600 hover:bg-emerald-500'
                                     : 'bg-indigo-600 hover:bg-indigo-500'
                                 } disabled:opacity-40`}>
-                            {loading ? '...' : form.estRemboursementCash ? '💵 Rembourser' : '📋 Créer Avoir'}
+                            {loading ? '...' : form.estRemboursementCash ? 'ðŸ’µ Rembourser' : 'ðŸ“‹ Créer Avoir'}
                         </button>
                     </div>
                 </form>
@@ -324,7 +324,7 @@ function ModalRenduSansAchat({ tenantId, typesConsigne, clients, onSuccess, onCl
     );
 }
 
-// ── Page Principale Consignes ───────────────────────────────
+// â”€â”€ Page Principale Consignes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ConsignesPage() {
     const { tenantId } = useAuth();
     const [typesConsigne, setTypesConsigne] = useState([]);
@@ -373,18 +373,18 @@ export default function ConsignesPage() {
                 <div>
                     <h1 className="text-2xl font-black text-white">Consignes & Vides</h1>
                     <p className="text-slate-400 text-sm mt-1">
-                        Blindage financier — Inventaire emballages — Portefeuille clients
+                        Blindage financier â€” Inventaire emballages â€” Portefeuille clients
                     </p>
                 </div>
                 <div className="flex gap-3 flex-wrap">
                     <button onClick={() => setModalConfig(true)}
                         className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all">
-                        ⚙️ Configurer
+                        âš™ï¸ Configurer
                     </button>
                     <button onClick={() => setModalRendu(true)}
                         disabled={typesConsigne.length === 0}
                         className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20">
-                        🔄 Rendu Sans Achat
+                        ðŸ”„ Rendu Sans Achat
                     </button>
                 </div>
             </div>
@@ -392,7 +392,7 @@ export default function ConsignesPage() {
             {/* Message si pas encore configuré */}
             {typesConsigne.length === 0 && !loading && (
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-6 mb-8 flex items-center gap-4">
-                    <span className="text-3xl">⚙️</span>
+                    <span className="text-3xl">âš™ï¸</span>
                     <div>
                         <p className="text-orange-400 font-black">Configuration requise</p>
                         <p className="text-slate-400 text-sm mt-1">
@@ -401,7 +401,7 @@ export default function ConsignesPage() {
                     </div>
                     <button onClick={() => setModalConfig(true)}
                         className="ml-auto bg-orange-600 hover:bg-orange-500 text-white font-bold px-4 py-2 rounded-xl text-sm shrink-0">
-                        Configurer →
+                        Configurer â†’
                     </button>
                 </div>
             )}
@@ -436,10 +436,10 @@ export default function ConsignesPage() {
             {/* Onglets */}
             <div className="flex gap-2 mb-6 flex-wrap">
                 {[
-                    ['inventaire', '🏭 Inventaire Vides'],
-                    ['configuration', '⚙️ Configuration'],
-                    ['portefeuilles', `👤 Portefeuilles Clients (${portefeuilles.length})`],
-                    ['historique', '📋 Historique'],
+                    ['inventaire', 'ðŸ­ Inventaire Vides'],
+                    ['configuration', 'âš™ï¸ Configuration'],
+                    ['portefeuilles', `ðŸ‘¤ Portefeuilles Clients (${portefeuilles.length})`],
+                    ['historique', 'ðŸ“‹ Historique'],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
@@ -451,14 +451,14 @@ export default function ConsignesPage() {
                 ))}
             </div>
 
-            {/* ── Onglet Inventaire ── */}
+            {/* â”€â”€ Onglet Inventaire â”€â”€ */}
             {onglet === 'inventaire' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {loading ? (
                         [1, 2, 3].map(i => <div key={i} className="h-36 bg-slate-800 rounded-2xl animate-pulse" />)
                     ) : inventaire.length === 0 ? (
                         <div className="col-span-3 text-center py-16 text-slate-500 bg-slate-800/50 border border-slate-700 rounded-2xl">
-                            <p className="text-4xl mb-3">📦</p>
+                            <p className="text-4xl mb-3">ðŸ“¦</p>
                             <p>Aucun type de consigne configuré</p>
                         </div>
                     ) : inventaire.map(inv => {
@@ -490,11 +490,11 @@ export default function ConsignesPage() {
                                 </div>
                                 <div className="border-t border-slate-700 pt-3 grid grid-cols-2 gap-2 text-xs">
                                     <div>
-                                        <p className="text-slate-500">↑ Rentrés</p>
+                                        <p className="text-slate-500">â†‘ Rentrés</p>
                                         <p className="text-emerald-400 font-bold">{inv.totalEntrees}</p>
                                     </div>
                                     <div>
-                                        <p className="text-slate-500">↓ Sortis</p>
+                                        <p className="text-slate-500">â†“ Sortis</p>
                                         <p className="text-red-400 font-bold">{inv.totalSorties}</p>
                                     </div>
                                 </div>
@@ -510,7 +510,7 @@ export default function ConsignesPage() {
                 </div>
             )}
 
-            {/* ── Onglet Configuration ── */}
+            {/* â”€â”€ Onglet Configuration â”€â”€ */}
             {onglet === 'configuration' && (
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
@@ -527,7 +527,7 @@ export default function ConsignesPage() {
                     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                         {typesConsigne.length === 0 ? (
                             <div className="text-center py-12 text-slate-500">
-                                <p className="text-4xl mb-3">⚙️</p>
+                                <p className="text-4xl mb-3">âš™ï¸</p>
                                 <p>Aucun type configuré</p>
                                 <button onClick={() => setModalConfig(true)}
                                     className="mt-4 text-indigo-400 text-sm font-bold">
@@ -556,7 +556,7 @@ export default function ConsignesPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-slate-400 text-sm">
-                                                    {t.description || '—'}
+                                                    {t.description || 'â€”'}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <span className="text-indigo-400 font-black text-lg">
@@ -567,7 +567,7 @@ export default function ConsignesPage() {
                                                 <td className="px-6 py-4 text-right">
                                                     <button onClick={() => setTypeEdit(t)}
                                                         className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-all">
-                                                        ✏️ Modifier
+                                                        âœï¸ Modifier
                                                     </button>
                                                 </td>
                                             </tr>
@@ -580,7 +580,7 @@ export default function ConsignesPage() {
                 </div>
             )}
 
-            {/* ── Onglet Portefeuilles Clients ── */}
+            {/* â”€â”€ Onglet Portefeuilles Clients â”€â”€ */}
             {onglet === 'portefeuilles' && (
                 <div className="space-y-4">
                     {loading ? (
@@ -589,7 +589,7 @@ export default function ConsignesPage() {
                         </div>
                     ) : portefeuilles.length === 0 ? (
                         <div className="text-center py-16 text-slate-500 bg-slate-800/50 border border-slate-700 rounded-2xl">
-                            <p className="text-4xl mb-3">👤</p>
+                            <p className="text-4xl mb-3">ðŸ‘¤</p>
                             <p className="font-semibold">Aucun client avec des consignes en cours</p>
                         </div>
                     ) : portefeuilles.map(p => (
@@ -602,7 +602,7 @@ export default function ConsignesPage() {
                                     </div>
                                     <div>
                                         <p className="text-white font-black">{p.client.nom}</p>
-                                        <p className="text-slate-500 text-xs">{p.client.telephone || '—'}</p>
+                                        <p className="text-slate-500 text-xs">{p.client.telephone || 'â€”'}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
@@ -621,7 +621,7 @@ export default function ConsignesPage() {
                                             className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2 flex items-center gap-2">
                                             <span>{label?.emoji}</span>
                                             <span className="text-orange-400 font-bold text-sm">
-                                                {c.quantite} × {label?.label}
+                                                {c.quantite} Ã— {label?.label}
                                             </span>
                                             <span className="text-slate-500 text-xs">
                                                 = {(c.quantite * c.typeConsigne.valeurXAF).toLocaleString('fr-FR')} F
@@ -635,12 +635,12 @@ export default function ConsignesPage() {
                 </div>
             )}
 
-            {/* ── Onglet Historique ── */}
+            {/* â”€â”€ Onglet Historique â”€â”€ */}
             {onglet === 'historique' && (
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                     {historique.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">📋</p>
+                            <p className="text-4xl mb-3">ðŸ“‹</p>
                             <p>Aucun mouvement enregistré</p>
                         </div>
                     ) : (
@@ -671,7 +671,7 @@ export default function ConsignesPage() {
                                                         ? 'bg-red-500/10 border-red-500/20 text-red-400'
                                                         : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                                     }`}>
-                                                    {m.estSortie ? '↓ Sortie' : '↑ Entrée'}
+                                                    {m.estSortie ? 'â†“ Sortie' : 'â†‘ Entrée'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
@@ -680,14 +680,14 @@ export default function ConsignesPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-400 text-xs max-w-xs truncate">
-                                                {m.motif || '—'}
+                                                {m.motif || 'â€”'}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {m.estRemboursementCash ? (
                                                     <span className="text-emerald-400 font-bold text-sm">
-                                                        💵 {m.montantRembourse.toLocaleString('fr-FR')} F
+                                                        ðŸ’µ {m.montantRembourse.toLocaleString('fr-FR')} F
                                                     </span>
-                                                ) : '—'}
+                                                ) : 'â€”'}
                                             </td>
                                             <td className="px-6 py-4 text-slate-500 text-xs">
                                                 {new Date(m.createdAt).toLocaleDateString('fr-FR')}{' '}
@@ -724,3 +724,7 @@ export default function ConsignesPage() {
         </div>
     );
 }
+
+
+
+

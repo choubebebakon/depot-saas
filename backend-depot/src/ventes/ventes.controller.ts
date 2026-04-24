@@ -13,51 +13,65 @@ export class VentesController {
 
   @Post()
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.CAISSIER, RoleUser.COMMERCIAL)
-  create(@Body() createVenteDto: CreateVenteDto, @CurrentUser() user: any) {
-    return this.ventesService.createVente(createVenteDto, user);
+  async create(@Body() createVenteDto: CreateVenteDto, @CurrentUser() user: any) {
+    try {
+      return await this.ventesService.createVente(createVenteDto, user);
+    } catch (error) {
+      console.error('Erreur lors de la création de la vente:', error);
+      throw error;
+    }
   }
 
   @Get('stats')
   getStats(
     @Query('tenantId') tenantId: string,
-    @Query('siteId') siteId: string,
+    @Query('depotId') depotId: string,
   ) {
-    return this.ventesService.getStats(tenantId, siteId);
+    return this.ventesService.getStats(tenantId, depotId);
   }
 
   @Get('validations/en-attente')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
   findEnAttenteValidation(
     @Query('tenantId') tenantId: string,
-    @Query('siteId') siteId?: string,
+    @Query('depotId') depotId: string,
   ) {
-    return this.ventesService.findEnAttenteValidation(tenantId, siteId);
+    return this.ventesService.findEnAttenteValidation(tenantId, depotId);
   }
 
   @Get()
   findAll(
     @Query('tenantId') tenantId: string,
+    @Query('depotId') depotId: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('siteId') siteId?: string,
     @Query('statut') statut?: string,
   ) {
-    return this.ventesService.findAll(tenantId, startDate, endDate, siteId, statut);
+    return this.ventesService.findAll(tenantId, startDate, endDate, depotId, statut);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.ventesService.findOne(id, tenantId);
+  findOne(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+    @Query('depotId') depotId: string,
+  ) {
+    return this.ventesService.findOne(id, tenantId, depotId);
   }
 
   @Patch(':id/valider-sortie')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
-  validerSortie(
+  async validerSortie(
     @Param('id') id: string,
     @Body() body: ValiderSortieVenteDto,
     @CurrentUser() user: any,
   ) {
-    return this.ventesService.validerSortieVente(id, body.tenantId, user);
+    try {
+      return await this.ventesService.validerSortieVente(id, body.tenantId, body.depotId, user);
+    } catch (error) {
+      console.error(`Erreur lors de la validation sortie (Vente ID: ${id}):`, error);
+      throw error;
+    }
   }
 
   @Patch(':id/annuler')
@@ -67,6 +81,6 @@ export class VentesController {
     @Body() body: AnnulerVenteDto,
     @CurrentUser() user: any,
   ) {
-    return this.ventesService.annulerVente(id, body.motif, body.tenantId, user);
+    return this.ventesService.annulerVente(id, body.motif, body.tenantId, body.depotId, user);
   }
 }

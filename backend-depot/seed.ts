@@ -27,7 +27,7 @@ async function main() {
     console.log('✅ Tenant créé :', tenant.id);
 
     // 2. Site
-    const site = await prisma.site.create({
+    const site = await prisma.depot.create({
         data: {
             nom: 'Dépôt Principal',
             adresse: 'Douala, Cameroun',
@@ -100,7 +100,7 @@ async function main() {
     // 6. Stocks
     for (const art of [castel, mutzig, guinnessArt, sourceArt]) {
         await prisma.stock.create({
-            data: { articleId: art.id, siteId: site.id, quantite: 120 },
+            data: { articleId: art.id, depotId: site.id, quantite: 120 },
         });
     }
     console.log('✅ Stocks initialisés (120 unités chacun)');

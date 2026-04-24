@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const TYPES_MAINTENANCE = {
-    VIDANGE: { label: 'Vidange', emoji: '🛢️', couleur: 'blue' },
+    VIDANGE: { label: 'Vidange', emoji: 'ðŸ›¢ï¸', couleur: 'blue' },
     PNEU: { label: 'Pneu', emoji: '⚫', couleur: 'slate' },
     FREINS: { label: 'Freins', emoji: '🔴', couleur: 'red' },
     CARBURANT: { label: 'Carburant', emoji: '⛽', couleur: 'yellow' },
-    REPARATION: { label: 'Réparation', emoji: '🔧', couleur: 'orange' },
-    REVISION: { label: 'Révision', emoji: '🔍', couleur: 'purple' },
-    AUTRE: { label: 'Autre', emoji: '📝', couleur: 'slate' },
+    REPARATION: { label: 'Réparation', emoji: '🛠️', couleur: 'orange' },
+    REVISION: { label: 'Révision', emoji: 'ðŸ”', couleur: 'purple' },
+    AUTRE: { label: 'Autre', emoji: 'ðŸ“', couleur: 'slate' },
 };
 
-// ── Modal Nouvelle Maintenance ──────────────────────────────
+// â”€â”€ Modal Nouvelle Maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
     const [form, setForm] = useState({
         tricycleId: tricycles[0]?.id || '',
@@ -55,7 +55,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl my-4">
-                <h3 className="text-white font-black text-xl mb-6">🔧 Nouvelle Maintenance</h3>
+                <h3 className="text-white font-black text-xl mb-6">🛠️ Nouvelle Maintenance</h3>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,7 +84,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Description *</label>
                         <input required value={form.description}
                             onChange={e => setForm({ ...form, description: e.target.value })}
-                            placeholder="Ex: Vidange moteur + filtre à huile"
+                            placeholder="Ex: Vidange moteur + filtre Ã  huile"
                             className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
                     </div>
 
@@ -112,7 +112,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                             <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${form.estEffectue ? 'left-7' : 'left-1'}`} />
                         </div>
                         <span className="text-slate-300 text-sm font-semibold">
-                            {form.estEffectue ? '✅ Déjà effectuée' : '📅 Planifier pour plus tard'}
+                            {form.estEffectue ? '✅ DéjÃ  effectuée' : '📅 Planifier pour plus tard'}
                         </span>
                     </label>
 
@@ -130,7 +130,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl">
-                            {loading ? '...' : '🔧 Enregistrer'}
+                            {loading ? '...' : '🛠️ Enregistrer'}
                         </button>
                     </div>
                 </form>
@@ -139,7 +139,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
     );
 }
 
-// ── Modal Plein Carburant ───────────────────────────────────
+// â”€â”€ Modal Plein Carburant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalCarburant({ tenantId, tricycles, onSuccess, onClose }) {
     const [form, setForm] = useState({
         tricycleId: tricycles[0]?.id || '',
@@ -243,7 +243,7 @@ function ModalCarburant({ tenantId, tricycles, onSuccess, onClose }) {
     );
 }
 
-// ── Page Principale Maintenance ─────────────────────────────
+// â”€â”€ Page Principale Maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function MaintenancePage() {
     const { tenantId } = useAuth();
     const [tricycles, setTricycles] = useState([]);
@@ -306,7 +306,7 @@ export default function MaintenancePage() {
                     <button onClick={() => setModalMaintenance(true)}
                         disabled={tricycles.length === 0}
                         className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20">
-                        🔧 Maintenance
+                        🛠️ Maintenance
                     </button>
                 </div>
             </div>
@@ -390,7 +390,7 @@ export default function MaintenancePage() {
             <div className="flex gap-2 mb-6">
                 {[
                     ['tableau-bord', '📊 Tableau de bord'],
-                    ['maintenances', `🔧 Maintenances (${maintenances.length})`],
+                    ['maintenances', `🛠️ Maintenances (${maintenances.length})`],
                     ['carburant', `⛽ Carburant (${carburants.length})`],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
@@ -403,7 +403,7 @@ export default function MaintenancePage() {
                 ))}
             </div>
 
-            {/* ── Tableau de bord par tricycle ── */}
+            {/* â”€â”€ Tableau de bord par tricycle â”€â”€ */}
             {onglet === 'tableau-bord' && statsGlobales && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {statsGlobales.tricycles?.map(({ tricycle, stats }) => (
@@ -415,7 +415,7 @@ export default function MaintenancePage() {
                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                                             : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
                                         }`}>
-                                        {tricycle.estLibre ? '● Libre' : '⏳ En tournée'}
+                                        {tricycle.estLibre ? 'â— Libre' : 'â³ En tournée'}
                                     </span>
                                 </div>
                                 {stats.enRetard > 0 && (
@@ -445,7 +445,7 @@ export default function MaintenancePage() {
 
                             {stats.toursTotal > 0 && (
                                 <div className="mt-2 text-xs text-slate-500">
-                                    Conso. moy : {stats.consommationMoyenne} L/tour · {stats.toursTotal} tours effectués
+                                    Conso. moy : {stats.consommationMoyenne} L/tour Â· {stats.toursTotal} tours effectués
                                 </div>
                             )}
 
@@ -460,7 +460,7 @@ export default function MaintenancePage() {
                 </div>
             )}
 
-            {/* ── Liste maintenances ── */}
+            {/* â”€â”€ Liste maintenances â”€â”€ */}
             {onglet === 'maintenances' && (
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                     {loading ? (
@@ -469,7 +469,7 @@ export default function MaintenancePage() {
                         </div>
                     ) : maintenances.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">🔧</p>
+                            <p className="text-4xl mb-3">🛠️</p>
                             <p>Aucune maintenance enregistrée</p>
                             <button onClick={() => setModalMaintenance(true)}
                                 className="mt-4 text-indigo-400 text-sm font-bold">+ Première maintenance</button>
@@ -537,7 +537,7 @@ export default function MaintenancePage() {
                 </div>
             )}
 
-            {/* ── Carburant ── */}
+            {/* â”€â”€ Carburant â”€â”€ */}
             {onglet === 'carburant' && (
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                     {carburants.length === 0 ? (
@@ -605,3 +605,7 @@ export default function MaintenancePage() {
         </div>
     );
 }
+
+
+
+

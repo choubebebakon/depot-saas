@@ -1,18 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 
 export enum StatutDLC {
     OK = 'OK',
-    ATTENTION = 'ATTENTION', // < 30 jours
-    URGENT = 'URGENT',       // < 7 jours
-    EXPIRE = 'EXPIRE',       // dépassé
+    ATTENTION = 'ATTENTION',
+    URGENT = 'URGENT',
+    EXPIRE = 'EXPIRE',
 }
 
 @Injectable()
 export class DlcService {
     constructor(private prisma: PrismaService) { }
 
-    // Calcule le statut d'une DLC
+    private requireDepotId(depotId?: string) {
+        if (!depotId) {
+            throw new BadRequestException('depotId est obligatoire pour isoler les lots du depot actif.');
+        }
+
+        return depotId;
+    }
+
     getStatutDLC(dlc: Date | null): StatutDLC {
         if (!dlc) return StatutDLC.OK;
         const now = new Date();
@@ -24,10 +31,9 @@ export class DlcService {
         return StatutDLC.OK;
     }
 
-    // Crée un lot lors d'une réception
     async creerLot(data: {
         articleId: string;
-        siteId: string;
+        depotId: string;
         tenantId: string;
         quantite: number;
         dlc?: Date;
@@ -36,32 +42,33 @@ export class DlcService {
         return this.prisma.lotStock.create({
             data: {
                 articleId: data.articleId,
-                siteId: data.siteId,
+                depotId: data.depotId,
                 tenantId: data.tenantId,
                 quantite: data.quantite,
                 quantiteInitiale: data.quantite,
                 dlc: data.dlc || null,
                 numeroLot: data.numeroLot || null,
             },
-            include: { article: true, site: true },
+            include: { article: true, depot: true },
         });
     }
 
-    // Tous les lots avec leur statut DLC
-    async findLots(tenantId: string, siteId?: string) {
+    async findLots(tenantId: string, depotId?: string) {
+        const selectedDepotId = this.requireDepotId(depotId);
+
         const lots = await this.prisma.lotStock.findMany({
             where: {
                 tenantId,
-                quantite: { gt: 0 }, // seulement les lots non épuisés
-                ...(siteId ? { siteId } : {}),
+                depotId: selectedDepotId,
+                quantite: { gt: 0 },
             },
             include: {
                 article: {
                     include: { famille: true, marque: true },
                 },
-                site: true,
+                depot: true,
             },
-            orderBy: { dlc: 'asc' }, // FIFO : plus ancienne DLC en premier
+            orderBy: { dlc: 'asc' },
         });
 
         return lots.map(lot => ({
@@ -73,9 +80,8 @@ export class DlcService {
         }));
     }
 
-    // Alertes DLC critiques (urgentes + expirées)
-    async getAlertes(tenantId: string, siteId?: string) {
-        const lots = await this.findLots(tenantId, siteId);
+    async getAlertes(tenantId: string, depotId?: string) {
+        const lots = await this.findLots(tenantId, depotId);
         return lots.filter(l =>
             l.statutDLC === StatutDLC.URGENT ||
             l.statutDLC === StatutDLC.EXPIRE ||
@@ -83,9 +89,8 @@ export class DlcService {
         );
     }
 
-    // Stats DLC pour le dashboard
-    async getStats(tenantId: string, siteId?: string) {
-        const lots = await this.findLots(tenantId, siteId);
+    async getStats(tenantId: string, depotId?: string) {
+        const lots = await this.findLots(tenantId, depotId);
 
         return {
             total: lots.length,
@@ -96,19 +101,17 @@ export class DlcService {
         };
     }
 
-    // Déduire un lot (lors d'une vente — FIFO automatique)
     async deduireLotFIFO(
         articleId: string,
-        siteId: string,
+        depotId: string,
         tenantId: string,
         quantiteADeduire: number,
     ) {
-        // Prend les lots dans l'ordre DLC croissante (les plus proches d'expirer en premier)
         const lots = await this.prisma.lotStock.findMany({
-            where: { articleId, siteId, tenantId, quantite: { gt: 0 } },
+            where: { articleId, depotId, tenantId, quantite: { gt: 0 } },
             orderBy: [
-                { dlc: 'asc' },    // DLC la plus proche d'abord
-                { createdAt: 'asc' }, // En cas d'égalité, le plus ancien
+                { dlc: 'asc' },
+                { createdAt: 'asc' },
             ],
         });
 
@@ -126,12 +129,11 @@ export class DlcService {
         }
     }
 
-    // Mettre à jour la DLC d'un lot
     async updateLot(id: string, tenantId: string, data: { dlc?: Date; numeroLot?: string }) {
         return this.prisma.lotStock.update({
             where: { id },
             data,
-            include: { article: true, site: true },
+            include: { article: true, depot: true },
         });
     }
 }

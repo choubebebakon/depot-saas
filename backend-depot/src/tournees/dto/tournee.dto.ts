@@ -6,7 +6,7 @@ export class OuvrirTourneeDto {
     tricycleId: string;
 
     @IsString()
-    siteId: string;
+    depotId: string;
 
     @IsString()
     commercialId: string;

@@ -22,25 +22,25 @@ export class CaisseController {
     @Get('session-active')
     getSessionActive(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId: string,
+        @Query('depotId') depotId: string,
     ) {
-        return this.caisseService.getSessionActive(tenantId, siteId);
+        return this.caisseService.getSessionActive(tenantId, depotId);
     }
 
     @Get('historique')
     getHistorique(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId: string,
+        @Query('depotId') depotId: string,
     ) {
-        return this.caisseService.getHistorique(tenantId, siteId);
+        return this.caisseService.getHistorique(tenantId, depotId);
     }
 
     @Get('resume')
     getResume(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId: string,
+        @Query('depotId') depotId: string,
     ) {
-        return this.caisseService.getResume(tenantId, siteId);
+        return this.caisseService.getResume(tenantId, depotId);
     }
 
     @Post('depenses')
@@ -51,10 +51,10 @@ export class CaisseController {
     @Get('depenses')
     getDepenses(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId: string,
+        @Query('depotId') depotId: string,
         @Query('dateDebut') dateDebut?: string,
         @Query('dateFin') dateFin?: string,
     ) {
-        return this.caisseService.getDepenses(tenantId, siteId, dateDebut, dateFin);
+        return this.caisseService.getDepenses(tenantId, depotId, dateDebut, dateFin);
     }
 }

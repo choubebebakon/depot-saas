@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 
-// ── Convertisseur d'unités ──────────────────────────────────
+// â”€â”€ Convertisseur d'unités â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function convertirUnites(qte, article) {
     if (!article) return null;
     const { uniteParPalette = 120, uniteParCasier = 12, uniteParPack = 6 } = article;
@@ -30,10 +30,10 @@ function AffichageStock({ qte, article }) {
     );
 }
 
-// ── Modal Nouvelle Famille ──────────────────────────────────
+// â”€â”€ Modal Nouvelle Famille â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalFamille({ tenantId, onSuccess, onClose }) {
-    const [form, setForm] = useState({ nom: '', emoji: '📦' });
-    const emojis = ['🍺', '🥤', '💧', '🧃', '🍷', '🥛', '📦'];
+    const [form, setForm] = useState({ nom: '', emoji: 'ðŸ“¦' });
+    const emojis = ['ðŸº', 'ðŸ¥¤', 'ðŸ’§', 'ðŸ§ƒ', 'ðŸ·', 'ðŸ¥›', 'ðŸ“¦'];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -46,7 +46,7 @@ function ModalFamille({ tenantId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">📂 Nouvelle Famille</h3>
+                <h3 className="text-white font-black text-xl mb-6">ðŸ“‚ Nouvelle Famille</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom *</label>
@@ -77,7 +77,7 @@ function ModalFamille({ tenantId, onSuccess, onClose }) {
     );
 }
 
-// ── Modal Nouvelle Marque ───────────────────────────────────
+// â”€â”€ Modal Nouvelle Marque â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalMarque({ tenantId, familles, onSuccess, onClose }) {
     const [form, setForm] = useState({ nom: '', familleId: familles[0]?.id || '' });
 
@@ -92,7 +92,7 @@ function ModalMarque({ tenantId, familles, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">🏭 Nouvelle Marque</h3>
+                <h3 className="text-white font-black text-xl mb-6">ðŸ­ Nouvelle Marque</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Famille *</label>
@@ -117,7 +117,7 @@ function ModalMarque({ tenantId, familles, onSuccess, onClose }) {
     );
 }
 
-// ── Modal Nouvel Article ────────────────────────────────────
+// â”€â”€ Modal Nouvel Article â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
     const estModif = !!article;
     const [form, setForm] = useState({
@@ -174,7 +174,7 @@ function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-xl shadow-2xl my-4">
                 <h3 className="text-white font-black text-xl mb-6">
-                    {estModif ? '✏️ Modifier Article' : '➕ Nouvel Article'}
+                    {estModif ? 'âœï¸ Modifier Article' : 'âž• Nouvel Article'}
                 </h3>
 
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
@@ -243,20 +243,20 @@ function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
                                 : marge >= 10 ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
                                     : 'bg-red-500/10 border-red-500/30 text-red-400'
                             }`}>
-                            Marge : {marge}% — {form.prixVente - form.prixAchat} FCFA/unité
+                            Marge : {marge}% â€” {form.prixVente - form.prixAchat} FCFA/unité
                         </div>
                     )}
 
                     {/* Conversions */}
                     <div className="bg-slate-800 rounded-xl p-4">
                         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">
-                            📦 Conversions (unité = bouteille)
+                            ðŸ“¦ Conversions (unité = bouteille)
                         </p>
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { key: 'uniteParCasier', label: 'Btl / Casier', icon: '📦' },
-                                { key: 'uniteParPack', label: 'Btl / Pack', icon: '🗂️' },
-                                { key: 'uniteParPalette', label: 'Btl / Palette', icon: '🏗️' },
+                                { key: 'uniteParCasier', label: 'Btl / Casier', icon: 'ðŸ“¦' },
+                                { key: 'uniteParPack', label: 'Btl / Pack', icon: 'ðŸ—‚ï¸' },
+                                { key: 'uniteParPalette', label: 'Btl / Palette', icon: 'ðŸ—ï¸' },
                             ].map(f => (
                                 <div key={f.key}>
                                     <label className="text-slate-500 text-xs mb-1 block">{f.icon} {f.label}</label>
@@ -304,7 +304,7 @@ function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : estModif ? '✏️ Modifier' : '➕ Créer'}
+                            {loading ? '...' : estModif ? 'âœï¸ Modifier' : 'âž• Créer'}
                         </button>
                     </div>
                 </form>
@@ -313,7 +313,7 @@ function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
     );
 }
 
-// ── Page Principale Catalogue ───────────────────────────────
+// â”€â”€ Page Principale Catalogue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function CataloguePage() {
     const { tenantId } = useAuth();
     const [familles, setFamilles] = useState([]);
@@ -374,22 +374,22 @@ export default function CataloguePage() {
                 <div>
                     <h1 className="text-2xl font-black text-white">Catalogue Produits</h1>
                     <p className="text-slate-400 text-sm mt-1">
-                        Famille → Marque → Format — Conversions automatiques
+                        Famille â†’ Marque â†’ Format â€” Conversions automatiques
                     </p>
                 </div>
                 <div className="flex gap-3 flex-wrap">
                     <button onClick={() => setModalFamille(true)}
                         className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all">
-                        📂 Famille
+                        ðŸ“‚ Famille
                     </button>
                     <button onClick={() => setModalMarque(true)}
                         disabled={familles.length === 0}
                         className="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all">
-                        🏭 Marque
+                        ðŸ­ Marque
                     </button>
                     <button onClick={() => { setArticleEdit(null); setModalArticle(true); }}
                         className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20">
-                        ➕ Nouvel Article
+                        âž• Nouvel Article
                     </button>
                 </div>
             </div>
@@ -424,7 +424,7 @@ export default function CataloguePage() {
                         onClick={() => { setFamilleActive(null); setMarqueActive(null); }}
                         className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${!familleActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                             }`}>
-                        📦 Toutes ({totalArticles})
+                        ðŸ“¦ Toutes ({totalArticles})
                     </button>
                     {familles.map(f => (
                         <button key={f.id}
@@ -459,7 +459,7 @@ export default function CataloguePage() {
 
                     {/* Recherche */}
                     <input value={recherche} onChange={e => setRecherche(e.target.value)}
-                        placeholder="🔍 Rechercher un article..."
+                        placeholder="ðŸ” Rechercher un article..."
                         className="w-full mb-4 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
 
                     {/* Grille articles */}
@@ -469,10 +469,10 @@ export default function CataloguePage() {
                         </div>
                     ) : articlesFiltres.length === 0 ? (
                         <div className="text-center py-16 text-slate-500 bg-slate-800/50 border border-slate-700 rounded-2xl">
-                            <p className="text-4xl mb-3">📦</p>
+                            <p className="text-4xl mb-3">ðŸ“¦</p>
                             <p className="font-semibold">Aucun article trouvé</p>
                             <button onClick={() => { setArticleEdit(null); setModalArticle(true); }}
-                                className="mt-4 text-indigo-400 text-sm font-bold">➕ Créer un article</button>
+                                className="mt-4 text-indigo-400 text-sm font-bold">âž• Créer un article</button>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -509,7 +509,7 @@ export default function CataloguePage() {
                                             </div>
                                             <button onClick={() => { setArticleEdit(a); setModalArticle(true); }}
                                                 className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-white transition-all p-1 ml-2">
-                                                ✏️
+                                                âœï¸
                                             </button>
                                         </div>
 
@@ -531,9 +531,9 @@ export default function CataloguePage() {
                                                 : isCritique ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
                                                     : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                             }`}>
-                                            {isRupture ? '⚠️ RUPTURE' : (
+                                            {isRupture ? 'âš ï¸ RUPTURE' : (
                                                 <>
-                                                    📦 <AffichageStock qte={stockTotal} article={a} />
+                                                    ðŸ“¦ <AffichageStock qte={stockTotal} article={a} />
                                                 </>
                                             )}
                                         </div>
@@ -541,14 +541,14 @@ export default function CataloguePage() {
                                         {/* Conversions */}
                                         <div className="mt-3 flex gap-2 text-slate-500 text-xs">
                                             <span>1 cas. = {a.uniteParCasier} btl.</span>
-                                            <span>·</span>
+                                            <span>Â·</span>
                                             <span>1 pal. = {a.uniteParPalette} btl.</span>
                                         </div>
 
                                         {a.estConsigne && (
                                             <div className="mt-2">
                                                 <span className="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-0.5 rounded-lg">
-                                                    🔄 Avec consigne
+                                                    ðŸ”„ Avec consigne
                                                 </span>
                                             </div>
                                         )}
@@ -579,3 +579,7 @@ export default function CataloguePage() {
         </div>
     );
 }
+
+
+
+

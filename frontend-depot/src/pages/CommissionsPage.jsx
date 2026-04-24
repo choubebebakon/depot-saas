@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -50,9 +50,15 @@ export default function CommissionsPage() {
         try {
             const res = await api.post('/commissions/calculer', { tenantId, periode });
             setCalcul(res.data);
+            if (res.data?.commissions?.length === 0) {
+               console.log('[COMMISSION] Calcul effectué: aucune vente trouvée sur cette période.');
+            } else {
+               console.log(`[COMMISSION] Calcul effectué: ${res.data?.commissions?.length} bénéficiaire(s) trouvé(s).`);
+            }
             fetchData();
         } catch (err) {
-            console.error('Erreur calcul:', err);
+            console.error('Erreur calcul commissions:', err.response?.data || err.message);
+            alert("Erreur lors du calcul des commissions : " + (err.response?.data?.message || err.message));
         } finally {
             setCalculEnCours(false);
         }
@@ -105,9 +111,9 @@ export default function CommissionsPage() {
             {/* Onglets */}
             <div className="flex gap-2 mb-6">
                 {[
-                    ['calcul', '🧮 Calcul'],
-                    ['historique', '📋 Historique'],
-                    ['parametres', '⚙️ Paramètres'],
+                    ['calcul', 'ðŸ§® Calcul'],
+                    ['historique', 'ðŸ“‹ Historique'],
+                    ['parametres', 'âš™ï¸ Paramètres'],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
@@ -119,16 +125,16 @@ export default function CommissionsPage() {
                 ))}
             </div>
 
-            {/* ── Onglet Calcul ── */}
+            {/* â”€â”€ Onglet Calcul â”€â”€ */}
             {onglet === 'calcul' && (
                 <div className="space-y-6">
                     {!parametre ? (
                         <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-6 text-center">
-                            <p className="text-orange-400 font-black mb-2">⚙️ Aucun taux configuré</p>
+                            <p className="text-orange-400 font-black mb-2">âš™ï¸ Aucun taux configuré</p>
                             <p className="text-slate-400 text-sm mb-4">Configurez un taux de commission avant de calculer.</p>
                             <button onClick={() => setOnglet('parametres')}
                                 className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm">
-                                Configurer le taux →
+                                Configurer le taux â†’
                             </button>
                         </div>
                     ) : (
@@ -141,15 +147,23 @@ export default function CommissionsPage() {
                                 <div className="flex gap-3 items-end flex-wrap">
                                     <div className="flex-1 min-w-[200px]">
                                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">
-                                            Période à calculer
+                                            Période Ã  calculer
                                         </label>
                                         <input type="month" value={periode}
                                             onChange={e => setPeriode(e.target.value)}
                                             className="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
                                     </div>
                                     <button onClick={handleCalculer} disabled={calculEnCours}
-                                        className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20">
-                                        {calculEnCours ? '🔄 Calcul...' : '🧮 Calculer'}
+                                        className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                                        {calculEnCours ? (
+                                           <>
+                                             <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                             </svg>
+                                             <span>Calcul en cours...</span>
+                                           </>
+                                        ) : 'ðŸ§® Calculer'}
                                     </button>
                                 </div>
                             </div>
@@ -160,18 +174,21 @@ export default function CommissionsPage() {
                                     <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                                         <div>
                                             <p className="text-white font-black">
-                                                Résultats — {calcul.periode}
+                                                Résultats â€” {calcul.periode}
                                             </p>
                                             <p className="text-slate-400 text-xs mt-1">
-                                                Taux : {calcul.taux}% · Total : {calcul.totalCommissions.toLocaleString('fr-FR')} FCFA
+                                                Taux : {calcul.taux}% Â· Total : {calcul.totalCommissions.toLocaleString('fr-FR')} FCFA
                                             </p>
                                         </div>
                                     </div>
 
                                     {calcul.commissions.length === 0 ? (
-                                        <div className="text-center py-12 text-slate-500">
-                                            <p className="text-3xl mb-2">🤷</p>
-                                            <p>Aucune vente trouvée sur cette période</p>
+                                        <div className="text-center py-12 text-slate-500 bg-slate-900/40 rounded-xl m-4 border border-slate-700/50">
+                                            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-700">
+                                               <p className="text-3xl">ðŸ¤·</p>
+                                            </div>
+                                            <p className="font-bold text-slate-300">Aucune vente correspondante</p>
+                                            <p className="text-sm mt-1">Les commerciaux n'ont réalisé aucune vente sur la période {calcul.periode}.</p>
                                         </div>
                                     ) : (
                                         <table className="w-full text-left">
@@ -214,7 +231,7 @@ export default function CommissionsPage() {
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
                                                             {c.estPayee ? (
-                                                                <span className="text-emerald-400 text-xs font-bold">✓ Payée</span>
+                                                                <span className="text-emerald-400 text-xs font-bold">âœ“ Payée</span>
                                                             ) : (
                                                                 <button
                                                                     onClick={() => {
@@ -224,7 +241,7 @@ export default function CommissionsPage() {
                                                                         if (comm) handlePayer(comm.id);
                                                                     }}
                                                                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all">
-                                                                    💵 Payer
+                                                                    ðŸ’µ Payer
                                                                 </button>
                                                             )}
                                                         </td>
@@ -234,7 +251,7 @@ export default function CommissionsPage() {
                                             <tfoot className="border-t border-slate-700 bg-slate-800/50">
                                                 <tr>
                                                     <td colSpan="5" className="px-6 py-3 text-slate-400 font-bold text-sm">
-                                                        Total commissions à verser
+                                                        Total commissions Ã  verser
                                                     </td>
                                                     <td className="px-6 py-3 text-right text-indigo-400 font-black text-lg">
                                                         {calcul.totalCommissions.toLocaleString('fr-FR')} FCFA
@@ -251,7 +268,7 @@ export default function CommissionsPage() {
                 </div>
             )}
 
-            {/* ── Historique ── */}
+            {/* â”€â”€ Historique â”€â”€ */}
             {onglet === 'historique' && (
                 <div className="space-y-4">
                     <div className="flex gap-2 flex-wrap mb-4">
@@ -265,7 +282,7 @@ export default function CommissionsPage() {
                     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                         {commissions.length === 0 ? (
                             <div className="text-center py-16 text-slate-500">
-                                <p className="text-4xl mb-3">📋</p>
+                                <p className="text-4xl mb-3">ðŸ“‹</p>
                                 <p>Aucune commission calculée</p>
                             </div>
                         ) : (
@@ -295,15 +312,15 @@ export default function CommissionsPage() {
                                                         : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
                                                     }`}>
                                                     {c.estPayee
-                                                        ? `✓ Payée le ${new Date(c.datePaiement).toLocaleDateString('fr-FR')}`
-                                                        : '⏳ À payer'}
+                                                        ? `âœ“ Payée le ${new Date(c.datePaiement).toLocaleDateString('fr-FR')}`
+                                                        : 'â³ À payer'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 {!c.estPayee && (
                                                     <button onClick={() => handlePayer(c.id)}
                                                         className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all">
-                                                        💵 Payer
+                                                        ðŸ’µ Payer
                                                     </button>
                                                 )}
                                             </td>
@@ -316,11 +333,11 @@ export default function CommissionsPage() {
                 </div>
             )}
 
-            {/* ── Paramètres ── */}
+            {/* â”€â”€ Paramètres â”€â”€ */}
             {onglet === 'parametres' && (
                 <div className="max-w-md">
                     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-                        <h3 className="text-white font-black text-lg mb-2">⚙️ Taux de Commission</h3>
+                        <h3 className="text-white font-black text-lg mb-2">âš™ï¸ Taux de Commission</h3>
                         <p className="text-slate-400 text-sm mb-6">
                             Le taux est appliqué sur le chiffre d'affaires total de chaque commercial.
                             Un taux de 2% signifie que sur 1 000 000 FCFA de ventes, le commercial touche 20 000 FCFA.
@@ -348,7 +365,7 @@ export default function CommissionsPage() {
                                         <div key={ca} className="flex justify-between text-slate-400">
                                             <span>CA {ca.toLocaleString('fr-FR')} FCFA</span>
                                             <span className="text-white font-bold">
-                                                → {(ca * taux / 100).toLocaleString('fr-FR')} FCFA
+                                                â†’ {(ca * taux / 100).toLocaleString('fr-FR')} FCFA
                                             </span>
                                         </div>
                                     ))}
@@ -357,7 +374,7 @@ export default function CommissionsPage() {
 
                             <button onClick={handleSaveTaux} disabled={!taux}
                                 className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                                {parametre ? '✏️ Mettre à jour' : '⚙️ Configurer le taux'}
+                                {parametre ? 'âœï¸ Mettre Ã  jour' : 'âš™ï¸ Configurer le taux'}
                             </button>
                         </div>
                     </div>
@@ -373,3 +390,7 @@ export default function CommissionsPage() {
         </div>
     );
 }
+
+
+
+

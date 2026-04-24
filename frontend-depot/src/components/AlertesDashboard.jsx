@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
-import { useSite } from '../contexts/SiteContext';
+import { useDepot } from '../contexts/DepotContext';
 
 export default function AlertesDashboard() {
     const { tenantId } = useAuth();
-    const { siteId } = useSite();
+    const { depotId } = useDepot();
     const [alertesStock, setAlertesStock] = useState([]);
     const [alertesDLC, setAlertesDLC] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,7 +13,7 @@ export default function AlertesDashboard() {
 
     const fetchAlertes = useCallback(async () => {
         if (!tenantId) return;
-        const params = { tenantId, ...(siteId ? { siteId } : {}) };
+        const params = { tenantId, ...(depotId ? { depotId } : {}) };
         try {
             const [resStock, resDLC] = await Promise.all([
                 api.get('/stocks/alertes', { params }),
@@ -26,7 +26,7 @@ export default function AlertesDashboard() {
         } finally {
             setLoading(false);
         }
-    }, [tenantId, siteId]);
+    }, [tenantId, depotId]);
 
     useEffect(() => {
         fetchAlertes();
@@ -42,9 +42,9 @@ export default function AlertesDashboard() {
     if (loading) return null;
     if (totalAlertes === 0) return (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mb-6 flex items-center gap-3">
-            <span className="text-xl">✅</span>
+            <span className="text-xl">âœ…</span>
             <p className="text-emerald-400 font-semibold text-sm">
-                Tous les stocks sont OK — Aucune alerte en cours
+                Tous les stocks sont OK â€” Aucune alerte en cours
             </p>
         </div>
     );
@@ -62,16 +62,16 @@ export default function AlertesDashboard() {
             >
                 <div className="flex items-center gap-3">
                     <span className={`text-xl ${alertesCritiques > 0 ? 'animate-bounce' : ''}`}>
-                        {alertesCritiques > 0 ? '🚨' : '⚠️'}
+                        {alertesCritiques > 0 ? 'ðŸš¨' : 'âš ï¸'}
                     </span>
                     <div className="text-left">
                         <p className={`font-black text-sm ${alertesCritiques > 0 ? 'text-red-400' : 'text-orange-400'}`}>
                             {totalAlertes} alerte{totalAlertes > 1 ? 's' : ''} active{totalAlertes > 1 ? 's' : ''}
-                            {alertesCritiques > 0 && ` — ${alertesCritiques} critique${alertesCritiques > 1 ? 's' : ''}`}
+                            {alertesCritiques > 0 && ` â€” ${alertesCritiques} critique${alertesCritiques > 1 ? 's' : ''}`}
                         </p>
                         <p className="text-slate-400 text-xs">
                             {alertesStock.length} stock{alertesStock.length > 1 ? 's' : ''} critique{alertesStock.length > 1 ? 's' : ''}
-                            {alertesDLC.length > 0 && ` · ${alertesDLC.length} DLC à traiter`}
+                            {alertesDLC.length > 0 && ` Â· ${alertesDLC.length} DLC Ã  traiter`}
                         </p>
                     </div>
                 </div>
@@ -101,11 +101,11 @@ export default function AlertesDashboard() {
             {!reduit && (
                 <div className="px-5 pb-5 space-y-4">
 
-                    {/* ── Alertes Stock ── */}
+                    {/* â”€â”€ Alertes Stock â”€â”€ */}
                     {alertesStock.length > 0 && (
                         <div>
                             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">
-                                📦 Stocks critiques
+                                ðŸ“¦ Stocks critiques
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {alertesStock.map(alerte => {
@@ -122,7 +122,7 @@ export default function AlertesDashboard() {
                                                     {alerte.article?.famille?.emoji} {alerte.article?.designation}
                                                 </p>
                                                 <p className="text-slate-500 text-xs truncate">
-                                                    {alerte.article?.format} — {alerte.site?.nom}
+                                                    {alerte.article?.format} â€” {alerte.Dépôt?.nom}
                                                 </p>
                                             </div>
                                             <div className="text-right shrink-0">
@@ -140,11 +140,11 @@ export default function AlertesDashboard() {
                         </div>
                     )}
 
-                    {/* ── Alertes DLC ── */}
+                    {/* â”€â”€ Alertes DLC â”€â”€ */}
                     {alertesDLC.length > 0 && (
                         <div>
                             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">
-                                📅 DLC à traiter
+                                ðŸ“… DLC Ã  traiter
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {alertesDLC.map(lot => {
@@ -162,7 +162,7 @@ export default function AlertesDashboard() {
                                                     {lot.article?.famille?.emoji} {lot.article?.designation}
                                                 </p>
                                                 <p className="text-slate-500 text-xs">
-                                                    {lot.quantite} btl. — {lot.site?.nom}
+                                                    {lot.quantite} btl. â€” {lot.Dépôt?.nom}
                                                 </p>
                                             </div>
                                             <div className="text-right shrink-0">
@@ -187,7 +187,7 @@ export default function AlertesDashboard() {
                             onClick={fetchAlertes}
                             className="text-xs text-slate-500 hover:text-slate-300 font-bold transition-colors flex items-center gap-1"
                         >
-                            🔄 Actualiser
+                            ðŸ”„ Actualiser
                         </button>
                     </div>
                 </div>
@@ -195,3 +195,7 @@ export default function AlertesDashboard() {
         </div>
     );
 }
+
+
+
+

@@ -7,6 +7,14 @@ import { CreateReceptionDto } from './dto/create-reception.dto';
 export class FournisseursService {
     constructor(private prisma: PrismaService) { }
 
+    private requireDepotId(depotId?: string) {
+        if (!depotId) {
+            throw new BadRequestException('depotId est obligatoire pour isoler les receptions du depot actif.');
+        }
+
+        return depotId;
+    }
+
     // ── Fournisseurs ─────────────────────────────────────────
 
     async createFournisseur(dto: CreateFournisseurDto) {
@@ -27,94 +35,89 @@ export class FournisseursService {
 
     async createReception(dto: CreateReceptionDto) {
         return await this.prisma.$transaction(async (tx) => {
-
-            // 1. Calcul du total de la réception (payant seulement, pas gratuits)
+            // 1. Calcul du total et conversion des unités
             let totalReception = 0;
+            const linesToCreate: any[] = [];
+            const stockUpdates: any[] = [];
+
             for (const ligne of dto.lignes) {
+                const article = await tx.article.findUnique({ where: { id: ligne.articleId } });
+                if (!article) throw new BadRequestException(`Article ${ligne.articleId} introuvable`);
+
+                // Déterminer le multiplicateur
+                let mult = 1;
+                const u = (ligne.unite || '').toUpperCase();
+                if (u === 'CASIER') mult = article.uniteParCasier || 12;
+                else if (u === 'PACK') mult = article.uniteParPack || 6;
+                else if (u === 'PALETTE') mult = article.uniteParPalette || 120;
+                else if (u === 'PLATEAU') mult = 24; 
+
+                const qteLivreeBase = ligne.quantiteLivree * mult;
+                const qteGratuiteBase = ligne.quantiteGratuite * mult;
+
                 totalReception += ligne.prixAchatUnitaire * ligne.quantiteLivree;
+
+                linesToCreate.push({
+                    articleId: article.id,
+                    quantiteLivree: qteLivreeBase,
+                    quantiteGratuite: qteGratuiteBase,
+                    prixAchatUnitaire: ligne.prixAchatUnitaire,
+                    uniteUsed: ligne.unite,
+                });
+
+                stockUpdates.push({
+                    articleId: article.id,
+                    totalQte: qteLivreeBase + qteGratuiteBase,
+                    unite: ligne.unite,
+                });
             }
 
-            // 2. Calcul de la dette fournisseur
             const montantDette = Math.max(0, totalReception - dto.montantPaye);
-
-            // 3. Référence unique de réception
+            
             const count = await tx.receptionFournisseur.count({
                 where: { tenantId: dto.tenantId },
             });
             const reference = `REC-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
 
-            // 4. Créer la réception
             const reception = await tx.receptionFournisseur.create({
                 data: {
                     reference,
+                    numBordereau: dto.numBordereau,
                     statut: 'VALIDEE',
                     modePaiement: dto.modePaiement as any,
                     montantPaye: dto.montantPaye,
                     montantDette,
                     fournisseurId: dto.fournisseurId,
-                    siteId: dto.siteId,
+                    depotId: dto.depotId,
                     tenantId: dto.tenantId,
                     lignes: {
-                        create: dto.lignes.map(l => ({
-                            articleId: l.articleId,
-                            quantiteLivree: l.quantiteLivree,
-                            quantiteGratuite: l.quantiteGratuite,
-                            prixAchatUnitaire: l.prixAchatUnitaire,
-                        })),
+                        create: linesToCreate
                     },
                 },
                 include: { lignes: true },
             });
 
-            // 5. Mise à jour des stocks (livré + gratuit)
-            for (const ligne of dto.lignes) {
-                const totalQte = ligne.quantiteLivree + ligne.quantiteGratuite;
-                if (totalQte <= 0) continue;
+            for (const upd of stockUpdates) {
+                if (upd.totalQte <= 0) continue;
 
-                // Upsert du stock : crée si n'existe pas, incrémente sinon
-                const stockExist = await tx.stock.findUnique({
-                    where: { articleId_siteId: { articleId: ligne.articleId, siteId: dto.siteId } },
+                await tx.stock.upsert({
+                    where: { articleId_depotId: { articleId: upd.articleId, depotId: dto.depotId } },
+                    update: { quantite: { increment: upd.totalQte } },
+                    create: { articleId: upd.articleId, depotId: dto.depotId, quantite: upd.totalQte },
                 });
 
-                if (stockExist) {
-                    await tx.stock.update({
-                        where: { id: stockExist.id },
-                        data: { quantite: { increment: totalQte } },
-                    });
-                } else {
-                    await tx.stock.create({
-                        data: { articleId: ligne.articleId, siteId: dto.siteId, quantite: totalQte },
-                    });
-                }
-
-                // Mouvement stock ENTREE
                 await tx.mouvementStock.create({
                     data: {
                         type: 'ENTREE',
-                        quantite: totalQte,
-                        motif: `Réception ${reference}`,
-                        articleId: ligne.articleId,
-                        siteId: dto.siteId,
+                        quantite: upd.totalQte,
+                        motif: `Réception ${reference} (Bordereau: ${dto.numBordereau || 'N/A'})`,
+                        articleId: upd.articleId,
+                        depotId: dto.depotId,
                         tenantId: dto.tenantId,
                     },
                 });
-
-                // Si quantité gratuite → mouvement SORTIE_GRATUITE séparé pour la comptabilité
-                if (ligne.quantiteGratuite > 0) {
-                    await tx.mouvementStock.create({
-                        data: {
-                            type: 'SORTIE_GRATUITE',
-                            quantite: ligne.quantiteGratuite,
-                            motif: `Gratuit réception ${reference}`,
-                            articleId: ligne.articleId,
-                            siteId: dto.siteId,
-                            tenantId: dto.tenantId,
-                        },
-                    });
-                }
             }
 
-            // 6. Mise à jour de la dette fournisseur
             if (montantDette > 0) {
                 await tx.fournisseur.update({
                     where: { id: dto.fournisseurId },
@@ -126,12 +129,14 @@ export class FournisseursService {
         });
     }
 
-    async findAllReceptions(tenantId: string, siteId?: string) {
+    async findAllReceptions(tenantId: string, depotId?: string) {
+        const selectedDepotId = this.requireDepotId(depotId);
+
         return this.prisma.receptionFournisseur.findMany({
-            where: { tenantId, ...(siteId ? { siteId } : {}) },
+            where: { tenantId, depotId: selectedDepotId },
             include: {
                 fournisseur: true,
-                site: true,
+                depot: true,
                 lignes: { include: { article: true } },
             },
             orderBy: { createdAt: 'desc' },

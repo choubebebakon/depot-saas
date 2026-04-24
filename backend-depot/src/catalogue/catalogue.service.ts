@@ -87,7 +87,7 @@ export class CatalogueService {
             include: {
                 famille: true,
                 marque: true,
-                stocks: { include: { site: true } },
+                stocks: { include: { depot: true } },
             },
             orderBy: [
                 { famille: { nom: 'asc' } },
@@ -136,15 +136,15 @@ export class CatalogueService {
     }
 
     // Stock avec affichage converti
-    async getStockConverti(tenantId: string, siteId?: string) {
+    async getStockConverti(tenantId: string, depotId?: string) {
         const stocks = await this.prisma.stock.findMany({
             where: {
                 article: { tenantId },
-                ...(siteId ? { siteId } : {}),
+                ...(depotId ? { depotId } : {}),
             },
             include: {
                 article: { include: { famille: true, marque: true } },
-                site: true,
+                depot: true,
             },
         });
 

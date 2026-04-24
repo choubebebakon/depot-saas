@@ -30,18 +30,23 @@ export class TenantsService {
   }
 
   async findAll() {
-    // Récupère tous les patrons avec leurs dépôts (sites)
+    // Récupère tous les patrons avec leurs dépôts (depots)
     return this.prisma.tenant.findMany({
-      include: { sites: true },
+      include: { depots: true },
     });
   }
 
   async findOne(id: string) {
     return this.prisma.tenant.findUnique({
       where: { id },
-      include: { sites: true },
+      include: { depots: true },
     });
   }
 
-  // ... Tu pourras ajouter update et remove plus tard
+  async update(id: string, updateTenantDto: UpdateTenantDto) {
+    return this.prisma.tenant.update({
+      where: { id },
+      data: updateTenantDto,
+    });
+  }
 }

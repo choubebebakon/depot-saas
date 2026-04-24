@@ -11,7 +11,7 @@ export class DlcController {
     @Post('lots')
     creerLot(@Body() body: {
         articleId: string;
-        siteId: string;
+        depotId: string;
         tenantId: string;
         quantite: number;
         dlc?: string;
@@ -26,25 +26,25 @@ export class DlcController {
     @Get('lots')
     findLots(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId: string,
     ) {
-        return this.dlcService.findLots(tenantId, siteId);
+        return this.dlcService.findLots(tenantId, depotId);
     }
 
     @Get('alertes')
     getAlertes(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId: string,
     ) {
-        return this.dlcService.getAlertes(tenantId, siteId);
+        return this.dlcService.getAlertes(tenantId, depotId);
     }
 
     @Get('stats')
     getStats(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId: string,
     ) {
-        return this.dlcService.getStats(tenantId, siteId);
+        return this.dlcService.getStats(tenantId, depotId);
     }
 
     @Put('lots/:id')

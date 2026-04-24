@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
-import { useSite } from '../contexts/SiteContext';
+import { useDepot } from '../contexts/DepotContext';
 import { ROLES, hasRole } from '../utils/rbac';
+import Receipt80mm from '../components/Receipt80mm';
 
 function BadgeStatut({ statut }) {
     const config = {
@@ -14,7 +16,7 @@ function BadgeStatut({ statut }) {
     return <span className={`text-xs font-bold px-2 py-1 rounded-lg border ${c.classes}`}>{c.label}</span>;
 }
 
-function ModalDetailVente({ vente, tenantId, onSuccess, onClose, canCancel, canValidate }) {
+function ModalDetailVente({ vente, tenantId, tenantConfig, onSuccess, onClose, canCancel, canValidate }) {
     const [motifAnnulation, setMotifAnnulation] = useState('');
     const [showAnnulation, setShowAnnulation] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -24,7 +26,7 @@ function ModalDetailVente({ vente, tenantId, onSuccess, onClose, canCancel, canV
         if (!motifAnnulation.trim()) { setErreur('Motif obligatoire'); return; }
         setLoading(true);
         try {
-            await api.patch(`/ventes/${vente.id}/annuler`, { motif: motifAnnulation, tenantId });
+            await api.patch(`/ventes/${vente.id}/annuler`, { motif: motifAnnulation, tenantId, depotId: vente.depotId });
             onSuccess();
             onClose();
         } catch (err) {
@@ -38,7 +40,7 @@ function ModalDetailVente({ vente, tenantId, onSuccess, onClose, canCancel, canV
         setLoading(true);
         setErreur('');
         try {
-            await api.patch(`/ventes/${vente.id}/valider-sortie`, { tenantId });
+            await api.patch(`/ventes/${vente.id}/valider-sortie`, { tenantId, depotId: vente.depotId });
             onSuccess();
             onClose();
         } catch (err) {
@@ -49,54 +51,25 @@ function ModalDetailVente({ vente, tenantId, onSuccess, onClose, canCancel, canV
     };
 
     const handleImprimer = () => {
-        const contenu = `
-      <html><head><title>Facture ${vente.reference}</title>
-      <style>
-        body { font-family: Arial; padding: 20px; color: #111; }
-        h1 { font-size: 20px; } h2 { font-size: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
-        th { background: #f4f4f4; }
-        .total { font-size: 18px; font-weight: bold; margin-top: 12px; }
-        .footer { margin-top: 30px; font-size: 11px; color: #888; }
-      </style></head><body>
-      <h1>Depot-SaaS - Facture</h1>
-      <p><strong>Reference :</strong> ${vente.reference}</p>
-      <p><strong>Date :</strong> ${new Date(vente.date).toLocaleDateString('fr-FR')}</p>
-      <p><strong>Site :</strong> ${vente.site?.nom || '-'}</p>
-      ${vente.client ? `<p><strong>Client :</strong> ${vente.client.nom}</p>` : ''}
-      ${vente.createur ? `<p><strong>Cree par :</strong> ${vente.createur.email}</p>` : ''}
-      <h2>Detail de la vente</h2>
-      <table>
-        <tr><th>Article</th><th>Qte</th><th>Prix U.</th><th>Remise</th><th>Total</th></tr>
-        ${vente.lignes.map(l => `
-          <tr>
-            <td>${l.article?.designation}</td>
-            <td>${l.quantite}</td>
-            <td>${l.prixUnitaire.toLocaleString('fr-FR')} FCFA</td>
-            <td>${(l.remise || 0).toLocaleString('fr-FR')} FCFA</td>
-            <td>${l.total.toLocaleString('fr-FR')} FCFA</td>
-          </tr>
-        `).join('')}
-      </table>
-      <p class="total">TOTAL : ${vente.total.toLocaleString('fr-FR')} FCFA</p>
-      <p>Mode de paiement : ${vente.modePaiement || 'CASH'}</p>
-      <p>Statut : ${vente.statut}</p>
-      <p class="footer">Genere par Depot-SaaS - ${new Date().toLocaleDateString('fr-FR')}</p>
-      </body></html>
-    `;
-        const w = window.open('', '_blank');
-        w.document.write(contenu);
-        w.document.close();
-        w.print();
+        // En utilisant window.print(), le Media Query Print de Receipt80mm maskera tout 
+        // le reste de l'application et affichera uniquement le reçu en format 80mm !
+        window.print();
     };
 
     const totalRemise = vente.lignes.reduce((acc, l) => acc + (l.remise || 0), 0);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-3xl shadow-2xl my-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto print-container">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm print:hidden" onClick={onClose} />
+            <div className="relative flex max-h-[90vh] w-full max-w-5xl flex-col md:flex-row gap-6 shadow-2xl print:shadow-none print:bg-white print:max-h-none print:w-auto">
+                
+                {/* PARTIE GAUCHE : LE RECU (APERÃ‡U ET IMPRESSION) */}
+                <div className="bg-slate-100 p-4 rounded-2xl flex-shrink-0 overflow-y-auto w-full lg:w-auto print:p-0 print:w-auto">
+                    <Receipt80mm vente={vente} config={tenantConfig} preview={true} />
+                </div>
+
+                {/* PARTIE DROITE : LES ACTIONS ET METADONNEES DU SYSTEME (CACHEE A L'IMPRESSION) */}
+                <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full print:hidden overflow-y-auto">
                 <div className="flex justify-between items-start mb-6 gap-4">
                     <div>
                         <h3 className="text-white font-black text-xl">{vente.reference}</h3>
@@ -112,8 +85,8 @@ function ModalDetailVente({ vente, tenantId, onSuccess, onClose, canCancel, canV
 
                 <div className="grid grid-cols-2 gap-3 mb-5 text-sm">
                     <div className="bg-slate-800 rounded-xl p-3">
-                        <p className="text-slate-500 text-xs mb-1">Site</p>
-                        <p className="text-white font-bold">{vente.site?.nom || '—'}</p>
+                        <p className="text-slate-500 text-xs mb-1">Dépôt</p>
+                        <p className="text-white font-bold">{vente.Dépôt?.nom || 'â€”'}</p>
                     </div>
                     <div className="bg-slate-800 rounded-xl p-3">
                         <p className="text-slate-500 text-xs mb-1">Mode paiement</p>
@@ -222,6 +195,7 @@ function ModalDetailVente({ vente, tenantId, onSuccess, onClose, canCancel, canV
                         </button>
                     )}
                 </div>
+                </div>
             </div>
         </div>
     );
@@ -266,7 +240,7 @@ function PendingValidationPanel({ ventes, onRefresh, tenantId, canValidate }) {
 
             {ventes.length === 0 ? (
                 <div className="rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-6 text-sm text-slate-500">
-                    Aucune sortie à valider.
+                    Aucune sortie Ã  valider.
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -279,10 +253,10 @@ function PendingValidationPanel({ ventes, onRefresh, tenantId, canValidate }) {
                                         <BadgeStatut statut={vente.statut} />
                                     </div>
                                     <p className="text-sm text-slate-400 mt-1">
-                                        {vente.client?.nom || 'Vente comptoir'} · {vente.total.toLocaleString('fr-FR')} FCFA
+                                        {vente.client?.nom || 'Vente comptoir'} Â· {vente.total.toLocaleString('fr-FR')} FCFA
                                     </p>
                                     <p className="text-xs text-slate-600 mt-1">
-                                        {vente.createur?.email || 'Utilisateur inconnu'} · {new Date(vente.date).toLocaleString('fr-FR')}
+                                        {vente.createur?.email || 'Utilisateur inconnu'} Â· {new Date(vente.date).toLocaleString('fr-FR')}
                                     </p>
                                 </div>
                                 <button
@@ -303,7 +277,7 @@ function PendingValidationPanel({ ventes, onRefresh, tenantId, canValidate }) {
 
 export default function VentesPage() {
     const { tenantId, role } = useAuth();
-    const { siteId } = useSite();
+    const { depotId } = useDepot();
     const canValidate = hasRole(role, [ROLES.PATRON, ROLES.GERANT, ROLES.MAGASINIER]);
     const canCancel = hasRole(role, [ROLES.PATRON, ROLES.GERANT, ROLES.CAISSIER]);
     const [ventes, setVentes] = useState([]);
@@ -317,11 +291,27 @@ export default function VentesPage() {
         recherche: '',
     });
 
+    // Charger la configuration de l'entreprise pour pouvoir l'injecter dans Receipt80mm
+    const { data: tenantConfig } = useQuery({
+        queryKey: ['tenant-config', tenantId],
+        queryFn: async () => {
+            if (!tenantId) return null;
+            const res = await api.get(`/tenants/${tenantId}`);
+            return res.data;
+        },
+        enabled: !!tenantId,
+    });
+
     const fetchVentes = useCallback(async () => {
-        if (!tenantId) return;
+        if (!tenantId || !depotId) {
+            setVentes([]);
+            setVentesEnAttente([]);
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
-            const params = { tenantId, ...(siteId ? { siteId } : {}) };
+            const params = { tenantId, depotId };
             if (filtres.startDate) params.startDate = filtres.startDate;
             if (filtres.endDate) params.endDate = filtres.endDate;
             if (filtres.statut) params.statut = filtres.statut;
@@ -329,7 +319,7 @@ export default function VentesPage() {
             const [resVentes, resAttente] = await Promise.all([
                 api.get('/ventes', { params }),
                 canValidate
-                    ? api.get('/ventes/validations/en-attente', { params: { tenantId, ...(siteId ? { siteId } : {}) } })
+                    ? api.get('/ventes/validations/en-attente', { params: { tenantId, depotId } })
                     : Promise.resolve({ data: [] }),
             ]);
 
@@ -340,7 +330,7 @@ export default function VentesPage() {
         } finally {
             setLoading(false);
         }
-    }, [tenantId, siteId, filtres, canValidate]);
+    }, [tenantId, depotId, filtres, canValidate]);
 
     useEffect(() => { fetchVentes(); }, [fetchVentes]);
 
@@ -456,7 +446,7 @@ export default function VentesPage() {
                             <tr className="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-700">
                                 <th className="px-6 py-4">Référence</th>
                                 <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Site</th>
+                                <th className="px-6 py-4">Dépôt</th>
                                 <th className="px-6 py-4">Client</th>
                                 <th className="px-6 py-4">Créateur</th>
                                 <th className="px-6 py-4">Paiement</th>
@@ -473,9 +463,9 @@ export default function VentesPage() {
                                     <td className="px-6 py-4 text-slate-400 text-sm">
                                         {new Date(v.date).toLocaleDateString('fr-FR')}
                                     </td>
-                                    <td className="px-6 py-4 text-slate-300 text-sm">{v.site?.nom || '—'}</td>
-                                    <td className="px-6 py-4 text-slate-400 text-sm">{v.client?.nom || '—'}</td>
-                                    <td className="px-6 py-4 text-slate-500 text-xs">{v.createur?.email || '—'}</td>
+                                    <td className="px-6 py-4 text-slate-300 text-sm">{v.Dépôt?.nom || 'â€”'}</td>
+                                    <td className="px-6 py-4 text-slate-400 text-sm">{v.client?.nom || 'â€”'}</td>
+                                    <td className="px-6 py-4 text-slate-500 text-xs">{v.createur?.email || 'â€”'}</td>
                                     <td className="px-6 py-4">
                                         <span className="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded-lg">
                                             {v.modePaiement || 'CASH'}
@@ -502,6 +492,7 @@ export default function VentesPage() {
                 <ModalDetailVente
                     vente={venteDetail}
                     tenantId={tenantId}
+                    tenantConfig={tenantConfig}
                     onSuccess={fetchVentes}
                     onClose={() => setVenteDetail(null)}
                     canCancel={canCancel}
@@ -511,3 +502,7 @@ export default function VentesPage() {
         </div>
     );
 }
+
+
+
+

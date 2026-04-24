@@ -6,7 +6,7 @@ export class OuvrirCaisseDto {
     fondInitial: number;
 
     @IsString()
-    siteId: string;
+    depotId: string;
 
     @IsString()
     userId: string;
@@ -40,7 +40,7 @@ export class CreateDepenseDto {
     motif: string;
 
     @IsString()
-    siteId: string;
+    depotId: string;
 
     @IsString()
     tenantId: string;

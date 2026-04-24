@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { useDepot } from '../contexts/DepotContext';
 
 const ACTION_LABELS = {
   VENTE_ANNULEE: 'Annulation',
@@ -24,8 +25,10 @@ function BadgeAction({ action }) {
 
 export default function AuditPage() {
   const { tenantId } = useAuth();
+  const { depotId } = useDepot();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     action: '',
@@ -33,12 +36,14 @@ export default function AuditPage() {
     endDate: '',
   });
 
-  const fetchJournal = useCallback(async () => {
+  const fetchJournal = useCallback(async (isSilent = false) => {
     if (!tenantId) return;
-    setLoading(true);
+    if (!isSilent) setLoading(true);
+    else setRefreshing(true);
+
     setError('');
     try {
-      const params = { tenantId };
+      const params = { tenantId, depotId };
       if (filters.action) params.action = filters.action;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
@@ -48,18 +53,33 @@ export default function AuditPage() {
       setError(err.response?.data?.message || 'Impossible de charger le journal.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [tenantId, filters]);
+  }, [tenantId, depotId, filters]);
 
   useEffect(() => {
     fetchJournal();
-  }, [fetchJournal]);
+
+    const interval = setInterval(() => {
+      if (!filters.startDate && !filters.endDate) {
+        fetchJournal(true);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [fetchJournal, filters.startDate, filters.endDate]);
 
   return (
     <div>
       <div className="flex items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-black text-white">Journal d’audit</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black text-white">Journal d audit</h1>
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider transition-all ${refreshing ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${refreshing ? 'bg-indigo-400 animate-pulse' : 'bg-emerald-400'}`} />
+              {refreshing ? 'Syncing...' : 'Live Sync'}
+            </div>
+          </div>
           <p className="text-slate-400 text-sm mt-1">Vue Patron sur les annulations, remises et validations sensibles.</p>
         </div>
       </div>
@@ -96,7 +116,7 @@ export default function AuditPage() {
             onClick={() => setFilters({ action: '', startDate: '', endDate: '' })}
             className="rounded-xl border border-slate-600 bg-slate-900 px-4 py-2.5 text-sm font-bold text-slate-300 hover:border-slate-500 hover:text-white transition-all"
           >
-            Réinitialiser
+            Reinitialiser
           </button>
         </div>
       </div>
@@ -114,14 +134,14 @@ export default function AuditPage() {
           </div>
         ) : rows.length === 0 ? (
           <div className="py-16 text-center text-slate-500">
-            Aucun événement d’audit trouvé.
+            Aucun evenement d audit trouve.
           </div>
         ) : (
           <table className="w-full text-left">
             <thead>
               <tr className="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-700">
                 <th className="px-6 py-4">Action</th>
-                <th className="px-6 py-4">Référence</th>
+                <th className="px-6 py-4">Reference</th>
                 <th className="px-6 py-4">Description</th>
                 <th className="px-6 py-4">Acteur</th>
                 <th className="px-6 py-4">Date</th>
@@ -131,7 +151,7 @@ export default function AuditPage() {
               {rows.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-700/30">
                   <td className="px-6 py-4"><BadgeAction action={row.action} /></td>
-                  <td className="px-6 py-4 text-indigo-400 font-black text-sm">{row.reference || '—'}</td>
+                  <td className="px-6 py-4 text-indigo-400 font-black text-sm">{row.reference || '-'}</td>
                   <td className="px-6 py-4 text-slate-300 text-sm">
                     <div>{row.description}</div>
                     {row.metadata?.motif && (
@@ -144,8 +164,8 @@ export default function AuditPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-400">
-                    <div>{row.actorEmail || 'Système'}</div>
-                    <div className="text-xs text-slate-600 mt-1">{row.actorRole || '—'}</div>
+                    <div>{row.actorEmail || 'Systeme'}</div>
+                    <div className="text-xs text-slate-600 mt-1">{row.actorRole || '-'}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-400">
                     {new Date(row.createdAt).toLocaleString('fr-FR')}

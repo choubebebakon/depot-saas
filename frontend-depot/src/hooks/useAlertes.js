@@ -1,36 +1,37 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useQuery } from '@tanstack/react-query';
 import api from '../api/axios';
 
-export function useAlertes(tenantId, siteId) {
-    const [totalAlertes, setTotalAlertes] = useState(0);
-    const [alertesCritiques, setAlertesCritiques] = useState(0);
+export function useAlertes(tenantId, depotId) {
+    const { data: stocksAlertes = [] } = useQuery({
+        queryKey: ['stocks-alertes', tenantId, depotId],
+        queryFn: async () => {
+            const params = { tenantId, ...(depotId ? { depotId } : {}) };
+            const res = await api.get('/stocks/alertes', { params });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        enabled: !!tenantId,
+        refetchInterval: 30000, // 30 secondes
+    });
 
-    const fetchCount = useCallback(async () => {
-        if (!tenantId) return;
-        const params = { tenantId, ...(siteId ? { siteId } : {}) };
-        try {
-            const [resStock, resDLC] = await Promise.all([
-                api.get('/stocks/alertes', { params }),
-                api.get('/dlc/alertes', { params }),
-            ]);
-            const stocks = Array.isArray(resStock.data) ? resStock.data : [];
-            const dlcs = Array.isArray(resDLC.data) ? resDLC.data : [];
+    const { data: dlcsAlertes = [] } = useQuery({
+        queryKey: ['dlc-alertes', tenantId, depotId],
+        queryFn: async () => {
+            const params = { tenantId, ...(depotId ? { depotId } : {}) };
+            const res = await api.get('/dlc/alertes', { params });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        enabled: !!tenantId,
+        refetchInterval: 30000,
+    });
 
-            setTotalAlertes(stocks.length + dlcs.length);
-            setAlertesCritiques(
-                stocks.filter(a => a.quantite <= 0).length +
-                dlcs.filter(a => a.statutDLC === 'EXPIRE').length
-            );
-        } catch (err) {
-            console.error('Erreur comptage alertes:', err);
-        }
-    }, [tenantId, siteId]);
+    const totalAlertes = stocksAlertes.length + dlcsAlertes.length;
+    const alertesCritiques = 
+        stocksAlertes.filter(a => a.quantite <= 0).length +
+        dlcsAlertes.filter(a => a.statutDLC === 'EXPIRE').length;
 
-    useEffect(() => {
-        fetchCount();
-        const interval = setInterval(fetchCount, 2 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [fetchCount]);
-
-    return { totalAlertes, alertesCritiques };
+    return { totalAlertes, alertesCritiques, stocksAlertes, dlcsAlertes };
 }
+
+
+
+

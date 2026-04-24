@@ -16,6 +16,10 @@ export class LigneReceptionDto {
     @IsNumber()
     @Min(0)
     prixAchatUnitaire: number;
+
+    @IsOptional()
+    @IsString()
+    unite?: string; // CASIER, PACK, PLATEAU, BOUTEILLE
 }
 
 export class CreateReceptionDto {
@@ -23,7 +27,7 @@ export class CreateReceptionDto {
     fournisseurId: string;
 
     @IsString()
-    siteId: string;
+    depotId: string;
 
     @IsString()
     tenantId: string;
@@ -39,6 +43,10 @@ export class CreateReceptionDto {
     @ValidateNested({ each: true })
     @Type(() => LigneReceptionDto)
     lignes: LigneReceptionDto[];
+
+    @IsOptional()
+    @IsString()
+    numBordereau?: string;
 
     @IsOptional()
     @IsString()

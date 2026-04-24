@@ -11,26 +11,27 @@ export class RapportsController {
     @Get('top-produits-marge')
     getTopProduitsParMarge(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId: string,
         @Query('month') month?: string,
     ) {
-        return this.rapportsService.getTopProduitsParMarge(tenantId, siteId, month);
+        return this.rapportsService.getTopProduitsParMarge(tenantId, depotId, month);
     }
 
     @Get('performance-commerciaux')
     getPerformanceCommerciaux(
         @Query('tenantId') tenantId: string,
+        @Query('depotId') depotId: string,
         @Query('month') month?: string,
     ) {
-        return this.rapportsService.getPerformanceCommerciaux(tenantId, month);
+        return this.rapportsService.getPerformanceCommerciaux(tenantId, depotId, month);
     }
 
     @Get('point-mort')
     getPointMortMensuel(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId: string,
         @Query('month') month?: string,
     ) {
-        return this.rapportsService.getPointMortMensuel(tenantId, siteId, month);
+        return this.rapportsService.getPointMortMensuel(tenantId, depotId, month);
     }
 }

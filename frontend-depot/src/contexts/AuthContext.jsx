@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+﻿import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -56,3 +56,7 @@ export function useAuth() {
     if (!ctx) throw new Error('useAuth doit être utilisé dans AuthProvider');
     return ctx;
 }
+
+
+
+

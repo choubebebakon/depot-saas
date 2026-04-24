@@ -11,7 +11,7 @@ export class ImpressionService {
       where: { id: venteId },
       include: {
         tenant: true,  // Pour l'en-tête (Nom, tel)
-        site: true,    // Pour l'adresse du site
+        depot: true,    // Pour l'adresse du Depot
         lignes: {
           include: {
             article: true, // Pour la désignation de chaque article
@@ -48,8 +48,8 @@ export class ImpressionService {
 
     // --- EN-TÊTE ---
     ticketLines.push(centerText(vente.tenant.nomEntreprise.toUpperCase()));
-    if (vente.site.adresse) {
-      ticketLines.push(centerText(vente.site.adresse));
+    if (vente.depot.adresse) {
+      ticketLines.push(centerText(vente.depot.adresse));
     }
     if (vente.tenant.telephone) {
       ticketLines.push(centerText(`Tel: ${vente.tenant.telephone}`));

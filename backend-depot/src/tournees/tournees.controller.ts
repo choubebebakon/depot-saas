@@ -58,14 +58,18 @@ export class TourneesController {
     @Get()
     findAll(
         @Query('tenantId') tenantId: string,
-        @Query('siteId') siteId?: string,
+        @Query('depotId') depotId: string,
         @Query('statut') statut?: string,
     ) {
-        return this.service.findAll(tenantId, siteId, statut);
+        return this.service.findAll(tenantId, depotId, statut);
     }
 
     @Get(':id')
-    findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-        return this.service.findOne(id, tenantId);
+    findOne(
+        @Param('id') id: string,
+        @Query('tenantId') tenantId: string,
+        @Query('depotId') depotId: string,
+    ) {
+        return this.service.findOne(id, tenantId, depotId);
     }
 }

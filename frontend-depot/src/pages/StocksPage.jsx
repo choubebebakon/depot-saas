@@ -1,386 +1,250 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
-import { useSite } from '../contexts/SiteContext';
+import { useDepot } from '../contexts/DepotContext';
+import { useAlertes } from '../hooks/useAlertes';
+import AjustementStockModal from '../components/AjustementStockModal';
+import { 
+  Search, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, 
+  History, Package, Filter, ArrowRight, Info, Edit3
+} from 'lucide-react';
 
-// ── Badge type mouvement ────────────────────────────────────
-function BadgeType({ type }) {
-    const config = {
-        ENTREE: { label: '↑ Entrée', classes: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' },
-        SORTIE_VENTE: { label: '↓ Vente', classes: 'bg-blue-500/10 border-blue-500/30 text-blue-400' },
-        SORTIE: { label: '↓ Sortie', classes: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
-        TRANSFERT_SORTIE: { label: '→ Transfert', classes: 'bg-purple-500/10 border-purple-500/30 text-purple-400' },
-        TRANSFERT_ENTREE: { label: '← Retour', classes: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' },
-        AJUSTEMENT_INVENTAIRE: { label: '⚖ Inventaire', classes: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' },
-        RETOUR_CLIENT: { label: '↩ Retour client', classes: 'bg-slate-600 border-slate-500 text-slate-300' },
-        CASSE_AVARIE: { label: '✕ Casse', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
-        SORTIE_GRATUITE: { label: '🎁 Gratuit', classes: 'bg-pink-500/10 border-pink-500/30 text-pink-400' },
-    };
-    const c = config[type] || { label: type, classes: 'bg-slate-700 border-slate-600 text-slate-400' };
-    return <span className={`text-xs font-bold px-2 py-1 rounded-lg border whitespace-nowrap ${c.classes}`}>{c.label}</span>;
-}
-
-// ── Modal Ajustement Inventaire ─────────────────────────────
-function ModalAjustement({ stock, tenantId, onSuccess, onClose }) {
-    const [nouvelleQuantite, setNouvelleQuantite] = useState(stock.quantite);
-    const [motif, setMotif] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [erreur, setErreur] = useState('');
-
-    const difference = Number(nouvelleQuantite) - stock.quantite;
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!motif.trim()) { setErreur('Motif obligatoire'); return; }
-        setLoading(true);
-        setErreur('');
-        try {
-            await api.post('/stocks/ajuster', {
-                articleId: stock.articleId,
-                siteId: stock.siteId,
-                nouvelleQuantite: Number(nouvelleQuantite),
-                motif,
-                tenantId,
-            });
-            onSuccess();
-            onClose();
-        } catch (err) {
-            setErreur(err.response?.data?.message || 'Erreur ajustement');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">⚖️ Ajustement Inventaire</h3>
-                <p className="text-slate-400 text-sm mb-6">
-                    Article : <strong className="text-white">{stock.article?.designation}</strong><br />
-                    Stock actuel : <strong className="text-indigo-400">{stock.quantite} unités</strong>
-                </p>
-                {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">
-                            Nouvelle quantité *
-                        </label>
-                        <input type="number" min="0" required
-                            value={nouvelleQuantite}
-                            onChange={e => setNouvelleQuantite(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-2xl font-black text-center focus:outline-none focus:border-indigo-500" />
-                    </div>
-
-                    {difference !== 0 && (
-                        <div className={`rounded-xl p-3 text-center text-sm font-bold border ${difference > 0
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                                : 'bg-red-500/10 border-red-500/30 text-red-400'
-                            }`}>
-                            {difference > 0 ? '▲' : '▼'} Ajustement de {difference > 0 ? '+' : ''}{difference} unités
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">
-                            Motif * (obligatoire pour audit)
-                        </label>
-                        <input required value={motif} onChange={e => setMotif(e.target.value)}
-                            placeholder="Ex: Comptage physique, Casse non déclarée..."
-                            className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-500" />
-                    </div>
-
-                    <div className="flex gap-3 pt-2">
-                        <button type="button" onClick={onClose}
-                            className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
-                        <button type="submit" disabled={loading || difference === 0}
-                            className="flex-1 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : '⚖️ Ajuster'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-}
-
-// ── Page Principale Stocks ──────────────────────────────────
-export default function StocksPage() {
+const StocksPage = () => {
     const { tenantId } = useAuth();
-    const { siteId, siteActif } = useSite();
-    const [stocks, setStocks] = useState([]);
-    const [mouvements, setMouvements] = useState([]);
-    const [alertes, setAlertes] = useState([]);
-    const [statsStocks, setStatsStocks] = useState({ totalArticles: 0, enRupture: 0, critiques: 0, valeurStock: 0 });
-    const [loading, setLoading] = useState(true);
-    const [onglet, setOnglet] = useState('stocks');
-    const [stockAjustement, setStockAjustement] = useState(null);
+    const { depotActif } = useDepot();
+    const depotId = depotActif?.id;
+    const queryClient = useQueryClient();
     const [recherche, setRecherche] = useState('');
-    const [filtresMvt, setFiltresMvt] = useState({ startDate: '', endDate: '', articleId: '' });
+    const [onglet, setOnglet] = useState('stocks');
+    const [modalAjustement, setModalAjustement] = useState({ isOpen: false, article: null });
 
-    const fetchData = useCallback(async () => {
-        if (!tenantId) return;
-        setLoading(true);
-        try {
-            const params = { tenantId, ...(siteId ? { siteId } : {}) };
-            const [resS, resM, resA, resSt] = await Promise.all([
-                api.get('/stocks', { params }),
-                api.get('/stocks/mouvements', {
-                    params: {
-                        ...params,
-                        ...(filtresMvt.startDate ? { startDate: filtresMvt.startDate } : {}),
-                        ...(filtresMvt.endDate ? { endDate: filtresMvt.endDate } : {}),
-                        ...(filtresMvt.articleId ? { articleId: filtresMvt.articleId } : {}),
-                    }
-                }),
-                api.get('/stocks/alertes', { params }),
-                api.get('/stocks/stats', { params }),
-            ]);
-            setStocks(Array.isArray(resS.data) ? resS.data : []);
-            setMouvements(Array.isArray(resM.data) ? resM.data : []);
-            setAlertes(Array.isArray(resA.data) ? resA.data : []);
-            setStatsStocks(resSt.data || {});
-        } catch (err) {
-            console.error('Erreur stocks:', err);
-        } finally {
-            setLoading(false);
+    const { alertes } = useAlertes(tenantId, depotId);
+
+    // 1. Liste des stocks
+    const { data: stocks = [], isLoading: loadingStocks } = useQuery({
+        queryKey: ['stocks', tenantId, depotId],
+        queryFn: async () => {
+            const res = await api.get('/stocks', { params: { tenantId, depotId } });
+            return res.data;
+        },
+        enabled: !!tenantId,
+    });
+
+    // 2. Stats
+    const { data: statsStocks = {} } = useQuery({
+        queryKey: ['stocks-stats', tenantId, depotId],
+        queryFn: async () => {
+            const res = await api.get('/stocks/stats', { params: { tenantId, depotId } });
+            return res.data;
+        },
+        enabled: !!tenantId,
+    });
+
+    // 3. Mouvements (Audit)
+    const { data: mouvements = [], isLoading: loadingMvts } = useQuery({
+        queryKey: ['stocks-mouvements', tenantId, depotId],
+        queryFn: async () => {
+            const res = await api.get('/stocks/mouvements', { params: { tenantId, depotId } });
+            return res.data;
+        },
+        enabled: !!tenantId && onglet === 'mouvements',
+    });
+
+    // 4. Mutation Ajustement
+    const mutationAjuster = useMutation({
+        mutationFn: async (payload) => {
+            return api.post('/stocks/ajuster', { ...payload, tenantId });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['stocks']);
+            queryClient.invalidateQueries(['stocks-stats']);
+            queryClient.invalidateQueries(['stocks-mouvements']);
+            setModalAjustement({ isOpen: false, article: null });
         }
-    }, [tenantId, siteId, filtresMvt]);
+    });
 
-    useEffect(() => { fetchData(); }, [fetchData]);
-    useEffect(() => {
-        const handler = () => fetchData();
-        window.addEventListener('refresh-stocks', handler);
-        return () => window.removeEventListener('refresh-stocks', handler);
-    }, [fetchData]);
-
-    const stocksFiltres = stocks.filter(s =>
-        s.article?.designation?.toLowerCase().includes(recherche.toLowerCase())
-    );
+    const stocksFiltres = useMemo(() => {
+        return stocks.filter(s =>
+            s.article?.designation?.toLowerCase().includes(recherche.toLowerCase())
+        ).sort((a, b) => {
+            const seuilA = a.seuilCritique ?? a.article?.seuilCritique ?? 0;
+            const seuilB = b.seuilCritique ?? b.article?.seuilCritique ?? 0;
+            const critA = a.quantite <= seuilA;
+            const critB = b.quantite <= seuilB;
+            if (critA && !critB) return -1;
+            if (!critA && critB) return 1;
+            return (a.article?.designation || '').localeCompare(b.article?.designation || '');
+        });
+    }, [stocks, recherche]);
 
     return (
-        <div>
-            {/* En-tête */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="p-6 pb-24 space-y-8 bg-slate-900 min-h-screen text-slate-200">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white">Gestion des Stocks</h1>
-                    <p className="text-slate-400 text-sm mt-1">
-                        Inventaires, mouvements et alertes — {siteActif?.nom || 'Tous les sites'}
+                    <h1 className="text-3xl font-black text-white tracking-tight">Gestion des Stocks</h1>
+                    <p className="text-slate-500 text-sm mt-1">
+                        Dépôt : <span className="text-indigo-400 font-bold">{depotActif?.nom || 'Global'}</span>
                     </p>
+                </div>
+                <div className="flex bg-slate-800 p-1 rounded-2xl border border-slate-700">
+                    <button onClick={() => setOnglet('stocks')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${onglet === 'stocks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white'}`}>Stocks</button>
+                    <button onClick={() => setOnglet('mouvements')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${onglet === 'mouvements' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white'}`}>Audit</button>
                 </div>
             </div>
 
-            {/* Alertes critiques */}
-            {alertes.length > 0 && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6">
-                    <p className="text-red-400 font-black text-sm mb-3">
-                        ⚠️ {alertes.length} article(s) en stock critique
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {alertes.map(a => (
-                            <span key={a.id} className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold px-3 py-1.5 rounded-lg">
-                                {a.article?.designation} — {a.quantite} u. (seuil: {a.article?.seuilCritique})
-                            </span>
+            {/* Quick Stats cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                 {[
+                    { label: 'Articles', val: statsStocks.totalArticles, icon: Package, color: 'indigo' },
+                    { label: 'En Rupture', val: statsStocks.enRupture, icon: AlertTriangle, color: 'red' },
+                    { label: 'Sous le Seuil', val: statsStocks.critiques, icon: TrendingDown, color: 'orange' },
+                    { label: 'Valeur Totale', val: `${(statsStocks.valeurStock || 0).toLocaleString()} XAF`, icon: TrendingUp, color: 'emerald' },
+                 ].map((stat, i) => (
+                    <div key={i} className="bg-slate-800/50 border border-slate-700 p-6 rounded-3xl">
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{stat.label}</p>
+                            <stat.icon size={16} className={`text-${stat.color}-500`} />
+                        </div>
+                        <p className="text-2xl font-black text-white">{stat.val}</p>
+                    </div>
+                 ))}
+            </div>
+
+            {onglet === 'stocks' && (
+                <div className="space-y-6">
+                    {/* Filtres */}
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                            <input 
+                                value={recherche} onChange={e => setRecherche(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+                                placeholder="Rechercher un article..."
+                            />
+                        </div>
+                    </div>
+
+                    {/* Table des Stocks */}
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-3xl overflow-hidden backdrop-blur-sm">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-900/50 border-b border-slate-700">
+                                <tr className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                                    <th className="px-6 py-5">Article</th>
+                                    <th className="px-6 py-5">Quantité Actuelle</th>
+                                    <th className="px-6 py-5">Seuil Critique</th>
+                                    <th className="px-6 py-5">Statut</th>
+                                    <th className="px-6 py-5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700/50 text-sm">
+                                {stocksFiltres.map(s => {
+                                    const seuil = s.seuilCritique ?? s.article?.seuilCritique ?? 0;
+                                    const isCritique = s.quantite <= seuil;
+                                    const isRupture = s.quantite <= 0;
+
+                                    return (
+                                        <tr key={s.id} className="hover:bg-slate-700/30 transition-colors group">
+                                            <td className="px-6 py-5">
+                                                <div className="font-bold text-white group-hover:text-indigo-400 transition-colors uppercase">{s.article?.designation}</div>
+                                                <div className="text-[10px] text-slate-500">ID: {s.articleId.slice(0,8)}</div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className={`text-lg font-black ${isRupture ? 'text-red-500' : isCritique ? 'text-orange-500' : 'text-white'}`}>
+                                                    {s.quantite} <span className="text-[10px] font-normal text-slate-500">Unités</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="text-slate-400 font-medium">{seuil}</div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                {isRupture ? (
+                                                    <span className="bg-red-500/10 text-red-500 text-[10px] font-black px-2 py-1 rounded-md">RUPTURE</span>
+                                                ) : isCritique ? (
+                                                    <span className="bg-orange-500/10 text-orange-400 text-[10px] font-black px-2 py-1 rounded-md">CRITIQUE</span>
+                                                ) : (
+                                                    <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-black px-2 py-1 rounded-md">OPTIMAL</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <button 
+                                                    onClick={() => setModalAjustement({ isOpen: true, article: s })}
+                                                    className="bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-2 ml-auto"
+                                                >
+                                                    <Edit3 size={14} /> Ajuster
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {onglet === 'mouvements' && (
+                <div className="space-y-6">
+                    <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl flex items-center gap-3">
+                         <Info className="text-indigo-400" size={20} />
+                         <p className="text-xs text-indigo-300">
+                             L'historique d'audit affiche les 200 derniers mouvements pour le dépôt <span className="font-bold underline">{depotActif?.nom || 'Global'}</span>.
+                         </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        {loadingMvts ? (
+                            <div className="animate-pulse space-y-4">
+                                {[1,2,3,4].map(i => <div key={i} className="h-20 bg-slate-800 rounded-3xl" />)}
+                            </div>
+                        ) : mouvements.map(mv => (
+                            <div key={mv.id} className="bg-slate-800 border border-slate-700 p-5 rounded-3xl flex items-center justify-between hover:border-indigo-500/50 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-2xl ${
+                                        ['ENTREE_STOCK', 'RECEPTION_FOURNISSEUR', 'TRANSFERT_ENTREE'].includes(mv.type) 
+                                        ? 'bg-emerald-500/10 text-emerald-500' 
+                                        : 'bg-red-500/10 text-red-500'
+                                    }`}>
+                                        <History size={20} />
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-white text-sm uppercase tracking-tight">{mv.article?.designation || 'Article inconnu'}</div>
+                                        <div className="text-slate-500 text-[10px] mt-1">
+                                            {new Date(mv.createdAt).toLocaleString('fr-FR')} • {mv.type.replace(/_/g, ' ')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className={`text-lg font-black ${
+                                        ['ENTREE_STOCK', 'RECEPTION_FOURNISSEUR', 'TRANSFERT_ENTREE'].includes(mv.type) 
+                                        ? 'text-emerald-500' 
+                                        : 'text-red-500'
+                                    }`}>
+                                        {['ENTREE_STOCK', 'RECEPTION_FOURNISSEUR', 'TRANSFERT_ENTREE'].includes(mv.type) ? '+' : '-'}{mv.quantite}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 truncate max-w-[200px] italic">
+                                        "{mv.motif || 'Aucun motif'}"
+                                    </div>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* Stats stocks */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Articles</p>
-                    <p className="text-white text-2xl font-black">{statsStocks.totalArticles}</p>
-                </div>
-                <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
-                    <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-2">Ruptures</p>
-                    <p className="text-white text-2xl font-black">{statsStocks.enRupture}</p>
-                </div>
-                <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4">
-                    <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-2">Critiques</p>
-                    <p className="text-white text-2xl font-black">{statsStocks.critiques}</p>
-                </div>
-                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4">
-                    <p className="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-2">Valeur Stock</p>
-                    <p className="text-white text-2xl font-black">{(statsStocks.valeurStock || 0).toLocaleString('fr-FR')}</p>
-                    <p className="text-slate-500 text-xs">FCFA</p>
-                </div>
-            </div>
-
-            {/* Onglets */}
-            <div className="flex gap-2 mb-6 flex-wrap">
-                {[
-                    ['stocks', '📦 Stocks'],
-                    ['mouvements', '📋 Mouvements'],
-                ].map(([id, label]) => (
-                    <button key={id} onClick={() => setOnglet(id)}
-                        className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
-                                ? 'bg-indigo-600 border-indigo-500 text-white'
-                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
-                            }`}>
-                        {label}
-                    </button>
-                ))}
-            </div>
-
-            {/* ── Onglet Stocks ── */}
-            {onglet === 'stocks' && (
-                <>
-                    <input value={recherche} onChange={e => setRecherche(e.target.value)}
-                        placeholder="🔍 Rechercher un article..."
-                        className="w-full mb-4 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
-
-                    <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
-                        {loading ? (
-                            <div className="flex items-center justify-center h-48">
-                                <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        ) : (
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-700">
-                                        <th className="px-6 py-4">Article</th>
-                                        <th className="px-6 py-4">Site</th>
-                                        <th className="px-6 py-4 text-center">Quantité</th>
-                                        <th className="px-6 py-4 text-center">Seuil critique</th>
-                                        <th className="px-6 py-4 text-right">Valeur stock</th>
-                                        <th className="px-6 py-4 text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-700/50">
-                                    {stocksFiltres.length === 0 ? (
-                                        <tr><td colSpan="6" className="px-6 py-10 text-center text-slate-500">Aucun stock trouvé</td></tr>
-                                    ) : stocksFiltres.map(s => {
-                                        const isRupture = s.quantite <= 0;
-                                        const isCritique = s.quantite > 0 && s.quantite <= s.article?.seuilCritique;
-                                        return (
-                                            <tr key={s.id} className="hover:bg-slate-700/30 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <p className="text-white font-bold text-sm">{s.article?.designation}</p>
-                                                    <p className="text-slate-500 text-xs">{s.article?.prixVente?.toLocaleString('fr-FR')} FCFA/u</p>
-                                                </td>
-                                                <td className="px-6 py-4 text-slate-400 text-sm">{s.site?.nom}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-black border ${isRupture ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                                                            : isCritique ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                                                                : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                                                        }`}>
-                                                        {isRupture ? 'RUPTURE' : `${s.quantite} u.`}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center text-slate-400 text-sm">
-                                                    {s.article?.seuilCritique || 0}
-                                                </td>
-                                                <td className="px-6 py-4 text-right text-slate-300 font-bold text-sm">
-                                                    {(s.quantite * (s.article?.prixAchat || 0)).toLocaleString('fr-FR')} FCFA
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button onClick={() => setStockAjustement(s)}
-                                                        className="bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 text-yellow-400 font-bold px-3 py-1.5 rounded-lg text-xs transition-all">
-                                                        ⚖️ Ajuster
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                </>
-            )}
-
-            {/* ── Onglet Mouvements ── */}
-            {onglet === 'mouvements' && (
-                <>
-                    {/* Filtres mouvements */}
-                    <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 mb-5">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div>
-                                <label className="text-slate-500 text-xs mb-1 block">Date début</label>
-                                <input type="date" value={filtresMvt.startDate}
-                                    onChange={e => setFiltresMvt({ ...filtresMvt, startDate: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-                            </div>
-                            <div>
-                                <label className="text-slate-500 text-xs mb-1 block">Date fin</label>
-                                <input type="date" value={filtresMvt.endDate}
-                                    onChange={e => setFiltresMvt({ ...filtresMvt, endDate: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-                            </div>
-                            <div>
-                                <label className="text-slate-500 text-xs mb-1 block">Article</label>
-                                <select value={filtresMvt.articleId}
-                                    onChange={e => setFiltresMvt({ ...filtresMvt, articleId: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
-                                    <option value="">Tous les articles</option>
-                                    {stocks.map(s => (
-                                        <option key={s.articleId} value={s.articleId}>{s.article?.designation}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
-                        {loading ? (
-                            <div className="flex items-center justify-center h-48">
-                                <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        ) : mouvements.length === 0 ? (
-                            <div className="text-center py-16 text-slate-500">
-                                <p className="text-4xl mb-3">📋</p>
-                                <p>Aucun mouvement trouvé</p>
-                            </div>
-                        ) : (
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-700">
-                                        <th className="px-6 py-4">Type</th>
-                                        <th className="px-6 py-4">Article</th>
-                                        <th className="px-6 py-4">Site</th>
-                                        <th className="px-6 py-4 text-center">Quantité</th>
-                                        <th className="px-6 py-4">Motif</th>
-                                        <th className="px-6 py-4">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-700/50">
-                                    {mouvements.map(m => (
-                                        <tr key={m.id} className="hover:bg-slate-700/30 transition-colors">
-                                            <td className="px-6 py-4"><BadgeType type={m.type} /></td>
-                                            <td className="px-6 py-4 text-white font-semibold text-sm">{m.article?.designation}</td>
-                                            <td className="px-6 py-4 text-slate-400 text-sm">{m.site?.nom}</td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`font-black text-sm ${['ENTREE', 'TRANSFERT_ENTREE'].includes(m.type) ? 'text-emerald-400'
-                                                        : 'text-red-400'
-                                                    }`}>
-                                                    {['ENTREE', 'TRANSFERT_ENTREE'].includes(m.type) ? '+' : '-'}{m.quantite}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-400 text-xs max-w-[200px] truncate">{m.motif || '—'}</td>
-                                            <td className="px-6 py-4 text-slate-400 text-xs">
-                                                {new Date(m.createdAt).toLocaleDateString('fr-FR')}{' '}
-                                                {new Date(m.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                </>
-            )}
-
-            {/* Modal ajustement */}
-            {stockAjustement && (
-                <ModalAjustement
-                    stock={stockAjustement}
-                    tenantId={tenantId}
-                    onSuccess={() => { fetchData(); window.dispatchEvent(new CustomEvent('refresh-stocks')); }}
-                    onClose={() => setStockAjustement(null)}
-                />
-            )}
+            <AjustementStockModal 
+                isOpen={modalAjustement.isOpen}
+                onClose={() => setModalAjustement({ isOpen: false, article: null })}
+                article={modalAjustement.article}
+                onSubmit={(data) => mutationAjuster.mutate(data)}
+            />
         </div>
     );
-}
+};
+
+export default StocksPage;
+
+
+
+
