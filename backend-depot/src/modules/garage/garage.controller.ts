@@ -73,4 +73,16 @@ export class GarageController {
   async createCaisseEntry(@Body() body: any) {
     return body;
   }
+
+  // --- Stubs Phase 4 ---
+
+  @Get('parametres')
+  async getParametres() {
+    return {};
+  }
+
+  @Put('parametres')
+  async updateParametres(@Body() body: Record<string, unknown>) {
+    return body;
+  }
 }

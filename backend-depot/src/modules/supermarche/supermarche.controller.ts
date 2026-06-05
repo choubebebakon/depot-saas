@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, UseGuards, Req, Patch, Delete, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards, Req, Patch, Delete, Param, Put } from '@nestjs/common';
 import { SupermarcheService, PaginationDto, CreateRayonDto, UpdateRayonDto, AssignArticleDto, CreateCodeBarresDto, CreateArticleDto, UpdateArticleDto, UpdateStockDto, CreateClientDto, UpdateClientDto, CreateFournisseurDto, UpdateFournisseurDto, CreateDepenseDto, UpdateDepenseDto, CreatePromotionDto, UpdatePromotionDto, CreateReceptionDto, CreateVenteDto, InventaireDto } from './supermarche.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
@@ -249,5 +249,22 @@ export class SupermarcheController {
   @Post('reset-data')
   async resetData(@Req() req: any) {
     return this.service.resetData(req.user.tenantId);
+  }
+
+  // --- Stubs Phase 4 ---
+
+  @Put('parametres')
+  async putParametres(@Body() body: Record<string, unknown>) {
+    return body;
+  }
+
+  @Get('config')
+  async getConfig() {
+    return {};
+  }
+
+  @Get('caisse')
+  async getCaisse() {
+    return { solde: 0, totalEntrees: 0, totalSorties: 0 };
   }
 }

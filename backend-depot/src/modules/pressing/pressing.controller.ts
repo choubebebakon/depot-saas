@@ -62,4 +62,16 @@ export class PressingController {
   async updateParametres(@Body() body: any) {
     return body;
   }
+
+  // --- Stubs Phase 4 ---
+
+  @Get('config')
+  async getConfig() {
+    return {};
+  }
+
+  @Get('caisse')
+  async getCaisse() {
+    return { solde: 0, totalEntrees: 0, totalSorties: 0 };
+  }
 }

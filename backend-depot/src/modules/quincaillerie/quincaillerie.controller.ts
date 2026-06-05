@@ -19,4 +19,21 @@ export class QuincaillerieController {
   async updateConfig(@Body() body: any) {
     return body;
   }
+
+  // --- Stubs Phase 4 ---
+
+  @Get('parametres')
+  async getParametres() {
+    return {};
+  }
+
+  @Put('parametres')
+  async updateParametres(@Body() body: Record<string, unknown>) {
+    return body;
+  }
+
+  @Get('caisse')
+  async getCaisse() {
+    return { solde: 0, totalEntrees: 0, totalSorties: 0 };
+  }
 }

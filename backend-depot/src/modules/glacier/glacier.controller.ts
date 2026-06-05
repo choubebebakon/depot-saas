@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, UseGuards, Req, Put } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -65,5 +65,22 @@ export class GlacierController {
   @Get('caisse')
   async getCaisse() {
     return { data: [], total: 0 };
+  }
+
+  // --- Stubs Phase 4 ---
+
+  @Get('parametres')
+  async getParametres() {
+    return {};
+  }
+
+  @Put('parametres')
+  async updateParametres(@Body() body: Record<string, unknown>) {
+    return body;
+  }
+
+  @Get('config')
+  async getConfig() {
+    return {};
   }
 }

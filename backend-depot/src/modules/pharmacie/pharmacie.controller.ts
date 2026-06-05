@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Req } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Req, Put } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 
 @Controller('pharmacie')
@@ -34,5 +34,22 @@ export class PharmacieController {
       ventes: [],
       croissance: 0
     };
+  }
+
+  // --- Stubs Phase 4 ---
+
+  @Put('parametres')
+  async putParametres(@Body() body: Record<string, unknown>) {
+    return body;
+  }
+
+  @Get('config')
+  async getConfig() {
+    return {};
+  }
+
+  @Get('caisse')
+  async getCaisse() {
+    return { solde: 0, totalEntrees: 0, totalSorties: 0 };
   }
 }

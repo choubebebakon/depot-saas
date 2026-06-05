@@ -72,4 +72,16 @@ export class SalonBeauteController {
   async deleteRdv(@Param('id') id: string) {
     return { success: true };
   }
+
+  // --- Stubs Phase 4 ---
+
+  @Get('config')
+  async getConfig() {
+    return {};
+  }
+
+  @Get('caisse')
+  async getCaisse() {
+    return { solde: 0, totalEntrees: 0, totalSorties: 0 };
+  }
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, UseGuards, Req, Put } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -39,5 +39,27 @@ export class ParfumerieController {
   @Get('fidelite/top-clients')
   async getTopClients(@Req() req: any, @Query('limit') limit?: string) {
     return this.parfumerieService.getTopClients(req.user.tenantId, limit ? parseInt(limit) : 10);
+  }
+
+  // --- Stubs Phase 4 ---
+
+  @Get('parametres')
+  async getParametres() {
+    return {};
+  }
+
+  @Put('parametres')
+  async updateParametres(@Body() body: Record<string, unknown>) {
+    return body;
+  }
+
+  @Get('config')
+  async getConfig() {
+    return {};
+  }
+
+  @Get('caisse')
+  async getCaisse() {
+    return { solde: 0, totalEntrees: 0, totalSorties: 0 };
   }
 }

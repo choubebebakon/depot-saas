@@ -61,4 +61,11 @@ export class LibrairieController {
   async updateParametres(@Body() body: any) {
     return body;
   }
+
+  // --- Stubs Phase 4 ---
+
+  @Get('config')
+  async getConfig() {
+    return {};
+  }
 }
