@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { useDepot } from '../contexts/DepotContext';
 import { ShoppingCart, AlertTriangle, CheckCircle, Plus, FileText, ChevronRight } from 'lucide-react';
 
 const CommandesPage = () => {
-  const { user, tenantId } = useAuth();
+  const { tenantId } = useAuth();
   const { depotId } = useDepot();
   const queryClient = useQueryClient();
   const [selectedArticles, setSelectedArticles] = useState([]);
@@ -61,7 +61,7 @@ const CommandesPage = () => {
 
   const handleGenerer = () => {
     if (!fournisseurId || selectedArticles.length === 0) return;
-    
+
     const reference = `BC-${new Date().getTime()}`;
     createMutation.mutate({
       reference,
@@ -84,13 +84,13 @@ const CommandesPage = () => {
           <p className="text-slate-400 text-sm">Gérez vos stocks critiques et générez vos bons de commande.</p>
         </div>
         <div className="flex gap-2">
-           <button 
+           <button
              onClick={() => setStep('SUGGESTIONS')}
              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${step === 'SUGGESTIONS' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}
            >
              Suggestions
            </button>
-           <button 
+           <button
              onClick={() => setStep('LIST')}
              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${step === 'LIST' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}
            >
@@ -107,7 +107,7 @@ const CommandesPage = () => {
               <AlertTriangle className="text-orange-500" size={20} />
               Articles sous le seuil critique
             </h2>
-            
+
             {suggestions.length === 0 && !loadingSugg && (
               <div className="bg-slate-800/50 p-12 rounded-3xl text-center border border-dashed border-slate-700">
                 <CheckCircle className="mx-auto text-emerald-500 mb-4" size={48} />
@@ -121,12 +121,12 @@ const CommandesPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {suggestions.map(s => (
-                <div 
+                <div
                   key={s.articleId}
                   onClick={() => toggleArticle(s)}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                     selectedArticles.find(a => a.articleId === s.articleId)
-                    ? 'bg-indigo-500/20 border-indigo-500 shadow-lg shadow-indigo-500/10' 
+                    ? 'bg-indigo-500/20 border-indigo-500 shadow-lg shadow-indigo-500/10'
                     : 'bg-slate-800 border-slate-700 hover:border-slate-500'
                   }`}
                 >
@@ -165,7 +165,7 @@ const CommandesPage = () => {
                         <p className="text-white text-sm font-bold truncate">{a.designation}</p>
                         <p className="text-slate-500 text-[10px]">Sug: +{a.seuilCritique * 2}</p>
                       </div>
-                      <input 
+                      <input
                         type="number"
                         value={a.quantiteACommander}
                         onChange={(e) => updateQt(a.articleId, e.target.value)}
@@ -177,7 +177,7 @@ const CommandesPage = () => {
 
                 <div className="border-t border-slate-700 pt-6">
                   <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Fournisseur</label>
-                  <select 
+                  <select
                     value={fournisseurId}
                     onChange={(e) => setFournisseurId(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500"
@@ -187,7 +187,7 @@ const CommandesPage = () => {
                   </select>
                 </div>
 
-                <button 
+                <button
                   onClick={handleGenerer}
                   disabled={!fournisseurId || createMutation.isPending}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
@@ -221,7 +221,3 @@ const CommandesPage = () => {
 };
 
 export default CommandesPage;
-
-
-
-

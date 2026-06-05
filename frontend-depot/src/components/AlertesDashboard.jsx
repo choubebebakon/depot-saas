@@ -1,50 +1,20 @@
-﻿import { useState, useEffect, useCallback } from 'react';
-import api from '../api/axios';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
+import { useAlertes } from '../hooks/useAlertes';
 
 export default function AlertesDashboard() {
     const { tenantId } = useAuth();
     const { depotId } = useDepot();
-    const [alertesStock, setAlertesStock] = useState([]);
-    const [alertesDLC, setAlertesDLC] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { stocksAlertes: alertesStock, dlcsAlertes: alertesDLC, totalAlertes, alertesCritiques, loading, refetch } = useAlertes(tenantId, depotId);
     const [reduit, setReduit] = useState(false);
 
-    const fetchAlertes = useCallback(async () => {
-        if (!tenantId) return;
-        const params = { tenantId, ...(depotId ? { depotId } : {}) };
-        try {
-            const [resStock, resDLC] = await Promise.all([
-                api.get('/stocks/alertes', { params }),
-                api.get('/dlc/alertes', { params }),
-            ]);
-            setAlertesStock(Array.isArray(resStock.data) ? resStock.data : []);
-            setAlertesDLC(Array.isArray(resDLC.data) ? resDLC.data : []);
-        } catch (err) {
-            console.error('Erreur alertes:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [tenantId, depotId]);
-
-    useEffect(() => {
-        fetchAlertes();
-        // Rafraîchit les alertes toutes les 2 minutes
-        const interval = setInterval(fetchAlertes, 2 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [fetchAlertes]);
-
-    const totalAlertes = alertesStock.length + alertesDLC.length;
-    const alertesCritiques = alertesStock.filter(a => a.quantite <= 0).length
-        + alertesDLC.filter(a => a.statutDLC === 'EXPIRE').length;
-
-    if (loading) return null;
+    if (loading || !tenantId) return null;
     if (totalAlertes === 0) return (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mb-6 flex items-center gap-3">
-            <span className="text-xl">âœ…</span>
+            <span className="text-xl">✅</span>
             <p className="text-emerald-400 font-semibold text-sm">
-                Tous les stocks sont OK â€” Aucune alerte en cours
+                Tous les stocks sont OK — Aucune alerte en cours
             </p>
         </div>
     );
@@ -62,16 +32,16 @@ export default function AlertesDashboard() {
             >
                 <div className="flex items-center gap-3">
                     <span className={`text-xl ${alertesCritiques > 0 ? 'animate-bounce' : ''}`}>
-                        {alertesCritiques > 0 ? 'ðŸš¨' : 'âš ï¸'}
+                        {alertesCritiques > 0 ? '🚨' : '⚠️'}
                     </span>
                     <div className="text-left">
                         <p className={`font-black text-sm ${alertesCritiques > 0 ? 'text-red-400' : 'text-orange-400'}`}>
                             {totalAlertes} alerte{totalAlertes > 1 ? 's' : ''} active{totalAlertes > 1 ? 's' : ''}
-                            {alertesCritiques > 0 && ` â€” ${alertesCritiques} critique${alertesCritiques > 1 ? 's' : ''}`}
+                            {alertesCritiques > 0 && ` — ${alertesCritiques} critique${alertesCritiques > 1 ? 's' : ''}`}
                         </p>
                         <p className="text-slate-400 text-xs">
                             {alertesStock.length} stock{alertesStock.length > 1 ? 's' : ''} critique{alertesStock.length > 1 ? 's' : ''}
-                            {alertesDLC.length > 0 && ` Â· ${alertesDLC.length} DLC Ã  traiter`}
+                            {alertesDLC.length > 0 && ` · ${alertesDLC.length} DLC à traiter`}
                         </p>
                     </div>
                 </div>
@@ -101,11 +71,11 @@ export default function AlertesDashboard() {
             {!reduit && (
                 <div className="px-5 pb-5 space-y-4">
 
-                    {/* â”€â”€ Alertes Stock â”€â”€ */}
+                    {/* ── Alertes Stock ── */}
                     {alertesStock.length > 0 && (
                         <div>
                             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">
-                                ðŸ“¦ Stocks critiques
+                                📦 Stocks critiques
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {alertesStock.map(alerte => {
@@ -122,7 +92,7 @@ export default function AlertesDashboard() {
                                                     {alerte.article?.famille?.emoji} {alerte.article?.designation}
                                                 </p>
                                                 <p className="text-slate-500 text-xs truncate">
-                                                    {alerte.article?.format} â€” {alerte.Dépôt?.nom}
+                                                    {alerte.article?.format} — {alerte.Dépôt?.nom}
                                                 </p>
                                             </div>
                                             <div className="text-right shrink-0">
@@ -140,11 +110,11 @@ export default function AlertesDashboard() {
                         </div>
                     )}
 
-                    {/* â”€â”€ Alertes DLC â”€â”€ */}
+                    {/* ── Alertes DLC ── */}
                     {alertesDLC.length > 0 && (
                         <div>
                             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">
-                                ðŸ“… DLC Ã  traiter
+                                📅 DLC à traiter
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {alertesDLC.map(lot => {
@@ -162,7 +132,7 @@ export default function AlertesDashboard() {
                                                     {lot.article?.famille?.emoji} {lot.article?.designation}
                                                 </p>
                                                 <p className="text-slate-500 text-xs">
-                                                    {lot.quantite} btl. â€” {lot.Dépôt?.nom}
+                                                    {lot.quantite} btl. — {lot.Dépôt?.nom}
                                                 </p>
                                             </div>
                                             <div className="text-right shrink-0">
@@ -184,10 +154,10 @@ export default function AlertesDashboard() {
                     {/* Action rapide */}
                     <div className="flex gap-2 pt-1">
                         <button
-                            onClick={fetchAlertes}
+                            onClick={refetch}
                             className="text-xs text-slate-500 hover:text-slate-300 font-bold transition-colors flex items-center gap-1"
                         >
-                            ðŸ”„ Actualiser
+                            🔄 Actualiser
                         </button>
                     </div>
                 </div>
@@ -195,7 +165,3 @@ export default function AlertesDashboard() {
         </div>
     );
 }
-
-
-
-

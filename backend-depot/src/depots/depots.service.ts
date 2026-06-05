@@ -1,21 +1,41 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { getDepotLimitForPlan, getSuggestedPlanForPlan } from '../common/plan-limits';
 
 @Injectable()
 export class DepotsService {
   constructor(private prisma: PrismaService) { }
 
-  findAll(tenantId: string) {
-    return this.prisma.depot.findMany({
-      where: { tenantId },
-      include: {
-        _count: {
-          select: {
-            stocks: true,
-            ventes: true,
+  async findAll(tenantId: string) {
+    if (!tenantId) {
+      throw new ForbiddenException('Tenant requis pour lire les depots.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.findUnique({
+        where: { id: tenantId },
+        select: { planType: true },
+      });
+
+      if (!tenant) {
+        throw new ForbiddenException('Tenant introuvable.');
+      }
+
+      const depotLimit = getDepotLimitForPlan(tenant.planType);
+
+      return tx.depot.findMany({
+        where: { tenantId, isArchived: false },
+        take: depotLimit === Number.MAX_SAFE_INTEGER ? undefined : depotLimit,
+        orderBy: { updatedAt: 'asc' },
+        include: {
+          _count: {
+            select: {
+              stocks: true,
+              ventes: true,
+            },
           },
         },
-      },
+      });
     });
   }
 
@@ -25,9 +45,44 @@ export class DepotsService {
     });
   }
 
-  create(createDepotDto: any) {
-    return this.prisma.depot.create({
-      data: createDepotDto,
+  async create(createDepotDto: any, currentUserTenantId?: string) {
+    const tenantId = currentUserTenantId ?? createDepotDto.tenantId;
+    if (!tenantId) {
+      throw new ForbiddenException('Tenant requis pour creer un depot.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.findUnique({
+        where: { id: tenantId },
+        select: { planType: true },
+      });
+
+      if (!tenant) {
+        throw new ForbiddenException('Tenant introuvable.');
+      }
+
+      const depotCount = await tx.depot.count({
+        where: { tenantId, isArchived: false },
+      });
+      const depotLimit = getDepotLimitForPlan(tenant.planType);
+
+      if (depotCount >= depotLimit) {
+        throw new ForbiddenException({
+          error: 'QUOTA_REACHED',
+          message: `Quota de depots atteint pour le plan ${tenant.planType} (${depotCount}/${depotLimit}).`,
+          metadata: {
+            resource: 'depots',
+            currentPlan: tenant.planType,
+            suggestedPlan: getSuggestedPlanForPlan(tenant.planType),
+            current: depotCount,
+            limit: depotLimit,
+          },
+        });
+      }
+
+      return tx.depot.create({
+        data: { ...createDepotDto, tenantId },
+      });
     });
   }
 

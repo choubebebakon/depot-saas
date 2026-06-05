@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -52,7 +52,7 @@ export default function StatsCards() {
       valeur: `${(stats.caJour || 0).toLocaleString('fr-FR')} FCFA`,
       gradient: 'from-yellow-400 to-amber-600',
       shadow: 'shadow-amber-500/20',
-      emoji: 'ðŸ’°',
+      emoji: '💰',
     },
     {
       label: 'Ventes du Jour',
@@ -60,7 +60,7 @@ export default function StatsCards() {
       valeur: stats.nbVentesJour || 0,
       gradient: 'from-blue-500 to-sky-600',
       shadow: 'shadow-blue-500/20',
-      emoji: 'ðŸ§¾',
+      emoji: '🧾',
     },
     {
       label: 'Produit Star',
@@ -68,7 +68,7 @@ export default function StatsCards() {
       valeur: stats.articleStar?.designation || 'Aucun mouvement',
       gradient: 'from-indigo-500 to-violet-700',
       shadow: 'shadow-indigo-500/20',
-      emoji: 'â­',
+      emoji: '⭐',
     },
   ];
 
@@ -87,7 +87,3 @@ export default function StatsCards() {
     </div>
   );
 }
-
-
-
-

@@ -1,15 +1,18 @@
-﻿import React from 'react';
+import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function Receipt80mm({ vente, config, preview = false }) {
   if (!vente) return null;
-  
+
   // Fallback si config n'est pas encore chargé
   const businessName = config?.nomEntreprise || 'GESTOCK';
   const businessAddress = config?.adresse || '';
   const businessPhone = config?.telephone || '';
   const businessSlogan = config?.slogan || '';
   const endMessage = config?.messageFin || 'Merci de votre fidélité !';
+
+  const caissier = vente.caissier || vente.createur?.name || vente.createur?.email || 'Caissier';
+  const totalRemise = vente.lignes?.reduce((acc, l) => acc + (Number(l.remise) || 0), 0) || 0;
 
   const dateAchat = new Date(vente.createdAt || vente.date || new Date()).toLocaleDateString('fr-FR');
   const heureAchat = new Date(vente.createdAt || vente.date || new Date()).toLocaleTimeString('fr-FR', {
@@ -18,35 +21,43 @@ export default function Receipt80mm({ vente, config, preview = false }) {
   });
 
   const separator = "------------------------------------------";
+  const logoVersion = config?.updatedAt || config?.logoUpdatedAt || '';
+  const logoSrc = config?.logo
+    ? config.logo.startsWith('data:')
+      ? config.logo
+      : logoVersion
+        ? `${config.logo}${config.logo.includes('?') ? '&' : '?'}t=${encodeURIComponent(logoVersion)}`
+        : config.logo
+    : null;
 
   return (
     <div id="receipt-80mm" className={`bg-white text-black p-0 w-m] mx-auto font-mono text-[11px] leading-tight print:block shadow-none mb-10 overflow-hidden border border-slate-100 ${preview ? 'block' : 'hidden'}`}>
       <div className="flex flex-col items-center px-4 py-6 bg-white">
         {/* LOGO avec filtre B&W plus tolérant */}
-        {config?.logo && (
-          <div className="bg-white p-1 mb-4">
-            <img 
-              src={config.logo} 
-              alt="Logo" 
-              className="w-32 h-auto object-contain filter grayscale(100%) contrast(500%)" 
+        {logoSrc && (
+          <div className="bg-white p-1 mb-2">
+            <img
+              src={logoSrc}
+              alt="Logo"
+              className="w-32 h-auto object-contain grayscale contrast-200"
             />
           </div>
         )}
 
-        {/* EN-TÃŠTE : HIÉRARCHIE VISUELLE FORTE */}
-        <h1 className="text-[22px] font-black uppercase text-center leading-none mb-2 tracking-tighter text-black">
+        {/* EN-TÊTE : HIÉRARCHIE VISUELLE FORTE */}
+        <h1 className="text-[22px] font-black uppercase text-center leading-none mb-1 tracking-tighter text-black">
           {businessName}
         </h1>
-        
+
         {businessSlogan && (
           <p className="text-[10px] italic mb-1 text-center font-bold px-2 text-black">
             {businessSlogan}
           </p>
         )}
-        
-        <div className="text-[10px] text-center space-y-0.5 mt-2 text-black">
-          {businessAddress && <p>{businessAddress}</p>}
+
+        <div className="text-[10px] text-center space-y-0.5 mt-1 text-black font-semibold">
           {businessPhone && <p>TÉL: {businessPhone}</p>}
+          {businessAddress && <p>{businessAddress}</p>}
         </div>
 
         <div className="w-full text-center my-3">
@@ -56,12 +67,16 @@ export default function Receipt80mm({ vente, config, preview = false }) {
         {/* INFOS FACTURE & CLIENT */}
         <div className="w-full space-y-1 mb-3">
           <div className="flex justify-between">
-            <span className="font-black">FACTURE NÂ°:</span>
+            <span className="font-black">FACTURE N°:</span>
             <span className="font-black">{vente.reference}</span>
           </div>
           <div className="flex justify-between">
             <span>DATE:</span>
-            <span>{dateAchat} Ã  {heureAchat}</span>
+            <span>{dateAchat} à {heureAchat}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>CAISSIER:</span>
+            <span>{caissier}</span>
           </div>
           <div className="flex justify-between border-t border-dotted border-black pt-1 mt-1">
             <span>CLIENT:</span>
@@ -82,42 +97,42 @@ export default function Receipt80mm({ vente, config, preview = false }) {
             <span className="w-20 text-right">TOTAL</span>
           </div>
           <div className="border-t border-dotted border-black mb-2 opacity-50"></div>
-          
+
           <div className="space-y-2">
             {vente.lignes?.map((l, i) => {
               const comp = l.composition ? (typeof l.composition === 'string' ? JSON.parse(l.composition) : l.composition) : null;
               return (
-              <div key={i} className="flex flex-col mb-1.5 break-inside-avoid">
-                <div className="flex justify-between items-start">
-                  <span className="w-8 font-bold text-[11px] mt-px">{l.quantite}</span>
-                  <span className="flex-1 text-left px-1 uppercase text-[10px] leading-tight break-words font-bold">
-                    {l.casierMixte ? (comp ? `CASIER MIXTE (${comp.reduce((acc,s)=>acc+s.quantite,0)} UNITÉS)` : 'CASIER MIXTE') : (l.article?.designation || 'Article')}
-                  </span>
-                  <span className="w-16 text-right whitespace-nowrap text-[10px] mt-px">
-                    {Math.round(l.prixUnitaire || (l.total / l.quantite)).toLocaleString('fr-FR')}
-                  </span>
-                  <span className="w-20 text-right font-black whitespace-nowrap text-[11px] mt-px">
-                    {l.total.toLocaleString('fr-FR')}
-                  </span>
-                </div>
-                {l.casierMixte && comp && Array.isArray(comp) && (
-                  <div className="pl-9 pr-2 mt-0.5 space-y-0.5 text-[9px] leading-[1.1] text-black/80 font-medium">
-                    {comp.map((sub, idx) => (
-                      <div key={idx} className="flex justify-between items-start">
-                        <div className="flex items-start">
-                          <span className="mr-1 italic">-</span>
-                          <span className="italic uppercase break-words pr-1">{sub.quantite}x {sub.designation}</span>
-                        </div>
-                        <div className="text-right whitespace-nowrap italic">
-                          <span className="text-[8px] opacity-70 mr-2">({sub.prixUnitaire?.toLocaleString('fr-FR')})</span>
-                          <span>{((sub.quantite || 0) * (sub.prixUnitaire || 0)).toLocaleString('fr-FR')}</span>
-                        </div>
-                      </div>
-                    ))}
+                <div key={i} className="flex flex-col mb-1.5 break-inside-avoid">
+                  <div className="flex justify-between items-start">
+                    <span className="w-8 font-bold text-[11px] mt-px">{l.quantite}</span>
+                    <span className="flex-1 text-left px-1 uppercase text-[10px] leading-tight break-words font-bold">
+                      {l.casierMixte ? (comp ? `CASIER MIXTE (${comp.reduce((acc, s) => acc + s.quantite, 0)} UNITÉS)` : 'CASIER MIXTE') : (l.article?.designation || 'Article')}
+                    </span>
+                    <span className="w-16 text-right whitespace-nowrap text-[10px] mt-px">
+                      {Math.round(l.prix || (l.total / l.quantite) || 0).toLocaleString('fr-FR')}
+                    </span>
+                    <span className="w-20 text-right font-black whitespace-nowrap text-[11px] mt-px">
+                      {(l.total || 0).toLocaleString('fr-FR')}
+                    </span>
                   </div>
-                )}
-              </div>
-            );
+                  {l.casierMixte && comp && Array.isArray(comp) && (
+                    <div className="pl-9 pr-2 mt-0.5 space-y-0.5 text-[9px] leading-[1.1] text-black/80 font-medium">
+                      {comp.map((sub, idx) => (
+                        <div key={idx} className="flex justify-between items-start">
+                          <div className="flex items-start">
+                            <span className="mr-1 italic">-</span>
+                            <span className="italic uppercase break-words pr-1">{sub.quantite}x {sub.designation}</span>
+                          </div>
+                          <div className="text-right whitespace-nowrap italic">
+                            <span className="text-[8px] opacity-70 mr-2">({sub.prix?.toLocaleString('fr-FR')})</span>
+                            <span>{((sub.quantite || 0) * (sub.prix || 0)).toLocaleString('fr-FR')}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
             })}
           </div>
         </div>
@@ -128,10 +143,18 @@ export default function Receipt80mm({ vente, config, preview = false }) {
 
         {/* TOTAUX ET PAIEMENT */}
         <div className="w-full flex flex-col items-end gap-1">
+          {totalRemise > 0 && (
+            <div className="flex justify-between w-full items-baseline border-b border-dotted border-black pb-1 mb-1">
+              <span className="text-[12px] font-bold">REMISE:</span>
+              <span className="text-[12px] font-bold uppercase">
+                -{totalRemise.toLocaleString('fr-FR')} FCFA
+              </span>
+            </div>
+          )}
           <div className="flex justify-between w-full items-baseline">
             <span className="text-[12px] font-black">TOTAL NET:</span>
             <span className="text-[20px] font-black uppercase">
-              {vente.total.toLocaleString('fr-FR')} FCFA
+              {(vente.total || 0).toLocaleString('fr-FR')} FCFA
             </span>
           </div>
           <div className="flex justify-between w-full text-[10px] mt-1">
@@ -142,23 +165,20 @@ export default function Receipt80mm({ vente, config, preview = false }) {
 
         {/* PIED DE PAGE : MESSAGE & QR CODE */}
         <div className="w-full mt-8 border-t border-dotted border-black pt-6 flex flex-col items-center bg-white text-black">
-          <p className="font-black text-[12px] uppercase text-center mb-1 text-black">
-            MERCI DE VOTRE FIDÉLITÉ !
-          </p>
-          <p className="text-center italic text-[9px] px-4 text-black">
+          <p className="font-black text-center text-[11px] px-4 text-black uppercase">
             {endMessage}
           </p>
-          
+
           <div className="mt-6 mb-4 filter grayscale contrast-200">
-            <QRCodeSVG 
-              value={vente.reference} 
-              size={64} 
+            <QRCodeSVG
+              value={vente.reference}
+              size={64}
               level="M"
               includeMargin={false}
-              bgAlpha={0}
+              bgColor="transparent"
             />
           </div>
-          
+
           <p className="text-[8px] uppercase tracking-widest opacity-50 font-bold mt-2">
             GÉNÉRÉ PAR GESTOCK SAAS
           </p>
@@ -209,7 +229,3 @@ export default function Receipt80mm({ vente, config, preview = false }) {
     </div>
   );
 }
-
-
-
-

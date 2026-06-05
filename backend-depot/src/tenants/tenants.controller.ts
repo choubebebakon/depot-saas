@@ -36,3 +36,4 @@ export class TenantsController {
 
   // On a supprimé update et remove pour l'instant pour nettoyer les erreurs
 }
+

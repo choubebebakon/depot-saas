@@ -4,6 +4,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { DepotsService } from './depots.service';
 import { CreateDepotDto } from './dto/create-depot.dto';
 import { UpdateDepotDto } from './dto/update-depot.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('depots')
 export class DepotsController {
@@ -11,8 +12,8 @@ export class DepotsController {
 
   @Get()
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.CAISSIER, RoleUser.COMMERCIAL, RoleUser.MAGASINIER, RoleUser.COMPTABLE)
-  findAll(@Query('tenantId') tenantId: string) {
-    return this.depotsService.findAll(tenantId);
+  findAll(@CurrentUser() user: any) {
+    return this.depotsService.findAll(user?.tenantId);
   }
 
   @Get(':id')
@@ -23,8 +24,8 @@ export class DepotsController {
 
   @Post()
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
-  create(@Body() createDepotDto: CreateDepotDto) {
-    return this.depotsService.create(createDepotDto);
+  create(@Body() createDepotDto: CreateDepotDto, @CurrentUser() user: any) {
+    return this.depotsService.create(createDepotDto, user?.tenantId);
   }
 
   @Patch(':id')

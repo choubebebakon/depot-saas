@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function MixedCrateBuilder({ articles, crateSize, basePrice, crateName, initialComposition, onSave, onClose }) {
   const [composition, setComposition] = useState(() => {
@@ -12,17 +12,18 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
     });
     return init;
   });
-  const [errorMsg, setErrorMsg] = useState('');
   const [customPrices, setCustomPrices] = useState(() => {
     if (!initialComposition || !Array.isArray(initialComposition)) return {};
     const prices = {};
     initialComposition.forEach(item => {
-       if (item.prixUnitaire !== undefined) {
-         prices[item.articleId] = item.prixUnitaire;
-       }
+      if (item.prix !== undefined) {
+        prices[item.articleId] = item.prix;
+      }
     });
     return prices;
   });
+  const targetSize = Number(crateSize) > 0 ? Number(crateSize) : null;
+  const referencePrice = Number(basePrice) > 0 ? Number(basePrice) : null;
 
   const getUnitPrice = (article) => {
     if (customPrices[article.id] !== undefined) return customPrices[article.id];
@@ -34,10 +35,12 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
 
   const totalSelected = Object.values(composition).reduce((acc, item) => acc + item.quantite, 0);
   const totalPrice = Object.values(composition).reduce((acc, item) => acc + (item.quantite * getUnitPrice(item.article)), 0);
-  
-  const isComplete = totalSelected > 0;
+  const remaining = targetSize ? targetSize - totalSelected : null;
+
+  const isComplete = targetSize ? totalSelected === targetSize : totalSelected > 0;
 
   const handleIncrement = (article) => {
+    if (targetSize && totalSelected >= targetSize) return;
     setComposition(prev => ({
       ...prev,
       [article.id]: {
@@ -49,9 +52,9 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
 
   const handleRemove = (articleId) => {
     setComposition(prev => {
-       const next = { ...prev };
-       delete next[articleId];
-       return next;
+      const next = { ...prev };
+      delete next[articleId];
+      return next;
     });
   };
 
@@ -81,7 +84,7 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
       articleId: item.article.id,
       designation: item.article.designation,
       quantite: item.quantite,
-      prixUnitaire: getUnitPrice(item.article)
+      prix: getUnitPrice(item.article)
     }));
 
     onSave(compositionArray, totalPrice);
@@ -91,15 +94,15 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="p-6 border-b border-slate-800 flex justify-between items-start shrink-0 relative">
           <div>
             <h3 className="text-xl font-black text-white">Composer : {crateName}</h3>
-            <p className="text-slate-400 text-sm mt-1">Sélectionnez les parfums Ã  l'intérieur du casier.</p>
+            <p className="text-slate-400 text-sm mt-1">Sélectionnez les parfums à l'intérieur du casier.</p>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
-            âœ•
+            ✖
           </button>
         </div>
 
@@ -108,9 +111,16 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
           <div className="flex justify-between items-center">
             <span className="text-sm font-bold text-slate-300">Composition libre</span>
             <span className="text-sm font-black text-emerald-400">
-               Total : {totalSelected} bouteille{totalSelected > 1 ? 's' : ''}
+              Total : {totalSelected}{targetSize ? `/${targetSize}` : ''} bouteille{totalSelected > 1 ? 's' : ''}
             </span>
           </div>
+          {targetSize && remaining !== 0 && (
+            <p className={`text-xs font-bold mt-2 ${remaining > 0 ? 'text-amber-300' : 'text-red-300'}`}>
+              {remaining > 0
+                ? `${remaining} bouteille${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}`
+                : `${Math.abs(remaining)} bouteille${Math.abs(remaining) > 1 ? 's' : ''} en trop`}
+            </p>
+          )}
         </div>
 
         {/* Liste des parfums disponibles */}
@@ -121,32 +131,32 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
               <div key={article.id} className="flex items-center justify-between bg-slate-800 border border-slate-700 p-3 rounded-xl hover:border-indigo-500/30 transition-colors">
                 <div className="flex-1 pr-4">
                   <div className="flex items-baseline gap-2">
-                     <p className="text-sm font-bold text-white leading-tight">{article.designation}</p>
-                     <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-1.5 py-0.5 mt-1">
-                       <input 
-                         type="number" 
-                         min="0"
-                         value={getUnitPrice(article)}
-                         onChange={(e) => setCustomPrices(prev => ({ ...prev, [article.id]: parseInt(e.target.value) || 0 }))}
-                         className="w-14 bg-transparent text-amber-400 text-xs font-bold focus:outline-none text-right"
-                       />
-                       <span className="text-[9px] text-slate-500 font-bold uppercase">F/btl</span>
-                     </div>
+                    <p className="text-sm font-bold text-white leading-tight">{article.designation}</p>
+                    <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md px-1.5 py-0.5 mt-1">
+                      <input
+                        type="number"
+                        min="0"
+                        value={getUnitPrice(article)}
+                        onChange={(e) => setCustomPrices(prev => ({ ...prev, [article.id]: parseInt(e.target.value) || 0 }))}
+                        className="w-14 bg-transparent text-amber-400 text-xs font-bold focus:outline-none text-right"
+                      />
+                      <span className="text-[9px] text-slate-500 font-bold uppercase">F/btl</span>
+                    </div>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">Stock: {article.stocks?.[0]?.quantite || 0}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-900 rounded-lg p-1 border border-slate-700">
                   {count > 0 && (
                     <button
-                       type="button"
-                       onClick={() => handleRemove(article.id)}
-                       className="w-7 h-7 rounded shrink-0 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mr-1"
-                       title="Retirer l'article"
+                      type="button"
+                      onClick={() => handleRemove(article.id)}
+                      className="w-7 h-7 rounded shrink-0 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mr-1"
+                      title="Retirer l'article"
                     >
-                       ðŸ—‘ï¸
+                      🗑️
                     </button>
                   )}
-                  <button 
+                  <button
                     type="button"
                     onClick={() => handleDecrement(article.id)}
                     disabled={count === 0}
@@ -155,9 +165,10 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
                     -
                   </button>
                   <span className="text-white font-black w-6 text-center">{count}</span>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => handleIncrement(article)}
+                    disabled={!!targetSize && totalSelected >= targetSize}
                     className="w-8 h-8 rounded shrink-0 bg-slate-800 text-white font-bold hover:bg-slate-700 disabled:opacity-30 flex items-center justify-center"
                   >
                     +
@@ -171,24 +182,29 @@ export default function MixedCrateBuilder({ articles, crateSize, basePrice, crat
         {/* Footer actions */}
         <div className="p-6 border-t border-slate-800 shrink-0 bg-slate-900 rounded-b-2xl">
           <div className="flex items-center justify-between mb-4 bg-slate-800/80 p-3 rounded-xl border border-slate-700/50">
-             <span className="text-slate-400 font-bold text-sm">Total Ã  payer</span>
-             <span className="text-emerald-400 font-black text-xl">{totalPrice.toLocaleString('fr-FR')} FCFA</span>
+            <div>
+              <span className="text-slate-400 font-bold text-sm block">Total à payer</span>
+              {referencePrice && (
+                <span className="text-[10px] text-slate-500">Prix standard : {referencePrice.toLocaleString('fr-FR')} FCFA</span>
+              )}
+            </div>
+            <span className="text-emerald-400 font-black text-xl">{totalPrice.toLocaleString('fr-FR')} FCFA</span>
           </div>
-          <button  
+          <button
             type="button"
             onClick={handleSubmit}
             disabled={!isComplete}
             className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:bg-slate-700 disabled:text-slate-400 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex flex-col items-center leading-tight"
           >
             <span>Valider la composition</span>
-            {!isComplete && <span className="text-[10px] font-normal mt-0.5 uppercase tracking-widest text-amber-200">Sélectionnez au moins un article</span>}
+            {!isComplete && (
+              <span className="text-[10px] font-normal mt-0.5 uppercase tracking-widest text-amber-200">
+                {targetSize ? `Composez ${targetSize} bouteilles` : 'Selectionnez au moins un article'}
+              </span>
+            )}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
-
-
-

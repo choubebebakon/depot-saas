@@ -1,0 +1,37 @@
+model Rayon {
+  id          String    @id @default(uuid())
+  tenantId    String
+  nom         String
+  couleur     String?
+  ordre       Int       @default(0)
+  actif       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  articles    RayonArticle[]
+
+  @@index([tenantId])
+}
+
+model RayonArticle {
+  id        String  @id @default(uuid())
+  rayonId   String
+  articleId String
+  rayon     Rayon   @relation(fields: [rayonId], references: [id], onDelete: Cascade)
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([rayonId, articleId])
+}
+
+model CodeBarresArticle {
+  id        String  @id @default(uuid())
+  tenantId  String
+  articleId String
+  code      String  @unique
+  type      String  @default("EAN13")
+  actif     Boolean @default(true)
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([code])
+}

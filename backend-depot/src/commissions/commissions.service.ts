@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { EmailService } from '../common/email/email.service';
 import { CreateParametreDto, CalculerCommissionsDto } from './dto/commission.dto';
 
 @Injectable()
 export class CommissionsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private emailService: EmailService,
+    ) { }
 
     // ── Paramètres ────────────────────────────────────────────
 
@@ -49,23 +53,23 @@ export class CommissionsService {
 
         const maintenant = new Date();
         const periode = dto.periode || `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, '0')}`;
-        
+
         let debut: Date;
         let fin: Date;
         try {
-           const [anneeStr, moisStr] = periode.split('-');
-           const annee = parseInt(anneeStr, 10) || maintenant.getFullYear();
-           const mois = parseInt(moisStr, 10) || (maintenant.getMonth() + 1);
+            const [anneeStr, moisStr] = periode.split('-');
+            const annee = parseInt(anneeStr, 10) || maintenant.getFullYear();
+            const mois = parseInt(moisStr, 10) || (maintenant.getMonth() + 1);
 
-           debut = new Date(annee, mois - 1, 1);
-           fin = new Date(annee, mois, 0, 23, 59, 59, 999);
-           
-           if (isNaN(debut.getTime()) || isNaN(fin.getTime())) {
-              throw new Error("Invalid date");
-           }
+            debut = new Date(annee, mois - 1, 1);
+            fin = new Date(annee, mois, 0, 23, 59, 59, 999);
+
+            if (isNaN(debut.getTime()) || isNaN(fin.getTime())) {
+                throw new Error("Invalid date");
+            }
         } catch (e) {
-           debut = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
-           fin = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 0, 23, 59, 59, 999);
+            debut = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
+            fin = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 0, 23, 59, 59, 999);
         }
 
         // Cherche les commerciaux
@@ -79,102 +83,102 @@ export class CommissionsService {
 
         const commissions = await Promise.all(
             users.map(async (user) => {
-               try {
-                // Calcule les ventes du commercial sur la période, en ouvrant les détails JSON
-                const ventes = await this.prisma.vente.findMany({
-                    where: {
-                        tenantId: dto.tenantId,
-                        createurId: user.id,
-                        statut: { not: 'ANNULE' },
-                        date: { gte: debut, lte: fin },
-                    },
-                    include: { lignes: true }
-                });
+                try {
+                    // Calcule les ventes du commercial sur la période, en ouvrant les détails JSON
+                    const ventes = await this.prisma.vente.findMany({
+                        where: {
+                            tenantId: dto.tenantId,
+                            createurId: user.id,
+                            statut: { not: 'ANNULE' },
+                            date: { gte: debut, lte: fin },
+                        },
+                        include: { lignes: true }
+                    });
 
-                let caVentes = 0;
-                let caMixte = 0;
-                let nbVentes = ventes.length;
+                    let caVentes = 0;
+                    let caMixte = 0;
+                    let nbVentes = ventes.length;
 
-                ventes.forEach(vente => {
-                   try {
-                     vente.lignes.forEach(ligne => {
-                          if (ligne.casierMixte && ligne.composition) {
-                              const comp = typeof ligne.composition === 'string' ? JSON.parse(ligne.composition) : ligne.composition;
-                              if (Array.isArray(comp)) {
-                                   comp.forEach(sub => {
-                                        console.log('Calcul pour la vente ID:', vente.id); // Forcé par demande
-                                        let price = Number(sub.prixUnitaire || 0);
-                                        if (isNaN(price) || price <= 0) {
-                                             const safeQtyTotale = comp.reduce((acc, c) => acc + (Number(c.quantite || 0) || 0), 0);
-                                             price = (Number(ligne.total || 0) || 0) / (Number(ligne.quantite || 1) || 1) / (safeQtyTotale || 1);
-                                        }
-                                        const subLigneTotal = price * Number(sub.quantite || 0);
-                                        const totalPourCasier = subLigneTotal * Number(ligne.quantite || 1);
-                                        caVentes += totalPourCasier;
-                                        caMixte += totalPourCasier;
-                                   });
-                              }
-                          } else {
-                              caVentes += Number(ligne.total || 0);
-                          }
-                     });
-                   } catch (err) {
-                      console.error(`[COMMISSION] Erreur de parsing sur la vente ${vente.id} (${vente.reference})`, err);
-                   }
-                });
+                    ventes.forEach(vente => {
+                        try {
+                            vente.lignes.forEach(ligne => {
+                                if (ligne.casierMixte && ligne.composition) {
+                                    const comp = typeof ligne.composition === 'string' ? JSON.parse(ligne.composition) : ligne.composition;
+                                    if (Array.isArray(comp)) {
+                                        comp.forEach(sub => {
+                                            console.log('Calcul pour la vente ID:', vente.id); // Forcé par demande
+                                            let price = Number(sub.prix || 0);
+                                            if (isNaN(price) || price <= 0) {
+                                                const safeQtyTotale = comp.reduce((acc, c) => acc + (Number(c.quantite || 0) || 0), 0);
+                                                price = (Number(ligne.total || 0) || 0) / (Number(ligne.quantite || 1) || 1) / (safeQtyTotale || 1);
+                                            }
+                                            const subLigneTotal = price * Number(sub.quantite || 0);
+                                            const totalPourCasier = subLigneTotal * Number(ligne.quantite || 1);
+                                            caVentes += totalPourCasier;
+                                            caMixte += totalPourCasier;
+                                        });
+                                    }
+                                } else {
+                                    caVentes += Number(ligne.total || 0);
+                                }
+                            });
+                        } catch (err) {
+                            console.error(`[COMMISSION] Erreur de parsing sur la vente ${vente.id} (${vente.reference})`, err);
+                        }
+                    });
 
-                const montantCommission = (caVentes * parametre.taux) / 100;
+                    const montantCommission = (caVentes * parametre.taux) / 100;
 
-                // Ventes tournées
-                const statsTournees = await this.prisma.tournee.aggregate({
-                    where: {
-                        tenantId: dto.tenantId,
-                        commercialId: user.id,
-                        statut: 'VALIDEE',
-                        dateOuverture: { gte: debut, lte: fin },
-                    },
-                    _count: { id: true },
-                });
+                    // Ventes tournées
+                    const statsTournees = await this.prisma.tournee.aggregate({
+                        where: {
+                            tenantId: dto.tenantId,
+                            commercialId: user.id,
+                            statut: 'VALIDEE',
+                            dateOuverture: { gte: debut, lte: fin },
+                        },
+                        _count: { id: true },
+                    });
 
-                // Cherche si commission existe déjà
-                const existante = await this.prisma.commission.findUnique({
-                    where: { userId_periode: { userId: user.id, periode } },
-                });
+                    // Cherche si commission existe déjà
+                    const existante = await this.prisma.commission.findUnique({
+                        where: { userId_periode: { userId: user.id, periode } },
+                    });
 
-                if (montantCommission > 0) {
-                    if (existante) {
-                        await this.prisma.commission.update({
-                            where: { id: existante.id },
-                            data: { montant: montantCommission, tauxApplique: parametre.taux },
-                        });
-                    } else {
-                        await this.prisma.commission.create({
-                            data: {
-                                userId: user.id,
-                                tenantId: dto.tenantId,
-                                montant: montantCommission,
-                                tauxApplique: parametre.taux,
-                                periode,
-                                estPayee: false,
-                            },
-                        });
+                    if (montantCommission > 0) {
+                        if (existante) {
+                            await this.prisma.commission.update({
+                                where: { id: existante.id },
+                                data: { montant: montantCommission, tauxApplique: parametre.taux },
+                            });
+                        } else {
+                            await this.prisma.commission.create({
+                                data: {
+                                    userId: user.id,
+                                    tenantId: dto.tenantId,
+                                    montant: montantCommission,
+                                    tauxApplique: parametre.taux,
+                                    periode,
+                                    estPayee: false,
+                                },
+                            });
+                        }
                     }
-                }
 
-                return {
-                    user: { id: user.id, email: user.email, role: user.role },
-                    caVentes,
-                    nbVentes,
-                    nbTournees: statsTournees._count.id || 0,
-                    montantCommission,
-                    tauxApplique: parametre.taux,
-                    periode,
-                    estPayee: existante?.estPayee || false,
-                };
-             } catch (err) {
-                console.error(`[COMMISSION] Crash complet sur l'utilisateur ${user.id} (${user.email}):`, err);
-                return null;
-             }
+                    return {
+                        user: { id: user.id, email: user.email, role: user.role },
+                        caVentes,
+                        nbVentes,
+                        nbTournees: statsTournees._count.id || 0,
+                        montantCommission,
+                        tauxApplique: parametre.taux,
+                        periode,
+                        estPayee: existante?.estPayee || false,
+                    };
+                } catch (err) {
+                    console.error(`[COMMISSION] Crash complet sur l'utilisateur ${user.id} (${user.email}):`, err);
+                    return null;
+                }
             })
         );
 
@@ -210,11 +214,22 @@ export class CommissionsService {
         if (!commission) throw new BadRequestException('Commission introuvable');
         if (commission.estPayee) throw new BadRequestException('Commission déjà payée');
 
-        return this.prisma.commission.update({
+        const result = await this.prisma.commission.update({
             where: { id: commissionId },
             data: { estPayee: true, datePaiement: new Date() },
-            include: { user: { select: { email: true, role: true } } },
+            include: { user: { select: { id: true, email: true, role: true, nom: true } } },
         });
+
+        if (result.user?.email) {
+            this.emailService.sendCommissionPaid(
+                result.user.email,
+                result.user.nom || 'Commercial',
+                result.montant,
+                result.periode,
+            ).catch(() => {});
+        }
+
+        return result;
     }
 
     // ── Stats globales commissions ────────────────────────────

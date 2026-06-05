@@ -1,15 +1,18 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { StatutVente, TypeMouvement } from '@prisma/client';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { StatutVente, TypeMouvement, NotifType } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma.service';
 import { DlcService } from '../dlc/dlc.service';
+import { NotificationsService } from '../core/notifications/notifications.service';
 
 @Injectable()
 export class VentesService {
+  private readonly logger = new Logger(VentesService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly dlcService: DlcService,
+    private readonly notifService: NotificationsService,
   ) { }
 
   private requireDepotId(depotId?: string) {
@@ -32,7 +35,7 @@ export class VentesService {
         const article = await tx.article.findUnique({ where: { id: ligne.articleId } });
         if (!article) throw new BadRequestException(`Article introuvable.`);
 
-        const prixBase = ligne.casierMixte || ligne.conditionnementId ? (ligne.prixUnitaire || article.prixVente) : article.prixVente;
+        const prixBase = ligne.casierMixte || ligne.conditionnementId ? (ligne.prix || article.prixVente) : article.prixVente;
         const totalLigne = (prixBase * ligne.quantite) - (ligne.remise || 0);
         totalVente += totalLigne;
 
@@ -40,7 +43,7 @@ export class VentesService {
           id: ligne.id || undefined,
           articleId: article.id,
           quantite: ligne.quantite,
-          prixUnitaire: prixBase,
+          prix: prixBase,
           remise: ligne.remise || 0,
           total: totalLigne,
           casierMixte: ligne.casierMixte || false,
@@ -116,16 +119,16 @@ export class VentesService {
         let composition = ligne.composition ? (typeof ligne.composition === 'string' ? JSON.parse(ligne.composition as string) : ligne.composition) : null;
 
         if (ligne.casierMixte && composition && Array.isArray(composition)) {
-            stockDecs = composition.map((item: any) => ({
-               articleId: item.articleId,
-               quantite: item.quantite * ligne.quantite
-            }));
+          stockDecs = composition.map((item: any) => ({
+            articleId: item.articleId,
+            quantite: item.quantite * ligne.quantite
+          }));
         } else if (ligne.conditionnementId) {
-            const cond = await tx.conditionnement.findUnique({where: {id: ligne.conditionnementId}});
-            const factor = cond ? cond.quantiteUnitaire : 1;
-            stockDecs = [{ articleId: ligne.articleId, quantite: ligne.quantite * factor }];
+          const cond = await tx.conditionnement.findUnique({ where: { id: ligne.conditionnementId } });
+          const factor = cond ? cond.quantiteUnitaire : 1;
+          stockDecs = [{ articleId: ligne.articleId, quantite: ligne.quantite * factor }];
         } else {
-            stockDecs = [{ articleId: ligne.articleId, quantite: ligne.quantite }];
+          stockDecs = [{ articleId: ligne.articleId, quantite: ligne.quantite }];
         }
 
         for (const dec of stockDecs) {
@@ -184,6 +187,12 @@ export class VentesService {
         description: `Validation sortie de stock ${vente.reference}`,
         metadata: { venteId: id }
       });
+
+      this.notifService.createFromTemplate(
+        tenantId,
+        NotifType.LIVRAISON_TERMINEE,
+        { client: vente.clientId || 'Client', montant: vente.total },
+      ).catch((e) => this.logger.error(`Erreur notif vente: ${e.message}`));
 
       return venteUpdated;
     });
@@ -260,13 +269,13 @@ export class VentesService {
           let composition = ligne.composition ? (typeof ligne.composition === 'string' ? JSON.parse(ligne.composition as string) : ligne.composition) : null;
 
           if (ligne.casierMixte && composition && Array.isArray(composition)) {
-              stockIncs = composition.map((item: any) => ({ articleId: item.articleId, quantite: item.quantite * ligne.quantite }));
+            stockIncs = composition.map((item: any) => ({ articleId: item.articleId, quantite: item.quantite * ligne.quantite }));
           } else if (ligne.conditionnementId) {
-              const cond = await tx.conditionnement.findUnique({where: {id: ligne.conditionnementId}});
-              const factor = cond ? cond.quantiteUnitaire : 1;
-              stockIncs = [{ articleId: ligne.articleId, quantite: ligne.quantite * factor }];
+            const cond = await tx.conditionnement.findUnique({ where: { id: ligne.conditionnementId } });
+            const factor = cond ? cond.quantiteUnitaire : 1;
+            stockIncs = [{ articleId: ligne.articleId, quantite: ligne.quantite * factor }];
           } else {
-              stockIncs = [{ articleId: ligne.articleId, quantite: ligne.quantite }];
+            stockIncs = [{ articleId: ligne.articleId, quantite: ligne.quantite }];
           }
 
           for (const inc of stockIncs) {

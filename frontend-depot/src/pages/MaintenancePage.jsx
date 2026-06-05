@@ -1,18 +1,19 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { useDepot } from '../contexts/DepotContext';
 
 const TYPES_MAINTENANCE = {
-    VIDANGE: { label: 'Vidange', emoji: 'ðŸ›¢ï¸', couleur: 'blue' },
+    VIDANGE: { label: 'Vidange', emoji: '🛢️', couleur: 'blue' },
     PNEU: { label: 'Pneu', emoji: '⚫', couleur: 'slate' },
     FREINS: { label: 'Freins', emoji: '🔴', couleur: 'red' },
     CARBURANT: { label: 'Carburant', emoji: '⛽', couleur: 'yellow' },
     REPARATION: { label: 'Réparation', emoji: '🛠️', couleur: 'orange' },
-    REVISION: { label: 'Révision', emoji: 'ðŸ”', couleur: 'purple' },
-    AUTRE: { label: 'Autre', emoji: 'ðŸ“', couleur: 'slate' },
+    REVISION: { label: 'Révision', emoji: '🔍', couleur: 'purple' },
+    AUTRE: { label: 'Autre', emoji: '📝', couleur: 'slate' },
 };
 
-// â”€â”€ Modal Nouvelle Maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Nouvelle Maintenance ──────────────────────────────
 function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
     const [form, setForm] = useState({
         tricycleId: tricycles[0]?.id || '',
@@ -84,7 +85,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Description *</label>
                         <input required value={form.description}
                             onChange={e => setForm({ ...form, description: e.target.value })}
-                            placeholder="Ex: Vidange moteur + filtre Ã  huile"
+                            placeholder="Ex: Vidange moteur + filtre à huile"
                             className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
                     </div>
 
@@ -112,7 +113,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                             <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${form.estEffectue ? 'left-7' : 'left-1'}`} />
                         </div>
                         <span className="text-slate-300 text-sm font-semibold">
-                            {form.estEffectue ? '✅ DéjÃ  effectuée' : '📅 Planifier pour plus tard'}
+                            {form.estEffectue ? '✅ Déjà effectuée' : '📅 Planifier pour plus tard'}
                         </span>
                     </label>
 
@@ -139,7 +140,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Modal Plein Carburant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Plein Carburant ──────────────────────────────────â”€
 function ModalCarburant({ tenantId, tricycles, onSuccess, onClose }) {
     const [form, setForm] = useState({
         tricycleId: tricycles[0]?.id || '',
@@ -243,9 +244,10 @@ function ModalCarburant({ tenantId, tricycles, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Page Principale Maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page Principale Maintenance ────────────────────────────â”€
 export default function MaintenancePage() {
     const { tenantId } = useAuth();
+    const { depotId } = useDepot();
     const [tricycles, setTricycles] = useState([]);
     const [maintenances, setMaintenances] = useState([]);
     const [carburants, setCarburants] = useState([]);
@@ -260,12 +262,12 @@ export default function MaintenancePage() {
         if (!tenantId) return;
         setLoading(true);
         try {
-            const params = { tenantId, ...(tricycleFiltre ? { tricycleId: tricycleFiltre } : {}) };
+            const params = { tenantId, depotId, ...(tricycleFiltre ? { tricycleId: tricycleFiltre } : {}) };
             const [resTr, resM, resC, resS] = await Promise.all([
-                api.get('/tournees/tricycles', { params: { tenantId } }),
+                api.get('/tournees/tricycles', { params: { tenantId, depotId } }),
                 api.get('/maintenance', { params }),
                 api.get('/maintenance/carburant', { params }),
-                api.get('/maintenance/stats', { params: { tenantId } }),
+                api.get('/maintenance/stats', { params: { tenantId, depotId } }),
             ]);
             setTricycles(Array.isArray(resTr.data) ? resTr.data : []);
             setMaintenances(Array.isArray(resM.data) ? resM.data : []);
@@ -276,7 +278,7 @@ export default function MaintenancePage() {
         } finally {
             setLoading(false);
         }
-    }, [tenantId, tricycleFiltre]);
+    }, [tenantId, depotId, tricycleFiltre]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -403,7 +405,7 @@ export default function MaintenancePage() {
                 ))}
             </div>
 
-            {/* â”€â”€ Tableau de bord par tricycle â”€â”€ */}
+            {/* ── Tableau de bord par tricycle ── */}
             {onglet === 'tableau-bord' && statsGlobales && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {statsGlobales.tricycles?.map(({ tricycle, stats }) => (
@@ -415,7 +417,7 @@ export default function MaintenancePage() {
                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                                             : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
                                         }`}>
-                                        {tricycle.estLibre ? 'â— Libre' : 'â³ En tournée'}
+                                        {tricycle.estLibre ? '● Libre' : '⏳ En tournée'}
                                     </span>
                                 </div>
                                 {stats.enRetard > 0 && (
@@ -445,7 +447,7 @@ export default function MaintenancePage() {
 
                             {stats.toursTotal > 0 && (
                                 <div className="mt-2 text-xs text-slate-500">
-                                    Conso. moy : {stats.consommationMoyenne} L/tour Â· {stats.toursTotal} tours effectués
+                                    Conso. moy : {stats.consommationMoyenne} L/tour · {stats.toursTotal} tours effectués
                                 </div>
                             )}
 
@@ -460,7 +462,7 @@ export default function MaintenancePage() {
                 </div>
             )}
 
-            {/* â”€â”€ Liste maintenances â”€â”€ */}
+            {/* ── Liste maintenances ── */}
             {onglet === 'maintenances' && (
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                     {loading ? (
@@ -537,7 +539,7 @@ export default function MaintenancePage() {
                 </div>
             )}
 
-            {/* â”€â”€ Carburant â”€â”€ */}
+            {/* ── Carburant ── */}
             {onglet === 'carburant' && (
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                     {carburants.length === 0 ? (
@@ -605,7 +607,3 @@ export default function MaintenancePage() {
         </div>
     );
 }
-
-
-
-

@@ -1,4 +1,4 @@
-﻿import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Génère un UUID v4 standard.
@@ -17,10 +17,6 @@ export const generateReference = (prefix, type = 'FAC') => {
   const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase(); // 3 chars random
 
   const cleanPrefix = prefix ? prefix.slice(0, 4).toUpperCase() : 'APP';
-  
+
   return `${type}-${cleanPrefix}-${dateStr}-${timeStr}-${randomStr}`;
 };
-
-
-
-

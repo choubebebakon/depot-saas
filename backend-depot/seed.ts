@@ -107,11 +107,12 @@ async function main() {
 
     // 7. Utilisateur Patron
     const hash = await bcrypt.hash('depot2026', 12);
+    const { Role } = await import('@prisma/client');
     await prisma.user.create({
         data: {
             email: 'patron@depot.cm',
             password: hash,
-            role: 'PATRON',
+            role: Role.PATRON,
             tenantId: tenant.id,
         },
     });

@@ -1,0 +1,845 @@
+﻿
+> backend-depot@0.0.1 build
+> nest build
+
+node.exe : [96msrc/auth/dto/login.dto.ts[0m:[93m5[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'email' 
+has no initializer and is not definitely assigned in the constructor.
+Au caractère C:\Program Files\nodejs\npm.ps1:29 : 3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([96msrc/auth/d...he constructor.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[7m5[0m     email: string;
+[7m [0m [91m    ~~~~~[0m
+[96msrc/auth/dto/login.dto.ts[0m:[93m9[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'password' has no 
+initializer and is not definitely assigned in the constructor.
+
+[7m9[0m     password: string;
+[7m [0m [91m    ~~~~~~~~[0m
+[96msrc/auth/dto/register.dto.ts[0m:[93m14[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'nomEntreprise' has no initializer and is not definitely assigned in the constructor.
+
+[7m14[0m   nomEntreprise: string;
+[7m  [0m [91m  ~~~~~~~~~~~~~[0m
+[96msrc/auth/dto/register.dto.ts[0m:[93m21[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'email' has no 
+initializer and is not definitely assigned in the constructor.
+
+[7m21[0m   email: string;
+[7m  [0m [91m  ~~~~~[0m
+[96msrc/auth/dto/register.dto.ts[0m:[93m30[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'password' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m30[0m   password: string;
+[7m  [0m [91m  ~~~~~~~~[0m
+[96msrc/auth/dto/register.dto.ts[0m:[93m37[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'acceptTerms' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m37[0m   acceptTerms: boolean;
+[7m  [0m [91m  ~~~~~~~~~~~[0m
+[96msrc/auth/strategies/jwt-refresh.strategy.ts[0m:[93m48[0m:[93m37[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'validateRefreshTokenFromCookie' does not exist on type 'AuthService'.
+
+[7m48[0m       return await this.authService.validateRefreshTokenFromCookie(refreshToken);
+[7m  [0m [91m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m6[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'fondInitial' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m6[0m     fondInitial: number;
+[7m [0m [91m    ~~~~~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m9[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'depotId' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m9[0m     depotId: string;
+[7m [0m [91m    ~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m12[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'userId' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m12[0m     userId: string;
+[7m  [0m [91m    ~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m15[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tenantId' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m15[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m20[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'sessionId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m20[0m     sessionId: string;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m24[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'fondFinal' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m24[0m     fondFinal: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m33[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'categorie' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m33[0m     categorie: string;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m37[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'montant' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m37[0m     montant: number;
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m40[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'motif' has no 
+initializer and is not definitely assigned in the constructor.
+
+[7m40[0m     motif: string;
+[7m  [0m [91m    ~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m43[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'depotId' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m43[0m     depotId: string;
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/caisse/dto/caisse.dto.ts[0m:[93m46[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tenantId' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m46[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m5[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'nom' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m5[0m     nom: string;
+[7m [0m [91m    ~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m12[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m12[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m17[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'nom' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m17[0m     nom: string;
+[7m  [0m [91m    ~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m20[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'familleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m20[0m     familleId: string;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m23[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m23[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m28[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'designation' has no initializer and is not definitely assigned in the constructor.
+
+[7m28[0m     designation: string;
+[7m  [0m [91m    ~~~~~~~~~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m36[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'prixVente' has no initializer and is not definitely assigned in the constructor.
+
+[7m36[0m     prixVente: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m40[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'prixAchat' has no initializer and is not definitely assigned in the constructor.
+
+[7m40[0m     prixAchat: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/catalogue/dto/catalogue.dto.ts[0m:[93m71[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m71[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/clients/dto/create-client.dto.ts[0m:[93m5[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'nom' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m5[0m     nom: string;
+[7m [0m [91m    ~~~[0m
+[96msrc/clients/dto/create-client.dto.ts[0m:[93m21[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m21[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/commandes/dto/create-commande.dto.ts[0m:[93m7[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'articleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m7[0m   articleId: string;
+[7m [0m [91m  ~~~~~~~~~[0m
+[96msrc/commandes/dto/create-commande.dto.ts[0m:[93m10[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'quantite' has no initializer and is not definitely assigned in the constructor.
+
+[7m10[0m   quantite: number;
+[7m  [0m [91m  ~~~~~~~~[0m
+[96msrc/commandes/dto/create-commande.dto.ts[0m:[93m13[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'prixAchatUnit' has no initializer and is not definitely assigned in the constructor.
+
+[7m13[0m   prixAchatUnit: number;
+[7m  [0m [91m  ~~~~~~~~~~~~~[0m
+[96msrc/commandes/dto/create-commande.dto.ts[0m:[93m19[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'reference' has no initializer and is not definitely assigned in the constructor.
+
+[7m19[0m   reference: string;
+[7m  [0m [91m  ~~~~~~~~~[0m
+[96msrc/commandes/dto/create-commande.dto.ts[0m:[93m23[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'fournisseurId' has no initializer and is not definitely assigned in the constructor.
+
+[7m23[0m   fournisseurId: string;
+[7m  [0m [91m  ~~~~~~~~~~~~~[0m
+[96msrc/commandes/dto/create-commande.dto.ts[0m:[93m27[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'depotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m27[0m   depotId: string;
+[7m  [0m [91m  ~~~~~~~[0m
+[96msrc/commandes/dto/create-commande.dto.ts[0m:[93m36[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'lignes' has no initializer and is not definitely assigned in the constructor.
+
+[7m36[0m   lignes: LigneCommandeDto[];
+[7m  [0m [91m  ~~~~~~[0m
+[96msrc/commissions/dto/commission.dto.ts[0m:[93m7[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'taux' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m7[0m     taux: number;
+[7m [0m [91m    ~~~~[0m
+[96msrc/commissions/dto/commission.dto.ts[0m:[93m14[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m14[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/commissions/dto/commission.dto.ts[0m:[93m19[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m19[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/commissions/dto/commission.dto.ts[0m:[93m32[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'commissionId' has no initializer and is not definitely assigned in the constructor.
+
+[7m32[0m     commissionId: string;
+[7m  [0m [91m    ~~~~~~~~~~~~[0m
+[96msrc/commissions/dto/commission.dto.ts[0m:[93m35[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m35[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/common/guards/access-status.guard.ts[0m:[93m10[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule 
+'"../../auth/strategies/jwt.strategy"' has no exported member 'AuthenticatedUser'.
+
+[7m10[0m import { AuthenticatedUser } from '../../auth/strategies/jwt.strategy';
+[7m  [0m [91m         ~~~~~~~~~~~~~~~~~[0m
+[96msrc/common/guards/access-status.guard.ts[0m:[93m100[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ 
+status: TenantStatus; subscriptionEnd: Date | null; }' is not assignable to type '{ status: TenantStatus; 
+subscriptionEnd: Date; }'.
+  Types of property 'subscriptionEnd' are incompatible.
+    Type 'Date | null' is not assignable to type 'Date'.
+      Type 'null' is not assignable to type 'Date'.
+
+[7m100[0m       return tenant;
+[7m   [0m [91m      ~~~~~~[0m
+[96msrc/common/guards/quota-depot.guard.ts[0m:[93m9[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule 
+'"../../auth/strategies/jwt.strategy"' has no exported member 'AuthenticatedUser'.
+
+[7m9[0m import { AuthenticatedUser } from '../../auth/strategies/jwt.strategy';
+[7m [0m [91m         ~~~~~~~~~~~~~~~~~[0m
+[96msrc/common/guards/quota-depot.guard.ts[0m:[93m59[0m:[93m28[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'isArchived' does not exist in type 'DepotWhereInput'.
+
+[7m59[0m         where: { tenantId, isArchived: false },
+[7m  [0m [91m                           ~~~~~~~~~~[0m
+[96msrc/common/interceptors/depot-scope.interceptor.ts[0m:[93m4[0m:[93m10[0m - [91merror[0m[90m TS2305: 
+[0mModule '"../../auth/strategies/jwt.strategy"' has no exported member 'AuthenticatedUser'.
+
+[7m4[0m import { AuthenticatedUser } from '../../auth/strategies/jwt.strategy';
+[7m [0m [91m         ~~~~~~~~~~~~~~~~~[0m
+[96msrc/common/interceptors/depot-scope.interceptor.ts[0m:[93m29[0m:[93m11[0m - [91merror[0m[90m TS2353: 
+[0mObject literal may only specify known properties, and 'tenantId' does not exist in type 'DepotScopeState'.
+
+[7m29[0m           tenantId: user.tenantId,
+[7m  [0m [91m          ~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m13[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'type' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m13[0m     type: TypeConsigneEnum;
+[7m  [0m [91m    ~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m17[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'valeurXAF' has no initializer and is not definitely assigned in the constructor.
+
+[7m17[0m     valeurXAF: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m24[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m24[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m30[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'valeurXAF' has no initializer and is not definitely assigned in the constructor.
+
+[7m30[0m     valeurXAF: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m39[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'typeConsigneId' has no initializer and is not definitely assigned in the constructor.
+
+[7m39[0m     typeConsigneId: string;
+[7m  [0m [91m    ~~~~~~~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m43[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'quantite' has no initializer and is not definitely assigned in the constructor.
+
+[7m43[0m     quantite: number;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m46[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'estSortie' has no initializer and is not definitely assigned in the constructor.
+
+[7m46[0m     estSortie: boolean; // true = vides sortis, false = vides rendus
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m61[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m61[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m66[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'clientId' has no initializer and is not definitely assigned in the constructor.
+
+[7m66[0m     clientId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m69[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'typeConsigneId' has no initializer and is not definitely assigned in the constructor.
+
+[7m69[0m     typeConsigneId: string;
+[7m  [0m [91m    ~~~~~~~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m73[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'quantite' has no initializer and is not definitely assigned in the constructor.
+
+[7m73[0m     quantite: number;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m76[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'estRemboursementCash' has no initializer and is not definitely assigned in the constructor.
+
+[7m76[0m     estRemboursementCash: boolean; // true = cash, false = avoir
+[7m  [0m [91m    ~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m79[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m79[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m84[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'venteId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m84[0m     venteId: string;
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m86[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'lignesConsignes' has no initializer and is not definitely assigned in the constructor.
+
+[7m86[0m     lignesConsignes: {
+[7m  [0m [91m    ~~~~~~~~~~~~~~~[0m
+[96msrc/consignes/dto/consigne.dto.ts[0m:[93m93[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m93[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/depots/dto/create-depot.dto.ts[0m:[93m6[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'nom' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m6[0m   nom: string;
+[7m [0m [91m  ~~~[0m
+[96msrc/depots/dto/create-depot.dto.ts[0m:[93m10[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'adresse' has no initializer and is not definitely assigned in the constructor.
+
+[7m10[0m   adresse: string;
+[7m  [0m [91m  ~~~~~~~[0m
+[96msrc/depots/dto/create-depot.dto.ts[0m:[93m14[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'emplacement' has no initializer and is not definitely assigned in the constructor.
+
+[7m14[0m   emplacement: string;
+[7m  [0m [91m  ~~~~~~~~~~~[0m
+[96msrc/depots/dto/create-depot.dto.ts[0m:[93m22[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m22[0m   tenantId: string;
+[7m  [0m [91m  ~~~~~~~~[0m
+[96msrc/depots/dto/create-transfert.dto.ts[0m:[93m7[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'articleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m7[0m   articleId: string;
+[7m [0m [91m  ~~~~~~~~~[0m
+[96msrc/depots/dto/create-transfert.dto.ts[0m:[93m10[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'quantite' has no initializer and is not definitely assigned in the constructor.
+
+[7m10[0m   quantite: number;
+[7m  [0m [91m  ~~~~~~~~[0m
+[96msrc/depots/dto/create-transfert.dto.ts[0m:[93m16[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'reference' has no initializer and is not definitely assigned in the constructor.
+
+[7m16[0m   reference: string;
+[7m  [0m [91m  ~~~~~~~~~[0m
+[96msrc/depots/dto/create-transfert.dto.ts[0m:[93m20[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'sourceDepotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m20[0m   sourceDepotId: string;
+[7m  [0m [91m  ~~~~~~~~~~~~~[0m
+[96msrc/depots/dto/create-transfert.dto.ts[0m:[93m24[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'destDepotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m24[0m   destDepotId: string;
+[7m  [0m [91m  ~~~~~~~~~~~[0m
+[96msrc/depots/dto/create-transfert.dto.ts[0m:[93m33[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'lignes' has no initializer and is not definitely assigned in the constructor.
+
+[7m33[0m   lignes: LigneTransfertDto[];
+[7m  [0m [91m  ~~~~~~[0m
+[96msrc/fournisseurs/dto/create-fournisseur.dto.ts[0m:[93m5[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'nom' has no initializer and is not definitely assigned in the constructor.
+
+[7m5[0m     nom: string;
+[7m [0m [91m    ~~~[0m
+[96msrc/fournisseurs/dto/create-fournisseur.dto.ts[0m:[93m12[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m12[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m6[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'articleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m6[0m     articleId: string;
+[7m [0m [91m    ~~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m10[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'quantiteLivree' has no initializer and is not definitely assigned in the constructor.
+
+[7m10[0m     quantiteLivree: number;
+[7m  [0m [91m    ~~~~~~~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m14[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'quantiteGratuite' has no initializer and is not definitely assigned in the constructor.
+
+[7m14[0m     quantiteGratuite: number;
+[7m  [0m [91m    ~~~~~~~~~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m18[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'prixAchatUnitaire' has no initializer and is not definitely assigned in the constructor.
+
+[7m18[0m     prixAchatUnitaire: number;
+[7m  [0m [91m    ~~~~~~~~~~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m27[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'fournisseurId' has no initializer and is not definitely assigned in the constructor.
+
+[7m27[0m     fournisseurId: string;
+[7m  [0m [91m    ~~~~~~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m30[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'depotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m30[0m     depotId: string;
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m33[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m33[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m36[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'modePaiement' has no initializer and is not definitely assigned in the constructor.
+
+[7m36[0m     modePaiement: string;
+[7m  [0m [91m    ~~~~~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m40[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'montantPaye' has no initializer and is not definitely assigned in the constructor.
+
+[7m40[0m     montantPaye: number;
+[7m  [0m [91m    ~~~~~~~~~~~[0m
+[96msrc/fournisseurs/dto/create-reception.dto.ts[0m:[93m45[0m:[93m5[0m - [91merror[0m[90m TS2564: 
+[0mProperty 'lignes' has no initializer and is not definitely assigned in the constructor.
+
+[7m45[0m     lignes: LigneReceptionDto[];
+[7m  [0m [91m    ~~~~~~[0m
+[96msrc/impression/impression.service.ts[0m:[93m50[0m:[93m33[0m - [91merror[0m[90m TS18047: 
+[0m'vente.tenant.nomEntreprise' is possibly 'null'.
+
+[7m50[0m     ticketLines.push(centerText(vente.tenant.nomEntreprise.toUpperCase()));
+[7m  [0m [91m                                ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/invoices/invoices.controller.ts[0m:[93m16[0m:[93m15[0m - [91merror[0m[90m TS2305: [0mModule 
+'"../auth/strategies/jwt.strategy"' has no exported member 'AuthenticatedUser'.
+
+[7m16[0m import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
+[7m  [0m [91m              ~~~~~~~~~~~~~~~~~[0m
+[96msrc/invoices/invoices.controller.ts[0m:[93m81[0m:[93m25[0m - [91merror[0m[90m TS18047: 
+[0m'payment.tenant.name' is possibly 'null'.
+
+[7m81[0m     const filename = `${payment.tenant.name.replace(/\s+/g, '_')}_${invoiceNumber}.pdf`;
+[7m  [0m [91m                        ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/invoices/invoices.service.ts[0m:[93m6[0m:[93m34[0m - [91merror[0m[90m TS2305: [0mModule 
+'"@prisma/client"' has no exported member 'BillingCycle'.
+
+[7m6[0m import { Payment, PaymentMethod, BillingCycle } from '@prisma/client';
+[7m [0m [91m                                 ~~~~~~~~~~~~[0m
+[96msrc/invoices/invoices.service.ts[0m:[93m69[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType 'string | 
+null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+
+[7m69[0m       tenantName: payment.tenant.name,
+[7m  [0m [91m      ~~~~~~~~~~[0m
+
+  [96msrc/invoices/invoices.service.ts[0m:[93m13[0m:[93m3[0m
+    [7m13[0m   tenantName: string;
+    [7m  [0m [96m  ~~~~~~~~~~[0m
+    The expected type comes from property 'tenantName' which is declared here on type 'InvoiceData'
+[96msrc/invoices/invoices.service.ts[0m:[93m73[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType 'string | 
+null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+
+[7m73[0m       planName: payment.planPurchased,
+[7m  [0m [91m      ~~~~~~~~[0m
+
+  [96msrc/invoices/invoices.service.ts[0m:[93m17[0m:[93m3[0m
+    [7m17[0m   planName: string;
+    [7m  [0m [96m  ~~~~~~~~[0m
+    The expected type comes from property 'planName' which is declared here on type 'InvoiceData'
+[96msrc/invoices/invoices.service.ts[0m:[93m83[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType 'Date | null' 
+is not assignable to type 'Date'.
+  Type 'null' is not assignable to type 'Date'.
+
+[7m83[0m       periodStart: payment.periodStart,
+[7m  [0m [91m      ~~~~~~~~~~~[0m
+
+  [96msrc/invoices/invoices.service.ts[0m:[93m27[0m:[93m3[0m
+    [7m27[0m   periodStart: Date;
+    [7m  [0m [96m  ~~~~~~~~~~~[0m
+    The expected type comes from property 'periodStart' which is declared here on type 'InvoiceData'
+[96msrc/invoices/invoices.service.ts[0m:[93m84[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType 'Date | null' 
+is not assignable to type 'Date'.
+  Type 'null' is not assignable to type 'Date'.
+
+[7m84[0m       periodEnd: payment.periodEnd,
+[7m  [0m [91m      ~~~~~~~~~[0m
+
+  [96msrc/invoices/invoices.service.ts[0m:[93m28[0m:[93m3[0m
+    [7m28[0m   periodEnd: Date;
+    [7m  [0m [96m  ~~~~~~~~~[0m
+    The expected type comes from property 'periodEnd' which is declared here on type 'InvoiceData'
+[96msrc/invoices/invoices.service.ts[0m:[93m356[0m:[93m11[0m - [91merror[0m[90m TS2739: [0mType '{ MTN_MOMO: 
+string; VISA_CARD: string; MASTERCARD: string; ORANGE_MONEY: string; }' is missing the following properties from type 
+'Record<PaymentMethod, string>': CASH, STRIPE
+
+[7m356[0m     const labels: Record<PaymentMethod, string> = {
+[7m   [0m [91m          ~~~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m15[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tricycleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m15[0m     tricycleId: string;
+[7m  [0m [91m    ~~~~~~~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m18[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'type' has no initializer and is not definitely assigned in the constructor.
+
+[7m18[0m     type: TypeMaintenanceEnum;
+[7m  [0m [91m    ~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m21[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'description' has no initializer and is not definitely assigned in the constructor.
+
+[7m21[0m     description: string;
+[7m  [0m [91m    ~~~~~~~~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m25[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'cout' has no initializer and is not definitely assigned in the constructor.
+
+[7m25[0m     cout: number;
+[7m  [0m [91m    ~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m44[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m44[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m49[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tricycleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m49[0m     tricycleId: string;
+[7m  [0m [91m    ~~~~~~~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m53[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'litres' has no initializer and is not definitely assigned in the constructor.
+
+[7m53[0m     litres: number;
+[7m  [0m [91m    ~~~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m57[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'prixLitre' has no initializer and is not definitely assigned in the constructor.
+
+[7m57[0m     prixLitre: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/maintenance/dto/maintenance.dto.ts[0m:[93m68[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m68[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/paiement/paiement.controller.ts[0m:[93m44[0m:[93m89[0m - [91merror[0m[90m TS18046: [0m'error' is of 
+type 'unknown'.
+
+[7m44[0m         this.logger.error(`Echec de renouvellement pour le tenant ${payload.tenantId}`, error.stack);
+[7m  [0m [91m                                                                                        ~~~~~[0m
+[96msrc/payments/dto/create-payment.dto.ts[0m:[93m2[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule 
+'"@prisma/client"' has no exported member 'BillingCycle'.
+
+[7m2[0m import { BillingCycle, PaymentMethod, PlanType } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/payments/dto/create-payment.dto.ts[0m:[93m7[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 
+'SOLO' does not exist on type '{ FREE: "FREE"; BASIC: "BASIC"; PREMIUM: "PREMIUM"; ENTERPRISE: "ENTERPRISE"; }'.
+
+[7m7[0m     enum: [PlanType.SOLO, PlanType.PME, PlanType.ENTERPRISE],
+[7m [0m [91m                    ~~~~[0m
+[96msrc/payments/dto/create-payment.dto.ts[0m:[93m7[0m:[93m36[0m - [91merror[0m[90m TS2339: [0mProperty 
+'PME' does not exist on type '{ FREE: "FREE"; BASIC: "BASIC"; PREMIUM: "PREMIUM"; ENTERPRISE: "ENTERPRISE"; }'.
+
+[7m7[0m     enum: [PlanType.SOLO, PlanType.PME, PlanType.ENTERPRISE],
+[7m [0m [91m                                   ~~~[0m
+[96msrc/payments/dto/create-payment.dto.ts[0m:[93m8[0m:[93m23[0m - [91merror[0m[90m TS2339: [0mProperty 
+'PME' does not exist on type '{ FREE: "FREE"; BASIC: "BASIC"; PREMIUM: "PREMIUM"; ENTERPRISE: "ENTERPRISE"; }'.
+
+[7m8[0m     example: PlanType.PME,
+[7m [0m [91m                      ~~~[0m
+[96msrc/payments/dto/create-payment.dto.ts[0m:[93m12[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'planPurchased' has no initializer and is not definitely assigned in the constructor.
+
+[7m12[0m   planPurchased: PlanType;
+[7m  [0m [91m  ~~~~~~~~~~~~~[0m
+[96msrc/payments/dto/create-payment.dto.ts[0m:[93m28[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'method' has no initializer and is not definitely assigned in the constructor.
+
+[7m28[0m   method: PaymentMethod;
+[7m  [0m [91m  ~~~~~~[0m
+[96msrc/payments/payments.controller.ts[0m:[93m5[0m:[93m15[0m - [91merror[0m[90m TS2305: [0mModule 
+'"../auth/strategies/jwt.strategy"' has no exported member 'AuthenticatedUser'.
+
+[7m5[0m import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
+[7m [0m [91m              ~~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m2[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule 
+'"@prisma/client"' has no exported member 'BillingCycle'.
+
+[7m2[0m import { BillingCycle, Payment, PaymentMethod, PaymentStatus, PlanType } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m11[0m:[93m3[0m - [91merror[0m[90m TS2353: [0mObject literal may 
+only specify known properties, and 'SOLO' does not exist in type 'Record<PlanType, number>'.
+
+[7m11[0m   SOLO: 20000,
+[7m  [0m [91m  ~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m17[0m:[93m3[0m - [91merror[0m[90m TS2353: [0mObject literal may 
+only specify known properties, and 'SOLO' does not exist in type 'Record<PlanType, number>'.
+
+[7m17[0m   SOLO: 200000,
+[7m  [0m [91m  ~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m23[0m:[93m3[0m - [91merror[0m[90m TS2353: [0mObject literal may 
+only specify known properties, and 'TRIAL' does not exist in type 'Record<PlanType, number>'.
+
+[7m23[0m   TRIAL: 1,
+[7m  [0m [91m  ~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m66[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'TRIAL' 
+does not exist on type '{ FREE: "FREE"; BASIC: "BASIC"; PREMIUM: "PREMIUM"; ENTERPRISE: "ENTERPRISE"; }'.
+
+[7m66[0m     if (plan === PlanType.TRIAL || plan === PlanType.UNLIMITED) {
+[7m  [0m [91m                          ~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m66[0m:[93m54[0m - [91merror[0m[90m TS2339: [0mProperty 
+'UNLIMITED' does not exist on type '{ FREE: "FREE"; BASIC: "BASIC"; PREMIUM: "PREMIUM"; ENTERPRISE: "ENTERPRISE"; }'.
+
+[7m66[0m     if (plan === PlanType.TRIAL || plan === PlanType.UNLIMITED) {
+[7m  [0m [91m                                                     ~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m200[0m:[93m34[0m - [91merror[0m[90m TS1255: [0mA definite 
+assignment assertion '!' is not permitted in this context.
+
+[7m200[0m             stripePaymentIntentId!:
+[7m   [0m [91m                                 ~[0m
+[96msrc/payments/payments.service.ts[0m:[93m212[0m:[93m40[0m - [91merror[0m[90m TS2538: [0mType 'null' 
+cannot be used as an index type.
+
+[7m212[0m             maxDepots: PLAN_MAX_DEPOTS[payment.planPurchased],
+[7m   [0m [91m                                       ~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m218[0m:[93m18[0m - [91merror[0m[90m TS2339: [0mProperty 
+'notification' does not exist on type 'Omit<PrismaClient<PrismaClientOptions, never, DefaultArgs>, "$on" | "$connect" 
+| "$disconnect" | "$use" | "$extends">'.
+
+[7m218[0m         await tx.notification.create({
+[7m   [0m [91m                 ~~~~~~~~~~~~[0m
+[96msrc/prisma.service.ts[0m:[93m88[0m:[93m62[0m - [91merror[0m[90m TS18046: [0m'error' is of type 'unknown'.
+
+[7m88[0m             console.error('ÔØî Erreur de connexion database:', error.message);
+[7m  [0m [91m                                                             ~~~~~[0m
+[96msrc/stocks/dto/signaler-avarie.dto.ts[0m:[93m6[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'articleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m6[0m     articleId: string;
+[7m [0m [91m    ~~~~~~~~~[0m
+[96msrc/stocks/dto/signaler-avarie.dto.ts[0m:[93m10[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'depotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m10[0m     depotId: string;
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/stocks/dto/signaler-avarie.dto.ts[0m:[93m15[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'quantite' has no initializer and is not definitely assigned in the constructor.
+
+[7m15[0m     quantite: number;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/stocks/dto/signaler-avarie.dto.ts[0m:[93m19[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'motif' has no initializer and is not definitely assigned in the constructor.
+
+[7m19[0m     motif: string; // Ex: Cass├®, Perc├®, P├®rim├®
+[7m  [0m [91m    ~~~~~[0m
+[96msrc/stocks/dto/signaler-avarie.dto.ts[0m:[93m27[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m27[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/tenants/dto/create-tenant.dto.ts[0m:[93m2[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'nomEntreprise' has no initializer and is not definitely assigned in the constructor.
+
+[7m2[0m     nomEntreprise: string;
+[7m [0m [91m    ~~~~~~~~~~~~~[0m
+[96msrc/tenants/dto/create-tenant.dto.ts[0m:[93m3[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'emailPatron' has no initializer and is not definitely assigned in the constructor.
+
+[7m3[0m     emailPatron: string;
+[7m [0m [91m    ~~~~~~~~~~~[0m
+[96msrc/tenants/dto/create-tenant.dto.ts[0m:[93m4[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'telephone' has no initializer and is not definitely assigned in the constructor.
+
+[7m4[0m     telephone: string;
+[7m [0m [91m    ~~~~~~~~~[0m
+[96msrc/tenants/tenants.service.ts[0m:[93m23[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject literal may 
+only specify known properties, and 'dateEssaiFin' does not exist in type '(Without<TenantCreateInput, 
+TenantUncheckedCreateInput> & TenantUncheckedCreateInput) | (Without<...> & TenantCreateInput)'.
+
+[7m23[0m         dateEssaiFin: dateFinEssai,
+[7m  [0m [91m        ~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m46340[0m:[93m5[0m
+    [7m46340[0m     data: XOR<TenantCreateInput, TenantUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TenantSelect<DefaultArgs> 
+| null | undefined; omit?: TenantOmit<DefaultArgs> | null | undefined; include?: TenantInclude<DefaultArgs> | null | 
+undefined; data: (Without<...> & TenantUncheckedCreateInput) | (Without<...> & TenantCreateInput); }'
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m6[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tricycleId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m6[0m     tricycleId: string;
+[7m [0m [91m    ~~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m9[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'depotId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m9[0m     depotId: string;
+[7m [0m [91m    ~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m12[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'commercialId' has no initializer and is not definitely assigned in the constructor.
+
+[7m12[0m     commercialId: string;
+[7m  [0m [91m    ~~~~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m15[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tenantId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m15[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m20[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'articleId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m20[0m     articleId: string;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m24[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'quantiteChargee' has no initializer and is not definitely assigned in the constructor.
+
+[7m24[0m     quantiteChargee: number;
+[7m  [0m [91m    ~~~~~~~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m29[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tourneeId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m29[0m     tourneeId: string;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m32[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tenantId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m32[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m37[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'lignes' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m37[0m     lignes: LigneChargementDto[];
+[7m  [0m [91m    ~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m42[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tourneeId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m42[0m     tourneeId: string;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m45[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tenantId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m45[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m49[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'cashRemis' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m49[0m     cashRemis: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m53[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'omRemis' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m53[0m     omRemis: number;
+Found 159 error(s).
+
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m57[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'momoRemis' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m57[0m     momoRemis: number;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m66[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tourneeId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m66[0m     tourneeId: string;
+[7m  [0m [91m    ~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m69[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tenantId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m69[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m72[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'lignesRetour' has no initializer and is not definitely assigned in the constructor.
+
+[7m72[0m     lignesRetour: { articleId: string; quantiteRetour: number }[];
+[7m  [0m [91m    ~~~~~~~~~~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m81[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'nom' has 
+no initializer and is not definitely assigned in the constructor.
+
+[7m81[0m     nom: string;
+[7m  [0m [91m    ~~~[0m
+[96msrc/tournees/dto/tournee.dto.ts[0m:[93m84[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 'tenantId' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m84[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/ventes/dto/create-vente.dto.ts[0m:[93m14[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'articleId' has no initializer and is not definitely assigned in the constructor.
+
+[7m14[0m   articleId: string;
+[7m  [0m [91m  ~~~~~~~~~[0m
+[96msrc/ventes/dto/create-vente.dto.ts[0m:[93m18[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'quantite' has no initializer and is not definitely assigned in the constructor.
+
+[7m18[0m   quantite: number;
+[7m  [0m [91m  ~~~~~~~~[0m
+[96msrc/ventes/dto/create-vente.dto.ts[0m:[93m52[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'depotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m52[0m   depotId: string;
+[7m  [0m [91m  ~~~~~~~[0m
+[96msrc/ventes/dto/create-vente.dto.ts[0m:[93m56[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m56[0m   tenantId: string;
+[7m  [0m [91m  ~~~~~~~~[0m
+[96msrc/ventes/dto/create-vente.dto.ts[0m:[93m86[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'lignes' 
+has no initializer and is not definitely assigned in the constructor.
+
+[7m86[0m   lignes: LigneVenteDto[];
+[7m  [0m [91m  ~~~~~~[0m
+[96msrc/ventes/dto/validation-vente.dto.ts[0m:[93m6[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m6[0m     tenantId: string;
+[7m [0m [91m    ~~~~~~~~[0m
+[96msrc/ventes/dto/validation-vente.dto.ts[0m:[93m10[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'depotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m10[0m     depotId: string;
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/ventes/dto/validation-vente.dto.ts[0m:[93m16[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'tenantId' has no initializer and is not definitely assigned in the constructor.
+
+[7m16[0m     tenantId: string;
+[7m  [0m [91m    ~~~~~~~~[0m
+[96msrc/ventes/dto/validation-vente.dto.ts[0m:[93m20[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'depotId' has no initializer and is not definitely assigned in the constructor.
+
+[7m20[0m     depotId: string;
+[7m  [0m [91m    ~~~~~~~[0m
+[96msrc/ventes/dto/validation-vente.dto.ts[0m:[93m24[0m:[93m5[0m - [91merror[0m[90m TS2564: [0mProperty 
+'motif' has no initializer and is not definitely assigned in the constructor.
+
+[7m24[0m     motif: string;
+[7m  [0m [91m    ~~~~~[0m
+

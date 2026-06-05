@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -75,13 +76,24 @@ export default function SettingsPage() {
     }
   };
 
+  // Cleanup timeout on unmount
+  const successTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const updateMutation = useMutation({
     mutationFn: (payload) => api.patch(`/tenants/${tenantId}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries(['tenant-config', tenantId]);
       setSuccess(true);
       setError('');
-      setTimeout(() => setSuccess(false), 5000);
+      successTimeoutRef.current = setTimeout(() => setSuccess(false), 5000);
     },
     onError: (err) => {
       console.error('Erreur sauvegarde:', err);
@@ -108,7 +120,7 @@ export default function SettingsPage() {
           <p className="text-slate-400 text-sm">Personnalisez vos reçus et les infos de votre établissement</p>
         </div>
         <div className="flex-1" />
-        <button 
+        <button
           onClick={() => window.dispatchEvent(new CustomEvent('nav-change', { detail: 'depots' }))}
           className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 hover:text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
         >
@@ -131,7 +143,7 @@ export default function SettingsPage() {
                   className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-all font-bold"
                 />
               </div>
-              
+
               <div>
                 <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Slogan</label>
                 <input
@@ -158,7 +170,7 @@ export default function SettingsPage() {
                 <input
                   value={form.adresse}
                   onChange={(e) => setForm({ ...form, adresse: e.target.value })}
-                  placeholder="Douala, Akwa face Ã ..."
+                  placeholder="Douala, Akwa face à..."
                   className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-all text-sm"
                 />
               </div>
@@ -177,7 +189,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between gap-4 pt-6 border-t border-slate-700/50 mt-6">
               <div className="flex-1">
-                {updateMutation.isLoading && (
+                {updateMutation.isPending && (
                   <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm bg-indigo-500/10 px-4 py-2.5 rounded-xl border border-indigo-500/20 animate-pulse">
                     <RefreshCcw className="w-4 h-4 animate-spin" />
                     Enregistrement en cours...
@@ -186,7 +198,7 @@ export default function SettingsPage() {
                 {success && (
                   <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm bg-emerald-500/20 px-4 py-3 rounded-xl border border-emerald-500/40 shadow-xl shadow-emerald-500/10 transition-all scale-105 origin-left">
                     <CheckCircle className="w-5 h-5" />
-                    SUCCÃˆS : Vos modifications ont été appliquées !
+                    SUCCÈS : Vos modifications ont été appliquées !
                   </div>
                 )}
                 {error && (
@@ -199,10 +211,10 @@ export default function SettingsPage() {
               <button
                 id="settings-submit-btn"
                 type="submit"
-                disabled={updateMutation.isLoading}
+                disabled={updateMutation.isPending}
                 className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2"
               >
-                {updateMutation.isLoading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                {updateMutation.isPending ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 SAUVEGARDER
               </button>
             </div>
@@ -216,7 +228,7 @@ export default function SettingsPage() {
               <Upload className="w-4 h-4 text-indigo-400" />
               Logo de l'entreprise
             </h3>
-            
+
             <div className="relative group aspect-square rounded-2xl bg-slate-900 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center overflow-hidden transition-all hover:border-indigo-500/50">
               {form.logo ? (
                 <img src={form.logo} alt="Logo" className="w-full h-full object-contain p-4 filter grayscale contrast-125" />
@@ -228,11 +240,11 @@ export default function SettingsPage() {
                   <p className="text-slate-500 text-xs font-semibold leading-relaxed">Cliquez pour ajouter un logo</p>
                 </div>
               )}
-              <input 
-                type="file" 
-                accept="image/*" 
+              <input
+                type="file"
+                accept="image/*"
                 onChange={handleLogoChange}
-                className="absolute inset-0 opacity-0 cursor-pointer" 
+                className="absolute inset-0 opacity-0 cursor-pointer"
               />
               {form.logo && (
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
@@ -240,7 +252,7 @@ export default function SettingsPage() {
                 </div>
               )}
             </div>
-            
+
             <div className="mt-6 space-y-3">
               <div className="flex items-start gap-3 bg-indigo-500/5 border border-indigo-500/10 p-4 rounded-xl">
                 <div className="w-1 h-1 bg-indigo-400 rounded-full mt-2 shrink-0" />
@@ -261,7 +273,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-
-
-

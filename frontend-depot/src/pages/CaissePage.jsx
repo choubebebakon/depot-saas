@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,13 +6,13 @@ import { useDepot } from '../contexts/DepotContext';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { generateId } from '../utils/offline';
 
-// â”€â”€ Catégories de dépenses prédéfinies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Catégories de dépenses prédéfinies ────────────────────â”€
 const CATEGORIES_DEPENSES = [
     'Carburant', 'Salaire', 'Loyer', 'Électricité', 'Eau',
     'Transport', 'Maintenance', 'Achat divers', 'Remboursement vides', 'Autre',
 ];
 
-// â”€â”€ Modal Ouverture Caisse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Ouverture Caisse ──────────────────────────────────
 function ModalOuvrirCaisse({ tenantId, depotId, userId, onSuccess, onClose }) {
     const [fondInitial, setFondInitial] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ function ModalOuvrirCaisse({ tenantId, depotId, userId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">ðŸ’° Ouvrir la Caisse</h3>
+                <h3 className="text-white font-black text-xl mb-2">💰 Ouvrir la Caisse</h3>
                 <p className="text-slate-400 text-sm mb-6">Saisissez le fond de départ en FCFA</p>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -61,7 +61,7 @@ function ModalOuvrirCaisse({ tenantId, depotId, userId, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : 'âœ… Ouvrir'}
+                            {loading ? '...' : '✅ Ouvrir'}
                         </button>
                     </div>
                 </form>
@@ -70,7 +70,7 @@ function ModalOuvrirCaisse({ tenantId, depotId, userId, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Modal Fermeture Caisse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Fermeture Caisse ──────────────────────────────────
 function ModalFermerCaisse({ session, soldeTheorique, onSuccess, onClose }) {
     const [fondFinal, setFondFinal] = useState('');
     const [motifEcart, setMotifEcart] = useState('');
@@ -105,7 +105,7 @@ function ModalFermerCaisse({ session, soldeTheorique, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">ðŸ”’ Clôture de Caisse</h3>
+                <h3 className="text-white font-black text-xl mb-6">🔒 Clôture de Caisse</h3>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
 
                 <div className="bg-slate-800 rounded-xl p-4 mb-5 space-y-2">
@@ -161,7 +161,7 @@ function ModalFermerCaisse({ session, soldeTheorique, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading || fondFinal === ''}
                             className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : 'ðŸ”’ Clôturer'}
+                            {loading ? '...' : '🔒 Clôturer'}
                         </button>
                     </div>
                 </form>
@@ -170,7 +170,7 @@ function ModalFermerCaisse({ session, soldeTheorique, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Modal Nouvelle Dépense â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Nouvelle Dépense ──────────────────────────────────
 function ModalDepense({ tenantId, depotId, onSuccess, onClose }) {
     const [form, setForm] = useState({ categorie: '', montant: '', motif: '' });
     const queryClient = useQueryClient();
@@ -209,7 +209,7 @@ function ModalDepense({ tenantId, depotId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">ðŸ’¸ Nouvelle Dépense</h3>
+                <h3 className="text-white font-black text-xl mb-6">💸 Nouvelle Dépense</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Catégorie *</label>
@@ -235,9 +235,9 @@ function ModalDepense({ tenantId, depotId, onSuccess, onClose }) {
                     <div className="flex gap-3 pt-2">
                         <button type="button" onClick={onClose}
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
-                        <button type="submit" disabled={createDepenseMutation.isLoading}
+                        <button type="submit" disabled={createDepenseMutation.isPending}
                             className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {createDepenseMutation.isLoading ? '...' : 'ðŸ’¸ Enregistrer'}
+                            {createDepenseMutation.isPending ? '...' : '💸 Enregistrer'}
                         </button>
                     </div>
                 </form>
@@ -246,10 +246,10 @@ function ModalDepense({ tenantId, depotId, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Page Principale Caisse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page Principale Caisse ──────────────────────────────────
 export default function CaissePage() {
     const { tenantId, user } = useAuth();
-    const { depotId, DépôtActif } = useDepot();
+    const { depotId, depotActif } = useDepot();
     const queryClient = useQueryClient();
     const [onglet, setOnglet] = useState('resume');
     const [modalOuvrir, setModalOuvrir] = useState(false);
@@ -293,7 +293,7 @@ export default function CaissePage() {
 
     if (!depotId) return (
         <div className="flex items-center justify-center h-64 text-slate-400">
-            Sélectionnez un Dépôt pour accéder Ã  la caisse.
+            Sélectionnez un Dépôt pour accéder à la caisse.
         </div>
     );
 
@@ -304,7 +304,7 @@ export default function CaissePage() {
             {/* En-tête */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-black text-white">Caisse â€” {DépôtActif?.nom}</h1>
+                    <h1 className="text-2xl font-black text-white">Caisse — {depotActif?.nom}</h1>
                     <p className="text-slate-400 text-sm mt-1">Session journalière & dépenses opérationnelles</p>
                 </div>
 
@@ -313,17 +313,17 @@ export default function CaissePage() {
                         <>
                             <button onClick={() => setModalDepense(true)}
                                 className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2">
-                                ðŸ’¸ Dépense
+                                💸 Dépense
                             </button>
                             <button onClick={() => setModalFermer(true)}
                                 className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2">
-                                ðŸ”’ Clôturer
+                                🔒 Clôturer
                             </button>
                         </>
                     ) : (
                         <button onClick={() => setModalOuvrir(true)}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
-                            ðŸ’° Ouvrir la Caisse
+                            💰 Ouvrir la Caisse
                         </button>
                     )}
                 </div>
@@ -336,7 +336,7 @@ export default function CaissePage() {
                 }`}>
                 <div className={`w-3 h-3 rounded-full ${resume?.sessionActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
                 <span className={`font-bold text-sm ${resume?.sessionActive ? 'text-emerald-400' : 'text-slate-400'}`}>
-                    {resume?.sessionActive ? 'âœ… Caisse OUVERTE â€” Session en cours' : 'â¸ï¸ Caisse FERMÉE â€” Aucune session active'}
+                    {resume?.sessionActive ? '✅ Caisse OUVERTE — Session en cours' : '⏸️ Caisse FERMÉE — Aucune session active'}
                 </span>
             </div>
 
@@ -348,10 +348,10 @@ export default function CaissePage() {
             ) : resume && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     {[
-                        { label: 'Ventes Cash', valeur: resume.ventesCash, couleur: 'emerald', emoji: 'ðŸ’µ' },
-                        { label: 'Orange Money', valeur: resume.ventesOM, couleur: 'orange', emoji: 'ðŸ“±' },
-                        { label: 'MTN MoMo', valeur: resume.ventesMoMo, couleur: 'yellow', emoji: 'ðŸ“²' },
-                        { label: 'Dépenses', valeur: resume.depensesTotal, couleur: 'red', emoji: 'ðŸ’¸' },
+                        { label: 'Ventes Cash', valeur: resume.ventesCash, couleur: 'emerald', emoji: '💵' },
+                        { label: 'Orange Money', valeur: resume.ventesOM, couleur: 'orange', emoji: '📱' },
+                        { label: 'MTN MoMo', valeur: resume.ventesMoMo, couleur: 'yellow', emoji: '📲' },
+                        { label: 'Dépenses', valeur: resume.depensesTotal, couleur: 'red', emoji: '💸' },
                     ].map((c, i) => (
                         <div key={i} className={`bg-${c.couleur}-500/10 border border-${c.couleur}-500/20 rounded-2xl p-4`}>
                             <p className={`text-${c.couleur}-400 text-xs font-bold uppercase tracking-widest mb-2`}>{c.label}</p>
@@ -368,7 +368,7 @@ export default function CaissePage() {
                         ? 'bg-indigo-500/10 border-indigo-500/20'
                         : 'bg-red-500/10 border-red-500/20'
                     }`}>
-                    <span className="text-slate-300 font-bold">Solde Net Cash (Ventes Cash âˆ’ Dépenses)</span>
+                    <span className="text-slate-300 font-bold">Solde Net Cash (Ventes Cash − Dépenses)</span>
                     <span className={`text-3xl font-black ${resume.soldeNet >= 0 ? 'text-indigo-400' : 'text-red-400'}`}>
                         {resume.soldeNet >= 0 ? '+' : ''}{resume.soldeNet.toLocaleString('fr-FR')} FCFA
                     </span>
@@ -377,7 +377,7 @@ export default function CaissePage() {
 
             {/* Onglets */}
             <div className="flex gap-2 mb-6">
-                {[['resume', 'ðŸ“Š Résumé'], ['depenses', 'ðŸ’¸ Dépenses'], ['historique', 'ðŸ“‹ Historique']].map(([id, label]) => (
+                {[['resume', '📊 Résumé'], ['depenses', '💸 Dépenses'], ['historique', '📋 Historique']].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
                                 ? 'bg-indigo-600 border-indigo-500 text-white'
@@ -391,11 +391,11 @@ export default function CaissePage() {
             {/* Contenu onglet Dépenses */}
             {onglet === 'depenses' && (
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
-                    {loadingDepenses ? (
+                    {loading ? (
                          <div className="flex items-center justify-center h-48 animate-pulse text-slate-500 text-sm">Chargement des dépenses...</div>
                     ) : depenses.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">ðŸ’¸</p>
+                            <p className="text-4xl mb-3">💸</p>
                             <p className="font-semibold">Aucune dépense aujourd'hui</p>
                             {resume?.sessionActive && (
                                 <button onClick={() => setModalDepense(true)}
@@ -447,11 +447,11 @@ export default function CaissePage() {
             {/* Historique sessions */}
             {onglet === 'historique' && (
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
-                    {loadingHistorique ? (
+                    {loading ? (
                          <div className="flex items-center justify-center h-48 animate-pulse text-slate-500 text-sm">Chargement de l'historique...</div>
                     ) : historique.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">ðŸ“‹</p>
+                            <p className="text-4xl mb-3">📋</p>
                             <p>Aucune session passée</p>
                         </div>
                     ) : (
@@ -477,21 +477,21 @@ export default function CaissePage() {
                                             {s.fondInitial.toLocaleString('fr-FR')} FCFA
                                         </td>
                                         <td className="px-6 py-4 text-slate-300 font-bold text-sm">
-                                            {s.fondFinal != null ? `${s.fondFinal.toLocaleString('fr-FR')} FCFA` : 'â€”'}
+                                            {s.fondFinal != null ? `${s.fondFinal.toLocaleString('fr-FR')} FCFA` : '—'}
                                         </td>
                                         <td className="px-6 py-4 text-sm">
                                             {s.ecart != null ? (
                                                 <span className={`font-black ${s.ecart > 0 ? 'text-emerald-400' : s.ecart < 0 ? 'text-red-400' : 'text-slate-400'}`}>
                                                     {s.ecart > 0 ? '+' : ''}{s.ecart.toLocaleString('fr-FR')} FCFA
                                                 </span>
-                                            ) : 'â€”'}
+                                            ) : '—'}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`text-xs font-bold px-2 py-1 rounded-lg border ${s.estOuverte
                                                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                                     : 'bg-slate-700 border-slate-600 text-slate-400'
                                                 }`}>
-                                                {s.estOuverte ? 'â— Ouverte' : 'âœ“ Clôturée'}
+                                                {s.estOuverte ? '● Ouverte' : '✅ Clôturée'}
                                             </span>
                                         </td>
                                     </tr>
@@ -506,7 +506,7 @@ export default function CaissePage() {
             {onglet === 'resume' && resume && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-                        <h3 className="text-white font-bold mb-4">ðŸ“Š Ventilation des encaissements</h3>
+                        <h3 className="text-white font-bold mb-4">📊 Ventilation des encaissements</h3>
                         <div className="space-y-3">
                             {[
                                 { label: 'Ventes Cash', val: resume.ventesCash, couleur: 'emerald' },
@@ -529,7 +529,7 @@ export default function CaissePage() {
                     </div>
 
                     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-                        <h3 className="text-white font-bold mb-4">ðŸ§¾ Résumé de la journée</h3>
+                        <h3 className="text-white font-bold mb-4">🧾 Résumé de la journée</h3>
                         <div className="space-y-3">
                             <div className="flex justify-between py-2 border-b border-slate-700">
                                 <span className="text-slate-400 text-sm">Nombre de ventes</span>
@@ -577,7 +577,3 @@ export default function CaissePage() {
         </div>
     );
 }
-
-
-
-

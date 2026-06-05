@@ -10,6 +10,14 @@ export interface JwtPayload {
     depotId?: string;
 }
 
+export interface AuthenticatedUser {
+    userId: string;
+    email: string;
+    role: string;
+    tenantId: string;
+    depotId: string | null;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor() {

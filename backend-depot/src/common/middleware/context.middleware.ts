@@ -1,0 +1,49 @@
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
+import { DepotScopeService } from '../depot-scope.service';
+import * as jwt from 'jsonwebtoken';
+
+@Injectable()
+export class ContextMiddleware implements NestMiddleware {
+    constructor(private readonly depotScope: DepotScopeService) {}
+
+    use(req: Request, res: Response, next: NextFunction) {
+        const authHeader = req.headers.authorization;
+        
+        let tenantId: string | null = null;
+        let depotId: string | null = null;
+        let role: string | null = null;
+
+        // 1. Extraction depuis le Token JWT (Prioritaire pour l'identité)
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            try {
+                const decoded = jwt.decode(token) as any;
+                if (decoded) {
+                    tenantId = decoded.tenantId || null;
+                    depotId = decoded.depotId || null;
+                    role = decoded.role || null;
+                }
+            } catch (error) {
+                // Token corrompu, géré ensuite par le JwtGuard
+            }
+        }
+
+        // 2. Alignement avec Axios Frontend : Si le front envoie un header spécifique, on l'écoute
+        if (req.headers['x-depot-id']) {
+            depotId = req.headers['x-depot-id'] as string;
+        } else if (req.query.depotId) {
+            depotId = req.query.depotId as string;
+        }
+
+        // Sécurité : éviter la valeur textuelle 'all' ou vide transmise par le front
+        if (depotId === 'all' || depotId === '') {
+            depotId = null;
+        }
+
+        // 3. Lancement du contexte asynchrone pour Prisma
+        this.depotScope.run({ tenantId, depotId, role }, () => {
+            next();
+        });
+    }
+}

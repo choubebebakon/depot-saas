@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Package, Hash, MessageSquare, Save, X } from 'lucide-react';
 
 const AjustementStockModal = ({ isOpen, onClose, onSubmit, article }) => {
@@ -10,7 +10,7 @@ const AjustementStockModal = ({ isOpen, onClose, onSubmit, article }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -25,7 +25,7 @@ const AjustementStockModal = ({ isOpen, onClose, onSubmit, article }) => {
         <div className="p-6 space-y-6">
           <div className="bg-indigo-50 p-4 rounded-2xl flex items-center gap-4">
             <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-xl">
-              ðŸ“¦
+              📦
             </div>
             <div>
               <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Article</p>
@@ -65,13 +65,13 @@ const AjustementStockModal = ({ isOpen, onClose, onSubmit, article }) => {
         </div>
 
         <div className="p-6 bg-slate-50 flex gap-3">
-          <button 
+          <button
             onClick={onClose}
             className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-all"
           >
             Annuler
           </button>
-          <button 
+          <button
             onClick={() => onSubmit({ articleId: article.articleId, nouvelleQuantite, motif })}
             disabled={!motif}
             className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold px-4 py-3 rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
@@ -86,7 +86,3 @@ const AjustementStockModal = ({ isOpen, onClose, onSubmit, article }) => {
 };
 
 export default AjustementStockModal;
-
-
-
-

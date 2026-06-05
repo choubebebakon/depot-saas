@@ -1,4 +1,4 @@
-﻿import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -14,7 +14,7 @@ export default function StockTable() {
       return Array.isArray(res.data) ? res.data : [];
     },
     enabled: !!tenantId && !!depotId,
-    refetchInterval: 30000, 
+    refetchInterval: 30000,
   });
 
   if (!depotId) return (
@@ -36,10 +36,10 @@ export default function StockTable() {
   const sortedStocks = [...stocks].sort((a, b) => {
     const isCritA = a.quantite <= (a.article?.seuilCritique || 0);
     const isCritB = b.quantite <= (b.article?.seuilCritique || 0);
-    
+
     if (isCritA && !isCritB) return -1;
     if (!isCritA && isCritB) return 1;
-    
+
     return (a.article?.designation || '').localeCompare(b.article?.designation || '');
   });
 
@@ -53,12 +53,12 @@ export default function StockTable() {
 
       <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/30">
         <h2 className="text-white font-bold flex items-center gap-2">
-          ðŸ“¦ <span>État des Stocks</span>
+          📦 <span>État des Stocks</span>
         </h2>
         <span className="flex items-center gap-2">
            {isFetching && <span className="w-2 h-2 bg-indigo-500 rounded-full animate-ping" />}
            <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
-            {isFetching ? 'Mise Ã  jour...' : 'Temps réel'}
+            {isFetching ? 'Mise à jour...' : 'Temps réel'}
           </span>
         </span>
       </div>
@@ -96,10 +96,10 @@ export default function StockTable() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-black border transition-all duration-500 shadow-sm ${
-                        isRupture 
-                        ? 'bg-red-500/20 text-red-500 border-red-500/40 animate-pulse' 
-                        : isCritique 
-                        ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' 
+                        isRupture
+                        ? 'bg-red-500/20 text-red-500 border-red-500/40 animate-pulse'
+                        : isCritique
+                        ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
                         : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                       }`}>
                       {isRupture ? 'RUPTURE' : `${qte} u.`}
@@ -114,7 +114,3 @@ export default function StockTable() {
     </div>
   );
 }
-
-
-
-

@@ -1,15 +1,15 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
 
-// â”€â”€ Badge statut tournée â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Badge statut tournée ────────────────────────────────────
 function BadgeStatut({ statut }) {
     const config = {
-        OUVERTE: { label: 'â— En cours', classes: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' },
-        CLOTURE_COMMERCIALE: { label: 'â³ Attente Magasinier', classes: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
-        VALIDEE: { label: 'âœ“ Validée', classes: 'bg-slate-700 border-slate-600 text-slate-400' },
-        ANNULEE: { label: 'âœ• Annulée', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
+        OUVERTE: { label: '● En cours', classes: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' },
+        CLOTURE_COMMERCIALE: { label: '⏳ Attente Magasinier', classes: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
+        VALIDEE: { label: '✅ Validée', classes: 'bg-slate-700 border-slate-600 text-slate-400' },
+        ANNULEE: { label: '✖ Annulée', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
     };
     const c = config[statut] || config.ANNULEE;
     return (
@@ -17,7 +17,7 @@ function BadgeStatut({ statut }) {
     );
 }
 
-// â”€â”€ Modal Nouveau Commercial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Nouveau Commercial ──────────────────────────────
 function ModalNouveauCommercial({ tenantId, onSuccess, onClose }) {
     const [form, setForm] = useState({ nom: '', email: '', password: '' });
     const [erreur, setErreur] = useState('');
@@ -29,7 +29,7 @@ function ModalNouveauCommercial({ tenantId, onSuccess, onClose }) {
         if (form.password.length < 6) { setErreur('Mot de passe minimum 6 caractères.'); return; }
         setLoading(true);
         try {
-            await api.post('/users', { ...form, role: 'COMMERCIAL', tenantId });
+            await api.post('/users/employees', { ...form, role: 'COMMERCIAL', tenantId });
             onSuccess();
             onClose();
         } catch (err) {
@@ -44,7 +44,7 @@ function ModalNouveauCommercial({ tenantId, onSuccess, onClose }) {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-violet-500/20 border border-violet-500/30 rounded-xl flex items-center justify-center text-lg">ðŸ‘¤</div>
+                    <div className="w-10 h-10 bg-violet-500/20 border border-violet-500/30 rounded-xl flex items-center justify-center text-lg">👤</div>
                     <div>
                         <h3 className="text-white font-black text-lg">Nouveau Commercial</h3>
                         <p className="text-slate-400 text-xs">Accès tournées et ventes terrain</p>
@@ -77,7 +77,7 @@ function ModalNouveauCommercial({ tenantId, onSuccess, onClose }) {
                     </div>
 
                     <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-3 text-violet-300 text-xs">
-                        ðŸ” Le commercial pourra se connecter et gérer ses tournées avec ces identifiants.
+                        🔐 Le commercial pourra se connecter et gérer ses tournées avec ces identifiants.
                     </div>
 
                     <div className="flex gap-3 pt-1">
@@ -85,7 +85,7 @@ function ModalNouveauCommercial({ tenantId, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-700 transition-all">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? 'â³ Création...' : 'ðŸ‘¤ Créer'}
+                            {loading ? '⏳ Création...' : '👤 Créer'}
                         </button>
                     </div>
                 </form>
@@ -94,7 +94,7 @@ function ModalNouveauCommercial({ tenantId, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Modal Nouveau Tricycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Nouveau Tricycle ────────────────────────────────
 function ModalNouveauTricycle({ tenantId, onSuccess, onClose }) {
     const [nom, setNom] = useState('');
     const [loading, setLoading] = useState(false);
@@ -116,7 +116,7 @@ function ModalNouveauTricycle({ tenantId, onSuccess, onClose }) {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center text-lg">ðŸ›º</div>
+                    <div className="w-10 h-10 bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center text-lg">🛺</div>
                     <div>
                         <h3 className="text-white font-black text-lg">Nouveau Tricycle</h3>
                         <p className="text-slate-400 text-xs">Véhicule de livraison terrain</p>
@@ -134,7 +134,7 @@ function ModalNouveauTricycle({ tenantId, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-700 transition-all">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : 'ðŸ›º Créer'}
+                            {loading ? '...' : '🛺 Créer'}
                         </button>
                     </div>
                 </form>
@@ -143,7 +143,7 @@ function ModalNouveauTricycle({ tenantId, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Modal Ouvrir Tournée â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Ouvrir Tournée ──────────────────────────────────
 function ModalOuvrirTournee({ tenantId, depotId, tricycles, users, onSuccess, onClose }) {
     const [form, setForm] = useState({ tricycleId: '', commercialId: '' });
     const [loading, setLoading] = useState(false);
@@ -171,12 +171,12 @@ function ModalOuvrirTournee({ tenantId, depotId, tricycles, users, onSuccess, on
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">ðŸ›º Ouvrir une Tournée</h3>
+                <h3 className="text-white font-black text-xl mb-6">🛺 Ouvrir une Tournée</h3>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
 
                 {tricyclesLibres.length === 0 && (
                     <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/30 text-orange-400 text-sm rounded-xl">
-                        âš ï¸ Aucun tricycle libre disponible. Clôturez une tournée en cours d'abord.
+                        ⚠️ Aucun tricycle libre disponible. Clôturez une tournée en cours d'abord.
                     </div>
                 )}
 
@@ -194,7 +194,7 @@ function ModalOuvrirTournee({ tenantId, depotId, tricycles, users, onSuccess, on
                         <select required value={form.commercialId} onChange={e => setForm({ ...form, commercialId: e.target.value })}
                             className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
                             <option value="">Choisir un commercial...</option>
-                            {users.length === 0 && <option disabled>âš ï¸ Aucun commercial enregistré</option>}
+                            {users.length === 0 && <option disabled>⚠️ Aucun commercial enregistré</option>}
                             {users.map(u => <option key={u.id} value={u.id}>{u.nom || u.email}</option>)}
                         </select>
                     </div>
@@ -203,7 +203,7 @@ function ModalOuvrirTournee({ tenantId, depotId, tricycles, users, onSuccess, on
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading || tricyclesLibres.length === 0}
                             className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl">
-                            {loading ? '...' : 'ðŸš€ Ouvrir'}
+                            {loading ? '...' : '🚀 Ouvrir'}
                         </button>
                     </div>
                 </form>
@@ -212,7 +212,7 @@ function ModalOuvrirTournee({ tenantId, depotId, tricycles, users, onSuccess, on
     );
 }
 
-// â”€â”€ Modal Chargement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Chargement ──────────────────────────────────────
 function ModalChargement({ tournee, tenantId, articles, onSuccess, onClose }) {
     const [lignes, setLignes] = useState([{ articleId: '', quantiteChargee: 1 }]);
     const [stocksDépôt, setStocksDépôt] = useState([]);
@@ -278,9 +278,9 @@ function ModalChargement({ tournee, tenantId, articles, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl my-4">
-                <h3 className="text-white font-black text-xl mb-2">ðŸ“¦ Chargement du Tricycle</h3>
+                <h3 className="text-white font-black text-xl mb-2">📦 Chargement du Tricycle</h3>
                 <p className="text-slate-400 text-sm mb-1">
-                    Tournée <strong className="text-indigo-400">{tournee.reference}</strong> â€” {tournee.tricycle?.nom}
+                    Tournée <strong className="text-indigo-400">{tournee.reference}</strong> — {tournee.tricycle?.nom}
                 </p>
                 <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-6">
                     Dépôt : {tournee.Dépôt?.nom || 'Dépôt'}
@@ -314,17 +314,17 @@ function ModalChargement({ tournee, tenantId, articles, onSuccess, onClose }) {
                                             className={`w-24 bg-slate-800 border ${estInsuffisant ? 'border-red-500/50 text-red-400' : 'border-slate-600 text-white'} rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:border-indigo-500`} />
                                         {lignes.length > 1 && (
                                             <button type="button" onClick={() => setLignes(lignes.filter((_, idx) => idx !== i))}
-                                                className="text-red-400 hover:text-red-300 p-1">âœ•</button>
+                                                className="text-red-400 hover:text-red-300 p-1">✖</button>
                                         )}
                                     </div>
                                     {estInsuffisant && (
                                         <p className="text-[10px] text-red-400 font-bold uppercase pl-1 animate-pulse">
-                                            âš ï¸ Stock insuffisant (Max: {dispo})
+                                            ⚠️ Stock insuffisant (Max: {dispo})
                                         </p>
                                     )}
                                     {l.articleId && !estInsuffisant && dispo > 0 && (
                                         <p className="text-[10px] text-emerald-400 font-medium pl-1">
-                                            âœ“ {dispo} unités disponibles au dépôt
+                                            ✅ {dispo} unités disponibles au dépôt
                                         </p>
                                     )}
                                 </div>
@@ -341,7 +341,7 @@ function ModalChargement({ tournee, tenantId, articles, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading || loadingStocks}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl">
-                            {loading ? '...' : 'ðŸ“¦ Charger'}
+                            {loading ? '...' : '📦 Charger'}
                         </button>
                     </div>
                 </form>
@@ -350,7 +350,7 @@ function ModalChargement({ tournee, tenantId, articles, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Modal Clôture Commerciale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Clôture Commerciale ──────────────────────────────â”€
 function ModalClotureCommerciale({ tournee, tenantId, onSuccess, onClose }) {
     const [form, setForm] = useState({ cashRemis: 0, omRemis: 0, momoRemis: 0, noteCloture: '' });
     const [loading, setLoading] = useState(false);
@@ -384,7 +384,7 @@ function ModalClotureCommerciale({ tournee, tenantId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">ðŸ”’ Clôture Commerciale</h3>
+                <h3 className="text-white font-black text-xl mb-2">🔒 Clôture Commerciale</h3>
                 <p className="text-slate-400 text-sm mb-6">
                     Tournée <strong className="text-indigo-400">{tournee.reference}</strong><br />
                     Le magasinier devra ensuite valider le retour physique des stocks.
@@ -393,9 +393,9 @@ function ModalClotureCommerciale({ tournee, tenantId, onSuccess, onClose }) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {[
-                        { key: 'cashRemis', label: 'ðŸ’µ Cash remis (FCFA)' },
-                        { key: 'omRemis', label: 'ðŸ“± Orange Money remis (FCFA)' },
-                        { key: 'momoRemis', label: 'ðŸ“² MTN MoMo remis (FCFA)' },
+                        { key: 'cashRemis', label: '💵 Cash remis (FCFA)' },
+                        { key: 'omRemis', label: '📱 Orange Money remis (FCFA)' },
+                        { key: 'momoRemis', label: '📲 MTN MoMo remis (FCFA)' },
                     ].map(f => (
                         <div key={f.key}>
                             <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">{f.label}</label>
@@ -422,7 +422,7 @@ function ModalClotureCommerciale({ tournee, tenantId, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl">
-                            {loading ? '...' : 'ðŸ”’ Clôturer'}
+                            {loading ? '...' : '🔒 Clôturer'}
                         </button>
                     </div>
                 </form>
@@ -431,7 +431,7 @@ function ModalClotureCommerciale({ tournee, tenantId, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Modal Validation Magasinier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal Validation Magasinier ────────────────────────────â”€
 function ModalValidationMagasinier({ tournee, tenantId, onSuccess, onClose }) {
     const [retours, setRetours] = useState(
         tournee.lignesChargement?.map(l => ({
@@ -478,9 +478,9 @@ function ModalValidationMagasinier({ tournee, tenantId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl my-4">
-                <h3 className="text-white font-black text-xl mb-2">âœ… Validation Magasinier</h3>
+                <h3 className="text-white font-black text-xl mb-2">✅ Validation Magasinier</h3>
                 <p className="text-orange-400 text-sm mb-6 bg-orange-500/10 border border-orange-500/20 px-4 py-2 rounded-xl">
-                    âš ï¸ Comptez physiquement les articles retournés avant de valider.
+                    ⚠️ Comptez physiquement les articles retournés avant de valider.
                 </p>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
 
@@ -534,7 +534,7 @@ function ModalValidationMagasinier({ tournee, tenantId, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl">
-                            {loading ? '...' : 'âœ… Valider & Libérer'}
+                            {loading ? '...' : '✅ Valider & Libérer'}
                         </button>
                     </div>
                 </form>
@@ -543,7 +543,7 @@ function ModalValidationMagasinier({ tournee, tenantId, onSuccess, onClose }) {
     );
 }
 
-// â”€â”€ Page Principale Tournées â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page Principale Tournées ────────────────────────────────
 export default function TourneesPage() {
     const { tenantId } = useAuth();
     const { depotId } = useDepot();
@@ -569,10 +569,10 @@ export default function TourneesPage() {
         try {
             const [resT, resTr, resA, resU, resS] = await Promise.all([
                 api.get('/tournees', { params: { tenantId, depotId } }),
-                api.get('/tournees/tricycles', { params: { tenantId } }),
-                api.get('/articles', { params: { tenantId } }),
-                api.get('/users/commerciaux', { params: { tenantId } }), // â† Filtre COMMERCIAL uniquement
-                api.get('/tournees/stats', { params: { tenantId } }),
+                api.get('/tournees/tricycles', { params: { tenantId, depotId } }),
+                api.get('/articles', { params: { tenantId, depotId } }),
+                api.get('/users/commerciaux', { params: { tenantId, depotId } }),
+                api.get('/tournees/stats', { params: { tenantId, depotId } }),
             ]);
             setTournees(Array.isArray(resT.data) ? resT.data : []);
             setTricycles(Array.isArray(resTr.data) ? resTr.data : []);
@@ -606,15 +606,15 @@ export default function TourneesPage() {
                 <div className="flex gap-3 flex-wrap">
                     <button onClick={() => setModalCommercial(true)}
                         className="bg-violet-700 hover:bg-violet-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all border border-violet-500/30">
-                        ðŸ‘¤ Nouveau Commercial
+                        👤 Nouveau Commercial
                     </button>
                     <button onClick={() => setModalTricycle(true)}
                         className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all">
-                        ðŸ›º Tricycle
+                        🛺 Tricycle
                     </button>
                     <button onClick={() => setModalOuvrir(true)}
                         className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
-                        ðŸš€ Nouvelle Tournée
+                        🚀 Nouvelle Tournée
                     </button>
                 </div>
             </div>
@@ -629,7 +629,7 @@ export default function TourneesPage() {
                     <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-2">Attente Magasinier</p>
                     <p className="text-white text-3xl font-black">{stats.attenteMagasinier}</p>
                     {stats.attenteMagasinier > 0 && (
-                        <p className="text-orange-400 text-xs mt-1 font-bold animate-pulse">âš ï¸ Action requise</p>
+                        <p className="text-orange-400 text-xs mt-1 font-bold animate-pulse">⚠️ Action requise</p>
                     )}
                 </div>
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5">
@@ -641,14 +641,14 @@ export default function TourneesPage() {
             {/* Tricycles */}
             <div className="mb-8">
                 <h2 className="text-white font-bold mb-3 text-sm uppercase tracking-widest text-slate-400">
-                    ðŸ›º État des Tricycles
+                    🛺 État des Tricycles
                 </h2>
                 <div className="flex flex-wrap gap-3">
                     {/* Compteur commerciaux */}
                     {users.length === 0 && (
                         <button onClick={() => setModalCommercial(true)}
                             className="border border-dashed border-violet-600/40 hover:border-violet-500 text-slate-500 hover:text-violet-400 px-5 py-3 rounded-xl text-sm font-semibold transition-all">
-                            ðŸ‘¤ Enregistrer un commercial d'abord
+                            👤 Enregistrer un commercial d'abord
                         </button>
                     )}
                     {tricycles.length === 0 ? (
@@ -661,9 +661,9 @@ export default function TourneesPage() {
                                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                                 : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
                             }`}>
-                            {t.nom} {t.estLibre ? 'â— Libre' : 'â³ En tournée'}
+                            {t.nom} {t.estLibre ? '● Libre' : '⏳ En tournée'}
                             {!t.estLibre && t.tournees?.[0] && (
-                                <span className="text-xs ml-2 opacity-70">â€” {t.tournees[0].commercial?.email}</span>
+                                <span className="text-xs ml-2 opacity-70">— {t.tournees[0].commercial?.email}</span>
                             )}
                         </div>
                     ))}
@@ -673,9 +673,9 @@ export default function TourneesPage() {
             {/* Onglets */}
             <div className="flex gap-2 mb-6 flex-wrap">
                 {[
-                    ['actives', `ðŸŸ¢ En cours (${stats.actives})`],
-                    ['attente', `â³ Attente Magasinier (${stats.attenteMagasinier})`],
-                    ['historique', 'ðŸ“‹ Historique'],
+                    ['actives', `🟢 En cours (${stats.actives})`],
+                    ['attente', `⏳ Attente Magasinier (${stats.attenteMagasinier})`],
+                    ['historique', '📋 Historique'],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
@@ -695,11 +695,11 @@ export default function TourneesPage() {
                     </div>
                 ) : tourneesFiltrees.length === 0 ? (
                     <div className="text-center py-16 text-slate-500 bg-slate-800/50 border border-slate-700 rounded-2xl">
-                        <p className="text-4xl mb-3">ðŸ›º</p>
+                        <p className="text-4xl mb-3">🛺</p>
                         <p className="font-semibold">Aucune tournée {onglet === 'actives' ? 'en cours' : onglet === 'attente' ? 'en attente' : 'dans l\'historique'}</p>
                         {onglet === 'actives' && (
                             <button onClick={() => setModalOuvrir(true)}
-                                className="mt-4 text-emerald-400 text-sm font-bold">ðŸš€ Lancer une tournée</button>
+                                className="mt-4 text-emerald-400 text-sm font-bold">🚀 Lancer une tournée</button>
                         )}
                     </div>
                 ) : tourneesFiltrees.map(tournee => (
@@ -713,7 +713,7 @@ export default function TourneesPage() {
                                     <BadgeStatut statut={tournee.statut} />
                                     {tournee.ecartStock > 0 && (
                                         <span className="text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
-                                            âš ï¸ Écart: {tournee.ecartStock} unités
+                                            ⚠️ Écart: {tournee.ecartStock} unités
                                         </span>
                                     )}
                                 </div>
@@ -744,7 +744,7 @@ export default function TourneesPage() {
                                     <div className="mt-4 flex flex-wrap gap-2">
                                         {tournee.lignesChargement.map(l => (
                                             <span key={l.id} className="bg-slate-700 text-slate-300 text-xs px-3 py-1 rounded-lg">
-                                                {l.article?.designation} Ã— {l.quantiteChargee}
+                                                {l.article?.designation} × {l.quantiteChargee}
                                             </span>
                                         ))}
                                     </div>
@@ -753,9 +753,9 @@ export default function TourneesPage() {
                                 {/* Encaissements si clôturée */}
                                 {tournee.statut === 'CLOTURE_COMMERCIALE' && (
                                     <div className="mt-3 bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 flex gap-4 text-sm flex-wrap">
-                                        <span className="text-orange-400">ðŸ’µ Cash: <strong>{tournee.cashRemis?.toLocaleString('fr-FR')} FCFA</strong></span>
-                                        <span className="text-orange-400">ðŸ“± OM: <strong>{tournee.omRemis?.toLocaleString('fr-FR')} FCFA</strong></span>
-                                        <span className="text-orange-400">ðŸ“² MoMo: <strong>{tournee.momoRemis?.toLocaleString('fr-FR')} FCFA</strong></span>
+                                        <span className="text-orange-400">💵 Cash: <strong>{tournee.cashRemis?.toLocaleString('fr-FR')} FCFA</strong></span>
+                                        <span className="text-orange-400">📱 OM: <strong>{tournee.omRemis?.toLocaleString('fr-FR')} FCFA</strong></span>
+                                        <span className="text-orange-400">📲 MoMo: <strong>{tournee.momoRemis?.toLocaleString('fr-FR')} FCFA</strong></span>
                                     </div>
                                 )}
                             </div>
@@ -766,18 +766,18 @@ export default function TourneesPage() {
                                     <>
                                         <button onClick={() => setTourneeChargement(tournee)}
                                             className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all text-center">
-                                            ðŸ“¦ Charger
+                                            📦 Charger
                                         </button>
                                         <button onClick={() => setTourneeCloture(tournee)}
                                             className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all text-center">
-                                            ðŸ”’ Clôture Commerciale
+                                            🔒 Clôture Commerciale
                                         </button>
                                     </>
                                 )}
                                 {tournee.statut === 'CLOTURE_COMMERCIALE' && (
                                     <button onClick={() => setTourneeValidation(tournee)}
                                         className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all text-center animate-pulse">
-                                        âœ… Valider (Magasinier)
+                                        ✅ Valider (Magasinier)
                                     </button>
                                 )}
                             </div>
@@ -821,7 +821,3 @@ export default function TourneesPage() {
         </div>
     );
 }
-
-
-
-

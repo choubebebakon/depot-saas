@@ -42,7 +42,7 @@ export class AnalysesService {
         marge: 0
       };
 
-      const margeUnitaire = l.prixUnitaire - (l.article.prixAchat || 0);
+      const margeUnitaire = l.prix - (l.article.prixAchat || 0);
 
       stats.set(artId, {
         ...current,

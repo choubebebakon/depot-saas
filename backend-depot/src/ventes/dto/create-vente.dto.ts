@@ -25,7 +25,7 @@ export class LigneVenteDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  prixUnitaire?: number; // Prix validé par front-end (utile pour conditionnement)
+  prix?: number; // Prix validé par front-end (utile pour conditionnement)
 
   @IsOptional()
   @IsString()

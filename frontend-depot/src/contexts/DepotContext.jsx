@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
@@ -6,7 +7,7 @@ import { useAuth } from './AuthContext';
 const DepotContext = createContext(null);
 
 export function DepotProvider({ children }) {
-    const { tenantId, isAuthenticated } = useAuth();
+    const { tenantId, isAuthenticated, user } = useAuth();
     const queryClient = useQueryClient();
     const [depots, setDepots] = useState([]);
     const [depotActif, setDepotActif] = useState(null);
@@ -22,9 +23,15 @@ export function DepotProvider({ children }) {
                 const data = Array.isArray(res.data) ? res.data : [];
                 setDepots(data);
 
-                const saved = localStorage.getItem('depot_actif_id');
-                const found = saved ? data.find((depot) => depot.id === saved) : null;
-                setDepotActif(found || data[0] || null);
+                // Isolation Frontend : On force le dépôt du profil pour les employés
+                if (!['PATRON', 'COMPTABLE'].includes(user?.role) && user?.depotId) {
+                    const profileDepot = data.find(d => d.id === user.depotId);
+                    setDepotActif(profileDepot || data[0] || null);
+                } else {
+                    const saved = localStorage.getItem('depot_actif_id');
+                    const found = saved ? data.find((depot) => depot.id === saved) : null;
+                    setDepotActif(found || data[0] || null);
+                }
             } catch (err) {
                 console.error('Erreur chargement dépôts:', err);
             } finally {
@@ -33,7 +40,7 @@ export function DepotProvider({ children }) {
         };
 
         fetchDepots();
-    }, [tenantId, isAuthenticated]);
+    }, [tenantId, isAuthenticated, user?.role, user?.depotId]);
 
     useEffect(() => {
         const currentDepotId = depotActif?.id || null;
@@ -52,6 +59,11 @@ export function DepotProvider({ children }) {
     }, [depotActif?.id, queryClient]);
 
     const changerDepot = (depot) => {
+        if (!['PATRON', 'COMPTABLE'].includes(user?.role) && depot?.id !== user?.depotId) {
+            console.warn(`[SECURITY] Tentative de changement de dépôt non autorisée. Utilisateur: ${user?.role}, Dépôt demandé: ${depot?.nom}`);
+            return; // Bloquer le changement
+        }
+
         setDepotActif(depot);
         if (depot) {
             localStorage.setItem('depot_actif_id', depot.id);

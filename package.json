@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@google/genai": "^2.4.0",
+    "@nestjs/config": "^4.0.4",
+    "@types/express": "^5.0.6",
+    "nestjs-pino": "^4.6.1",
+    "pino-http": "^11.0.0"
+  }
+}

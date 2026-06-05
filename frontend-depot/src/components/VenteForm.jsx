@@ -7,7 +7,7 @@ import { ROLES, hasRole } from '../utils/rbac';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { generateId, generateReference } from '../utils/offline';
 import Receipt80mm from './Receipt80mm';
-import { Printer } from 'lucide-react';
+import { Printer, PlusCircle } from 'lucide-react';
 import MixedCrateBuilder from './MixedCrateBuilder';
 
 const LABELS_TYPES = {
@@ -27,9 +27,9 @@ export default function VenteForm() {
 
   // Chargement des données avec Query (persistance automatique)
   const { data: articles = [] } = useQuery({
-    queryKey: ['articles', tenantId],
+    queryKey: ['articles', tenantId, depotId],
     queryFn: async () => {
-      const res = await api.get('/articles', { params: { tenantId } });
+      const res = await api.get('/articles', { params: { tenantId, depotId } });
       return Array.isArray(res.data) ? res.data : [];
     },
     enabled: !!tenantId
@@ -45,9 +45,9 @@ export default function VenteForm() {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ['clients', tenantId],
+    queryKey: ['clients', tenantId, depotId],
     queryFn: async () => {
-      const res = await api.get('/clients', { params: { tenantId } });
+      const res = await api.get('/clients', { params: { tenantId, depotId } });
       return Array.isArray(res.data) ? res.data : [];
     },
     enabled: !!tenantId
@@ -67,14 +67,16 @@ export default function VenteForm() {
     try {
       const saved = localStorage.getItem('depot_draft_lignes');
       if (saved) return JSON.parse(saved);
-    } catch(e) {}
+    } catch {
+      localStorage.removeItem('depot_draft_lignes');
+    }
     return [{ articleId: '', quantite: 1, remise: 0 }];
   });
 
   useEffect(() => {
     localStorage.setItem('depot_draft_lignes', JSON.stringify(lignes));
   }, [lignes]);
-  
+
   const [modePaiement, setModePaiement] = useState('CASH');
   const [clientId, setClientId] = useState('');
   const [avecConsignes, setAvecConsignes] = useState(false);
@@ -86,24 +88,25 @@ export default function VenteForm() {
   // Etat pour le modal Casier Mixte
   const [activeMixBuilder, setActiveMixBuilder] = useState(null);
 
-  useEffect(() => {
-    if (avecConsignes && lignesConsignes.length === 0 && typesConsigne.length > 0) {
-      setLignesConsignes(typesConsigne.map((t) => ({
-        typeConsigneId: t.id,
-        type: t.type,
-        valeurXAF: t.valeurXAF,
-        quantiteSortie: 0,
-        quantiteRendue: 0,
-      })));
-    }
-  }, [avecConsignes, typesConsigne, lignesConsignes.length]);
+  const buildLignesConsignes = () => typesConsigne.map((t) => ({
+    typeConsigneId: t.id,
+    type: t.type,
+    valeurXAF: t.valeurXAF,
+    quantiteSortie: 0,
+    quantiteRendue: 0,
+  }));
+
+  const toggleConsignes = (checked) => {
+    setAvecConsignes(checked);
+    setLignesConsignes(checked ? buildLignesConsignes() : []);
+  };
 
   const updateLigne = (i, champ, val) => {
     const copy = [...lignes];
     copy[i][champ] = champ === 'articleId' ? val : Number(val);
     if (champ === 'articleId') {
-       copy[i].casierMixte = false;
-       copy[i].composition = null;
+      copy[i].casierMixte = false;
+      copy[i].composition = null;
     }
     setLignes(copy);
   };
@@ -118,11 +121,11 @@ export default function VenteForm() {
 
   const totalArticles = lignes.reduce((acc, l) => {
     let sousTotal = 0;
-    if (l.casierMixte && l.prixUnitaire) {
-       sousTotal = l.prixUnitaire * (parseInt(l.quantite, 10) || 0);
+    if (l.casierMixte && l.prix) {
+      sousTotal = l.prix * (parseInt(l.quantite, 10) || 0);
     } else {
-       const art = getArticle(l.articleId);
-       sousTotal = art ? art.prixVente * (parseInt(l.quantite, 10) || 0) : 0;
+      const art = getArticle(l.articleId);
+      sousTotal = art ? art.prixVente * (parseInt(l.quantite, 10) || 0) : 0;
     }
     return acc + Math.max(0, sousTotal - (Number(l.remise) || 0));
   }, 0);
@@ -143,6 +146,16 @@ export default function VenteForm() {
     setClientId('');
     setAvecConsignes(false);
     setLignesConsignes([]);
+  };
+
+  const viderPanier = () => {
+    if (window.confirm("Voulez-vous vraiment annuler cette vente et vider le panier ?")) {
+      setLignes([]);
+      setClientId('');
+      setAvecConsignes(false);
+      setLignesConsignes([]);
+      localStorage.removeItem('depot_draft_lignes');
+    }
   };
 
   const createVenteMutation = useMutation({
@@ -178,7 +191,8 @@ export default function VenteForm() {
         modePaiement: data.modePaiement,
         client: data.client,
         lignes: data.lignes || [],
-        date: data.date || data.createdAt || new Date()
+        date: data.date || data.createdAt || new Date(),
+        caissier: user?.nom || user?.name || user?.email || 'Caissier'
       });
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['stocks', tenantId, depotId] });
@@ -189,6 +203,7 @@ export default function VenteForm() {
       setTimeout(() => { setSuccess(false); setDerniereVente(null); }, 6000);
     },
     onError: (err) => {
+      console.error('Erreur mutation vente:', err);
       const message = err?.response?.data?.message || err.message || 'Erreur inattendue.';
       setErreur(Array.isArray(message) ? message.join(', ') : message);
     }
@@ -197,39 +212,65 @@ export default function VenteForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!depotId) { setErreur('Sélectionnez un Dépôt dans le menu.'); return; }
-    setSuccess(false);
-    setErreur(null);
 
-    const payloadLignes = lignes.map((l) => {
-      const article = getArticle(l.articleId);
-      const quantite = parseInt(l.quantite, 10);
-      const remise = Number(l.remise) || 0;
-      const prixBase = l.casierMixte ? l.prixUnitaire : (article?.prixVente || 0);
-      const sousTotal = prixBase * quantite;
-      if (remise > sousTotal) {
-        let name = l.casierMixte ? "Casier Mixte" : (article?.designation || 'la ligne');
-        setErreur(`La remise dépasse le montant de ${name}.`);
-        throw new Error('Invalid remise');
+    try {
+      setSuccess(false);
+      setErreur(null);
+
+      // Filtrer les lignes vides et calculer les totaux
+      const payloadLignes = lignes
+        .filter(l => l.articleId || (l.casierMixte && l.composition?.length > 0))
+        .map((l) => {
+          const article = getArticle(l.articleId);
+          const quantite = parseInt(l.quantite, 10) || 0;
+          const remise = Number(l.remise) || 0;
+          const prixBase = l.casierMixte ? (Number(l.prix) || 0) : (article?.prixVente || 0);
+          const sousTotal = prixBase * quantite;
+
+          if (remise > sousTotal && sousTotal > 0) {
+            let name = l.casierMixte ? "Casier Mixte" : (article?.designation || 'la ligne');
+            throw new Error(`La remise dépasse le montant de ${name}.`);
+          }
+
+          // Déterminer l'articleId principal (celui du casier ou le premier du mix)
+          const effectiveArticleId = l.casierMixte
+            ? (l.composition?.[0]?.articleId || l.articleId)
+            : l.articleId;
+
+          if (!effectiveArticleId) {
+            throw new Error("ID d'article manquant sur une ligne.");
+          }
+
+          return {
+            articleId: effectiveArticleId,
+            quantite,
+            remise,
+            casierMixte: !!l.casierMixte,
+            composition: l.composition || null,
+            prix: prixBase,
+            total: sousTotal - remise, // Ajout du total pour le mode hors-ligne
+            article: article || (l.casierMixte ? { designation: "Casier Mixte" } : null) // Utile pour Receipt80mm
+          };
+        });
+
+      if (payloadLignes.length === 0) {
+        setErreur("Votre panier est vide.");
+        return;
       }
-      return { 
-        articleId: l.casierMixte ? l.composition[0].articleId : l.articleId, 
-        quantite, 
-        remise,
-        casierMixte: l.casierMixte,
-        composition: l.composition,
-        prixUnitaire: prixBase
-      };
-    });
 
-    createVenteMutation.mutate({
-      id: generateId(),
-      reference: generateReference(user?.email || 'OFF', 'FAC'),
-      depotId,
-      tenantId,
-      modePaiement,
-      clientId: clientId || undefined,
-      lignes: payloadLignes,
-    });
+      createVenteMutation.mutate({
+        id: generateId(),
+        reference: generateReference(user?.email || 'OFF', 'FAC'),
+        depotId,
+        tenantId,
+        modePaiement,
+        clientId: clientId || undefined,
+        lignes: payloadLignes,
+      });
+    } catch (err) {
+      console.error('Erreur handleSubmit Vente:', err);
+      setErreur(err.message);
+    }
   };
 
   const modes = [
@@ -244,7 +285,7 @@ export default function VenteForm() {
       <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-6">
         <h2 className="text-white font-bold text-lg mb-3">Caisse Express</h2>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-300">
-           Accès restreint aux caissiers et gérants.
+          Accès restreint aux caissiers et gérants.
         </div>
       </div>
     );
@@ -280,6 +321,32 @@ export default function VenteForm() {
           </select>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Paiement</label>
+            <select
+              value={modePaiement}
+              onChange={(e) => setModePaiement(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"
+            >
+              {modes.map((mode) => (
+                <option key={mode.val} value={mode.val}>{mode.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <label className="flex items-center justify-between gap-3 bg-slate-900 border border-slate-600 rounded-xl px-3 py-2.5">
+            <span className="text-slate-300 text-xs font-bold uppercase tracking-widest">Consignes</span>
+            <input
+              type="checkbox"
+              checked={avecConsignes}
+              disabled={typesConsigne.length === 0}
+              onChange={(e) => toggleConsignes(e.target.checked)}
+              className="h-4 w-4 accent-indigo-600"
+            />
+          </label>
+        </div>
+
         <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
           {lignes.map((ligne, i) => (
             <div key={i} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 space-y-2">
@@ -291,32 +358,34 @@ export default function VenteForm() {
                 <input type="number" value={ligne.quantite} onChange={(e) => updateLigne(i, 'quantite', e.target.value)} className="w-16 bg-slate-900 border border-slate-600 text-white text-xs rounded-lg px-2 text-center" />
               </div>
               {ligne.articleId && (
-                 <div className="flex justify-between items-center bg-indigo-500/5 p-2 rounded-lg border border-indigo-500/10">
-                   <span className="text-[10px] text-indigo-300 font-bold uppercase italic">
-                      {ligne.casierMixte ? "Casier Mixte" : "Standard"}
-                   </span>
-                   <button type="button" onClick={() => {
-                      const art = getArticle(ligne.articleId);
-                      setActiveMixBuilder({ index: i, crateSize: art?.uniteParCasier || 12, basePrice: art?.prixVente || 8000, crateName: art?.designation, initialComposition: ligne.composition });
-                   }} className="text-[10px] text-white bg-indigo-600 px-2 py-1 rounded">Mixer</button>
-                 </div>
+                <div className="flex justify-between items-center bg-indigo-500/5 p-2 rounded-lg border border-indigo-500/10">
+                  <span className="text-[10px] text-indigo-300 font-bold uppercase italic">
+                    {ligne.casierMixte ? "Casier Mixte" : "Standard"}
+                  </span>
+                  <button type="button" onClick={() => {
+                    const art = getArticle(ligne.articleId);
+                    setActiveMixBuilder({ index: i, crateSize: art?.uniteParCasier || 12, basePrice: art?.prixVente || 8000, crateName: art?.designation, initialComposition: ligne.composition });
+                  }} className="text-[10px] text-white bg-indigo-600 px-2 py-1 rounded">Mixer</button>
+                </div>
               )}
             </div>
           ))}
         </div>
 
-        <button type="button" onClick={() => setLignes([...lignes, { articleId: '', quantite: 1, remise: 0 }])} className="w-full border border-dashed border-slate-600 text-slate-400 py-2 text-sm font-semibold rounded-xl">+ Article</button>
+        <button type="button" onClick={() => setLignes([...lignes, { articleId: '', quantite: 1, remise: 0 }])} className="w-full flex items-center justify-center border border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-500 py-2 text-sm font-semibold rounded-xl transition-all">
+          <PlusCircle size={20} className="mr-3" /> Nouvelle Vente
+        </button>
 
         {avecConsignes && (
           <div className="bg-slate-900 rounded-xl p-4 border border-slate-600 space-y-2">
-             <p className="text-slate-400 text-xs font-bold uppercase">Consignes</p>
-             {lignesConsignes.map((l, i) => (
-                <div key={l.typeConsigneId} className="flex justify-between items-center gap-2">
-                   <span className="text-xs text-slate-300 flex-1">{l.type}</span>
-                   <input type="number" value={l.quantiteSortie} onChange={(e) => updateConsigne(i, 'quantiteSortie', e.target.value)} className="w-12 bg-slate-800 text-white text-xs rounded p-1 text-center" />
-                   <input type="number" value={l.quantiteRendue} onChange={(e) => updateConsigne(i, 'quantiteRendue', e.target.value)} className="w-12 bg-slate-800 text-white text-xs rounded p-1 text-center" />
-                </div>
-             ))}
+            <p className="text-slate-400 text-xs font-bold uppercase">Consignes</p>
+            {lignesConsignes.map((l, i) => (
+              <div key={l.typeConsigneId} className="flex justify-between items-center gap-2">
+                <span className="text-xs text-slate-300 flex-1">{l.type}</span>
+                <input type="number" value={l.quantiteSortie} onChange={(e) => updateConsigne(i, 'quantiteSortie', e.target.value)} className="w-12 bg-slate-800 text-white text-xs rounded p-1 text-center" />
+                <input type="number" value={l.quantiteRendue} onChange={(e) => updateConsigne(i, 'quantiteRendue', e.target.value)} className="w-12 bg-slate-800 text-white text-xs rounded p-1 text-center" />
+              </div>
+            ))}
           </div>
         )}
 
@@ -326,6 +395,12 @@ export default function VenteForm() {
               <span className="text-slate-400">Total Articles</span>
               <span className="text-white font-bold">{totalArticles.toLocaleString('fr-FR')} FCFA</span>
             </div>
+            {totalRemises > 0 && (
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500">Remises</span>
+                <span className="text-amber-300 font-bold">-{totalRemises.toLocaleString('fr-FR')} FCFA</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-slate-700 pt-1">
               <span className="text-white font-black">Total Général</span>
               <span className="text-white font-black text-lg">{totalGeneral.toLocaleString('fr-FR')} FCFA</span>
@@ -333,28 +408,45 @@ export default function VenteForm() {
           </div>
         )}
 
-        <button type="submit" disabled={createVenteMutation.isLoading} className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-500/20">
-          {createVenteMutation.isLoading ? 'Enregistrement...' : 'Valider la vente'}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={viderPanier}
+            className="w-[30%] bg-red-600 hover:bg-red-700 text-white font-black py-3.5 rounded-xl transition-all uppercase tracking-widest text-[10px]"
+          >
+            ANNULER
+          </button>
+          <button
+            type="submit"
+            disabled={createVenteMutation.isPending}
+            className="w-[70%] flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3.5 rounded-xl shadow-lg shadow-indigo-500/20 transition-all uppercase tracking-widest text-xs"
+          >
+            {createVenteMutation.isPending ? 'Enregistrement...' : (
+              <>
+                <Printer size={20} className="mr-3" /> Validation du ticket
+              </>
+            )}
+          </button>
+        </div>
       </form>
 
       {activeMixBuilder && (
-         <MixedCrateBuilder 
-           articles={articles}
-           crateSize={activeMixBuilder.crateSize}
-           basePrice={activeMixBuilder.basePrice}
-           crateName={activeMixBuilder.crateName}
-           initialComposition={activeMixBuilder.initialComposition}
-           onClose={() => setActiveMixBuilder(null)}
-           onSave={(composition, totalPrice) => {
-              const copy = [...lignes];
-              copy[activeMixBuilder.index].casierMixte = true;
-              copy[activeMixBuilder.index].composition = composition;
-              copy[activeMixBuilder.index].prixUnitaire = totalPrice;
-              setLignes(copy);
-              setActiveMixBuilder(null);
-           }}
-         />
+        <MixedCrateBuilder
+          articles={articles}
+          crateSize={activeMixBuilder.crateSize}
+          basePrice={activeMixBuilder.basePrice}
+          crateName={activeMixBuilder.crateName}
+          initialComposition={activeMixBuilder.initialComposition}
+          onClose={() => setActiveMixBuilder(null)}
+          onSave={(composition, totalPrice) => {
+            const copy = [...lignes];
+            copy[activeMixBuilder.index].casierMixte = true;
+            copy[activeMixBuilder.index].composition = composition;
+            copy[activeMixBuilder.index].prix = totalPrice;
+            setLignes(copy);
+            setActiveMixBuilder(null);
+          }}
+        />
       )}
 
       {derniereVente && <Receipt80mm vente={derniereVente} config={tenantConfig} />}

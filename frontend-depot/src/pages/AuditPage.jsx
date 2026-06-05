@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -26,48 +27,27 @@ function BadgeAction({ action }) {
 export default function AuditPage() {
   const { tenantId } = useAuth();
   const { depotId } = useDepot();
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     action: '',
     startDate: '',
     endDate: '',
   });
 
-  const fetchJournal = useCallback(async (isSilent = false) => {
-    if (!tenantId) return;
-    if (!isSilent) setLoading(true);
-    else setRefreshing(true);
-
-    setError('');
-    try {
+  const { data: rows = [], isLoading, isRefetching } = useQuery({
+    queryKey: ['audit-journal', tenantId, depotId, filters],
+    queryFn: async () => {
+      if (!tenantId) return [];
       const params = { tenantId, depotId };
       if (filters.action) params.action = filters.action;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
       const res = await api.get('/audit/journal', { params });
-      setRows(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de charger le journal.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [tenantId, depotId, filters]);
-
-  useEffect(() => {
-    fetchJournal();
-
-    const interval = setInterval(() => {
-      if (!filters.startDate && !filters.endDate) {
-        fetchJournal(true);
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [fetchJournal, filters.startDate, filters.endDate]);
+      return Array.isArray(res.data) ? res.data : [];
+    },
+    enabled: !!tenantId,
+    refetchInterval: 5000, // Mise à jour toutes les 5 secondes
+    refetchIntervalInBackground: true,
+  });
 
   return (
     <div>
@@ -75,9 +55,9 @@ export default function AuditPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-black text-white">Journal d audit</h1>
-            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider transition-all ${refreshing ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${refreshing ? 'bg-indigo-400 animate-pulse' : 'bg-emerald-400'}`} />
-              {refreshing ? 'Syncing...' : 'Live Sync'}
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider transition-all ${isRefetching ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isRefetching ? 'bg-indigo-400 animate-pulse' : 'bg-emerald-400'}`} />
+              {isRefetching ? 'Syncing...' : 'Live Sync'}
             </div>
           </div>
           <p className="text-slate-400 text-sm mt-1">Vue Patron sur les annulations, remises et validations sensibles.</p>
@@ -123,12 +103,12 @@ export default function AuditPage() {
 
       {error && (
         <div className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          {error}
+          {error.response?.data?.message || error.message || 'Impossible de charger le journal.'}
         </div>
       )}
 
       <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center h-48">
             <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           </div>

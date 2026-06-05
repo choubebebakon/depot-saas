@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class ImpressionService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async genererTicketVente(venteId: string, tenantId: string) {
     // 1. Récupération de la vente avec les relations complètes incluses
@@ -47,7 +47,7 @@ export class ImpressionService {
     const ticketLines: string[] = [];
 
     // --- EN-TÊTE ---
-    ticketLines.push(centerText(vente.tenant.nomEntreprise.toUpperCase()));
+    ticketLines.push(centerText((vente.tenant.nomEntreprise || 'GeStock').toUpperCase()));
     if (vente.depot.adresse) {
       ticketLines.push(centerText(vente.depot.adresse));
     }
@@ -68,7 +68,7 @@ export class ImpressionService {
       // Formatage des colonnes : on s'assure de respecter les largeurs
       const qte = String(ligne.quantite).padEnd(3, ' ');
       const designation = (ligne.article.designation || '').substring(0, 11).padEnd(11, ' ');
-      const pu = String(ligne.prixUnitaire).padStart(5, ' ') + ' ';
+      const pu = String(ligne.prix).padStart(5, ' ') + ' ';
       const total = String(ligne.total).padStart(6, ' ');
 
       ticketLines.push(`${qte} ${designation} ${pu} ${total}`);
@@ -85,7 +85,7 @@ export class ImpressionService {
     const heureAchat = vente.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     ticketLines.push(`Date: ${dateAchat} a ${heureAchat}`);
     ticketLines.push('');
-    
+
     // Remerciements
     ticketLines.push(centerText('Merci de votre confiance !'));
     // Lignes vides pour dégager le ticket de la lame de coupe

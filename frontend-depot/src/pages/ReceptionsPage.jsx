@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -17,7 +17,7 @@ export default function ReceptionsPage() {
     const [numBordereau, setNumBordereau] = useState('');
     const [modePaiement, setModePaiement] = useState('CASH');
     const [montantPaye, setMontantPaye] = useState(0);
-    const [lignes, setLignes] = useState([{ articleId: '', unite: 'BOUTEILLE', quantiteLivree: 0, quantiteGratuite: 0, prixAchatUnitaire: 0 }]);
+    const [lignes, setLignes] = useState([{ articleId: '', unite: 'Unité', quantiteLivree: 0, quantiteGratuite: 0, prixAchatUnitaire: 0 }]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
 
@@ -43,7 +43,7 @@ export default function ReceptionsPage() {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const addLigne = () => {
-        setLignes([...lignes, { articleId: '', unite: 'BOUTEILLE', quantiteLivree: 0, quantiteGratuite: 0, prixAchatUnitaire: 0 }]);
+        setLignes([...lignes, { articleId: '', unite: 'Unité', quantiteLivree: 0, quantiteGratuite: 0, prixAchatUnitaire: 0 }]);
     };
 
     const removeLigne = (index) => {
@@ -88,9 +88,9 @@ export default function ReceptionsPage() {
             // Reset form
             setFournisseurId('');
             setNumBordereau('');
-            setLignes([{ articleId: '', unite: 'BOUTEILLE', quantiteLivree: 0, quantiteGratuite: 0, prixAchatUnitaire: 0 }]);
+            setLignes([{ articleId: '', unite: 'Unité', quantiteLivree: 0, quantiteGratuite: 0, prixAchatUnitaire: 0 }]);
         } catch (err) {
-            setError(err.response?.data?.message || 'Erreur lors de lâ€™enregistrement');
+            setError(err.response?.data?.message || "Erreur lors de l'enregistrement");
         } finally {
             setSubmitting(false);
         }
@@ -117,7 +117,7 @@ export default function ReceptionsPage() {
                 <div className="bg-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-indigo-600" />
                     <div className="flex justify-between items-start mb-8">
-                        <h2 className="text-xl font-black text-white">ðŸ“¦ Saisie Nouveau Bordereau</h2>
+                        <h2 className="text-xl font-black text-white">📦 Saisie Nouveau Bordereau</h2>
                         <button onClick={() => setIsFormOpen(false)} className="text-slate-500 hover:text-white transition-colors">Fermer</button>
                     </div>
 
@@ -127,9 +127,9 @@ export default function ReceptionsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2 block">Fournisseur</label>
-                                <select 
-                                    required 
-                                    value={fournisseurId} 
+                                <select
+                                    required
+                                    value={fournisseurId}
                                     onChange={e => setFournisseurId(e.target.value)}
                                     className="w-full bg-slate-900 border border-slate-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-all font-semibold"
                                 >
@@ -138,9 +138,9 @@ export default function ReceptionsPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2 block">NÂ° Bordereau</label>
-                                <input 
-                                    type="text" 
+                                <label className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2 block">N° Bordereau</label>
+                                <input
+                                    type="text"
                                     placeholder="Ex: BR-2024-X"
                                     value={numBordereau}
                                     onChange={e => setNumBordereau(e.target.value)}
@@ -149,8 +149,8 @@ export default function ReceptionsPage() {
                             </div>
                             <div>
                                 <label className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2 block">Mode Paiement</label>
-                                <select 
-                                    value={modePaiement} 
+                                <select
+                                    value={modePaiement}
                                     onChange={e => setModePaiement(e.target.value)}
                                     className="w-full bg-slate-900 border border-slate-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-all font-semibold"
                                 >
@@ -170,7 +170,7 @@ export default function ReceptionsPage() {
                                 <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-slate-900/50 p-6 rounded-2xl border border-slate-800/50">
                                     <div className="md:col-span-4">
                                         <label className="text-slate-600 text-[10px] font-black uppercase mb-1 block">Article</label>
-                                        <select 
+                                        <select
                                             required
                                             value={ligne.articleId}
                                             onChange={e => updateLigne(idx, 'articleId', e.target.value)}
@@ -182,21 +182,18 @@ export default function ReceptionsPage() {
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="text-slate-600 text-[10px] font-black uppercase mb-1 block">Unité</label>
-                                        <select 
+                                        <input
+                                            type="text"
                                             value={ligne.unite}
+                                            placeholder="Ex: Casier, Palette, Sac..."
                                             onChange={e => updateLigne(idx, 'unite', e.target.value)}
                                             className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                                        >
-                                            <option value="BOUTEILLE">Bouteille/Unité</option>
-                                            <option value="CASIER">Casier</option>
-                                            <option value="PACK">Pack</option>
-                                            <option value="PLATEAU">Plateau</option>
-                                        </select>
+                                        />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="text-slate-600 text-[10px] font-black uppercase mb-1 block">Qté Livrée</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             value={ligne.quantiteLivree}
                                             onChange={e => updateLigne(idx, 'quantiteLivree', e.target.value)}
@@ -205,8 +202,8 @@ export default function ReceptionsPage() {
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="text-slate-600 text-[10px] font-black uppercase mb-1 block">Qté Gratuite</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             min="0"
                                             value={ligne.quantiteGratuite}
                                             onChange={e => updateLigne(idx, 'quantiteGratuite', e.target.value)}
@@ -216,8 +213,8 @@ export default function ReceptionsPage() {
                                     <div className="md:col-span-2 flex gap-2">
                                         <div className="flex-1">
                                             <label className="text-slate-600 text-[10px] font-black uppercase mb-1 block">Prix Achat (Unité)</label>
-                                            <input 
-                                                type="number" 
+                                            <input
+                                                type="number"
                                                 min="0"
                                                 value={ligne.prixAchatUnitaire}
                                                 onChange={e => updateLigne(idx, 'prixAchatUnitaire', e.target.value)}
@@ -225,19 +222,19 @@ export default function ReceptionsPage() {
                                             />
                                         </div>
                                         {lignes.length > 1 && (
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={() => removeLigne(idx)}
                                                 className="mb-1 p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                             >
-                                                âœ•
+                                                ✖
                                             </button>
                                         )}
                                     </div>
                                 </div>
                             ))}
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={addLigne}
                                 className="w-full py-3 border border-dashed border-slate-700 rounded-2xl text-slate-500 hover:text-indigo-400 hover:border-indigo-500/50 transition-all text-sm font-bold uppercase tracking-widest"
                             >
@@ -248,8 +245,8 @@ export default function ReceptionsPage() {
                         <div className="flex flex-col md:flex-row justify-between items-end gap-6 pt-6 border-t border-slate-800">
                             <div className="w-full md:w-64">
                                 <label className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2 block">Montant Payé (FCFA)</label>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     min="0"
                                     value={montantPaye}
                                     onChange={e => setMontantPaye(e.target.value)}
@@ -261,24 +258,24 @@ export default function ReceptionsPage() {
                                 <p className="text-4xl font-black text-white">{calculateTotal().toLocaleString()} <span className="text-slate-500 text-lg">FCFA</span></p>
                                 {calculateTotal() - montantPaye > 0 && (
                                     <p className="text-orange-500 text-sm font-bold mt-1 animate-pulse">
-                                        Reste Ã  payer (Dette) : {(calculateTotal() - montantPaye).toLocaleString()} FCFA
+                                        Reste à payer (Dette) : {(calculateTotal() - montantPaye).toLocaleString()} FCFA
                                     </p>
                                 )}
                             </div>
                             <div className="flex gap-4">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsFormOpen(false)}
                                     className="px-8 py-4 bg-slate-900 text-slate-400 font-black rounded-2xl hover:bg-slate-800 transition-all"
                                 >
                                     Annuler
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={submitting}
                                     className="px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 shadow-xl shadow-indigo-500/20 disabled:opacity-50 transition-all active:scale-95"
                                 >
-                                    {submitting ? 'Enregistrement...' : 'âœ… Valider la Réception'}
+                                    {submitting ? 'Enregistrement...' : '✅ Valider la Réception'}
                                 </button>
                             </div>
                         </div>
@@ -303,7 +300,9 @@ export default function ReceptionsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/50 font-semibold text-sm">
-                            {receptions.length === 0 ? (
+                            {loading ? (
+                                <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-600">Chargement des receptions...</td></tr>
+                            ) : receptions.length === 0 ? (
                                 <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-600">Aucune réception enregistrée</td></tr>
                             ) : receptions.map(r => (
                                 <tr key={r.id} className="hover:bg-slate-900/50 transition-colors">
@@ -315,7 +314,7 @@ export default function ReceptionsPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-white">{r.fournisseur?.nom}</p>
-                                        <p className="text-slate-500 text-xs italic">{r.numBordereau || 'Sans NÂ° bordereau'}</p>
+                                        <p className="text-slate-500 text-xs italic">{r.numBordereau || 'Sans N° bordereau'}</p>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex -space-x-2">
@@ -350,7 +349,3 @@ export default function ReceptionsPage() {
         </div>
     );
 }
-
-
-
-

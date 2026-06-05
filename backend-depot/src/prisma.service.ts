@@ -85,7 +85,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             await this.$connect();
             console.log('✅ Base de données connectée et Isolation active !');
         } catch (error) {
-            console.error('❌ Erreur de connexion database:', error.message);
+            console.error('❌ Erreur de connexion database:', (error as any).message);
         }
     }
 

@@ -1,53 +1,26 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Logger } from '@nestjs/common';
-import { PaiementService } from './paiement.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { PaymentsService } from '../payments/payments.service'; // On importe le service unifié
 
 @Controller('paiements')
 export class PaiementController {
   private readonly logger = new Logger(PaiementController.name);
 
-  constructor(private readonly paiementService: PaiementService) {}
+  // On injecte le NOUVEAU service pour centraliser la logique
+  constructor(private readonly paymentsService: PaymentsService) {}
 
   @Public()
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(@Body() payload: any) {
-    // Exemple attendu : { status: 'SUCCESS', tenantId: '...', amount: 20000, operateur: 'OM', transactionId: 'TXN123' }
+    this.logger.warn(`[DÉPRÉCIÉ] Webhook reçu sur l'ancienne route /paiements/webhook. Redirection vers PaymentsService.`);
 
-    if (payload.status === 'SUCCESS' && payload.tenantId) {
-      
-      const montant = parseInt(payload.amount);
-      const operateur = payload.operateur || 'INCONNU';
-      const transactionId = payload.transactionId || `AUTO-${Date.now()}`;
-
-      // Validation rapide du format de l'opérateur local pour les logs
-      if (operateur !== 'OM' && operateur !== 'MOMO') {
-        this.logger.warn(`Opérateur inhabituel détecté via webhook: ${operateur}`);
-      }
-
-      // Validation du montant avant de solliciter la DB
-      if (montant !== 20000 && montant !== 150000) {
-        this.logger.error(`Montant inattendu reçu : ${montant} pour le tenant ${payload.tenantId}`);
-        // Différent des prix du SaaS, on renvoie à l'opérateur que c'est traité (pour stopper les retries) 
-        // mais on n'ajoute pas de mois actif.
-        return { received: true, status: 'IGNORED_INVALID_AMOUNT' };
-      }
-
-      try {
-        await this.paiementService.traiterPaiement({
-          tenantId: payload.tenantId,
-          montant: montant,
-          operateur: operateur,
-          transactionId: transactionId
-        });
-      } catch (error) {
-        this.logger.error(`Echec de renouvellement pour le tenant ${payload.tenantId}`, error.stack);
-      }
-
-      return { received: true, status: 'PROCESSED' };
+    try {
+      // Si le payload vient de NotchPay/Campay sous l'ancienne route, on le passe au nouveau handler
+      return await this.paymentsService.handleWebhookNotification(payload);
+    } catch (error: any) {
+      this.logger.error(`Échec du traitement du webhook déprécié : ${error.message}`);
+      return { received: true, status: 'FAILED_IN_REDIRECT' };
     }
-
-    // Le webhook n'était pas SUCCESS ou est incomplet
-    return { received: true, status: 'IGNORED_OR_FAILED' };
   }
 }

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from '../api/axios';
 import {
@@ -68,8 +68,8 @@ const AnalysesPage = () => {
               key={p}
               onClick={() => setPeriode(p)}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                periode === p 
-                ? 'bg-indigo-600 text-white shadow-md' 
+                periode === p
+                ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
@@ -96,7 +96,7 @@ const AnalysesPage = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="designation" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   formatter={(value) => [`${value.toLocaleString()} FCFA`, 'Marge']}
                 />
@@ -127,7 +127,7 @@ const AnalysesPage = () => {
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" hide />
                 <YAxis dataKey="article" type="category" tick={{fontSize: 10}} width={120} axisLine={false} />
-                <Tooltip 
+                <Tooltip
                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
                 <Bar dataKey="rotation" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
@@ -150,7 +150,7 @@ const AnalysesPage = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="labels" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend iconType="circle" />
@@ -171,7 +171,7 @@ const AnalysesPage = () => {
           </div>
           <BarChart2 className="absolute -bottom-4 -right-4 w-24 h-24 opacity-10 group-hover:scale-110 transition-transform" />
         </div>
-        
+
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
           <div className="space-y-1">
             <p className="text-slate-500 text-sm font-medium">Rotation Globale</p>
@@ -197,7 +197,3 @@ const AnalysesPage = () => {
 };
 
 export default AnalysesPage;
-
-
-
-

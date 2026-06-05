@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -103,7 +103,7 @@ export default function RapportsPage() {
             <StatCard
               title="Point mort"
               value={`${(pointMort?.pointMortCA || 0).toLocaleString('fr-FR')} FCFA`}
-              subtitle={pointMort?.atteint ? 'DéjÃ  atteint ce mois' : 'Objectif de CA pour couvrir les charges'}
+              subtitle={pointMort?.atteint ? 'Déjà atteint ce mois' : 'Objectif de CA pour couvrir les charges'}
               tone={pointMort?.atteint ? 'emerald' : 'amber'}
             />
             <StatCard
@@ -141,7 +141,7 @@ export default function RapportsPage() {
                       <div>
                         <p className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-1">#{index + 1}</p>
                         <p className="text-white font-bold">{produit.designation}</p>
-                        <p className="text-xs text-slate-500 mt-1">{produit.quantiteVendue} unités Â· CA {produit.chiffreAffaires.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-xs text-slate-500 mt-1">{produit.quantiteVendue} unités · CA {produit.chiffreAffaires.toLocaleString('fr-FR')} FCFA</p>
                       </div>
                       <div className="text-right">
                         <p className="text-emerald-400 font-black">{produit.margeBrute.toLocaleString('fr-FR')} FCFA</p>
@@ -222,9 +222,9 @@ export default function RapportsPage() {
                 </p>
               ) : (
                 <p className="text-amber-300 text-sm leading-relaxed">
-                  Le point mort nâ€™est pas encore atteint pour {pointMort.month}. Il reste{' '}
-                  <strong>{pointMort.restePourPointMort.toLocaleString('fr-FR')} FCFA</strong> de chiffre dâ€™affaires validé
-                  Ã  générer pour couvrir les charges enregistrées.
+                  Le point mort n’est pas encore atteint pour {pointMort.month}. Il reste{' '}
+                  <strong>{pointMort.restePourPointMort.toLocaleString('fr-FR')} FCFA</strong> de chiffre d’affaires validé
+                  à générer pour couvrir les charges enregistrées.
                 </p>
               )}
             </section>
@@ -234,7 +234,3 @@ export default function RapportsPage() {
     </div>
   );
 }
-
-
-
-
