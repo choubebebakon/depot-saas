@@ -68,7 +68,7 @@ model Article {
   lignesChargement   LigneChargement[]
   lignesCommande     LigneCommandeFournisseur[]
   lignesReception    LigneReception[]
-  piecesReparation PieceReparation[]
+  piecesReparation   PieceReparation[]
   lignesTransfert    LigneTransfert[]
   lignesVentes       LigneVente[]
   lots               LotStock[]
@@ -204,8 +204,8 @@ model PieceReparation {
   nom          String
   prix         Float      @default(0) // Harmonisé sur 'prix'
   quantite     Int        @default(1)
-  articleId String
-  article   Article @relation(fields: [articleId], references: [id])
+  articleId    String
+  article      Article    @relation(fields: [articleId], references: [id])
   reparationId String
   reparation   Reparation @relation(fields: [reparationId], references: [id], onDelete: Cascade)
 }
@@ -241,14 +241,14 @@ model Reparation {
   telephoneId  String?
   imei         String?
   marque       String?
-  notes       String?
+  notes        String?
   modele       String?
   probleme     String
   diagnostic   String?
   montant      Float?
-  avance       Float @default(0)
+  avance       Float            @default(0)
   montantFinal Float            @default(0)
-  montantDevis Float?           // Ajouté pour corriger l'erreur de ton service
+  montantDevis Float? // Ajouté pour corriger l'erreur de ton service
   statut       ReparationStatut @default(RECU)
   technicienId String?
   dateDepot    DateTime         @default(now())
@@ -257,11 +257,12 @@ model Reparation {
   updatedAt    DateTime         @updatedAt
 
   // Relations
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  telephone Telephone? @relation(fields: [telephoneId], references: [id])
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client    Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  telephone Telephone?        @relation(fields: [telephoneId], references: [id])
   pieces    PieceReparation[]
 }
+
 model CommandeFournisseur {
   id                String                     @id @default(uuid())
   reference         String                     @unique
@@ -807,25 +808,25 @@ model Tenant {
 }
 
 model User {
-  id               String                @id @default(uuid())
-  isActive         Boolean               @default(true)
-  email            String                @unique
+  id               String                  @id @default(uuid())
+  isActive         Boolean                 @default(true)
+  email            String                  @unique
   password         String
   refreshTokenHash String?
   role             Role
   nom              String?
   tenantId         String
   depotId          String?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
   commandesCreees  CommandeFournisseur[]
   commissions      Commission[]
   refreshTokens    RefreshToken[]
   sessionsCaisse   SessionCaisse[]
   tourneesOuvertes Tournee[]
-  depot            Depot?                @relation(fields: [depotId], references: [id])
-  tenant           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  ventesCreees     Vente[]               @relation("VenteCreateur")
+  depot            Depot?                  @relation(fields: [depotId], references: [id])
+  tenant           Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ventesCreees     Vente[]                 @relation("VenteCreateur")
   notifications    Notification[]
   notifPreference  NotificationPreference?
 
@@ -1177,37 +1178,37 @@ model Notification {
 }
 
 model NotificationPreference {
-  id                 String    @id @default(uuid())
+  id                 String   @id @default(uuid())
   tenantId           String
-  userId             String    @unique
-  inAppEnabled       Boolean   @default(true)
-  emailEnabled       Boolean   @default(true)
-  whatsappEnabled    Boolean   @default(false)
-  pushEnabled        Boolean   @default(false)
-  smsEnabled         Boolean   @default(false)
-  silenceStart       String?   @default("22:00")
-  silenceEnd         String?   @default("07:00")
-  disabledCategories Json?     @default("[]")
-  dailyDigest        Boolean   @default(false)
-  digestHour         Int       @default(8)
-  updatedAt          DateTime  @updatedAt
-  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String   @unique
+  inAppEnabled       Boolean  @default(true)
+  emailEnabled       Boolean  @default(true)
+  whatsappEnabled    Boolean  @default(false)
+  pushEnabled        Boolean  @default(false)
+  smsEnabled         Boolean  @default(false)
+  silenceStart       String?  @default("22:00")
+  silenceEnd         String?  @default("07:00")
+  disabledCategories Json?    @default("[]")
+  dailyDigest        Boolean  @default(false)
+  digestHour         Int      @default(8)
+  updatedAt          DateTime @updatedAt
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
 
 model NotificationTemplate {
-  id         String      @id @default(uuid())
+  id         String       @id @default(uuid())
   tenantId   String?
   type       NotifType
   channel    NotifChannel
-  langue     String      @default("fr")
+  langue     String       @default("fr")
   titleTpl   String
   messageTpl String
-  actif      Boolean     @default(true)
-  createdAt  DateTime    @default(now())
-  tenant     Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actif      Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  tenant     Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([type, channel, langue])
   @@index([tenantId])
@@ -1398,20 +1399,21 @@ enum ReparationStatut {
 model Table {
   id        String      @id @default(uuid())
   tenantId  String
-  numero String
-  nom String?
+  numero    String
+  nom       String?
   capacite  Int
-  @@unique([tenantId, numero])
   statut    TableStatut @default(LIBRE)
   commandes Commande[]
   tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, numero])
 }
 
 model Commande {
   id               String            @id @default(uuid())
   tenantId         String
-  notes    String?
-  serveurId   String?
+  notes            String?
+  serveurId        String?
   tableId          String?
   clientId         String?
   statut           CommandeStatut    @default(EN_ATTENTE)
@@ -2336,4 +2338,3 @@ enum EvenementElevageType {
   TRAITEMENT
   PESEE
 }
-
