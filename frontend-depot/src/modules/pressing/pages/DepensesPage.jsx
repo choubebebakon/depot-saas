@@ -5,6 +5,7 @@ import { usePagination } from '../../../hooks/usePagination';
 import { useNotif } from '../../../context/NotifContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
+import { createFieldSetter } from '../../../shared/hooks/useFormField';
 import FormModal from '../../../shared/components/forms/FormModal';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
@@ -38,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -77,19 +78,18 @@ export default function DepensesPage() {
   const [form, setForm] = useState({ libelle: '', categorie: 'PRODUITS', montant: '', dateDepense: new Date().toISOString().split('T')[0], notes: '' });
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const set = createFieldSetter(setForm);
 
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const CATEGORIES = [];
+  const CATEGORIES = ['Loyer', 'Salaires', 'Électricité', 'Eau', 'Téléphone', 'Internet', 'Fournitures', 'Maintenance', 'Transport', 'Publicité', 'Autre'];
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: depenses = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/depenses`, { enabled: true });
+  const { data: depensesData = [], loading, refetch } = useData(`/${prefix}/depenses`, { enabled: true });
+  const depenses = Array.isArray(depensesData?.data) ? depensesData.data : (Array.isArray(depensesData) ? depensesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (depenses || []).filter(item =>

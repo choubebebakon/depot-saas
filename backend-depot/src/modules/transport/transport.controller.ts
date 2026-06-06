@@ -56,6 +56,58 @@ export class TransportController {
     return this.service.getStats(req.user.tenantId);
   }
 
+  // --- Transport : ressources complémentaires (stubs tenant-aware) ---
+
+  @Get('chauffeurs')
+  async findAllChauffeurs(@Req() req: any, @Query() query: PaginationDto) {
+    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+  }
+
+  @Post('chauffeurs')
+  async createChauffeur(@Req() req: any, @Body() dto: Record<string, unknown>) {
+    return { id: `stub-${Date.now()}`, ...dto, tenantId: req.user.tenantId };
+  }
+
+  @Get('personnel')
+  async findAllPersonnel(@Req() req: any, @Query() query: PaginationDto) {
+    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+  }
+
+  @Post('personnel')
+  async createPersonnel(@Req() req: any, @Body() dto: Record<string, unknown>) {
+    return { id: `stub-${Date.now()}`, ...dto, tenantId: req.user.tenantId };
+  }
+
+  @Get('livraisons')
+  async findAllLivraisons(@Req() req: any, @Query() query: PaginationDto) {
+    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+  }
+
+  @Post('livraisons')
+  async createLivraison(@Req() req: any, @Body() dto: Record<string, unknown>) {
+    return { id: `stub-${Date.now()}`, ...dto, tenantId: req.user.tenantId };
+  }
+
+  @Get('depenses')
+  async findAllDepenses(@Req() req: any) {
+    return { data: [], total: 0 };
+  }
+
+  @Post('depenses')
+  async createDepense(@Req() req: any, @Body() dto: Record<string, unknown>) {
+    return { id: `stub-${Date.now()}`, ...dto, tenantId: req.user.tenantId };
+  }
+
+  @Get('clients')
+  async findAllClients(@Req() req: any, @Query() query: PaginationDto) {
+    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+  }
+
+  @Post('clients')
+  async createClient(@Req() req: any, @Body() dto: Record<string, unknown>) {
+    return { id: `stub-${Date.now()}`, ...dto, tenantId: req.user.tenantId };
+  }
+
   // --- Stubs Phase 2 ---
   @Get('caisse')
   async getCaisse() {

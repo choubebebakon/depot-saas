@@ -1,7 +1,8 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'; // Ajout de NestModule et MiddlewareConsumer
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
 
 // Core & Common
 import { AppController } from './app.controller';
@@ -43,6 +44,7 @@ import { FournisseursModule } from './fournisseurs/fournisseurs.module';
 import { CaisseModule } from './caisse/caisse.module';
 import { TourneesModule } from './tournees/tournees.module';
 import { CommandesModule } from './commandes/commandes.module';
+import { LivraisonsModule } from './livraisons/livraisons.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { EmailModule } from './common/email/email.module';
 import { BoutiqueModule } from './modules/boutique/boutique.module';
@@ -66,11 +68,19 @@ import { GarageModule } from './modules/garage/garage.module';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import { HotellerieModule } from './modules/hotellerie/hotellerie.module';
 import { NotificationsModule } from './core/notifications/notifications.module';
-import { LoggerModule } from 'nestjs-pino';
+import { ExportsModule } from './exports/exports.module';
+import { InvoicesModule } from './invoices/invoices.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport: process.env.NODE_ENV !== 'production'
+          ? { target: 'pino-pretty', options: { singleLine: true } }
+          : undefined,
+      },
+    }),
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 100, // Augmenté légèrement à 100 pour éviter les faux positifs en développement
@@ -97,6 +107,7 @@ import { LoggerModule } from 'nestjs-pino';
     CaisseModule,
     TourneesModule,
     CommandesModule,
+    LivraisonsModule,
     AdminModule,
     PaymentsModule,
     TasksModule,
@@ -123,6 +134,8 @@ import { LoggerModule } from 'nestjs-pino';
     OnboardingModule,
     EmailModule,
     NotificationsModule,
+    ExportsModule,
+    InvoicesModule,
   ],
   controllers: [AppController],
   providers: [

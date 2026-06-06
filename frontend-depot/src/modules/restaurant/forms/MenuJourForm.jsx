@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../../api';
+import { createFieldSetter } from '../../../shared/hooks/useFormField';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
@@ -34,7 +35,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -65,6 +66,7 @@ export default function MenuJourForm({ isOpen, onClose, onSuccess, metier = 'res
   const [plats, setPlats] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const set = createFieldSetter(setForm);
 
   const prefix = `/${metier}`;
 
@@ -77,7 +79,7 @@ export default function MenuJourForm({ isOpen, onClose, onSuccess, metier = 'res
     } catch {}
   };
 
-  useState(() => { chargerPlats(); }, []);
+  useEffect(() => { chargerPlats(); }, []);
 
   const togglePlat = (platId) => {
     setForm(prev => ({

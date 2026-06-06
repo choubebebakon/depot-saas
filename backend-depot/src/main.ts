@@ -7,19 +7,50 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { metierSlugMiddleware } from './common/middleware/metier-slug.middleware';
 
 async function bootstrap() {
-  // bufferLogs: true permet à nestjs-pino de récupérer les logs initiaux proprement
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  
+
   app.useLogger(app.get(Logger));
+
+  // CORS en premier — avant pipes, guards et middlewares métier
+  app.enableCors({
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:4173',
+      'http://localhost:3000',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-tenant-id',
+      'X-Tenant-Id',
+      'x-refresh-token',
+      'x-depot-id',
+      'X-Depot-Id',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'Cache-Control',
+    ],
+    exposedHeaders: [
+      'x-tenant-id',
+      'x-new-access-token',
+    ],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
+  app.use(metierSlugMiddleware);
+
   app.useGlobalFilters(new AllExceptionsFilter(app.get(HttpAdapterHost)));
   app.use(cookieParser());
-  
-  // Préfixe global pour l'API standard
+
   app.setGlobalPrefix('api/v1');
 
-  // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('GeStock SaaS API')
     .setDescription('Documentation de l\'API GeStock pour la gestion de stocks multi-tenant')
@@ -28,8 +59,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
-  
-  // Sécurisation stricte de l'encodage et de la taille des données (UTF-8 par défaut)
+
   app.use(json({
     limit: '50mb',
     verify: (req: any, _res, buf) => {
@@ -38,21 +68,9 @@ async function bootstrap() {
   }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
-  // CORS : Autorise votre frontend Vite/React (Port 5173) à communiquer de manière sécurisée
-  app.enableCors({
-    origin: 'http://localhost:5173',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Depot-Id'],
-  });
-
-  // SUPPRESSION DU MIDDLEWARE EXPRESS BRUT ICI !
-  // C'est maintenant le ContextMiddleware (dans app.module) qui gère l'AsyncLocalStorage de manière stable.
-
-  // Validation globale des DTOs (Transforme et nettoie les entrées contre les injections)
-  app.useGlobalPipes(new ValidationPipe({ 
-    whitelist: true, 
-    transform: true, 
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
   }));
 
   await app.listen(3000);

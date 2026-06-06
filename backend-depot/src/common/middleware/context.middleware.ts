@@ -29,7 +29,12 @@ export class ContextMiddleware implements NestMiddleware {
             }
         }
 
-        // 2. Alignement avec Axios Frontend : Si le front envoie un header spécifique, on l'écoute
+        // 2. Headers Axios frontend (x-tenant-id, x-depot-id)
+        const headerTenantId = req.headers['x-tenant-id'] as string | undefined;
+        if (headerTenantId) {
+            tenantId = headerTenantId;
+        }
+
         if (req.headers['x-depot-id']) {
             depotId = req.headers['x-depot-id'] as string;
         } else if (req.query.depotId) {

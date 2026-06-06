@@ -37,10 +37,30 @@ function pickDepotIdFromRequest(config) {
 
 api.defaults.headers.post['Content-Type'] = 'application/json';
 
+function getTenantId() {
+  const fromStorage = localStorage.getItem('gestock_tenantId');
+  if (fromStorage) return fromStorage;
+
+  const savedUser = localStorage.getItem('depot_user') || localStorage.getItem('user');
+  if (!savedUser) return null;
+
+  try {
+    const user = JSON.parse(savedUser);
+    return user?.tenantId || null;
+  } catch {
+    return null;
+  }
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('depot_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  const tenantId = getTenantId();
+  if (tenantId) {
+    config.headers['x-tenant-id'] = tenantId;
   }
 
   const depotId = pickDepotIdFromRequest(config) || getActiveDepotId();

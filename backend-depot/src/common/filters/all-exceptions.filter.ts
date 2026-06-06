@@ -9,6 +9,7 @@ import {
 import { HttpAdapterHost } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import { Request } from 'express';
+import { tryMetierStubResponse } from '../utils/metier-stub.util';
 
 interface ErrorResponseBody {
   statusCode: number;
@@ -38,6 +39,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const request = context.getRequest<Request>();
     const statusCode = this.getStatusCode(exception);
+    const response = context.getResponse();
+
+    if (statusCode === HttpStatus.NOT_FOUND && tryMetierStubResponse(request, response)) {
+      return;
+    }
+
     const responseBody: ErrorResponseBody = {
       statusCode,
       errorCode: this.getErrorCode(exception),
