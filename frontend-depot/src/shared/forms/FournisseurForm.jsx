@@ -92,8 +92,10 @@ export default function FournisseurForm({ isOpen, onClose, onSuccess, edit, meti
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs'] });
-      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      const fournisseurQueryKey = metier ? [`${metier}-fournisseurs`] : ['fournisseurs'];
+      const dashboardQueryKey = metier ? [`${metier}-dashboard`] : ['dashboard'];
+      queryClient.invalidateQueries({ queryKey: fournisseurQueryKey });
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey });
       notif.success(edit ? 'Fournisseur mis à jour' : 'Fournisseur créé avec succès');
       onSuccess?.();
       onClose();

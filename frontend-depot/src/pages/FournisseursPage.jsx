@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
-import { useData } from '../hooks/useData';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../context/NotifContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -8,22 +7,29 @@ import api from '../api/axios';
 
 function ModalNouveauFournisseur({ tenantId, onSuccess, onClose }) {
   const [form, setForm] = useState({ nom: '', telephone: '' });
-  const [loading, setLoading] = useState(false);
   const { success, error: notifError } = useNotif();
+  const queryClient = useQueryClient();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await api.post('/fournisseurs', { ...form, tenantId });
+  const createMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await api.post('/fournisseurs', payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs'] });
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs-stats'] });
       success('Fournisseur créé');
       onSuccess();
       onClose();
-    } catch (err) {
+    },
+    onError: (err) => {
       notifError(err.response?.data?.message || 'Erreur création', 'Échec');
-    } finally {
-      setLoading(false);
     }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    createMutation.mutate({ ...form, tenantId });
   };
 
   return (
@@ -46,9 +52,9 @@ function ModalNouveauFournisseur({ tenantId, onSuccess, onClose }) {
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={createMutation.isPending}
               className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-              {loading ? 'Création...' : 'Créer'}
+              {createMutation.isPending ? 'Création...' : 'Créer'}
             </button>
           </div>
         </form>
@@ -62,9 +68,9 @@ function ModalReception({ tenantId, depotId, fournisseurs, articles, onSuccess, 
   const [modePaiement, setModePaiement] = useState('CASH');
   const [montantPaye, setMontantPaye] = useState(0);
   const [lignes, setLignes] = useState([{ articleId: '', quantiteLivree: 0, quantiteGratuite: 0, prixAchatUnitaire: 0 }]);
-  const [loading, setLoading] = useState(false);
   const [erreur, setErreur] = useState('');
   const { success, error: notifError } = useNotif();
+  const queryClient = useQueryClient();
 
   const updateLigne = (i, champ, val) => {
     const copy = [...lignes];
@@ -75,31 +81,39 @@ function ModalReception({ tenantId, depotId, fournisseurs, articles, onSuccess, 
   const totalReception = lignes.reduce((acc, l) => acc + (l.prixAchatUnitaire * l.quantiteLivree), 0);
   const montantDette = Math.max(0, totalReception - montantPaye);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!depotId) { setErreur('Sélectionnez un Dépôt dans le menu.'); return; }
-    setLoading(true);
-    setErreur('');
-    try {
-      await api.post('/fournisseurs/receptions', {
-        fournisseurId, depotId, tenantId, modePaiement,
-        montantPaye: Number(montantPaye),
-        lignes: lignes.map(l => ({
-          articleId: l.articleId,
-          quantiteLivree: Number(l.quantiteLivree),
-          quantiteGratuite: Number(l.quantiteGratuite),
-          prixAchatUnitaire: Number(l.prixAchatUnitaire),
-        })),
-      });
+  const createReceptionMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await api.post('/fournisseurs/receptions', payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs'] });
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs-receptions'] });
       window.dispatchEvent(new CustomEvent('refresh-stocks'));
       success('Réception enregistrée');
       onSuccess();
       onClose();
-    } catch (err) {
+    },
+    onError: (err) => {
       notifError(err.response?.data?.message || 'Erreur réception', 'Échec');
-    } finally {
-      setLoading(false);
     }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!depotId) { setErreur('Sélectionnez un Dépôt dans le menu.'); return; }
+    setErreur('');
+    createReceptionMutation.mutate({
+      fournisseurId, depotId, tenantId, modePaiement,
+      montantPaye: Number(montantPaye),
+      lignes: lignes.map(l => ({
+        articleId: l.articleId,
+        quantiteLivree: Number(l.quantiteLivree),
+        quantiteGratuite: Number(l.quantiteGratuite),
+        prixAchatUnitaire: Number(l.prixAchatUnitaire),
+      })),
+    });
   };
 
   return (
@@ -202,9 +216,9 @@ function ModalReception({ tenantId, depotId, fournisseurs, articles, onSuccess, 
 
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={createReceptionMutation.isPending}
               className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-              {loading ? 'Validation...' : 'Valider la Réception'}
+              {createReceptionMutation.isPending ? 'Validation...' : 'Valider la Réception'}
             </button>
           </div>
         </form>
@@ -214,33 +228,65 @@ function ModalReception({ tenantId, depotId, fournisseurs, articles, onSuccess, 
 }
 
 export default function FournisseursPage() {
-  const { metier: metierParam } = useParams();
   const { metier: metierAuth, tenantId } = useAuth();
   const { depotId } = useDepot();
-  const metier = metierParam || metierAuth;
-  const prefix = metier ? metier.toLowerCase().replace(/_/g, '-') : '';
-
+  const queryClient = useQueryClient();
   const { success, error: notifError } = useNotif();
 
   const [onglet, setOnglet] = useState('fournisseurs');
   const [modalNouvel, setModalNouvel] = useState(false);
   const [modalReception, setModalReception] = useState(false);
 
-  const { data: fournisseurs = [], error: loadingFournisseurs, refetch: refetchFournisseurs  } = useData(
-    '/fournisseurs', { params: { tenantId }, enabled: !!tenantId }
-  );
+  const { data: fournisseurs = [], isLoading: loadingFournisseurs } = useQuery({
+    queryKey: ['fournisseurs', tenantId],
+    queryFn: async () => {
+      const res = await api.get('/fournisseurs', { params: { tenantId } });
+      return res.data;
+    },
+    enabled: !!tenantId,
+  });
 
-  const { data: receptions = [], error: loadingReceptions  } = useData(
-    '/fournisseurs/receptions', { params: { tenantId, depotId }, enabled: !!tenantId }
-  );
+  const { data: receptions = [], isLoading: loadingReceptions } = useQuery({
+    queryKey: ['fournisseurs-receptions', tenantId, depotId],
+    queryFn: async () => {
+      const res = await api.get('/fournisseurs/receptions', { params: { tenantId, depotId } });
+      return res.data;
+    },
+    enabled: !!tenantId,
+  });
 
-  const { data: articles = []  } = useData(
-    '/articles', { params: { tenantId }, enabled: !!tenantId }
-  );
+  const { data: articles = [] } = useQuery({
+    queryKey: ['articles', tenantId],
+    queryFn: async () => {
+      const res = await api.get('/articles', { params: { tenantId } });
+      return res.data;
+    },
+    enabled: !!tenantId,
+  });
 
-  const { data: stats = { totalDette: 0, nbFournisseursEnDette: 0, totalReceptions: 0 } } = useData(
-    '/fournisseurs/stats', { params: { tenantId }, enabled: !!tenantId }
-  );
+  const { data: stats = { totalDette: 0, nbFournisseursEnDette: 0, totalReceptions: 0 } } = useQuery({
+    queryKey: ['fournisseurs-stats', tenantId],
+    queryFn: async () => {
+      const res = await api.get('/fournisseurs/stats', { params: { tenantId } });
+      return res.data;
+    },
+    enabled: !!tenantId,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await api.delete(`/fournisseurs/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs'] });
+      queryClient.invalidateQueries({ queryKey: ['fournisseurs-stats'] });
+      success('Fournisseur supprimé');
+    },
+    onError: () => {
+      notifError('Erreur lors de la suppression', 'Échec');
+    }
+  });
 
   const loading = loadingFournisseurs || loadingReceptions;
 
@@ -373,12 +419,12 @@ export default function FournisseursPage() {
         </div>
       )}
 
-      {modalNouvel && <ModalNouveauFournisseur tenantId={tenantId} onSuccess={refetchFournisseurs} onClose={() => setModalNouvel(false)} />}
+      {modalNouvel && <ModalNouveauFournisseur tenantId={tenantId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['fournisseurs'] })} onClose={() => setModalNouvel(false)} />}
       {modalReception && (
         <ModalReception
           tenantId={tenantId} depotId={depotId}
           fournisseurs={fournisseurs} articles={articles}
-          onSuccess={refetchFournisseurs} onClose={() => setModalReception(false)}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['fournisseurs'] })} onClose={() => setModalReception(false)}
         />
       )}
     </div>
