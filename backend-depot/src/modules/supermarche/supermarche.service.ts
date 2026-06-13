@@ -214,6 +214,7 @@ export class SupermarcheService {
       include: {
         stocks: { include: { depot: true } },
         famille: true,
+        rayons: { include: { rayon: true } },
         promotions: { where: { actif: true, dateFin: { gte: new Date() } } },
       },
       orderBy: { designation: 'asc' },
