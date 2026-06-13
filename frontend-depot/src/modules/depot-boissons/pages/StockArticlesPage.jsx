@@ -1,66 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotif } from '../../../context/NotifContext';
 import { depotApi } from '../services/depotApi';
 import ArticleBoissonsForm from '../forms/ArticleBoissonsForm';
 import ConditionnementForm from '../forms/ConditionnementForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
-
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
-    }
-  });
-}
-
-
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
-      }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
-  });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
-}
-
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
-  });
-}
-
 
 const STATUS_COLORS = {
   critique: 'bg-red-500/10 text-red-400 border-red-500/30',
@@ -77,117 +23,132 @@ function getStockStatus(quantite, seuil) {
   return 'ok';
 }
 
-const LIMIT = 20;
+const LIMIT = 100; // Increase backend limit so client-side pagination has full access to filtered dataset
 
 export default function StockArticlesPage() {
   const { metier } = useAuth();
+  const queryClient = useQueryClient();
+  const notif = useNotif();
 
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filtreFamille, setFiltreFamille] = useState('');
   const [filtreStock, setFiltreStock] = useState('');
   const [search, setSearch] = useState('');
-  const [total, setTotal] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [conditionnementOpen, setConditionnementOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const [edit, setEdit] = useState(null);
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accs non autoris</div>;
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
   }
 
-  const filtres = (articles || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
+  // Fetch articles via useQuery
+  const { data, isLoading } = useQuery({
+    queryKey: ['depot-articles', { search, filtreFamille, filtreStock }],
+    queryFn: async () => {
+      const params = { page: 1, limit: LIMIT, search, famille: filtreFamille, stock: filtreStock };
+      const res = await depotApi.getArticles(params);
+      return res.data?.data || res.data || [];
+    },
+    enabled: metier === 'DEPOT_BOISSONS',
+  });
+
+  const articles = Array.isArray(data) ? data : (data?.data || []);
+  const total = articles.length;
+
+  const filtres = articles;
+
   const {
     currentPage,
     setCurrentPage,
-    goToPage,
     nextPage,
     prevPage,
     totalPages,
     totalItems,
     paginatedData: paginated,
   } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
 
-  const familles = [...new Set(articles.map(a => a.famille).filter(Boolean))];
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = { page, limit: LIMIT, search, famille: filtreFamille, stock: filtreStock };
-      const res = await depotApi.getArticles(params);
-      setArticles(res.data.data || res.data);
-      setTotal(res.data.total || res.data.length || 0);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, filtreFamille, filtreStock]);
-
-  useEffect(() => { load(); }, [load]);
+  const families = [...new Set(articles.map(a => a.famille).filter(Boolean))];
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (a) => { setEditItem(a); setFormOpen(true); };
 
-  const handleDelete = async () => {
-    if (!confirmDelete) return;
-    setDeleting(true);
-    try {
-      await depotApi.archiveArticle(confirmDelete.id);
+  const archiveMutation = useMutation({
+    mutationFn: (id) => depotApi.archiveArticle(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      notif.success('Article archivé avec succès');
       setConfirmDelete(null);
-      load();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDeleting(false);
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors de l\'archivage');
+    }
+  });
+
+  const entreeMutation = useMutation({
+    mutationFn: (data) => depotApi.entreStock(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      notif.success('Entrée de stock enregistrée');
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors de l\'entrée de stock');
+    }
+  });
+
+  const sortieMutation = useMutation({
+    mutationFn: (data) => depotApi.sortieStock(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      notif.success('Sortie de stock enregistrée');
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors de la sortie de stock');
+    }
+  });
+
+  const transfertMutation = useMutation({
+    mutationFn: (data) => depotApi.transfertStock(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      notif.success('Transfert de stock enregistré');
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors du transfert');
+    }
+  });
+
+  const handleDelete = () => {
+    if (confirmDelete) {
+      archiveMutation.mutate(confirmDelete.id);
     }
   };
 
-  async function handleEntreeStock(id) {
-    const qte = prompt('Quantit  ajouter :');
+  const handleEntreeStock = (id) => {
+    const qte = prompt('Quantité à ajouter :');
     if (!qte || isNaN(qte)) return;
-    try {
-      await depotApi.entreStock({ articleId: id, quantite: parseInt(qte) });
-      load();
-    } catch (err) {
-      console.error(err);
-    }
-  }
+    entreeMutation.mutate({ articleId: id, quantite: parseInt(qte) });
+  };
 
-  async function handleSortieStock(id) {
-    const qte = prompt('Quantit  retirer :');
+  const handleSortieStock = (id) => {
+    const qte = prompt('Quantité à retirer :');
     if (!qte || isNaN(qte)) return;
-    try {
-      await depotApi.sortieStock({ articleId: id, quantite: parseInt(qte) });
-      load();
-    } catch (err) {
-      console.error(err);
-    }
-  }
+    sortieMutation.mutate({ articleId: id, quantite: parseInt(qte) });
+  };
 
-  async function handleTransfert(id) {
-    const qte = prompt('Quantit  transfrer :');
+  const handleTransfert = (id) => {
+    const qte = prompt('Quantité à transférer :');
     if (!qte || isNaN(qte)) return;
-    const depotDest = prompt('Dpt de destination :');
+    const depotDest = prompt('Dépôt de destination :');
     if (!depotDest) return;
-    try {
-      await depotApi.transfertStock({ articleId: id, quantite: parseInt(qte), depotDestination: depotDest });
-      load();
-    } catch (err) {
-      console.error(err);
-    }
-  }
+    transfertMutation.mutate({ articleId: id, quantite: parseInt(qte), depotDestination: depotDest });
+  };
 
-
-  if (loading && totalItems === 0) {
+  if (isLoading && totalItems === 0) {
     return (
       <div className="p-6 space-y-6">
         <div className="animate-pulse space-y-4">
@@ -196,32 +157,33 @@ export default function StockArticlesPage() {
       </div>
     );
   }
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight">Stock & Articles</h1>
-          <p className="text-slate-400 text-sm mt-1">{total} article{total > 1 ? 's' : ''} enregistr{total > 1 ? 's' : ''}</p>
+          <p className="text-slate-400 text-sm mt-1">{total} article{total > 1 ? 's' : ''} enregistré{total > 1 ? 's' : ''}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={openCreate} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-            ? Nouvel article
+            ➕ Nouvel article
           </button>
           <button onClick={() => setConditionnementOpen(true)} className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20">
-            ?? Conditionnement
+            📦 Conditionnement
           </button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <input type="text" placeholder="🔍 Rechercher un article..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+        <input type="text" placeholder="🔍 Rechercher un article..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
-        <select value={filtreFamille} onChange={e => { setFiltreFamille(e.target.value); setPage(1); }}
+        <select value={filtreFamille} onChange={e => { setFiltreFamille(e.target.value); setCurrentPage(1); }}
           className="px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none">
           <option value="">Toutes familles</option>
-          {familles.map(f => <option key={f} value={f}>{f}</option>)}
+          {families.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
-        <select value={filtreStock} onChange={e => { setFiltreStock(e.target.value); setPage(1); }}
+        <select value={filtreStock} onChange={e => { setFiltreStock(e.target.value); setCurrentPage(1); }}
           className="px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none">
           <option value="">Tous statuts</option>
           <option value="critique">Stock critique</option>
@@ -234,7 +196,7 @@ export default function StockArticlesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-800/80 text-slate-400 text-xs uppercase tracking-wider">
-              <th className="text-left p-4 font-semibold">Dsignation</th>
+              <th className="text-left p-4 font-semibold">Désignation</th>
               <th className="text-left p-4 font-semibold">Format</th>
               <th className="text-left p-4 font-semibold">Famille</th>
               <th className="text-right p-4 font-semibold">Stock</th>
@@ -245,7 +207,7 @@ export default function StockArticlesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
-            {totalItems === 0 && !loading ? (
+            {totalItems === 0 && !isLoading ? (
               <tr>
                 <td colSpan="8" className="p-12 text-center text-slate-500">
                   <p className="text-lg mb-2">Aucun article trouvé</p>
@@ -271,14 +233,14 @@ export default function StockArticlesPage() {
                       {status === 'critique' ? 'CRITIQUE' : status === 'faible' ? 'FAIBLE' : status === 'moyen' ? 'MOYEN' : 'OK'}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => openEdit(a)} title="Modifier" className="p-1.5 hover:bg-orange-500/20 rounded-lg text-slate-400 hover:text-orange-400 transition-all">✏️ Modifier</button>
-                      <button onClick={() => handleEntreeStock(a.id)} title="Entre stock" className="p-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all">✏️ Modifier</button>
-                      <button onClick={() => handleSortieStock(a.id)} title="Sortie stock" className="p-1.5 hover:bg-orange-500/20 rounded-lg text-slate-400 hover:text-orange-400 transition-all">✏️ Modifier</button>
-                      <button onClick={() => handleTransfert(a.id)} title="Transfrer" className="p-1.5 hover:bg-purple-500/20 rounded-lg text-slate-400 hover:text-purple-400 transition-all">✏️ Modifier</button>
-                      <button onClick={() => depotApi.getStockHistory(a.id).then(r => alert(JSON.stringify(r.data, null, 2)))} title="Historique" className="p-1.5 hover:bg-cyan-500/20 rounded-lg text-slate-400 hover:text-cyan-400 transition-all">✏️ Modifier</button>
-                      <button onClick={() => setConfirmDelete(a)} title="Archiver" className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all">🗑️ Supprimer</button>
+                      <button onClick={() => openEdit(a)} title="Modifier" className="p-1.5 hover:bg-orange-500/20 rounded-lg text-slate-400 hover:text-orange-400 transition-all text-xs">✏️ Modifier</button>
+                      <button onClick={() => handleEntreeStock(a.id)} title="Entrée stock" className="p-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all text-xs">📥 Entrée</button>
+                      <button onClick={() => handleSortieStock(a.id)} title="Sortie stock" className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all text-xs">📤 Sortie</button>
+                      <button onClick={() => handleTransfert(a.id)} title="Transférer" className="p-1.5 hover:bg-purple-500/20 rounded-lg text-slate-400 hover:text-purple-400 transition-all text-xs">🔄 Transfert</button>
+                      <button onClick={() => depotApi.getStockHistory(a.id).then(r => alert(JSON.stringify(r.data, null, 2)))} title="Historique" className="p-1.5 hover:bg-cyan-500/20 rounded-lg text-slate-400 hover:text-cyan-400 transition-all text-xs">📋 Hist.</button>
+                      <button onClick={() => setConfirmDelete(a)} title="Archiver" className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -290,16 +252,16 @@ export default function StockArticlesPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <button disabled={page <= 1} onClick={prevPage} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">? Prcdent</button>
-          <span className="text-slate-400 text-sm">Page {page} / {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={nextPage} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ?</button>
+          <button disabled={currentPage <= 1} onClick={prevPage} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
+          <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
+          <button disabled={currentPage >= totalPages} onClick={nextPage} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
         </div>
       )}
 
-      <ArticleBoissonsForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={load} edit={editItem} metier="depot-boissons" />
-      <ConditionnementForm isOpen={conditionnementOpen} onClose={() => setConditionnementOpen(false)} onSuccess={() => load()} metier="depot-boissons" />
-      <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleting}
-        title="Archiver l'article" message={`Archiver  ${confirmDelete?.designation}  ? Cette action est irrversible.`} />
+      <ArticleBoissonsForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" />
+      <ConditionnementForm isOpen={conditionnementOpen} onClose={() => setConditionnementOpen(false)} metier="depot-boissons" />
+      <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={archiveMutation.isPending}
+        title="Archiver l'article" message={`Archiver ${confirmDelete?.designation} ? Cette action est irréversible.`} />
     </div>
   );
 }

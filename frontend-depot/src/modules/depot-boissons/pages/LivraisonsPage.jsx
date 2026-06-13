@@ -1,181 +1,131 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotif } from '../../../context/NotifContext';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
-    }
-  });
-}
-
-
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
-      }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
-  });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
-}
-
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
-  });
-}
-
-
-const LIMIT = 20;
+const LIMIT = 100;
 
 export default function LivraisonsPage() {
   const { metier } = useAuth();
+  const queryClient = useQueryClient();
+  const notif = useNotif();
 
-  const [livraisons, setLivraisons] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
   const [formData, setFormData] = useState({ fournisseurId: '', articles: '', dateLivraison: '', notes: '' });
-  const [fournisseurs, setFournisseurs] = useState([]);
   const [filtreStatut, setFiltreStatut] = useState('');
-  const [total, setTotal] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-  const [search, setSearch] = useState('');
-
-  const [isOpen, setIsOpen] = useState(false);
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accs non autoris</div>;
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
   }
 
-  const filtres = (livraisons || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
+  // Fetch deliveries
+  const { data: deliveriesData, isLoading } = useQuery({
+    queryKey: ['depot-livraisons', { filtreStatut }],
+    queryFn: async () => {
+      const params = { page: 1, limit: LIMIT, statut: filtreStatut || undefined };
+      const res = await depotApi.getLivraisons(params);
+      return res.data?.data || res.data || [];
+    },
+    enabled: metier === 'DEPOT_BOISSONS',
+  });
+
+  // Fetch providers for creation modal
+  const { data: providersData = [] } = useQuery({
+    queryKey: ['depot-fournisseurs'],
+    queryFn: async () => {
+      const res = await depotApi.getFournisseurs({ limit: 100 });
+      return res.data?.data || res.data || [];
+    },
+    enabled: !!showModal,
+  });
+
+  const livraisons = Array.isArray(deliveriesData) ? deliveriesData : (deliveriesData?.data || []);
+  const total = livraisons.length;
+
   const {
     currentPage,
     setCurrentPage,
-    goToPage,
     nextPage,
     prevPage,
     totalPages,
     totalItems,
     paginatedData: paginated,
-  } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
+  } = usePagination(livraisons, 10);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = { page, limit: LIMIT, statut: filtreStatut || undefined };
-      const res = await depotApi.getLivraisons(params);
-      setLivraisons(res.data.data || res.data);
-      setTotal(res.data.total || res.data.length || 0);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, filtreStatut]);
-
-  useEffect(() => { load(); }, [load]);
-
-  useEffect(() => {
-    if (showModal) {
-      depotApi.getFournisseurs({ limit: 100 }).then(r => {
-        setFournisseurs(r.data.data || r.data);
-      }).catch(console.error);
-    }
-  }, [showModal]);
-
-  async function handleCreate() {
-    try {
-      await depotApi.createLivraison(formData);
+  const createMutation = useMutation({
+    mutationFn: (data) => depotApi.createLivraison(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-livraisons'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      notif.success('Nouvelle livraison créée');
       setShowModal(null);
       setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '' });
-      load();
-    } catch (err) {
-      console.error(err);
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors de la création');
     }
-  }
+  });
 
-  const handleDelete = async () => {
-    if (!confirmDelete) return;
-    setDeleting(true);
-    try {
-      await depotApi.deleteLivraison(confirmDelete.id);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => depotApi.deleteLivraison(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-livraisons'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      notif.success('Livraison supprimée');
       setConfirmDelete(null);
-      load();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDeleting(false);
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors de la suppression');
+    }
+  });
+
+  const handleCreate = () => {
+    if (!formData.fournisseurId) {
+      notif.warning('Veuillez sélectionner un fournisseur');
+      return;
+    }
+    createMutation.mutate(formData);
+  };
+
+  const handleDelete = () => {
+    if (confirmDelete) {
+      deleteMutation.mutate(confirmDelete.id);
     }
   };
 
-
-  if (loading && totalItems === 0) {
+  if (isLoading && totalItems === 0) {
     return (
       <div className="p-6 space-y-4 animate-pulse">
         {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-800/60 rounded-xl" />)}
       </div>
     );
   }
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight">Livraisons</h1>
-          <p className="text-slate-400 text-sm mt-1">Suivi des entres marchandises</p>
+          <p className="text-slate-400 text-sm mt-1">Suivi des entrées marchandises ({total} livraison{total > 1 ? 's' : ''})</p>
         </div>
         <button onClick={() => setShowModal('create')}
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
-          ? Nouvelle livraison
+          ➕ Nouvelle livraison
         </button>
       </div>
 
       <div className="flex gap-3">
-        <select value={filtreStatut} onChange={e => { setFiltreStatut(e.target.value); setPage(1); }}
+        <select value={filtreStatut} onChange={e => { setFiltreStatut(e.target.value); setCurrentPage(1); }}
           className="px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none">
           <option value="">Tous statuts</option>
           <option value="EN_ATTENTE">En attente</option>
           <option value="EN_COURS">En cours</option>
-          <option value="RECUE">Reue</option>
-          <option value="ANNULEE">Annule</option>
+          <option value="RECUE">Reçue</option>
+          <option value="ANNULEE">Annulée</option>
         </select>
       </div>
 
@@ -195,7 +145,7 @@ export default function LivraisonsPage() {
               <tr>
                 <td colSpan="5" className="p-12 text-center text-slate-500">
                   <p className="text-lg mb-2">Aucune livraison</p>
-                  <p className="text-sm">Crez votre premire livraison</p>
+                  <p className="text-sm">Créez votre première livraison</p>
                 </td>
               </tr>
             ) : paginated.map(l => (
@@ -215,7 +165,7 @@ export default function LivraisonsPage() {
                 </td>
                 <td className="p-4 text-right">
                   <button onClick={() => setConfirmDelete(l)} title="Supprimer"
-                    className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all">🗑️ Supprimer</button>
+                    className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Supprimer</button>
                 </td>
               </tr>
             ))}
@@ -225,11 +175,11 @@ export default function LivraisonsPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <button disabled={page <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">? Prcdent</button>
-          <span className="text-slate-400 text-sm">Page {page} / {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={nextPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ?</button>
+          <button disabled={currentPage <= 1} onClick={prevPage}
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
+          <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
+          <button disabled={currentPage >= totalPages} onClick={nextPage}
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
         </div>
       )}
 
@@ -239,30 +189,32 @@ export default function LivraisonsPage() {
             <h2 className="text-lg font-black text-white mb-4">Nouvelle livraison</h2>
             <div className="space-y-4">
               <select value={formData.fournisseurId} onChange={e => setFormData({...formData, fournisseurId: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
-                <option value="">Slectionner un fournisseur</option>
-                {fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500">
+                <option value="">Sélectionner un fournisseur</option>
+                {providersData.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
               </select>
-              <textarea placeholder="Articles livrs (un par ligne)" value={formData.articles}
+              <textarea placeholder="Articles livrés (un par ligne)" value={formData.articles}
                 onChange={e => setFormData({...formData, articles: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm min-h-[100px]" />
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm min-h-[100px] focus:outline-none focus:border-amber-500" />
               <input type="date" value={formData.dateLivraison} onChange={e => setFormData({...formData, dateLivraison: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500" />
               <input placeholder="Notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500" />
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowModal(null)}
                 className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
-              <button onClick={handleCreate}
-                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">Crer la livraison</button>
+              <button onClick={handleCreate} disabled={createMutation.isPending}
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm">
+                {createMutation.isPending ? 'Création...' : 'Créer la livraison'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleting}
-        title="Supprimer la livraison" message={`Supprimer la livraison du ${confirmDelete?.dateLivraison ? new Date(confirmDelete.dateLivraison).toLocaleDateString('fr-FR') : '...'} ? Cette action est irrversible.`} />
+      <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleteMutation.isPending}
+        title="Supprimer la livraison" message={`Supprimer la livraison du ${confirmDelete?.dateLivraison ? new Date(confirmDelete.dateLivraison).toLocaleDateString('fr-FR') : '...'} ? Cette action est irréversible.`} />
     </div>
   );
 }

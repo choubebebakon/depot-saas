@@ -1,126 +1,51 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { depotApi } from '../services/depotApi';
 import ConsigneForm from '../forms/ConsigneForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
-    }
-  });
-}
-
-
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
-      }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
-  });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
-}
-
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
-  });
-}
-
-
 export default function ConsignesPage() {
   const { metier } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
-  const [consignes, setConsignes] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-
-  const [edit, setEdit] = useState(null);
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
   }
 
-
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  async function loadClients() {
-    try {
+  // Fetch clients
+  const { data: clientsData, isLoading: loadingClients } = useQuery({
+    queryKey: ['depot-clients'],
+    queryFn: async () => {
       const res = await depotApi.getClients({ limit: 100 });
-      setClients(res.data.data || res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
+      return res.data?.data || res.data || [];
+    },
+    enabled: metier === 'DEPOT_BOISSONS',
+  });
 
-  const loadConsignes = useCallback(async (clientId) => {
-    try {
-      const res = await depotApi.getConsignesClient(clientId);
-      setConsignes(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.data || []);
+
+  // Fetch selected client's consignes
+  const { data: consignes, isLoading: loadingConsignes } = useQuery({
+    queryKey: ['depot-consignes-client', selectedClient?.id],
+    queryFn: async () => {
+      const res = await depotApi.getConsignesClient(selectedClient.id);
+      return res.data;
+    },
+    enabled: !!selectedClient?.id,
+  });
 
   const openForm = () => { setEditItem(null); setFormOpen(true); };
 
-  const handleDelete = async () => {
-    if (!confirmDelete) return;
-    setDeleting(true);
-    try {
-      setConfirmDelete(null);
-      loadConsignes(selectedClient?.id);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   const handleFormSuccess = () => {
-    if (selectedClient) loadConsignes(selectedClient.id);
+    if (selectedClient) {
+      queryClient.invalidateQueries({ queryKey: ['depot-consignes-client', selectedClient.id] });
+    }
   };
 
   const filteredClients = clients.filter(c =>
@@ -128,7 +53,7 @@ export default function ConsignesPage() {
     c.telephone?.includes(search)
   );
 
-  if (loading) {
+  if (loadingClients) {
     return (
       <div className="p-6 space-y-4 animate-pulse">
         {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-800/60 rounded-xl" />)}
@@ -157,7 +82,7 @@ export default function ConsignesPage() {
                 <p className="text-sm">Ajoutez des clients pour gérer les consignes</p>
               </div>
             ) : filteredClients.map(c => (
-              <button key={c.id} onClick={() => { setSelectedClient(c); loadConsignes(c.id); }}
+              <button key={c.id} onClick={() => setSelectedClient(c)}
                 className={`w-full text-left p-4 rounded-xl border transition-all ${
                   selectedClient?.id === c.id
                     ? 'bg-blue-600/20 border-blue-500/50 text-white'
@@ -190,13 +115,17 @@ export default function ConsignesPage() {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={openForm}
-                      className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all">
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1">
                       🔄 Nouveau mouvement
                     </button>
                   </div>
                 </div>
 
-                {consignes && (
+                {loadingConsignes ? (
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-12 bg-slate-700/30 rounded-xl" />
+                  </div>
+                ) : consignes && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                     {Object.entries(consignes.portefeuille || {}).map(([type, qte]) => (
                       <div key={type} className="bg-slate-700/30 rounded-lg p-3 text-center">
@@ -208,7 +137,7 @@ export default function ConsignesPage() {
                 )}
 
                 {consignes?.soldeTotal > 0 && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-center">
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-center mt-3">
                     <p className="text-xs text-amber-400 uppercase tracking-wider">Valeur totale consignes</p>
                     <p className="text-xl font-black text-amber-400">{parseInt(consignes.soldeTotal).toLocaleString('fr-FR')} FCFA</p>
                   </div>
@@ -217,21 +146,25 @@ export default function ConsignesPage() {
 
               <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5">
                 <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Historique des consignes</h3>
-                {(!consignes?.historique || consignes.historique.length === 0) ? (
+                {loadingConsignes ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-10 bg-slate-700/20 rounded-lg" />
+                  </div>
+                ) : (!consignes?.historique || consignes.historique.length === 0) ? (
                   <p className="text-slate-500 text-sm text-center py-4">Aucun mouvement de consigne</p>
                 ) : (
                   <div className="space-y-2">
                     {consignes.historique.slice(0, 20).map((h, i) => (
                       <div key={i} className="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <span>{h.type === 'sortie' ? '📤' : h.type === 'retour' ? '📥' : '💰'}</span>
+                          <span>{h.estSortie ? '📤' : '📥'}</span>
                           <div>
-                            <p className="text-sm text-white font-medium">{h.typeConsigne}</p>
-                            <p className="text-xs text-slate-500">{new Date(h.date).toLocaleDateString('fr-FR')}</p>
+                            <p className="text-sm text-white font-medium">{h.typeConsigne?.type || h.typeConsigneId || 'Mouvement'}</p>
+                            <p className="text-xs text-slate-500">{new Date(h.createdAt || h.date).toLocaleDateString('fr-FR')}</p>
                           </div>
                         </div>
-                        <span className={`font-bold text-sm ${h.type === 'sortie' ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {h.type === 'sortie' ? '-' : '+'}{h.quantite}
+                        <span className={`font-bold text-sm ${h.estSortie ? 'text-red-400' : 'text-emerald-400'}`}>
+                          {h.estSortie ? '-' : '+'}{h.quantite}
                         </span>
                       </div>
                     ))}
@@ -244,7 +177,7 @@ export default function ConsignesPage() {
       </div>
 
       <ConsigneForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={handleFormSuccess} edit={editItem} metier="depot-boissons" />
-      <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleting}
+      <ConfirmModal isOpen={false} onConfirm={() => {}} onCancel={() => {}}
         title="Supprimer" message={`Supprimer ce mouvement ? Cette action est irréversible.`} />
     </div>
   );

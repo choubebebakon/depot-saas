@@ -1,72 +1,15 @@
 import { useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useApi } from '../../../shared/hooks/useApi';
+import { useQuery } from '@tanstack/react-query';
 import { depotApi } from '../services/depotApi';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
 } from 'recharts';
 import {
-  TrendingUp, AlertTriangle, Truck, Wallet, Users, Route,
-  Plus, Play, Package, UserPlus, AlertCircle,
+  TrendingUp, AlertTriangle, AlertCircle, Package,
 } from 'lucide-react';
-import { DASHBOARD_WIDGETS, DASHBOARD_GRAPHS } from '../dashboard.config';
-
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
-    }
-  });
-}
-
-
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
-      }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
-  });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
-}
-
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
-  });
-}
-
+import { DASHBOARD_WIDGETS } from '../dashboard.config';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -128,8 +71,19 @@ function CustomTooltip({ active, payload, label }) {
 export default function DashboardDepot() {
   const { metier, nomEntreprise } = useAuth();
 
-  const { data, loading, error } = useApi(depotApi.getDashboardStats, []);
-  const alerteStock = useMemo(() => data?.alertes_stock || [], [data]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['depot-dashboard'],
+    queryFn: async () => {
+      const res = await depotApi.getDashboardStats();
+      return res.data;
+    },
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    staleTime: 10_000,
+    enabled: metier === 'DEPOT_BOISSONS',
+  });
+
+  const alerteStock = useMemo(() => data?.stock_critique?.articles || [], [data]);
 
   if (metier !== 'DEPOT_BOISSONS') {
     return (
@@ -140,7 +94,7 @@ export default function DashboardDepot() {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-8">
         <div className="flex items-center gap-4">
@@ -192,16 +146,8 @@ export default function DashboardDepot() {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Bienvenue dans votre tableau de bord</h2>
           <p className="text-slate-400 text-sm mb-8">
-            Aucune donnée disponible pour le moment. Commencez par enregistréer vos premières opérations.
+            Aucune donnée disponible pour le moment. Commencez par enregistrer vos premières opérations.
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <button className="px-5 py-2.5 bg-emerald-500/20 text-emerald-300 rounded-xl hover:bg-emerald-500/30 transition-colors text-sm font-semibold flex items-center gap-2">
-              💰 Nouvelle vente
-            </button>
-            <button className="px-5 py-2.5 bg-blue-500/20 text-blue-300 rounded-xl hover:bg-blue-500/30 transition-colors text-sm font-semibold flex items-center gap-2">
-              🥤 Nouvel article
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -223,28 +169,36 @@ export default function DashboardDepot() {
   const evolutionStock = data.graphiques?.evolution_stock ?? data.evolution_stock ?? [];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 space-y-8 animate-fadeIn">
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20 flex-shrink-0">
-          🥤
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-black text-white tracking-tight truncate">
-            Tableau de bord
-          </h1>
-          <p className="text-slate-400 text-sm truncate">
-            {nomEntreprise || 'Dépôt de Boissons'} • Aujourd'hui
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20 flex-shrink-0">
+            🥤
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black text-white tracking-tight truncate">
+                Tableau de bord
+              </h1>
+              <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                En direct
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm truncate">
+              {nomEntreprise || 'Dépôt de Boissons'} • Aujourd'hui
+            </p>
+          </div>
         </div>
       </div>
 
       {alerteStock.length > 0 && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5 animate-bounce" />
           <div>
             <p className="text-red-300 font-semibold text-sm">
-              {alerteStock.length} article{alerteStock.length > 1 ? 's' : ''} en stock critique
+              {data.stock_critique?.count || alerteStock.length} article{alerteStock.length > 1 ? 's' : ''} en stock critique
             </p>
             <ul className="mt-1.5 space-y-1">
               {alerteStock.slice(0, 5).map((a, i) => (
@@ -267,21 +221,6 @@ export default function DashboardDepot() {
         {widgets.map((w) => (
           <WidgetCard key={w.id} widget={w} value={w.value} accentColor={w.color} />
         ))}
-      </div>
-
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 text-emerald-300 rounded-xl hover:bg-emerald-500/25 transition-all text-sm font-semibold shadow-lg shadow-emerald-500/5">
-          <span className="text-lg">💰</span> Nouvelle vente
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-cyan-500/15 text-cyan-300 rounded-xl hover:bg-cyan-500/25 transition-all text-sm font-semibold shadow-lg shadow-cyan-500/5">
-          <span className="text-lg">🛺</span> Démarrer tournée
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/15 text-amber-300 rounded-xl hover:bg-amber-500/25 transition-all text-sm font-semibold shadow-lg shadow-amber-500/5">
-          <span className="text-lg">🥤</span> Nouvel article
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/15 text-indigo-300 rounded-xl hover:bg-indigo-500/25 transition-all text-sm font-semibold shadow-lg shadow-indigo-500/5">
-          <span className="text-lg">👥</span> Nouveau client
-        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -380,29 +319,3 @@ export default function DashboardDepot() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

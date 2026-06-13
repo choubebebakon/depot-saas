@@ -1,81 +1,47 @@
 import { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
+import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
-    }
-  });
-}
-
-
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
-      }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
-  });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
-}
-
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
-  });
-}
-
-
 export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, metier = 'depot', depotId }) {
-  const [form, setForm] = useState({ clientId: '', depotId: depotId || '', modePaiement: 'CASH', remiseGlobale: 0, montantCash: '', montantOM: '', montantMoMo: '' });
+  const queryClient = useQueryClient();
+  const notif = useNotif();
   const [panier, setPanier] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [localErrors, setLocalErrors] = useState({});
 
-  const [search, setSearch] = useState('');
+  const { control, handleSubmit, watch, setValue, reset } = useForm({
+    defaultValues: {
+      clientId: '',
+      depotId: depotId || '',
+      modePaiement: 'CASH',
+      remiseGlobale: 0,
+      montantCash: '',
+      montantOM: '',
+      montantMoMo: '',
+    }
+  });
 
-  const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
-
+  const modePaiement = watch('modePaiement');
+  const remiseGlobale = Number(watch('remiseGlobale')) || 0;
 
   useEffect(() => {
     setPanier([]);
-    setForm({ clientId: '', depotId: depotId || '', modePaiement: 'CASH', remiseGlobale: 0, montantCash: '', montantOM: '', montantMoMo: '' });
-  }, [isOpen, depotId]);
+    reset({
+      clientId: '',
+      depotId: depotId || '',
+      modePaiement: 'CASH',
+      remiseGlobale: 0,
+      montantCash: '',
+      montantOM: '',
+      montantMoMo: '',
+    });
+    setLocalErrors({});
+  }, [isOpen, depotId, reset]);
 
   const prefix = `/${metier}`;
 
@@ -100,49 +66,95 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
 
   const updatePanier = (idx, field) => (e) => {
     const next = [...panier];
-    next[idx] = { ...next[idx], [field]: e.target.value };
+    next[idx] = { ...next[idx], [field]: Number(e.target.value) || 0 };
     setPanier(next);
   };
 
   const suppriméerDuPanier = (idx) => setPanier(panier.filter((_, i) => i !== idx));
 
   const sousTotal = panier.reduce((sum, p) => sum + (p.quantite * p.prixUnitaire * (1 - (p.remise || 0) / 100)), 0);
-  const remiseMontant = sousTotal * (form.remiseGlobale / 100);
+  const remiseMontant = sousTotal * (remiseGlobale / 100);
   const total = sousTotal - remiseMontant;
 
-  const isMixte = form.modePaiement === 'MIXTE';
+  const isMixte = modePaiement === 'MIXTE';
 
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      if (panier.length === 0) {
+        throw new Error('Ajoutez au moins un article au panier');
+      }
+      const payload = {
+        ...data,
+        remiseGlobale,
+        panier: panier.map(p => ({
+          articleId: p.articleId,
+          quantite: p.quantite,
+          prixUnitaire: p.prixUnitaire,
+          remise: p.remise
+        })),
+        total,
+      };
+      const r = await api.post(`${prefix}/ventes`, payload);
+      return r.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-ventes'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      notif.success('Vente enregistrée avec succès');
+      onSuccess?.();
+      onClose();
+    },
+    onError: (err) => {
+      const msg = err.response?.data?.message || err.message || 'Erreur lors de la vente';
+      setLocalErrors({ general: msg });
+      notif.error(msg);
+    }
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (panier.length === 0) { setErrors({ panier: 'Ajoutez au moins un article au panier' }); return; }
-    setLoading(true);
-    const payload = {
-      ...form,
-      panier: panier.map(p => ({ articleId: p.articleId, quantite: p.quantite, prixUnitaire: p.prixUnitaire, remise: p.remise })),
-      total,
-    };
-    try {
-      await api.post(`${prefix}/ventes`, payload);
-      onSuccess(); onClose();
-    } catch (err) {
-      setErrors({ general: err.response?.data?.message || 'Erreur lors de la vente' });
-    } finally { setLoading(false); }
+  const onSubmit = (data) => {
+    setLocalErrors({});
+    mutation.mutate(data);
   };
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier vente' : '💰 Nouvelle vente'} loading={loading} size="xl" submitIcon="💵" submitLabel="Encaisser">
-      {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier vente' : '💰 Nouvelle vente'} loading={mutation.isPending} size="xl" submitIcon="💵" submitLabel="Encaisser">
+      {localErrors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{localErrors.general}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-        <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} placeholder="Client (optionnel)" />
-        <FormField label="Mode de paiement" name="modePaiement" type="radio" value={form.modePaiement} onChange={set('modePaiement')}
-          options={[
-            { value: 'CASH', label: '💵 Cash' },
-            { value: 'ORANGE_MONEY', label: '📱 Orange Money' },
-            { value: 'MTN_MOMO', label: '📱 MTN MoMo' },
-            { value: 'MIXTE', label: '🔀 Mixte' },
-          ]} />
+        <Controller
+          name="clientId"
+          control={control}
+          render={({ field }) => (
+            <AutocompleteInput
+              label="Client"
+              name="clientId"
+              value={field.value}
+              onChange={field.onChange}
+              fetchSuggestions={fetchClients}
+              placeholder="Client (optionnel)"
+            />
+          )}
+        />
+
+        <Controller
+          name="modePaiement"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Mode de paiement"
+              name="modePaiement"
+              type="radio"
+              value={field.value}
+              onChange={field.onChange}
+              options={[
+                { value: 'CASH', label: '💵 Cash' },
+                { value: 'ORANGE_MONEY', label: '📱 Orange Money' },
+                { value: 'MTN_MOMO', label: '📱 MTN MoMo' },
+                { value: 'MIXTE', label: '🔀 Mixte' },
+              ]}
+            />
+          )}
+        />
       </div>
 
       <div className="border-t border-slate-700/50 pt-4 mb-4">
@@ -150,7 +162,7 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
         <AutocompleteInput name="addArticle" fetchSuggestions={fetchArticles} displayKey="designation" placeholder="Rechercher un article..." onSelect={ajouterAuPanier} />
       </div>
 
-      {errors.panier && <p className="text-red-400 text-xs mb-3">⚠️ {errors.panier}</p>}
+      {panier.length === 0 && <p className="text-red-400 text-xs mb-3">⚠️ Ajoutez au moins un article au panier</p>}
 
       {panier.length > 0 && (
         <div className="space-y-2 mb-4">
@@ -173,19 +185,76 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
 
       <div className="p-4 bg-slate-800 rounded-xl space-y-1 text-sm">
         <div className="flex justify-between text-slate-400"><span>Sous-total</span><span>{(sousTotal || 0).toLocaleString('fr-FR')} FCFA</span></div>
-        {form.remiseGlobale > 0 && <div className="flex justify-between text-amber-400"><span>Remise ({form.remiseGlobale}%)</span><span>-{remiseMontant.toLocaleString('fr-FR')} FCFA</span></div>}
+        {remiseGlobale > 0 && <div className="flex justify-between text-amber-400"><span>Remise ({remiseGlobale}%)</span><span>-{remiseMontant.toLocaleString('fr-FR')} FCFA</span></div>}
         <div className="flex justify-between text-white font-bold text-base pt-1 border-t border-slate-600"><span>Total</span><span>{(total || 0).toLocaleString('fr-FR')} FCFA</span></div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <FormField label="Remise globale" name="remiseGlobale" type="number" value={form.remiseGlobale} onChange={set('remiseGlobale')} min={0} max={100} unit="%" />
+        <Controller
+          name="remiseGlobale"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Remise globale"
+              name="remiseGlobale"
+              type="number"
+              value={field.value}
+              onChange={field.onChange}
+              min={0}
+              max={100}
+              unit="%"
+            />
+          )}
+        />
       </div>
 
       {isMixte && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Montant Cash" name="montantCash" type="number" value={form.montantCash} onChange={set('montantCash')} min={0} unit="FCFA" />
-          <FormField label="Montant Orange Money" name="montantOM" type="number" value={form.montantOM} onChange={set('montantOM')} min={0} unit="FCFA" />
-          <FormField label="Montant MTN MoMo" name="montantMoMo" type="number" value={form.montantMoMo} onChange={set('montantMoMo')} min={0} unit="FCFA" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 animate-fadeIn">
+          <Controller
+            name="montantCash"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="Montant Cash"
+                name="montantCash"
+                type="number"
+                value={field.value}
+                onChange={field.onChange}
+                min={0}
+                unit="FCFA"
+              />
+            )}
+          />
+          <Controller
+            name="montantOM"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="Montant Orange Money"
+                name="montantOM"
+                type="number"
+                value={field.value}
+                onChange={field.onChange}
+                min={0}
+                unit="FCFA"
+              />
+            )}
+          />
+          <Controller
+            name="montantMoMo"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="Montant MTN MoMo"
+                name="montantMoMo"
+                type="number"
+                value={field.value}
+                onChange={field.onChange}
+                min={0}
+                unit="FCFA"
+              />
+            )}
+          />
         </div>
       )}
     </FormModal>

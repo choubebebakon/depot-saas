@@ -1,146 +1,215 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotif } from '../../../context/NotifContext';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
-    }
+// Separate Modal components for better organization and local useForm instances
+
+function OuvrirCaisseModal({ isOpen, onClose, onOpen }) {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: { montant: '', motif: '' }
   });
+
+  return isOpen ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <form onSubmit={handleSubmit(onOpen)} className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h2 className="text-lg font-black text-white mb-4">🔓 Ouverture de caisse</h2>
+        <div className="space-y-4">
+          <div>
+            <input
+              type="number"
+              placeholder="Montant initial (FCFA) *"
+              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit être positif' } })}
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+            {errors.montant && <p className="text-red-400 text-xs mt-1">⚠️ {errors.montant.message}</p>}
+          </div>
+          <div>
+            <input
+              placeholder="Motif d'ouverture (optionnel)"
+              {...register('motif')}
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button type="button" onClick={onClose}
+            className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
+          <button type="submit"
+            className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm">Ouvrir</button>
+        </div>
+      </form>
+    </div>
+  ) : null;
 }
 
-
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
-      }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
+function VenteCaisseModal({ isOpen, onClose, onSubmit }) {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: { montant: '', motif: '', typeMouvement: 'ENTREE' }
   });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
+
+  return isOpen ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h2 className="text-lg font-black text-white mb-4">💰 Saisir une vente</h2>
+        <div className="space-y-4">
+          <div>
+            <input
+              type="number"
+              placeholder="Montant de la vente (FCFA) *"
+              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit être positif' } })}
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+            {errors.montant && <p className="text-red-400 text-xs mt-1">⚠️ {errors.montant.message}</p>}
+          </div>
+          <div>
+            <input
+              placeholder="Description de la vente *"
+              {...register('motif', { required: 'Description requise' })}
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+            {errors.motif && <p className="text-red-400 text-xs mt-1">⚠️ {errors.motif.message}</p>}
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button type="button" onClick={onClose}
+            className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
+          <button type="submit"
+            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  ) : null;
 }
 
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
+function MouvementCaisseModal({ isOpen, onClose, onSubmit }) {
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    defaultValues: { montant: '', motif: '', typeMouvement: 'ENTREE' }
   });
-}
 
+  const typeMouvement = watch('typeMouvement');
+
+  return isOpen ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h2 className="text-lg font-black text-white mb-4">Nouveau mouvement</h2>
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setValue('typeMouvement', 'ENTREE')}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${typeMouvement === 'ENTREE' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}>📥 Entrée</button>
+            <button type="button" onClick={() => setValue('typeMouvement', 'SORTIE')}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${typeMouvement === 'SORTIE' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400'}`}>📤 Sortie</button>
+          </div>
+          <div>
+            <input
+              type="number"
+              placeholder="Montant (FCFA) *"
+              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit être positif' } })}
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+            {errors.montant && <p className="text-red-400 text-xs mt-1">⚠️ {errors.montant.message}</p>}
+          </div>
+          <div>
+            <input
+              placeholder="Motif *"
+              {...register('motif', { required: 'Motif requis' })}
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+            {errors.motif && <p className="text-red-400 text-xs mt-1">⚠️ {errors.motif.message}</p>}
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button type="button" onClick={onClose}
+            className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
+          <button type="submit"
+            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">Valider</button>
+        </div>
+      </form>
+    </div>
+  ) : null;
+}
 
 export default function CaissePage() {
   const { metier } = useAuth();
+  const queryClient = useQueryClient();
+  const notif = useNotif();
 
-  const [caisse, setCaisse] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
-  const [formData, setFormData] = useState({ montant: '', motif: '', typeMouvement: 'ENTREE' });
-  const [mouvements, setMouvements] = useState([]);
   const [confirmFermer, setConfirmFermer] = useState(null);
-  const [deleting, setDeleting] = useState(false);
   const [rapportData, setRapportData] = useState(null);
+  const [fetchingRapport, setFetchingRapport] = useState(false);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const { data: caisse, isLoading, error: queryError } = useQuery({
+    queryKey: ['depot-caisse-statut'],
+    queryFn: async () => {
+      const res = await depotApi.getCaisseStatut();
+      return res.data;
+    },
+    refetchInterval: 10_000,
+    enabled: metier === 'DEPOT_BOISSONS'
+  });
+
+  const ouvrirMutation = useMutation({
+    mutationFn: (data) => depotApi.ouvrirCaisse({ montantInitial: parseInt(data.montant), motif: data.motif }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
+      notif.success('Caisse ouverte avec succès');
+      setShowModal(null);
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors de l\'ouverture de caisse');
+    }
+  });
+
+  const fermerMutation = useMutation({
+    mutationFn: () => depotApi.fermerCaisse({}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
+      notif.success('Caisse fermée avec succès');
+      setConfirmFermer(null);
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors de la fermeture de caisse');
+    }
+  });
+
+  const mouvementMutation = useMutation({
+    mutationFn: (data) => depotApi.mouvementCaisse({
+      montant: parseInt(data.montant),
+      motif: data.motif,
+      typeMouvement: data.typeMouvement
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
+      notif.success('Mouvement enregistré avec succès');
+      setShowModal(null);
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Erreur lors du mouvement');
+    }
+  });
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
   }
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await depotApi.getCaisseStatut();
-      setCaisse(res.data);
-      setMouvements(res.data.mouvements || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  async function handleOuvrir() {
-    if (!formData.montant || isNaN(formData.montant)) return;
-    try {
-      await depotApi.ouvrirCaisse({ montantInitial: parseInt(formData.montant) });
-      setShowModal(null);
-      setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' });
-      load();
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function handleFermer() {
-    if (!confirmFermer) return;
-    setDeleting(true);
-    try {
-      await depotApi.fermerCaisse({});
-      setConfirmFermer(null);
-      load();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  async function handleMouvement() {
-    if (!formData.montant || isNaN(formData.montant)) return;
-    try {
-      await depotApi.mouvementCaisse(formData);
-      setShowModal(null);
-      setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' });
-      load();
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   async function handleRapport() {
+    setFetchingRapport(true);
     try {
       const res = await depotApi.rapportJournalier();
       setRapportData(res.data);
       setShowModal('rapport');
     } catch (err) {
-      console.error(err);
+      notif.error(err.response?.data?.message || 'Erreur lors de la génération du rapport');
+    } finally {
+      setFetchingRapport(false);
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6 space-y-4 animate-pulse">
         <div className="h-32 bg-slate-800/60 rounded-xl" />
@@ -149,7 +218,16 @@ export default function CaissePage() {
     );
   }
 
+  if (queryError) {
+    return (
+      <div className="p-6 text-center text-red-400">
+        Erreur de chargement de la caisse : {queryError.message}
+      </div>
+    );
+  }
+
   const estOuverte = caisse?.statut === 'OUVERTE';
+  const mouvements = caisse?.mouvements || [];
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -162,17 +240,17 @@ export default function CaissePage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {!estOuverte ? (
-            <button onClick={() => { setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' }); setShowModal('ouvrir'); }}
+            <button onClick={() => setShowModal('ouvrir')}
               className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
               🔓 Ouvrir caisse
             </button>
           ) : (
             <>
-              <button onClick={() => { setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' }); setShowModal('vente'); }}
+              <button onClick={() => setShowModal('vente')}
                 className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
                 💰 Saisir vente
               </button>
-              <button onClick={() => { setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' }); setShowModal('mouvement'); }}
+              <button onClick={() => setShowModal('mouvement')}
                 className="px-4 py-2.5 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
                 ➕ Mouvement
               </button>
@@ -182,9 +260,9 @@ export default function CaissePage() {
               </button>
             </>
           )}
-          <button onClick={handleRapport}
-            className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
-            📊 Rapport journalier
+          <button onClick={handleRapport} disabled={fetchingRapport}
+            className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
+            {fetchingRapport ? '⌛ Génération...' : '📊 Rapport journalier'}
           </button>
         </div>
       </div>
@@ -230,74 +308,23 @@ export default function CaissePage() {
         )}
       </div>
 
-      {showModal === 'ouvrir' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-lg font-black text-white mb-4">🔓 Ouverture de caisse</h2>
-            <div className="space-y-4">
-              <input type="number" placeholder="Montant initial (FCFA)" value={formData.montant}
-                onChange={e => setFormData({...formData, montant: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
-              <input placeholder="Motif d'ouverture" value={formData.motif} onChange={e => setFormData({...formData, motif: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(null)}
-                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
-              <button onClick={handleOuvrir}
-                className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm">Ouvrir</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <OuvrirCaisseModal
+        isOpen={showModal === 'ouvrir'}
+        onClose={() => setShowModal(null)}
+        onOpen={(data) => ouvrirMutation.mutate(data)}
+      />
 
-      {showModal === 'vente' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-lg font-black text-white mb-4">💰 Saisir une vente</h2>
-            <div className="space-y-4">
-              <input type="number" placeholder="Montant de la vente (FCFA)" value={formData.montant}
-                onChange={e => setFormData({...formData, montant: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
-              <input placeholder="Description de la vente" value={formData.motif} onChange={e => setFormData({...formData, motif: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(null)}
-                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
-              <button onClick={handleMouvement}
-                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">Enregistrer</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <VenteCaisseModal
+        isOpen={showModal === 'vente'}
+        onClose={() => setShowModal(null)}
+        onSubmit={(data) => mouvementMutation.mutate(data)}
+      />
 
-      {showModal === 'mouvement' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-lg font-black text-white mb-4">Nouveau mouvement</h2>
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <button onClick={() => setFormData({...formData, typeMouvement: 'ENTREE'})}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${formData.typeMouvement === 'ENTREE' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}>📥 Entrée</button>
-                <button onClick={() => setFormData({...formData, typeMouvement: 'SORTIE'})}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${formData.typeMouvement === 'SORTIE' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400'}`}>📤 Sortie</button>
-              </div>
-              <input type="number" placeholder="Montant (FCFA)" value={formData.montant}
-                onChange={e => setFormData({...formData, montant: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
-              <input placeholder="Motif" value={formData.motif} onChange={e => setFormData({...formData, motif: e.target.value})}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(null)}
-                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
-              <button onClick={handleMouvement}
-                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">Valider</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MouvementCaisseModal
+        isOpen={showModal === 'mouvement'}
+        onClose={() => setShowModal(null)}
+        onSubmit={(data) => mouvementMutation.mutate(data)}
+      />
 
       {showModal === 'rapport' && rapportData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -356,7 +383,7 @@ export default function CaissePage() {
         </div>
       )}
 
-      <ConfirmModal isOpen={!!confirmFermer} onConfirm={handleFermer} onCancel={() => setConfirmFermer(null)} loading={deleting}
+      <ConfirmModal isOpen={!!confirmFermer} onConfirm={() => fermerMutation.mutate()} onCancel={() => setConfirmFermer(null)} loading={fermerMutation.isPending}
         title="Fermer la caisse" message="Fermer la caisse ? Un rapport journalier sera généré et les ventes ne pourront plus être enregistrées pour aujourd'hui." />
     </div>
   );
