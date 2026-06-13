@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -70,7 +70,16 @@ export default function CheckOutForm({ isOpen, onClose, onSuccess, metier = 'hot
 
   const prefix = `/${metier}`;
 
-  if (!reservation) return null;
+  if (!reservation) {
+    return (
+      <FormModal isOpen={isOpen} onClose={onClose} title="🧾 Check-out" size="lg">
+        <div className="p-4 text-center text-slate-400">
+          <p className="text-lg mb-2">Aucune réservation sélectionnée</p>
+          <p className="text-sm">Veuillez sélectionner une réservation active pour effectuer le check-out.</p>
+        </div>
+      </FormModal>
+    );
+  }
 
   const nbNuits = Math.max(0, Math.round((new Date(reservation.dateDepart) - new Date(reservation.dateArrivee)) / 86400000));
   const totalHebergement = nbNuits * (reservation.prixNuit || 0);

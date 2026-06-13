@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -88,10 +88,8 @@ export default function PatientsPage() {
 
   const perm = usePermission(PERMISSIONS, 'patients');
 
-  const { data: patients = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/patients`, { enabled: true });
+  const { data: patientsData = [], loading, refetch } = useData(`/${prefix}/patients`, { enabled: true });
+  const patients = Array.isArray(patientsData?.data) ? patientsData.data : (Array.isArray(patientsData) ? patientsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (patients || []).filter(item =>

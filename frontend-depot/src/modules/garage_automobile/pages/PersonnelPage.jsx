@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -83,19 +83,17 @@ export default function PersonnelPage() {
   const [filtreFonction, setFiltreFonction] = useState('');
 
   const [edit, setEdit] = useState(null);
-  const FONCTIONS = [];
+  const FONCTIONS = ['Mécanicien', 'Électricien', 'Carrossier', 'Peintre', 'Réceptionniste', 'Gérant', 'Autre'];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'personnel');
 
-  const { data: personnel = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/personnel`, { enabled: true });
+  const { data: personnelData = [], loading, refetch } = useData(`/${prefix}/personnel`, { enabled: true });
+  const personnel = Array.isArray(personnelData?.data) ? personnelData.data : (Array.isArray(personnelData) ? personnelData : []);
 
-  // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
+  // Pagination centralisée — FIX: totalPages non défini
   const filtres = (personnel || []).filter(item =>
     !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
   );
@@ -124,7 +122,7 @@ export default function PersonnelPage() {
       } else {
         await api.post(`/${prefix}/personnel`, form);
       }
-      setFormOpen(false);
+      setShowModal(false);
       setEditItem(null);
       success(editItem ? 'élément modifié' : 'élément cr');
       refetch();

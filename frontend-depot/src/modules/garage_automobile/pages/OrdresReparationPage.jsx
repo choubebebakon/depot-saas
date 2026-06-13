@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -70,14 +70,17 @@ export default function OrdresReparationPage() {
 
   const [edit, setEdit] = useState(null);
 
-  const STATUTS = [];
-  const handleStatut = async (id, statut) => { try { await api.patch(`/${prefix}/reparations/${id}`, { statut }); refetch(); success('Statut mis Ã  jour'); } catch { notifError('Erreur'); } };
+  const STATUTS = ['En attente', 'En cours', 'Terminé', 'Annulé'];
+  const handleStatut = async (id, statut) => { try { await api.patch(`/${prefix}/reparations/${id}`, { statut }); refetch(); success('Statut mis à jour'); } catch { notifError('Erreur'); } };
   useEffect(() => { load(); }, [load]);
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3000); };
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (f) => { setEditItem(f); setFormOpen(true); };
   const handleDelete = async () => { if (!confirmDelete) return; setDeleting(true); try { await api.delete(`/garage/fiches-travaux/${confirmDelete.id}`); setConfirmDelete(null); showNotif('Ordre supprimé ?'); load(); } catch { showNotif('Erreur lors de la suppression', 'error'); } finally { setDeleting(false); } };
   const filtres = fiches.filter(f => { const q = search.toLowerCase(); const matchSearch = !q || f.reference?.toLowerCase().includes(q) || f.vehicule?.immatriculation?.toLowerCase().includes(q) || f.problemeClient?.toLowerCase().includes(q); const matchS = !filtreStatut || f.statut === filtreStatut; return matchSearch && matchS; });
+  const totalItems = filtres.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginated = filtres.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const goToPage = (p) => setPage(Math.max(1, Math.min(p, totalPages)));
 
   return (

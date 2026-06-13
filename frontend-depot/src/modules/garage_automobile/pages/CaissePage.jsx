@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -79,6 +79,9 @@ export default function CaissePage() {
   const setFormField = (f) => (e) => setForm({ ...form, [f]: e.target.value });
   const solde = mouvements.reduce((s, m) => s + (m.type === 'ENTREE' ? 1 : -1) * (m.montant || 0), 0);
   const filtres = mouvements.filter(m => { const q = search.toLowerCase(); const matchSearch = !q || m.libelle?.toLowerCase().includes(q); const matchT = !filtreType || m.type === filtreType; return matchSearch && matchT; });
+  const totalItems = filtres.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginated = filtres.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const goToPage = (p) => setPage(Math.max(1, Math.min(p, totalPages)));
 
   return (

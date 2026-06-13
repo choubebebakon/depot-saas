@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -89,10 +89,8 @@ export default function CommandesPage() {
 
   const perm = usePermission(PERMISSIONS, 'commandes');
 
-  const { data: articles = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/catalogue`, { enabled: true });
+  const { data: articlesData = [], loading, refetch } = useData(`/${prefix}/catalogue`, { enabled: true });
+  const articles = Array.isArray(articlesData?.data) ? articlesData.data : (Array.isArray(articlesData) ? articlesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (articles || []).filter(item =>
@@ -157,7 +155,7 @@ export default function CommandesPage() {
     <div className="p-6">
       {notif && <div className={`fixed top-4 right-4 z-[70] px-6 py-3 rounded-xl shadow-2xl text-white font-bold text-sm ${notif.type === 'error' ? 'bg-red-600' : 'bg-indigo-600'}`}>{notif.msg}</div>}
       <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-black text-white">Commandes</h1><p className="text-slate-400 text-sm mt-1">{data.length} commande{data.length !== 1 ? 's' : ''}</p></div>
+        <div><h1 className="text-2xl font-black text-white">Commandes</h1><p className="text-slate-400 text-sm mt-1">{articles.length} commande{articles.length !== 1 ? 's' : ''}</p></div>
         {perm.canCreate && <button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-lg shadow-indigo-600/20">+ Nouvelle Commande</button>}
       </div>
       <div className="mb-6"><input type="text" placeholder="🔍 Article, fournisseur..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="bg-slate-800 border border-slate-700 focus:border-indigo-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72" /></div>

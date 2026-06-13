@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RoleUser } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -65,6 +65,29 @@ export class UsersService {
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  // GET /:id — Détail d'un employé (Phase 4)
+  async findOne(tenantId: string, id: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, tenantId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        nom: true,
+        tenantId: true,
+        depotId: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return user;
   }
 
   // Activation ou désactivation d'un utilisateur

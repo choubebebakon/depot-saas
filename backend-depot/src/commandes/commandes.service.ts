@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { StatutCommande } from '@prisma/client';
 import { CreateCommandeDto } from './dto/create-commande.dto';
+import { UpdateCommandeDto } from './dto/update-commande.dto';
 
 @Injectable()
 export class CommandesService {
@@ -128,6 +129,22 @@ export class CommandesService {
     return this.prisma.commandeFournisseur.update({
       where: { id: commande.id },
       data: { statut },
+    });
+  }
+
+  // PUT /:id — Mise à jour complète d'une commande (Phase 4)
+  async update(tenantId: string, id: string, dto: UpdateCommandeDto) {
+    const commande = await this.prisma.commandeFournisseur.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!commande) {
+      throw new NotFoundException(`Commande with ID ${id} not found`);
+    }
+
+    return this.prisma.commandeFournisseur.update({
+      where: { id },
+      data: { ...dto },
     });
   }
 }

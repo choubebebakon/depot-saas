@@ -100,7 +100,7 @@ export const depotApi = {
   payerDette: (id, data) =>
     api.post(`/depot-boissons/clients/${id}/payer-dette`, data, getTenantHeaders()),
   historiqueAchats: (id, params) =>
-    api.get(`/depot-boissons/clients/${id}/achats`, { ...getTenantHeaders(), params }),
+    api.get(`/depot-boissons/clients/${id}/historique-achats`, { ...getTenantHeaders(), params }),
 
   // Fournisseurs
   getFournisseurs: (params) =>
@@ -134,7 +134,7 @@ export const depotApi = {
 
   // Caisse
   getCaisseStatut: () =>
-    api.get('/depot-boissons/caisse', getTenantHeaders()),
+    api.get('/depot-boissons/caisse/statut', getTenantHeaders()),
   ouvrirCaisse: (data) =>
     api.post('/depot-boissons/caisse/ouvrir', data, getTenantHeaders()),
   fermerCaisse: (data) =>

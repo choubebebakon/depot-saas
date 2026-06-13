@@ -8,6 +8,7 @@ import api from '../../../api/axios';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
+import DepenseLibrairieForm from '../forms/DepenseLibrairieForm';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -39,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -78,21 +79,17 @@ export default function DepensesPage() {
   const [deleting, setDeleting] = useState(false);
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
+  const { success, error: notifError } = useNotif();
   const [notif, setNotif] = useState(null);
 
   const [edit, setEdit] = useState(null);
+  const [form, setForm] = useState({});
 
-  const totalDepenses = items.reduce((acc, i) => acc + (i.montant || 0), 0);
-  const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
+  const { data: dataData = [], loading, refetch } = useData(`/${prefix}/depenses`, { enabled: true });
+  const data = Array.isArray(dataData?.data) ? dataData.data : (Array.isArray(dataData) ? dataData : []);
 
-  const { success, error: notifError } = useNotif();
-
-  const perm = usePermission(PERMISSIONS, 'depenses');
-
-  const { data: data = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/depenses`, { enabled: true });
+  const perm = usePermission(PERMISSIONS.DEPENSES);
+  const totalDepenses = data.reduce((acc, i) => acc + (i.montant || 0), 0);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (data || []).filter(item =>

@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -87,17 +87,17 @@ export default function MedicamentsPage() {
   const [form, setForm] = useState({});
 
   const [filtreFamille, setFiltreFamille] = useState('');
-  const FAMILLES_MEDICAMENTS = [];
+  const FAMILLES_MEDICAMENTS = ['Antibiotiques', 'Antalgiques', 'Anti-inflammatoires', 'Cardiovasculaires', 'Dermatologiques', 'Digestifs', 'Respiratoires', 'Vitamines', 'Autre'];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
+
+  const set = (field) => (value) => setFormData(prev => ({ ...prev, [field]: value }));
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'medicaments');
 
-  const { data: medicaments = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/medicaments`, { enabled: true });
+  const { data: medicamentsData = [], loading, refetch } = useData(`/${prefix}/medicaments`, { enabled: true });
+  const medicaments = Array.isArray(medicamentsData?.data) ? medicamentsData.data : (Array.isArray(medicamentsData) ? medicamentsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (medicaments || []).filter(item =>

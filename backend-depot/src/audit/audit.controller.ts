@@ -25,4 +25,13 @@ export class AuditController {
             limit: limit ? parseInt(limit, 10) : 100,
         });
     }
+
+    @Get('resume')
+    getResume(
+        @Query('tenantId') tenantId: string,
+        @Query('from') from: string,
+        @Query('to') to: string,
+    ) {
+        return this.auditService.getResume(tenantId, new Date(from), new Date(to));
+    }
 }

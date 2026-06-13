@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -79,14 +79,15 @@ export default function StockPage() {
 
   const [saving, setSaving] = useState(false);
 
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
+
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: items = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/stock`, { enabled: true });
+  const { data: itemsData = [], loading, refetch } = useData(`/${prefix}/stock`, { enabled: true });
+  const items = Array.isArray(itemsData?.data) ? itemsData.data : (Array.isArray(itemsData) ? itemsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (items || []).filter(item =>
@@ -164,9 +165,9 @@ export default function StockPage() {
       {totalPages > 1 && <div className="flex justify-center items-center gap-2 text-sm"><button disabled={page <= 1} onClick={prevPage} className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-30 text-white">?</button><span className="text-slate-400 px-4">{page} / {totalPages}</span><button disabled={page >= totalPages} onClick={nextPage} className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-30 text-white">?</button></div>}
 
       <FormModal isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleSubmit} title={editItem ? '?? Modifier article' : '?? Nouvel article'} loading={saving} submitLabel={editItem ? 'Modifier' : 'Créer'}>
-        <div><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">Catégorie</label><select value={form.categorie} onChange={set('categorie')} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm"><option value="PRODUIT">Produit soin</option><option value="COIFFURE">Coiffure</option><option value="MANUCURE">Manucure</option><option value="AUTRE">Autre</option></select></div>
+        <div><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">Catégorie</label><select value={form.categorie} onChange={setF('categorie')} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm"><option value="PRODUIT">Produit soin</option><option value="COIFFURE">Coiffure</option><option value="MANUCURE">Manucure</option><option value="AUTRE">Autre</option></select></div>
         {['nom','quantite','seuilAlerte','prixUnitaire'].map(f => (
-          <div key={f}><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">{f === 'nom' ? 'Nom' : f === 'quantite' ? 'Quantité' : f === 'seuilAlerte' ? 'Seuil d\'alerte' : 'Prix unitaire (FCFA)'}</label><input type={f === 'nom' ? 'text' : 'number'} value={form[f]} onChange={set(f)} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm" required={f === 'nom' || f === 'quantite'} /></div>
+          <div key={f}><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">{f === 'nom' ? 'Nom' : f === 'quantite' ? 'Quantité' : f === 'seuilAlerte' ? 'Seuil d\'alerte' : 'Prix unitaire (FCFA)'}</label><input type={f === 'nom' ? 'text' : 'number'} value={form[f]} onChange={setF(f)} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm" required={f === 'nom' || f === 'quantite'} /></div>
         ))}
       </FormModal>
 

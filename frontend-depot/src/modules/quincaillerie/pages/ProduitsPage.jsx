@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -87,17 +87,18 @@ export default function ProduitsPage() {
 
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const UNITES = [];
+  const UNITES = ['Pièce', 'Mètre', 'Kilogramme', 'Litre', 'Sac', 'Carton', 'Palette', 'Autre'];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'produits');
 
-  const { data: produits = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/produits`, { enabled: true });
+  const { data: produitsData = [], loading, refetch } = useData(`/${prefix}/produits`, { enabled: true });
+  const produits = Array.isArray(produitsData?.data) ? produitsData.data : (Array.isArray(produitsData) ? produitsData : []);
+
+  const { data: categoriesData = [] } = useData(`/${prefix}/categories`, { enabled: true });
+  const categories = Array.isArray(categoriesData?.data) ? categoriesData.data : (Array.isArray(categoriesData) ? categoriesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (produits || []).filter(item =>

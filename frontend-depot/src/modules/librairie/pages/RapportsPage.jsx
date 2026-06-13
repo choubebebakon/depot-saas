@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -67,16 +67,21 @@ export default function RapportsPage() {
   
   const [time, setTime] = useState(new Date());
 
-  const cards = [];
-
   useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
 
   const { data: stats, loading, refetch  } = useData(`/${prefix}/rapports`, { enabled: true });
 
+  const cards = [
+    { icon: '💰', label: 'Ventes', value: stats?.totalVentes || 0, unit: 'F', color: 'text-green-400' },
+    { icon: '📚', label: 'Livres', value: stats?.totalLivres || 0, unit: '', color: 'text-blue-400' },
+    { icon: '👥', label: 'Clients', value: stats?.totalClients || 0, unit: '', color: 'text-purple-400' },
+    { icon: '📈', label: 'Évolution', value: stats?.evolution || '0%', unit: '', color: 'text-orange-400' },
+  ];
+
   if (loading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
 ;
 
-  const bgCard = ['from-blue-500 to-blue-600', 'from-green-500 to-green-600', 'from-purple-500 to-purple-600', 'from-orange-500 to-orange-600'];
+  const bgCard = ['bg-gradient-to-br from-blue-500 to-blue-600', 'bg-gradient-to-br from-green-500 to-green-600', 'bg-gradient-to-br from-purple-500 to-purple-600', 'bg-gradient-to-br from-orange-500 to-orange-600'];
 
   return (
     <div className="p-6">

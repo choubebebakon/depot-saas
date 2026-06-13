@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -110,10 +110,8 @@ export default function ReceptionsPage() {
     api.get(`/${prefix}/produits`).then(r => setProduits(r.data?.data || r.data || [])).catch(() => {});
   }, [prefix]);
 
-  const { data: receptions = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/receptions`, { enabled: true });
+  const { data: receptionsData = [], loading, refetch } = useData(`/${prefix}/receptions`, { enabled: true });
+  const receptions = Array.isArray(receptionsData?.data) ? receptionsData.data : (Array.isArray(receptionsData) ? receptionsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (receptions || []).filter(item =>

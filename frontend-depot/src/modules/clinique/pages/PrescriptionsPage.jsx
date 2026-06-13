@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -87,14 +87,14 @@ export default function PrescriptionsPage() {
   const [form, setForm] = useState({});
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
+  const set = (field) => (value) => setFormData(prev => ({ ...prev, [field]: value }));
+
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'prescriptions');
 
-  const { data: prescriptions = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/prescriptions`, { enabled: true });
+  const { data: prescriptionsData = [], loading, refetch } = useData(`/${prefix}/prescriptions`, { enabled: true });
+  const prescriptions = Array.isArray(prescriptionsData?.data) ? prescriptionsData.data : (Array.isArray(prescriptionsData) ? prescriptionsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (prescriptions || []).filter(item =>

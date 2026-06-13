@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -93,12 +93,10 @@ export default function PiecesStockPage() {
 
   const perm = usePermission(PERMISSIONS, 'pieces');
 
-  const { data: pieces = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/pieces`, { enabled: true });
+  const { data: piecesData = [], loading, refetch } = useData(`/${prefix}/pieces`, { enabled: true });
+  const pieces = Array.isArray(piecesData?.data) ? piecesData.data : (Array.isArray(piecesData) ? piecesData : []);
 
-  // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
+  // Pagination centralisée — FIX: totalPages non défini
   const filtres = (pieces || []).filter(item =>
     !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
   );
@@ -135,7 +133,6 @@ export default function PiecesStockPage() {
   };
   const openEdit = (item) => {
     setEditItem(item);
-    setForm(item);
     setFormOpen(true);
   };
 

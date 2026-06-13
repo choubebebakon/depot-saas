@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -72,8 +72,8 @@ export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier =
 
 
   useState(() => {
-    api.get(`/${metier}/tricycles`).then(r => setTricycles(r.data?.data || r.data || [])).catch(() => {});
-    api.get(`/${metier}/commerciaux`).then(r => setCommerciaux(r.data?.data || r.data || [])).catch(() => {});
+    // api.get(`/${metier}/tricycles`).then(r => setTricycles(r.data?.data || r.data || [])).catch(() => {});
+    // api.get(`/${metier}/commerciaux`).then(r => setCommerciaux(r.data?.data || r.data || [])).catch(() => {});
     if (edit) setForm({ tricycleId: edit.tricycleId || '', commercialId: edit.commercialId || '', depotId: edit.depotId || depotId || '', date: edit.date?.slice(0, 16) || '' });
   }, [edit]);
 

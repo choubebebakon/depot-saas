@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -80,15 +80,13 @@ export default function FacturesPage() {
 
   const [edit, setEdit] = useState(null);
 
-  const totalFacture = items.reduce((acc, i) => acc + (i.total || i.montant || 0), 0);
-
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'factures');
-  const { data: items = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/factures`, { enabled: true });
+  const { data: itemsData = [], loading, refetch } = useData(`/${prefix}/factures`, { enabled: true });
+  const items = Array.isArray(itemsData?.data) ? itemsData.data : (Array.isArray(itemsData) ? itemsData : []);
+
+  const totalFacture = items.reduce((acc, i) => acc + (i.total || i.montant || 0), 0);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (items || []).filter(item =>

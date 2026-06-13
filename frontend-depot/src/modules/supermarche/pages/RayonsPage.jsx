@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -80,10 +80,8 @@ export default function RayonsPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: rayons = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/rayons`, { enabled: true });
+  const { data: rayonsData = [], loading, refetch } = useData(`/${prefix}/rayons`, { enabled: true });
+  const rayons = Array.isArray(rayonsData?.data) ? rayonsData.data : (Array.isArray(rayonsData) ? rayonsData : []);
 
   const handleDelete = async () => {
     if (!confirmDelete) return;

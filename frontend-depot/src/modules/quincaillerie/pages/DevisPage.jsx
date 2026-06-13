@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -93,10 +93,11 @@ export default function DevisPage() {
 
   const perm = usePermission(PERMISSIONS, 'devis');
 
-  const { data: devis = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/devis`, { enabled: true });
+  const { data: devisData = [], loading, refetch } = useData(`/${prefix}/devis`, { enabled: true });
+  const devis = Array.isArray(devisData?.data) ? devisData.data : (Array.isArray(devisData) ? devisData : []);
+
+  const { data: clientsData = [] } = useData(`/${prefix}/clients`, { enabled: true });
+  const clients = Array.isArray(clientsData?.data) ? clientsData.data : (Array.isArray(clientsData) ? clientsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (devis || []).filter(item =>

@@ -13,7 +13,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     constructor(private readonly depotScope: DepotScopeService) {
         const connectionString = process.env.DATABASE_URL;
-        const pool = new Pool({ connectionString });
+        const pool = new Pool({ 
+            connectionString,
+            client_encoding: 'UTF8'
+        });
         const adapter = new PrismaPg(pool);
 
         super({ adapter });

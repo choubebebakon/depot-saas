@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -78,10 +78,8 @@ export default function RecettesPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: recettes = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/recettes`, { enabled: true });
+  const { data: recettesData = [], loading, refetch } = useData(`/${prefix}/recettes`, { enabled: true });
+  const recettes = Array.isArray(recettesData?.data) ? recettesData.data : (Array.isArray(recettesData) ? recettesData : []);
 
   const handleDelete = async () => {
     if (!confirmDelete) return;

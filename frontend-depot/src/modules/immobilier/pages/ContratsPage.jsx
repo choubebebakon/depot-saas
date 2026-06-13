@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -87,10 +87,8 @@ export default function ContratsPage() {
 
   const perm = usePermission(PERMISSIONS, 'contrats');
 
-  const { data: contrats = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/contrats`, { enabled: true });
+  const { data: contratsData = [], loading, refetch } = useData(`/${prefix}/contrats`, { enabled: true });
+  const contrats = Array.isArray(contratsData?.data) ? contratsData.data : (Array.isArray(contratsData) ? contratsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (contrats || []).filter(item =>

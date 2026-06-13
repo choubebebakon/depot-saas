@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -66,8 +66,7 @@ export default function DepenseParfumerieForm({ isOpen, onClose, onSuccess, edit
 
   const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
 
-  const CATEGORIES = [];
-
+  const CATEGORIES = ['Loyer', 'Salaires', 'Électricité', 'Eau', 'Téléphone', 'Internet', 'Fournitures', 'Maintenance', 'Transport', 'Publicité', 'Autre'];
 
   useEffect(() => { if (edit) setForm({ ...edit }); else setForm({ ...initialState }); }, [edit, isOpen]);
   const prefix = `/${metier}`;

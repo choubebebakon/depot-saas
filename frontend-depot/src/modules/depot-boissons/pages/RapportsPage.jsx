@@ -32,7 +32,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -69,9 +69,6 @@ const RAPPORTS = [
 
 export default function RapportsPage() {
   const { metier } = useAuth();
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
-  }
 
   const [selectedRapport, setSelectedRapport] = useState(null);
   const [dateDebut, setDateDebut] = useState(() => {
@@ -80,6 +77,10 @@ export default function RapportsPage() {
   const [dateFin, setDateFin] = useState(() => new Date().toISOString().split('T')[0]);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+  }
 
 
   async function handleGenerer() {

@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,16 +81,16 @@ export default function MenagePage() {
   const [filtreStatut, setFiltreStatut] = useState('');
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const STATUTS_MENAGE = [];
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  const STATUTS_MENAGE = ['En attente', 'En cours', 'Terminé', 'Annulé'];
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: taches = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/menage`, { enabled: true });
+  const { data: tachesData = [], loading, refetch } = useData(`/${prefix}/menage`, { enabled: true });
+  const taches = Array.isArray(tachesData?.data) ? tachesData.data : (Array.isArray(tachesData) ? tachesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (taches || []).filter(item =>
@@ -240,11 +240,11 @@ export default function MenagePage() {
 
       <FormModal isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleSubmit} title={editItem ? '?? Modifier tche' : '?? Nouvelle tche'} loading={saving} submitLabel={editItem ? 'Modifier' : 'Crer'}>
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Chambre *</label><input required value={form.chambreNumero} onChange={set('chambreNumero')} placeholder="N chambre" className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Agent</label><input value={form.agent} onChange={set('agent')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={set('statut')} className={inputClass}>{STATUTS_MENAGE.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Priorit</label><select value={form.priorite} onChange={set('priorite')} className={inputClass}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></div>
-          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Notes</label><textarea value={form.notes} onChange={set('notes')} className={inputClass + ' h-20'} /></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Chambre *</label><input required value={form.chambreNumero} onChange={setF('chambreNumero')} placeholder="N chambre" className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Agent</label><input value={form.agent} onChange={setF('agent')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={setF('statut')} className={inputClass}>{STATUTS_MENAGE.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Priorit</label><select value={form.priorite} onChange={setF('priorite')} className={inputClass}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Notes</label><textarea value={form.notes} onChange={setF('notes')} className={inputClass + ' h-20'} /></div>
         </div>
       </FormModal>
 

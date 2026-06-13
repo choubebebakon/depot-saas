@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -82,10 +82,8 @@ export default function VisitesPage() {
 
   const perm = usePermission(PERMISSIONS, 'visites');
 
-  const { data: items = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/visites`, { enabled: true });
+  const { data: itemsData = [], loading, refetch } = useData(`/${prefix}/visites`, { enabled: true });
+  const items = Array.isArray(itemsData?.data) ? itemsData.data : (Array.isArray(itemsData) ? itemsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (items || []).filter(item =>
@@ -107,6 +105,15 @@ export default function VisitesPage() {
   } = usePagination(filtres, 10);
   const page = currentPage;
   const setPage = setCurrentPage;
+
+  const openCreate = () => { setEditItem(null); setFormData({ bienId: '', clientNom: '', clientTel: '', dateVisite: '', heure: '', statut: 'PREVUE', notes: '' }); setFormOpen(true); };
+  const [formData, setFormData] = useState({ bienId: '', clientNom: '', clientTel: '', dateVisite: '', heure: '', statut: 'PREVUE', notes: '' });
+  const setForm = (v) => setFormData(v || { bienId: '', clientNom: '', clientTel: '', dateVisite: '', heure: '', statut: 'PREVUE', notes: '' });
+  const set = (field) => (e) => setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState(null);
+
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
   const handleDelete = async () => {
     if (!confirmDelete) return;
@@ -131,13 +138,6 @@ export default function VisitesPage() {
   const [biens, setBiens] = useState([]);
   useEffect(() => { api.get(`/${prefix}/biens`).then(r => setBiens(r.data?.data || r.data || [])).catch(() => {}); }, [prefix]);
 
-  const openCreate = () => { setEditItem(null); setFormData({ bienId: '', clientNom: '', clientTel: '', dateVisite: '', heure: '', statut: 'PREVUE', notes: '' }); setFormOpen(true); };
-  const [formData, setFormData] = useState({ bienId: '', clientNom: '', clientTel: '', dateVisite: '', heure: '', statut: 'PREVUE', notes: '' });
-  const setForm = (v) => setFormData(v || { bienId: '', clientNom: '', clientTel: '', dateVisite: '', heure: '', statut: 'PREVUE', notes: '' });
-  const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState(null);
-
-  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true);

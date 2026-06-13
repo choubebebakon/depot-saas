@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -69,6 +69,9 @@ export default function CaissePage() {
   const handleDelete = async () => { if (!confirmDelete) return; try { await api.delete(`/boutique/caisse/${confirmDelete.id}`); showNotif('Supprim ?'); setConfirmDelete(null); load(); } catch { showNotif('Erreur', 'error'); } };
   const solde = items.reduce((acc, i) => acc + (i.type === 'ENTREE' ? i.montant : -i.montant), 0);
   const filtres = items.filter(i => { const q = search.toLowerCase(); return !q || i.libelle?.toLowerCase().includes(q) || i.mode?.toLowerCase().includes(q); });
+  const totalPages = Math.ceil(filtres.length / itemsPerPage);
+  const paginated = filtres.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const totalItems = filtres.length;
   const goToPage = (p) => setPage(Math.max(1, Math.min(p, totalPages)));
 
   return (

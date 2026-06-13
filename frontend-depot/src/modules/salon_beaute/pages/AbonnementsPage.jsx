@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -84,10 +84,8 @@ export default function AbonnementsPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: abonnements = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/abonnements`, { enabled: true });
+  const { data: abonnementsData = [], loading, refetch } = useData(`/${prefix}/abonnements`, { enabled: true });
+  const abonnements = Array.isArray(abonnementsData?.data) ? abonnementsData.data : (Array.isArray(abonnementsData) ? abonnementsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (abonnements || []).filter(item =>
@@ -132,7 +130,7 @@ export default function AbonnementsPage() {
       } else {
         await api.post(`/${prefix}/abonnements`, form);
       }
-      setFormOpen(false);
+      setShowModal(false);
       setEditItem(null);
       success(editItem ? 'élément modifié' : 'élément cr');
       refetch();
@@ -143,7 +141,7 @@ export default function AbonnementsPage() {
   const openEdit = (item) => {
     setEditItem(item);
     setForm(item);
-    setFormOpen(true);
+    setShowModal(true);
   };
 
 

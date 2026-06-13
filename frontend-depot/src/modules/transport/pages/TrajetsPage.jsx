@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -62,6 +62,7 @@ export default function TrajetsPage() {
   const [trajets, setTrajets] = useState([]); const [loading, setLoading] = useState(true); const [total, setTotal] = useState(0);
   const [search, setSearch] = useState(''); const [formOpen, setFormOpen] = useState(false); const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
 
   const [edit, setEdit] = useState(null);
 
@@ -99,8 +100,6 @@ export default function TrajetsPage() {
     from,
     to,
   } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between"><div><h1 className="text-3xl font-black text-white tracking-tight">🚛 Trajets</h1><p className="text-slate-400 text-sm">{total} trajet(s)</p></div>
@@ -111,7 +110,7 @@ export default function TrajetsPage() {
           <tr key={t.id} className="border-t border-slate-800 hover:bg-slate-800/40"><td className="p-4 text-white font-semibold">{t.villeDepart || t.depart}</td><td className="p-4 text-white">{t.villeArrivee || t.destination}</td><td className="p-4 text-slate-300">{t.dateDepart || t.date ? new Date(t.dateDepart || t.date).toLocaleDateString('fr-FR') : '-'}</td><td className="p-4 text-white">{t.chauffeur?.nom || t.chauffeur || '-'}</td><td className="p-4 text-slate-300">{t.vehicule?.immatriculation || t.vehicule || '-'}</td><td className="p-4"><span className={`text-[10px] font-black uppercase px-2 py-1 rounded-full ${t.statut === 'TERMINE' ? 'bg-green-500/20 text-green-400' : t.statut === 'EN_COURS' ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{t.statut}</span></td><td className="p-4 text-center"><div className="flex justify-center gap-2"><button onClick={() => openEdit(t)} className="text-orange-400 text-xs">✏️</button><button onClick={() => setConfirmDelete(t)} className="text-red-400 text-xs">🗑️</button></div></td></tr>
         ))}</tbody></table></div>
       )}
-      {totalPages > 1 && <div className="flex justify-center items-center gap-2 text-sm"><button disabled={page <= 1} onClick={() => setPage(p - 1)} className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-30 text-white">◀</button><span className="text-slate-400 px-4">{page} / {totalPages}</span><button disabled={page >= totalPages} onClick={() => setPage(p + 1)} className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-30 text-white">▶</button></div>}
+      {totalPages > 1 && <div className="flex justify-center items-center gap-2 text-sm"><button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-30 text-white">◀</button><span className="text-slate-400 px-4">{page} / {totalPages}</span><button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-30 text-white">▶</button></div>}
       <TrajetForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={load} edit={editItem} />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} message={`Supprimer le trajet ${confirmDelete?.villeDepart || confirmDelete?.depart || ''} → ${confirmDelete?.villeArrivee || confirmDelete?.destination || ''} ?`} loading={deleting} />
     </div>

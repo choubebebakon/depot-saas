@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -80,17 +80,16 @@ export default function CommandesPage() {
 
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const STATUT_COLOR = {};
-  const STATUT_MAP = {};
+  const STATUT_COLOR = { 'EN_ATTENTE': '#f59e0b', 'EN_COURS': '#3b82f6', 'PRETE': '#10b981', 'LIVREE': '#8b5cf6', 'ANNULEE': '#ef4444' };
+  const STATUT_MAP = { 'EN_ATTENTE': 'En attente', 'EN_COURS': 'En cours', 'PRETE': 'Prête', 'LIVREE': 'Livrée', 'ANNULEE': 'Annulée' };
+  const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: commandes = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/commandes`, { enabled: true });
+  const { data: commandesData = [], loading, refetch } = useData(`/${prefix}/commandes`, { enabled: true });
+  const commandes = Array.isArray(commandesData?.data) ? commandesData.data : (Array.isArray(commandesData) ? commandesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (commandes || []).filter(item =>

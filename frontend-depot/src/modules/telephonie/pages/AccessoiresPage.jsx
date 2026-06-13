@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -89,17 +89,18 @@ export default function AccessoiresPage() {
   const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const TYPES_ACCESSOIRE = [];
+  const TYPES_ACCESSOIRE = ['Écouteurs', 'Chargeur', 'Coque', 'Carte SD', 'Cable USB', 'Batterie', 'Écran', 'Autre'];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'accessoires');
 
-  const { data: accessoires = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/accessoires`, { enabled: true });
+  const { data: accessoiresData = [], loading, refetch } = useData(`/${prefix}/accessoires`, { enabled: true });
+  const accessoires = Array.isArray(accessoiresData?.data) ? accessoiresData.data : (Array.isArray(accessoiresData) ? accessoiresData : []);
+
+  const { data: fournisseursData = [] } = useData(`/${prefix}/fournisseurs`, { enabled: true });
+  const fournisseurs = Array.isArray(fournisseursData?.data) ? fournisseursData.data : (Array.isArray(fournisseursData) ? fournisseursData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (accessoires || []).filter(item =>

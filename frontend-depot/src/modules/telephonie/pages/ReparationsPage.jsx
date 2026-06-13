@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -83,8 +83,8 @@ export default function ReparationsPage() {
   const [filtreStatut, setFiltreStatut] = useState('');
 
   const [edit, setEdit] = useState(null);
-  const STATUTS_REP = [];
-  const handleStatut = async (id, statut) => { try { await api.patch(`/${prefix}/reparations/${id}`, { statut }); refetch(); success('Statut mis Ã  jour'); } catch { notifError('Erreur'); } };
+  const STATUTS_REP = ['En attente', 'En cours', 'Terminé', 'Annulé'];
+  const handleStatut = async (id, statut) => { try { await api.patch(`/${prefix}/reparations/${id}`, { statut }); refetch(); success('Statut mis à jour'); } catch { notifError('Erreur'); } };
 
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
@@ -92,10 +92,8 @@ export default function ReparationsPage() {
 
   const perm = usePermission(PERMISSIONS, 'reparations');
 
-  const { data: reparations = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/reparations`, { enabled: true });
+  const { data: reparationsData = [], loading, refetch } = useData(`/${prefix}/reparations`, { enabled: true });
+  const reparations = Array.isArray(reparationsData?.data) ? reparationsData.data : (Array.isArray(reparationsData) ? reparationsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (reparations || []).filter(item =>

@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,14 +81,14 @@ export default function FacturationPage() {
   const [filtreStatut, setFiltreStatut] = useState('');
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: factures = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/factures`, { enabled: true });
+  const { data: facturesData = [], loading, refetch } = useData(`/${prefix}/factures`, { enabled: true });
+  const factures = Array.isArray(facturesData?.data) ? facturesData.data : (Array.isArray(facturesData) ? facturesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (factures || []).filter(item =>
@@ -240,12 +240,12 @@ export default function FacturationPage() {
 
       <FormModal isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleSubmit} title={editItem ? '?? Modifier facture' : '?? Nouvelle facture'} loading={saving} submitLabel={editItem ? 'Modifier' : 'Crer'}>
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Client *</label><input required value={form.clientNom} onChange={set('clientNom')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Chambre</label><input value={form.chambre} onChange={set('chambre')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Montant (F) *</label><input type="number" required value={form.montant} onChange={set('montant')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Type</label><select value={form.type} onChange={set('type')} className={inputClass}><option>Sjour</option><option>Service</option><option>Restauration</option><option>Autre</option></select></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={set('statut')} className={inputClass}><option>Paye</option><option>Impaye</option><option>Partielle</option></select></div>
-          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Description</label><textarea value={form.description} onChange={set('description')} className={inputClass + ' h-20'} /></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Client *</label><input required value={form.clientNom} onChange={setF('clientNom')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Chambre</label><input value={form.chambre} onChange={setF('chambre')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Montant (F) *</label><input type="number" required value={form.montant} onChange={setF('montant')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Type</label><select value={form.type} onChange={setF('type')} className={inputClass}><option>Sjour</option><option>Service</option><option>Restauration</option><option>Autre</option></select></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={setF('statut')} className={inputClass}><option>Paye</option><option>Impaye</option><option>Partielle</option></select></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Description</label><textarea value={form.description} onChange={setF('description')} className={inputClass + ' h-20'} /></div>
         </div>
       </FormModal>
 

@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -78,24 +78,19 @@ export default function StockPage() {
   const [saving, setSaving] = useState(false);
   const [edits, setEdits] = useState({});
 
-  const [familleFiltre, setFamilleFiltre] = useState('');
-  const ruptureCount = items.filter(i => (i.quantite || 0) === 0).length;
-  const faibleCount = items.filter(i => (i.quantite || 0) > 0 && (i.quantite || 0) <= (i.seuil || 5)).length;
-  const expireCount = items.filter(i => i.datePeremption && new Date(i.datePeremption) < new Date()).length;
-
-  const totalValeur = items.reduce((acc, i) => acc + (i.valeurStock || i.valeur || i.quantite * i.prix || 0), 0);
-  const handleStockEdit = (item) => { setEditItem(item); setFormOpen(true); };
-  const saveStock = async () => { setSaving(true); try { await api.post(`/${prefix}/stock/edits`, edits); refetch(); success('Stock mis Ã  jour'); setEdits({}); } catch { notifError('Erreur'); } finally { setSaving(false); } };
-  const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
-
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'stock');
 
-  const { data: medicaments = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/medicaments`, { enabled: true });
+  const { data: medicamentsData = [], loading, refetch } = useData(`/${prefix}/medicaments`, { enabled: true });
+  const medicaments = Array.isArray(medicamentsData?.data) ? medicamentsData.data : (Array.isArray(medicamentsData) ? medicamentsData : []);
+
+  const [familleFiltre, setFamilleFiltre] = useState('');
+  const ruptureCount = medicaments.filter(i => (i.quantite || 0) === 0).length;
+  const faibleCount = medicaments.filter(i => (i.quantite || 0) > 0 && (i.quantite || 0) <= (i.seuil || 5)).length;
+  const expireCount = medicaments.filter(i => i.datePeremption && new Date(i.datePeremption) < new Date()).length;
+
+  const totalValeur = medicaments.reduce((acc, i) => acc + (i.valeurStock || i.valeur || i.quantite * i.prix || 0), 0);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (medicaments || []).filter(item =>
@@ -118,8 +113,20 @@ export default function StockPage() {
   const page = currentPage;
   const setPage = setCurrentPage;
 
-
-
+  const handleStockEdit = (id, val) => setEdits(prev => ({ ...prev, [id]: val }));
+  const saveStock = async (m) => {
+    setSaving(prev => ({ ...prev, [m.id]: true }));
+    try {
+      await api.patch(`/${prefix}/medicaments/${m.id}`, { stock: parseInt(edits[m.id]) });
+      setEdits(prev => { const { [m.id]: _, ...rest } = prev; return rest; });
+      success('Stock mis à jour');
+      refetch();
+    } catch {
+      notifError('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(prev => ({ ...prev, [m.id]: false }));
+    }
+  };
 
   return (
     <div className="p-6">

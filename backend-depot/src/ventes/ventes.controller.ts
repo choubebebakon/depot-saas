@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Put } from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateVenteDto } from './dto/create-vente.dto';
 import { AnnulerVenteDto, ValiderSortieVenteDto } from './dto/validation-vente.dto';
+import { UpdateVenteDto } from './dto/update-vente.dto';
 import { VentesService } from './ventes.service';
 
 @Controller('ventes')
@@ -82,5 +83,23 @@ export class VentesController {
     @CurrentUser() user: any,
   ) {
     return this.ventesService.annulerVente(id, body.motif, body.tenantId, body.depotId, user);
+  }
+
+  @Get('caisse')
+  async getCaisse(
+    @Query('tenantId') tenantId: string,
+    @Query('depotId') depotId: string,
+  ) {
+    return this.ventesService.getCaisse(tenantId, depotId);
+  }
+
+  @Put(':id')
+  @Roles(RoleUser.PATRON, RoleUser.GERANT)
+  async update(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+    @Body() dto: UpdateVenteDto,
+  ) {
+    return this.ventesService.update(tenantId, id, dto);
   }
 }

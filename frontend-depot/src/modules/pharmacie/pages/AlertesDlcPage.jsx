@@ -6,6 +6,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
+import AlertCard from '../components/AlertCard';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -37,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,10 +82,12 @@ export default function AlertesDlcPage() {
 
   const perm = usePermission(PERMISSIONS, 'alertes-dlc');
 
-  const { data: medicaments = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/medicaments`, { enabled: true });
+  const { data: medicamentsData = [], loading, refetch } = useData(`/${prefix}/medicaments`, { enabled: true });
+  const medicaments = Array.isArray(medicamentsData?.data) ? medicamentsData.data : (Array.isArray(medicamentsData) ? medicamentsData : []);
+
+  const expirees = medicaments.filter(m => m.datePeremption && new Date(m.datePeremption) < new Date());
+  const urgentes = medicaments.filter(m => m.datePeremption && new Date(m.datePeremption) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && new Date(m.datePeremption) >= new Date());
+  const bientot = medicaments.filter(m => m.datePeremption && new Date(m.datePeremption) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) && new Date(m.datePeremption) >= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
 
 

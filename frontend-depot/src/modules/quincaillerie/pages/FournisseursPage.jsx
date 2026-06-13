@@ -5,6 +5,7 @@ import { usePagination } from '../../../hooks/usePagination';
 import { useNotif } from '../../../context/NotifContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
+import FormModal from '../../../shared/components/forms/FormModal';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
@@ -39,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -76,6 +77,8 @@ export default function FournisseursPage() {
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [form, setForm] = useState({ nom: '', specialite: '', telephone: '', email: '', adresse: '' });
+  const [saving, setSaving] = useState(false);
 
   const [notif, setNotif] = useState(null);
 
@@ -83,14 +86,15 @@ export default function FournisseursPage() {
 
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
+
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'fournisseurs');
 
-  const { data: fournisseurs = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/fournisseurs`, { enabled: true });
+  const { data: fournisseursData = [], loading, refetch } = useData(`/${prefix}/fournisseurs`, { enabled: true });
+  const fournisseurs = Array.isArray(fournisseursData?.data) ? fournisseursData.data : (Array.isArray(fournisseursData) ? fournisseursData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (fournisseurs || []).filter(item =>
@@ -126,6 +130,27 @@ export default function FournisseursPage() {
     } finally {
       setDeleting(false);
     }
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editItem) {
+        await api.patch(`/${prefix}/fournisseurs/${editItem.id}`, form);
+      } else {
+        await api.post(`/${prefix}/fournisseurs`, form);
+      }
+      setFormOpen(false);
+      setEditItem(null);
+      success(editItem ? 'élément modifié' : 'élément cr');
+      refetch();
+    } catch {
+      notifError("Erreur lors de l'enregistréement", 'échec');
+    }
+  };
+  const openEdit = (item) => {
+    setEditItem(item);
+    setForm(item);
+    setFormOpen(true);
   };
 
 
@@ -167,7 +192,15 @@ export default function FournisseursPage() {
           )}
         </div>
       )}
-      <FournisseurForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { success(editItem ? 'Fournisseur modifié ?' : 'Fournisseur cr ?'); refetch(); }} edit={editItem} metier={prefix} />
+      <FormModal isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleSubmit} title={editItem ? '?? Modifier Fournisseur' : '?? Nouveau Fournisseur'} loading={saving} submitLabel={editItem ? 'Modifier' : 'Crer'}>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom *</label><input required value={form.nom} onChange={setF('nom')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Spcialit</label><input value={form.specialite} onChange={setF('specialite')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Tlphone *</label><input required value={form.telephone} onChange={setF('telephone')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Email</label><input type="email" value={form.email} onChange={setF('email')} className={inputClass} /></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Adresse</label><input value={form.adresse} onChange={setF('adresse')} className={inputClass} /></div>
+        </div>
+      </FormModal>
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleting} title="Supprimer le fournisseur" message={`tes-vous sr de vouloir suppriméer "${confirmDelete?.nom}" ?`} />
     </div>
   );

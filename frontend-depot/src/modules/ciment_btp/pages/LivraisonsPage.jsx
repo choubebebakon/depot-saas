@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -80,10 +80,8 @@ export default function LivraisonsPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: livraisons = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/livraisons`, { enabled: true });
+  const { data: livraisonsData = [], loading, refetch } = useData(`/${prefix}/livraisons`, { enabled: true });
+  const livraisons = Array.isArray(livraisonsData?.data) ? livraisonsData.data : (Array.isArray(livraisonsData) ? livraisonsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (livraisons || []).filter(item =>

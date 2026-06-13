@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -78,17 +78,14 @@ export default function PrestationsPage() {
 
   const [edit, setEdit] = useState(null);
 
-  const CATEGORIES = [];
-
+  const CATEGORIES = ['Coiffure', 'Manucure', 'Pédicure', 'Maquillage', 'Soin visage', 'Massage', 'Épilation', 'Autre'];
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: prestations = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/prestations`, { enabled: true });
+  const { data: prestationsData = [], loading, refetch } = useData(`/${prefix}/prestations`, { enabled: true });
+  const prestations = Array.isArray(prestationsData?.data) ? prestationsData.data : (Array.isArray(prestationsData) ? prestationsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (prestations || []).filter(item =>

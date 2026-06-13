@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../../api';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -69,8 +69,9 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const set = (field) => (value) => setForm({ ...form, [field]: value });
 
-  useState(() => {
+  useEffect(() => {
     if (edit) setForm({
       designation: edit.designation || edit.nom || '', prixVente: edit.prixVente || '', prixAchat: edit.prixAchat || '',
       seuilCritique: edit.seuilCritique || 0, familleId: edit.familleId || '', marqueId: edit.marqueId || '',

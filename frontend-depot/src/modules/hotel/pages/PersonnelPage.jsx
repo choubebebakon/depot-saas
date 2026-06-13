@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,16 +81,16 @@ export default function PersonnelPage() {
   const [filtreFonction, setFiltreFonction] = useState('');
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const FONCTIONS = [];
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  const FONCTIONS = ['Réceptionniste', 'Serveur', 'Cuisinier', 'Femme de chambre', 'Gardien', 'Manager', 'Autre'];
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: personnel = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/personnel`, { enabled: true });
+  const { data: personnelData = [], loading, refetch } = useData(`/${prefix}/personnel`, { enabled: true });
+  const personnel = Array.isArray(personnelData?.data) ? personnelData.data : (Array.isArray(personnelData) ? personnelData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (personnel || []).filter(item =>
@@ -240,13 +240,13 @@ export default function PersonnelPage() {
 
       <FormModal isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleSubmit} title={editItem ? '?? Modifier membre' : '????? Nouveau membre'} loading={saving} submitLabel={editItem ? 'Modifier' : 'Crer'}>
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom *</label><input required value={form.nom} onChange={set('nom')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Tlphone</label><input value={form.telephone} onChange={set('telephone')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Email</label><input type="email" value={form.email} onChange={set('email')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Fonction</label><select value={form.fonction} onChange={set('fonction')} className={inputClass}>{FONCTIONS.map(f => <option key={f} value={f}>{f}</option>)}</select></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Salaire (F)</label><input type="number" value={form.salaire} onChange={set('salaire')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Date d'embauche</label><input type="date" value={form.dateEmbauche} onChange={set('dateEmbauche')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={set('statut')} className={inputClass}><option>Actif</option><option>Inactif</option><option>Cong</option></select></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom *</label><input required value={form.nom} onChange={setF('nom')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Tlphone</label><input value={form.telephone} onChange={setF('telephone')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Email</label><input type="email" value={form.email} onChange={setF('email')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Fonction</label><select value={form.fonction} onChange={setF('fonction')} className={inputClass}>{FONCTIONS.map(f => <option key={f} value={f}>{f}</option>)}</select></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Salaire (F)</label><input type="number" value={form.salaire} onChange={setF('salaire')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Date d'embauche</label><input type="date" value={form.dateEmbauche} onChange={setF('dateEmbauche')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={setF('statut')} className={inputClass}><option>Actif</option><option>Inactif</option><option>Cong</option></select></div>
         </div>
       </FormModal>
 

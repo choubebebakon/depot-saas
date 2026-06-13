@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -91,10 +91,8 @@ export default function CategoriesPage() {
 
   const perm = usePermission(PERMISSIONS, 'categories');
 
-  const { data: categories = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/categories`, { enabled: true });
+  const { data: categoriesData = [], loading, refetch } = useData(`/${prefix}/categories`, { enabled: true });
+  const categories = Array.isArray(categoriesData?.data) ? categoriesData.data : (Array.isArray(categoriesData) ? categoriesData : []);
 
   const handleDelete = async () => {
     if (!confirmDelete) return;

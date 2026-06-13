@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -85,10 +85,8 @@ export default function BiensPage() {
 
   const perm = usePermission(PERMISSIONS, 'biens');
 
-  const { data: biens = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/biens`, { enabled: true });
+  const { data: biensData = [], loading, refetch } = useData(`/${prefix}/biens`, { enabled: true });
+  const biens = Array.isArray(biensData?.data) ? biensData.data : (Array.isArray(biensData) ? biensData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (biens || []).filter(item =>

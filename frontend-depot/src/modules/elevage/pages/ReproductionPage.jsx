@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -88,10 +88,8 @@ export default function ReproductionPage() {
 
   const perm = usePermission(PERMISSIONS, 'reproduction');
 
-  const { data: accouplements = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/reproduction`, { enabled: true });
+  const { data: accouplementsData = [], loading, refetch } = useData(`/${prefix}/reproduction`, { enabled: true });
+  const accouplements = Array.isArray(accouplementsData?.data) ? accouplementsData.data : (Array.isArray(accouplementsData) ? accouplementsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (accouplements || []).filter(item =>

@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -91,10 +91,8 @@ export default function TroupeauxPage() {
 
   const perm = usePermission(PERMISSIONS, 'troupeaux');
 
-  const { data: animaux = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/troupeaux`, { enabled: true });
+  const { data: animauxData = [], loading, refetch } = useData(`/${prefix}/troupeaux`, { enabled: true });
+  const animaux = Array.isArray(animauxData?.data) ? animauxData.data : (Array.isArray(animauxData) ? animauxData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (animaux || []).filter(item =>

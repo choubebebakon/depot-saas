@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -85,10 +85,8 @@ export default function LocatairesPage() {
 
   const perm = usePermission(PERMISSIONS, 'locataires');
 
-  const { data: locataires = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/locataires`, { enabled: true });
+  const { data: locatairesData = [], loading, refetch } = useData(`/${prefix}/locataires`, { enabled: true });
+  const locataires = Array.isArray(locatairesData?.data) ? locatairesData.data : (Array.isArray(locatairesData) ? locatairesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (locataires || []).filter(item =>

@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -66,6 +66,9 @@ export default function RapportsPage() {
   const prefix = metier.toLowerCase().replace(/_/g, '-');
   const [periode, setPeriode] = useState('MOIS');
   const [time, setTime] = useState(new Date());
+
+  const { data: itemsData = [] } = useData(`/${prefix}/depenses`, { enabled: true });
+  const items = Array.isArray(itemsData?.data) ? itemsData.data : (Array.isArray(itemsData) ? itemsData : []);
 
   const totalDepenses = items.reduce((acc, i) => acc + (i.montant || 0), 0);
 

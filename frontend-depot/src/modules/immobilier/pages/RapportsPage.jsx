@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -66,10 +66,13 @@ export default function RapportsPage() {
   const prefix = metier.toLowerCase().replace(/_/g, '-');
   
   const [time, setTime] = useState(new Date());
+  const [type, setType] = useState('loyers');
 
   useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
 
   const { data: stats, loading, refetch  } = useData(`/${prefix}/rapports`, { enabled: true });
+
+  const current = type === 'loyers' ? stats?.loyers || [] : type === 'biens' ? stats?.biens || [] : stats?.depenses || [];
 
   if (loading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
 ;
@@ -89,9 +92,9 @@ export default function RapportsPage() {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4"><p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Biens occupés</p><p className="text-white font-black text-xl mt-1">{stats?.biensOccupes}</p></div>
-        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4"><p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Loyers du mois</p><p className="text-white font-black text-xl mt-1">{stats?.loyersMois.toLocaleString('fr-FR')} F</p></div>
+        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4"><p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Loyers du mois</p><p className="text-white font-black text-xl mt-1">{(stats?.loyersMois || 0).toLocaleString('fr-FR')} F</p></div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4"><p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Paiements en retard</p><p className="text-red-400 font-black text-xl mt-1">{stats?.retards}</p></div>
-        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4"><p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Revenus annuels</p><p className="text-white font-black text-xl mt-1">{stats?.revenus.toLocaleString('fr-FR')} F</p></div>
+        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4"><p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Revenus annuels</p><p className="text-white font-black text-xl mt-1">{(stats?.revenus || 0).toLocaleString('fr-FR')} F</p></div>
       </div>
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden">
         <table className="w-full">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../../../hooks/useData';
 import { useAuth } from '../../../contexts/AuthContext';
+import AlertLevel from '../components/AlertLevel';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -33,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -69,11 +70,11 @@ export default function DashboardPharmacie() {
 
   const [month, setMonth] = useState(new Date().getMonth());
 
-  const expirees = items.filter(i => i.datePeremption && new Date(i.datePeremption) < new Date());
+  const { data: stats, loading } = useData(`/${prefix}/stats`, { enabled: true });
+
+  const expirees = (stats?.expirees || []).filter(i => i.datePeremption && new Date(i.datePeremption) < new Date());
 
   useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
-
-  const { data: stats, loading } = useData(`/${prefix}/stats`, { enabled: true });
 
   if (loading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
 ;

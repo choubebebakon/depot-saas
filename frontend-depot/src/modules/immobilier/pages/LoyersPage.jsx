@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -83,10 +83,8 @@ export default function LoyersPage() {
 
   const perm = usePermission(PERMISSIONS, 'loyers');
 
-  const { data: loyers = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/loyers`, { enabled: true });
+  const { data: loyersData = [], loading, refetch } = useData(`/${prefix}/loyers`, { enabled: true });
+  const loyers = Array.isArray(loyersData?.data) ? loyersData.data : (Array.isArray(loyersData) ? loyersData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (loyers || []).filter(item =>
@@ -108,6 +106,18 @@ export default function LoyersPage() {
   } = usePagination(filtres, 10);
   const page = currentPage;
   const setPage = setCurrentPage;
+
+  const openCreate = () => { setEditItem(null); setFormData({ contratId: '', mois: '', montant: '', datePaiement: '', statut: 'EN_ATTENTE' }); setFormOpen(true); };
+  const [formData, setFormData] = useState({ contratId: '', mois: '', montant: '', datePaiement: '', statut: 'EN_ATTENTE' });
+  const setForm = (v) => setFormData(v || { contratId: '', mois: '', montant: '', datePaiement: '', statut: 'EN_ATTENTE' });
+  const set = (field) => (e) => setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const [paiementFormOpen, setPaiementFormOpen] = useState(false);
+  const [paiementContrat, setPaiementContrat] = useState(null);
+  const [month, setMonth] = useState(new Date().getMonth());
+
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
   const handleDelete = async () => {
     if (!confirmDelete) return;
@@ -132,16 +142,6 @@ export default function LoyersPage() {
   const [contrats, setContrats] = useState([]);
   useEffect(() => { api.get(`/${prefix}/contrats`).then(r => setContrats(r.data?.data || r.data || [])).catch(() => {}); }, [prefix]);
 
-  const openCreate = () => { setEditItem(null); setFormData({ contratId: '', mois: '', montant: '', datePaiement: '', statut: 'EN_ATTENTE' }); setFormOpen(true); };
-  const [formData, setFormData] = useState({ contratId: '', mois: '', montant: '', datePaiement: '', statut: 'EN_ATTENTE' });
-  const setForm = (v) => setFormData(v || { contratId: '', mois: '', montant: '', datePaiement: '', statut: 'EN_ATTENTE' });
-  const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState(null);
-  const [paiementFormOpen, setPaiementFormOpen] = useState(false);
-  const [paiementContrat, setPaiementContrat] = useState(null);
-  const [month, setMonth] = useState(new Date().getMonth());
-
-  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true);

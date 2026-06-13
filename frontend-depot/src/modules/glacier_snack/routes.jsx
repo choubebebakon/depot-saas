@@ -44,10 +44,8 @@ if (typeof window !== 'undefined') {
   });
 
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
-    window.__shield_initialized = true;
-  }
+  // NOTE: Object.setPrototypeOf ne peut pas être utilisé sur window dans les navigateurs modernes
+  // Le proxy safeHandler est déjà configuré pour intercepter les appels
 }
 
 // Pages Administrateur génériques

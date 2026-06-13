@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -89,10 +89,8 @@ export default function VehiculesPage() {
 
   const perm = usePermission(PERMISSIONS, 'vehicules');
 
-  const { data: vehicules = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/vehicules`, { enabled: true });
+  const { data: vehiculesData = [], loading, refetch } = useData(`/${prefix}/vehicules`, { enabled: true });
+  const vehicules = Array.isArray(vehiculesData?.data) ? vehiculesData.data : (Array.isArray(vehiculesData) ? vehiculesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (vehicules || []).filter(item =>
@@ -131,7 +129,6 @@ export default function VehiculesPage() {
   };
   const openEdit = (item) => {
     setEditItem(item);
-    setForm(item);
     setFormOpen(true);
   };
 

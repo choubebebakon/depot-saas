@@ -457,7 +457,13 @@ export class DepotBoissonsService {
   }
 
   async updateClient(tenantId: string, id: string, data: any) {
-    return this.prisma.client.updateMany({ where: { id, tenantId }, data });
+    const validData: any = {};
+    if (data.nom !== undefined) validData.nom = data.nom;
+    if (data.telephone !== undefined) validData.telephone = data.telephone;
+    if (data.adresse !== undefined) validData.adresse = data.adresse;
+    if (data.plafondCredit !== undefined) validData.plafondCredit = parseFloat(data.plafondCredit) || 0;
+    if (data.depotId !== undefined) validData.depotId = data.depotId;
+    return this.prisma.client.updateMany({ where: { id, tenantId }, data: validData });
   }
 
   async payerDette(tenantId: string, clientId: string, data: any) {

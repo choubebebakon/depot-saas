@@ -8,6 +8,7 @@ import api from '../../../api/axios';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
+import ClientLibrairieForm from '../forms/ClientLibrairieForm';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -39,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,6 +82,7 @@ export default function ClientsPage() {
   const [notif, setNotif] = useState(null);
 
   const [edit, setEdit] = useState(null);
+  const [form, setForm] = useState({});
 
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
@@ -88,10 +90,8 @@ export default function ClientsPage() {
 
   const perm = usePermission(PERMISSIONS, 'clients');
 
-  const { data: data = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/clients`, { enabled: true });
+  const { data: dataData = [], loading, refetch } = useData(`/${prefix}/clients`, { enabled: true });
+  const data = Array.isArray(dataData?.data) ? dataData.data : (Array.isArray(dataData) ? dataData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (data || []).filter(item =>

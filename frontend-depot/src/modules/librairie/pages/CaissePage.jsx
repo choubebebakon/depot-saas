@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -60,6 +60,7 @@ if (typeof window !== 'undefined') {
 function ModalCaisse({ onClose, onSuccess, edit }) {
   const [form, setForm] = useState({ libelle: edit?.libelle || '', montant: edit?.montant || '', type: edit?.type || 'ENTREE', mode: edit?.mode || 'ESPECES', notes: edit?.notes || '' });
   const [loading, setLoading] = useState(false); const [erreur, setErreur] = useState('');
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
   const handleSubmit = async (e) => { e.preventDefault(); setLoading(true); try { if (edit) await api.patch(`/librairie/caisse/${edit.id}`, form); else await api.post('/librairie/caisse', form); onSuccess(); onClose(); } catch (err) { setErreur(err.response?.data?.message || 'Erreur'); } finally { setLoading(false); } };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} /><div className="relative bg-slate-900 border-slate-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl border">
@@ -80,7 +81,7 @@ function ModalCaisse({ onClose, onSuccess, edit }) {
 }
 
 export default function CaissePage() {
-  const [data, setData] = useState([]); const [loading, setLoading] = useState(true); const [page, setPage] = useState(1); const [total, setTotal] = useState(0);
+  const [data, setData] = useState([]); const [loading, setLoading] = useState(true); const [total, setTotal] = useState(0);
   const [search, setSearch] = useState(''); const [formOpen, setFormOpen] = useState(false); const [editItem, setEditItem] = useState(null); const [confirmDelete, setConfirmDelete] = useState(null); const [deleting, setDeleting] = useState(false); const [notif, setNotif] = useState(null);
 
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
@@ -93,7 +94,18 @@ export default function CaissePage() {
   const handleDelete = async () => { if (!confirmDelete) return; setDeleting(true); try { await api.delete(`/librairie/caisse/${confirmDelete.id}`); setConfirmDelete(null); showNotif('Supprim ?'); load(); } catch { showNotif('Erreur', 'error'); } finally { setDeleting(false); } };
   const solde = data.reduce((acc, i) => acc + (i.type === 'ENTREE' ? i.montant : -i.montant), 0);
   const filtres = data.filter(i => { const q = search.toLowerCase(); return !q || i.libelle?.toLowerCase().includes(q) || i.mode?.toLowerCase().includes(q) || i.type?.toLowerCase().includes(q); });
-  const goToPage = (p) => setPage(Math.max(1, Math.min(p, totalPages)));
+  const {
+    currentPage,
+    setCurrentPage,
+    goToPage,
+    nextPage,
+    prevPage,
+    totalPages,
+    totalItems,
+    paginatedData: paginated,
+  } = usePagination(filtres, 20);
+  const page = currentPage;
+  const setPage = setCurrentPage;
 
   return (
     <div className="p-6">

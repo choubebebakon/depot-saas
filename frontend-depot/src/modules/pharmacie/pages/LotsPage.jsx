@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -80,19 +80,18 @@ export default function LotsPage() {
 
   const [notif, setNotif] = useState(null);
 
-  const [edit, setEdit] = useState(null);
+  const { data: lotsData = [], loading, refetch } = useData(`/${prefix}/lots`, { enabled: true });
+  const lots = Array.isArray(lotsData?.data) ? lotsData.data : (Array.isArray(lotsData) ? lotsData : []);
 
-  const bientot = items.filter(i => i.datePeremption && new Date(i.datePeremption) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) && new Date(i.datePeremption) >= new Date());
+  const { data: medicamentsData = [] } = useData(`/${prefix}/medicaments`, { enabled: true });
+  const medicaments = Array.isArray(medicamentsData?.data) ? medicamentsData.data : (Array.isArray(medicamentsData) ? medicamentsData : []);
+
+  const bientot = lots.filter(i => i.datePeremption && new Date(i.datePeremption) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) && new Date(i.datePeremption) >= new Date());
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'lots');
-
-  const { data: lots = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/lots`, { enabled: true });
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (lots || []).filter(item =>

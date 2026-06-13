@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,6 +81,43 @@ export default function RendezVousPage() {
   const [confirmDelete, setConfirmDelete] = useState(null); const [deleting, setDeleting] = useState(false);
 
   const [edit, setEdit] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/salon/rendez-vous');
+      setRdvs(Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []));
+      setTotal(Array.isArray(res.data?.data) ? res.data.data.length : (Array.isArray(res.data) ? res.data.length : 0));
+    } catch {
+      setRdvs([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openCreate = () => { setEditItem(null); setFormOpen(true); };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/salon/rendez-vous/${confirmDelete.id}`);
+      setConfirmDelete(null);
+      load();
+    } catch {
+      setDeleting(false);
+    }
+  };
+
+  const openEdit = (item) => {
+    setEditItem(item);
+    setFormOpen(true);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const clients = rdvs.map(r => ({ id: r.id, nom: r.clientNom }));
 
   const filtres = (rdvs || []).filter(item =>
     !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())

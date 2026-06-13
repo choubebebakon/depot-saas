@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { TypeMouvement } from '@prisma/client';
 import { SignalerAvarieDto } from './dto/signaler-avarie.dto';
+import { UpdateStockDto } from './dto/update-stock.dto';
 import { AuditService } from '../audit/audit.service';
 
 @Injectable()
@@ -239,5 +240,72 @@ export class StocksService {
 
       return stock;
     });
+  }
+
+  // 8. GET /:id — Détail d'un article (Phase 4)
+  async findOne(tenantId: string, id: string) {
+    const stock = await this.prisma.stock.findFirst({
+      where: { id, depot: { tenantId } },
+      include: { article: true, depot: true, tricycle: true },
+    });
+
+    if (!stock) {
+      throw new NotFoundException(`Stock with ID ${id} not found`);
+    }
+
+    return stock;
+  }
+
+  // 9. PUT /:id — Mise à jour d'un article (Phase 4)
+  async update(tenantId: string, id: string, dto: UpdateStockDto) {
+    const stock = await this.prisma.stock.findFirst({
+      where: { id, depot: { tenantId } },
+    });
+
+    if (!stock) {
+      throw new NotFoundException(`Stock with ID ${id} not found`);
+    }
+
+    return this.prisma.stock.update({
+      where: { id },
+      data: { ...dto },
+    });
+  }
+
+  // 10. GET /config — Configuration du module stock (Phase 4)
+  async getConfig(tenantId: string) {
+    // Retourne une configuration par défaut pour le tenant
+    // Peut être étendu pour inclure une table StockConfig si nécessaire
+    return {
+      alertesStockBas: true,
+      seuilAlerteDefaut: 10,
+      autoriserAjustement: true,
+      autoriserTransfert: true,
+      trackingLots: false,
+    };
+  }
+
+  // 11. GET /caisse — État de la caisse du jour (Phase 4)
+  async getCaisse(tenantId: string, depotId: string) {
+    const selectedDepotId = this.requireDepotId(depotId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const ventes = await this.prisma.vente.aggregate({
+      where: { 
+        tenantId, 
+        depotId: selectedDepotId, 
+        date: { gte: today }, 
+        statut: 'PAYE' 
+      },
+      _sum: { total: true },
+      _count: true,
+    });
+
+    return {
+      montantTotal: ventes._sum?.total ?? 0,
+      nombreVentes: ventes._count,
+      date: today,
+    };
   }
 }

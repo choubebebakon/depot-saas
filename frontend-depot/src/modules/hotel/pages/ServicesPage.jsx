@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -84,16 +84,16 @@ export default function ServicesPage() {
   const [filtreType, setFiltreType] = useState('');
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const TYPES_SERVICE = [];
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  const TYPES_SERVICE = ['Petit-déjeuner', 'Déjeuner', 'Dîner', 'Room service', 'Nettoyage', 'Blanchisserie', 'Transport', 'Autre'];
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: services = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/services`, { enabled: true });
+  const { data: servicesData = [], loading, refetch } = useData(`/${prefix}/services`, { enabled: true });
+  const services = Array.isArray(servicesData?.data) ? servicesData.data : (Array.isArray(servicesData) ? servicesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (services || []).filter(item =>
@@ -247,12 +247,12 @@ export default function ServicesPage() {
 
       <FormModal isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleSubmit} title={editItem ? '?? Modifier service' : '??? Nouveau service'} loading={saving} submitLabel={editItem ? 'Modifier' : 'Crer'}>
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Chambre *</label><input required value={form.chambreNumero} onChange={set('chambreNumero')} placeholder="N chambre" className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Type *</label><select value={form.type} onChange={set('type')} className={inputClass}>{TYPES_SERVICE.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Montant (F)</label><input type="number" value={form.montant} onChange={set('montant')} className={inputClass} /></div>
-          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Description</label><input value={form.description} onChange={set('description')} className={inputClass} /></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={set('statut')} className={inputClass}><option>Command</option><option>En prparation</option><option>Livr</option><option>Annul</option></select></div>
-          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Date</label><input type="date" value={form.date} onChange={set('date')} className={inputClass} /></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Chambre *</label><input required value={form.chambreNumero} onChange={setF('chambreNumero')} placeholder="N chambre" className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Type *</label><select value={form.type} onChange={setF('type')} className={inputClass}>{TYPES_SERVICE.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Montant (F)</label><input type="number" value={form.montant} onChange={setF('montant')} className={inputClass} /></div>
+          <div className="col-span-2"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Description</label><input value={form.description} onChange={setF('description')} className={inputClass} /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Statut</label><select value={form.statut} onChange={setF('statut')} className={inputClass}><option>Command</option><option>En prparation</option><option>Livr</option><option>Annul</option></select></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Date</label><input type="date" value={form.date} onChange={setF('date')} className={inputClass} /></div>
         </div>
       </FormModal>
 

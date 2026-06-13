@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -83,19 +83,17 @@ export default function RetoursPage() {
 
   const [formMotif, setFormMotif] = useState('');
   const handleNewRetour = () => { setFormMotif(''); setShowForm(true); };
-  const handleValider = async () => { try { await api.post(`/${prefix}/retours/${confirmValidate}/valider`); setConfirmValidate(null); refetch(); success('Retour validÃ©'); } catch { notifError('Erreur'); } };
-  const MOTIFS_RETOUR = [];
-  const handleRembourser = async () => { try { await api.post(`/${prefix}/retours/${confirmValidate}/rembourser`); setConfirmValidate(null); refetch(); success('Remboursement effectuÃ©'); } catch { notifError('Erreur'); } };
+  const handleValider = async () => { try { await api.post(`/${prefix}/retours/${confirmValidate}/valider`); setConfirmValidate(null); refetch(); success('Retour validé'); } catch { notifError('Erreur'); } };
+  const MOTIFS_RETOUR = ['Produit périmé', 'Erreur de commande', 'Client insatisfait', 'Produit défectueux', 'Autre'];
+  const handleRembourser = async () => { try { await api.post(`/${prefix}/retours/${confirmValidate}/rembourser`); setConfirmValidate(null); refetch(); success('Remboursement effectué'); } catch { notifError('Erreur'); } };
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'retours');
 
-  const { data: retours = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/retours`, { enabled: true });
+  const { data: retoursData = [], loading, refetch } = useData(`/${prefix}/retours`, { enabled: true });
+  const retours = Array.isArray(retoursData?.data) ? retoursData.data : (Array.isArray(retoursData) ? retoursData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (retours || []).filter(item =>

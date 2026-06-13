@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -95,10 +95,8 @@ export default function EvenementsPage() {
 
   const perm = usePermission(PERMISSIONS, 'evenements');
 
-  const { data: events = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/evenements`, { enabled: true });
+  const { data: eventsData = [], loading, refetch } = useData(`/${prefix}/evenements`, { enabled: true });
+  const events = Array.isArray(eventsData?.data) ? eventsData.data : (Array.isArray(eventsData) ? eventsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (events || []).filter(item =>

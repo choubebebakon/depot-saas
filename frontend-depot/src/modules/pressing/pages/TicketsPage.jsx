@@ -6,6 +6,7 @@ import { useNotif } from '../../../context/NotifContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import TicketPressingForm from '../forms/TicketPressingForm';
 import RetraitPressingForm from '../forms/RetraitPressingForm';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
@@ -38,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,16 +82,14 @@ export default function TicketsPage() {
   const [retraitTicket, setRetraitTicket] = useState(null);
 
   const [edit, setEdit] = useState(null);
-  const STATUS_COLOR = {};
-  const STATUS_MAP = {};
+  const STATUS_COLOR = { 'En attente': '#f59e0b', 'En cours': '#3b82f6', 'Terminé': '#10b981', 'Annulé': '#ef4444' };
+  const STATUS_MAP = { 'En attente': 'En attente', 'En cours': 'En cours', 'Terminé': 'Terminé', 'Annulé': 'Annulé' };
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: tickets = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/tickets`, { enabled: true });
+  const { data: ticketsData = [], loading, refetch } = useData(`/${prefix}/tickets`, { enabled: true });
+  const tickets = Array.isArray(ticketsData?.data) ? ticketsData.data : (Array.isArray(ticketsData) ? ticketsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (tickets || []).filter(item =>
@@ -129,7 +128,6 @@ export default function TicketsPage() {
   };
   const openEdit = (item) => {
     setEditItem(item);
-    setForm(item);
     setFormOpen(true);
   };
 

@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -62,9 +62,6 @@ if (typeof window !== 'undefined') {
 
 export default function ConsignesPage() {
   const { metier } = useAuth();
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
-  }
 
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -77,6 +74,10 @@ export default function ConsignesPage() {
   const [deleting, setDeleting] = useState(false);
 
   const [edit, setEdit] = useState(null);
+
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+  }
 
 
   useEffect(() => {

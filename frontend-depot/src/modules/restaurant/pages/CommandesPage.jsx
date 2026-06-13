@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -91,12 +91,11 @@ export default function CommandesPage() {
   const { success, error: notifError } = useNotif();
   const perm = usePermission(PERMISSIONS, 'commandes');
 
-  const { data: commandes = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/commandes`, { enabled: true });
+  const { data: commandesData = [], loading, refetch } = useData(`/${prefix}/commandes`, { enabled: true });
+  const commandes = Array.isArray(commandesData?.data) ? commandesData.data : (Array.isArray(commandesData) ? commandesData : []);
 
   const itemsPerPage = 20;
+  const [page, setPage] = useState(1);
 
   const handleDelete = async () => {
     if (!confirmDelete) return;
@@ -141,6 +140,8 @@ export default function CommandesPage() {
     return matchSearch && matchStatut;
   });
 
+  const totalPages = Math.ceil(filtres.length / itemsPerPage);
+  const totalItems = filtres.length;
   const paginated = filtres.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const goToPage = (p) => setPage(Math.max(1, Math.min(p, totalPages)));
 

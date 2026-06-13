@@ -5,7 +5,11 @@ import { usePagination } from '../../../hooks/usePagination';
 import { useNotif } from '../../../context/NotifContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
+import FormModal from '../../../shared/components/forms/FormModal';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import ChambreForm from '../forms/ChambreForm';
+import TypeChambreForm from '../forms/TypeChambreForm';
+import CheckInForm from '../forms/CheckInForm';
 import CheckOutForm from '../forms/CheckOutForm';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
@@ -38,7 +42,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -75,27 +79,35 @@ export default function ChambresPage() {
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [écheckInReservation, setCheckInReservation] = useState(null);
-  const [écheckOutReservation, setCheckOutReservation] = useState(null);
+  const [form, setForm] = useState({ numero: '', type: '', prix: '', capacite: '', etage: '', statut: 'Disponible' });
+  const [checkInReservation, setCheckInReservation] = useState(null);
+  const [checkOutReservation, setCheckOutReservation] = useState(null);
 
-
-  const [écheckInOpen, setCheckInOpen] = useState(false);
-  const [écheckOutOpen, setCheckOutOpen] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [checkOutOpen, setCheckOutOpen] = useState(false);
   const [typeChambreOpen, setTypeChambreOpen] = useState(false);
   const [filtreStatut, setFiltreStatut] = useState('');
   const [filtreType, setFiltreType] = useState('');
 
   const [edit, setEdit] = useState(null);
-  const STATUTS_CHAMBRE = [];
-  const TYPES_CHAMBRE = [];
+  const STATUTS_CHAMBRE = ['Disponible', 'Occupée', 'En maintenance', 'Hors service'];
+  const TYPES_CHAMBRE = ['Simple', 'Double', 'Triple', 'Suite', 'Deluxe', 'Autre'];
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
+
+  const badgeStatut = (statut) => {
+    const colors = {
+      'Disponible': 'bg-emerald-500/20 text-emerald-400',
+      'Occupée': 'bg-red-500/20 text-red-400',
+      'En maintenance': 'bg-yellow-500/20 text-yellow-400',
+      'Hors service': 'bg-slate-500/20 text-slate-400'
+    };
+    return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colors[statut] || 'bg-slate-500/20 text-slate-400'}`}>{statut}</span>;
+  };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: chambres = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/chambres`, { enabled: true });
+  const { data: chambresData = [], loading, refetch } = useData(`/${prefix}/chambres`, { enabled: true });
+  const chambres = Array.isArray(chambresData?.data) ? chambresData.data : (Array.isArray(chambresData) ? chambresData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (chambres || []).filter(item =>
@@ -132,11 +144,30 @@ export default function ChambresPage() {
       setDeleting(false);
     }
   };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editItem) {
+        await api.patch(`/${prefix}/chambres/${editItem.id}`, form);
+      } else {
+        await api.post(`/${prefix}/chambres`, form);
+      }
+      setFormOpen(false);
+      setEditItem(null);
+      success(editItem ? 'élément modifié' : 'élément cr');
+      refetch();
+    } catch {
+      notifError("Erreur lors de l'enregistréement", 'échec');
+    }
+  };
   const openEdit = (item) => {
     setEditItem(item);
     setForm(item);
     setFormOpen(true);
   };
+
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
 
 
@@ -246,8 +277,8 @@ export default function ChambresPage() {
 
       <ChambreForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={refetch} edit={editItem} />
       <TypeChambreForm isOpen={typeChambreOpen} onClose={() => setTypeChambreOpen(false)} onSuccess={() => refetch()} metier={prefix} />
-      <CheckInForm isOpen={écheckInOpen} onClose={() => setCheckInOpen(false)} onSuccess={() => refetch()} metier={prefix} reservation={écheckInReservation} />
-      <CheckOutForm isOpen={écheckOutOpen} onClose={() => setCheckOutOpen(false)} onSuccess={() => refetch()} metier={prefix} reservation={écheckOutReservation} />
+      <CheckInForm isOpen={checkInOpen} onClose={() => setCheckInOpen(false)} onSuccess={() => refetch()} metier={prefix} reservation={checkInReservation} />
+      <CheckOutForm isOpen={checkOutOpen} onClose={() => setCheckOutOpen(false)} onSuccess={() => refetch()} metier={prefix} reservation={checkOutReservation} />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleting}
         title="Supprimer la chambre" message={`Supprimer la chambre N ${confirmDelete?.numero} ? Cette action est irrversible.`} />
     </div>

@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -71,8 +71,7 @@ export default function EncaissementSalonForm({ isOpen, onClose, onSuccess, meti
 
   const prefix = `/${metier}`;
   useState(() => { if (rendezVous) setForm(prev => ({ ...prev, rendezVousId: rendezVous.id })); }, [rendezVous]);
-  if (!rendezVous) return null;
-  const total = rendezVous.total || rendezVous.prestations?.reduce((s, p) => s + (p.prix || 0), 0) || 0;
+  const total = rendezVous?.total || rendezVous?.prestations?.reduce((s, p) => s + (p.prix || 0), 0) || 0;
   const totalFinal = total + (Number(form.pourboire) || 0);
   const monnaie = Number(form.montantRecu) - totalFinal;
   const handleSubmit = async (e) => { e.preventDefault(); setLoading(true);

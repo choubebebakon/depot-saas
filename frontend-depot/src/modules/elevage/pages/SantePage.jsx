@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -77,10 +77,8 @@ export default function SantePage() {
 
   const perm = usePermission(PERMISSIONS, 'sante');
 
-  const { data: soins = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/evenements`, { enabled: true });
+  const { data: soinsData = [], loading, refetch } = useData(`/${prefix}/evenements`, { enabled: true });
+  const soins = Array.isArray(soinsData?.data) ? soinsData.data : (Array.isArray(soinsData) ? soinsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (soins || []).filter(item =>

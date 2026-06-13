@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -90,17 +90,18 @@ export default function ChantiersPage() {
   const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const STATUTS_CHANTIER = [];
+  const STATUTS_CHANTIER = ['Planifié', 'En cours', 'En pause', 'Terminé', 'Annulé'];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'chantiers');
 
-  const { data: chantiers = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/chantiers`, { enabled: true });
+  const { data: chantiersData = [], loading, refetch } = useData(`/${prefix}/chantiers`, { enabled: true });
+  const chantiers = Array.isArray(chantiersData?.data) ? chantiersData.data : (Array.isArray(chantiersData) ? chantiersData : []);
+
+  const { data: clientsData = [] } = useData(`/${prefix}/clients`, { enabled: true });
+  const clients = Array.isArray(clientsData?.data) ? clientsData.data : (Array.isArray(clientsData) ? clientsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (chantiers || []).filter(item =>

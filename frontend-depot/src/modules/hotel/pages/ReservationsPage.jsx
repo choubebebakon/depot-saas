@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -80,15 +80,13 @@ export default function ReservationsPage() {
   const [filtreStatut, setFiltreStatut] = useState('');
 
   const [edit, setEdit] = useState(null);
-  const STATUTS_RESERVATION = [];
+  const STATUTS_RESERVATION = ['En attente', 'Confirmée', 'En cours', 'Terminée', 'Annulée'];
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: reservations = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/reservations`, { enabled: true });
+  const { data: reservationsData = [], loading, refetch } = useData(`/${prefix}/reservations`, { enabled: true });
+  const reservations = Array.isArray(reservationsData?.data) ? reservationsData.data : (Array.isArray(reservationsData) ? reservationsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (reservations || []).filter(item =>

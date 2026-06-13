@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -65,17 +65,8 @@ export default function CaissePage() {
 
 
   const limit = 20;
-  const load = useCallback(() => {
-    setLoading(true);
-    api.get('/transport/caisse', { params: { page, limit, search } }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
-  }, [page, search]);
-  useEffect(() => { load(); }, [load]);
-  const openCreate = () => { setEditItem(null); setFormOpen(true); };
-  const openEdit = (item) => { setEditItem(item); setFormOpen(true); };
-  const handleDelete = async () => { if (!confirmDelete) return; setDeleting(true); try { await api.delete(`/transport/caisse/${confirmDelete.id}`); setConfirmDelete(null); load(); } catch { alert('Erreur lors de la suppression'); } finally { setDeleting(false); } };
-
-
-  // Pagination centralisÃ©e â€” FIX: totalPages non dÃ©fini
+  
+  // Pagination centralisée — FIX: totalPages non défini
   const filtres = (data || []).filter(item =>
     !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
   );
@@ -95,6 +86,16 @@ export default function CaissePage() {
   } = usePagination(filtres, 10);
   const page = currentPage;
   const setPage = setCurrentPage;
+
+  const load = useCallback(() => {
+    setLoading(true);
+    api.get('/transport/caisse', { params: { page, limit, search } }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
+  }, [page, search]);
+  useEffect(() => { load(); }, [load]);
+  const openCreate = () => { setEditItem(null); setFormOpen(true); };
+  const openEdit = (item) => { setEditItem(item); setFormOpen(true); };
+  const handleDelete = async () => { if (!confirmDelete) return; setDeleting(true); try { await api.delete(`/transport/caisse/${confirmDelete.id}`); setConfirmDelete(null); load(); } catch { alert('Erreur lors de la suppression'); } finally { setDeleting(false); } };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between"><div><h1 className="text-3xl font-black text-white tracking-tight">🏧 Caisse</h1><p className="text-slate-400 text-sm">{total} mouvement(s)</p></div>

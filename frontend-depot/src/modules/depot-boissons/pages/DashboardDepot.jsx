@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useApi } from '../../../shared/hooks/useApi';
 import { depotApi } from '../services/depotApi';
@@ -42,7 +42,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -128,6 +128,9 @@ function CustomTooltip({ active, payload, label }) {
 export default function DashboardDepot() {
   const { metier, nomEntreprise } = useAuth();
 
+  const { data, loading, error } = useApi(depotApi.getDashboardStats, []);
+  const alerteStock = useMemo(() => data?.alertes_stock || [], [data]);
+
   if (metier !== 'DEPOT_BOISSONS') {
     return (
       <div className="p-8 text-center">
@@ -136,16 +139,6 @@ export default function DashboardDepot() {
       </div>
     );
   }
-
-  const { data, loading, error } = useApi(depotApi.getDashboardStats, []);
-  const [alerteStock, setAlerteStock] = useState([]);
-
-
-  useEffect(() => {
-    if (data?.alertes_stock) {
-      setAlerteStock(data.alertes_stock);
-    }
-  }, [data]);
 
   if (loading) {
     return (

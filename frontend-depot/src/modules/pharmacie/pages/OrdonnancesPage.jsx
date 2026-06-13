@@ -9,6 +9,7 @@ import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
 import DelivranceForm from '../forms/DelivranceForm';
+import OrdonnanceForm from '../forms/OrdonnanceForm';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -40,7 +41,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -79,7 +80,6 @@ export default function OrdonnancesPage() {
   const [deleting, setDeleting] = useState(false);
 
   const [notif, setNotif] = useState(null);
-  const [openDelivery, setOpenDelivery] = useState(false);
 
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [deliveryLignes, setDeliveryLignes] = useState([]);
@@ -87,17 +87,37 @@ export default function OrdonnancesPage() {
   const [deliveryLigne, setDeliveryLigne] = useState(null);
 
   const [edit, setEdit] = useState(null);
-  const STATUTS = [];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'ordonnances');
 
-  const { data: ordonnances = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/ordonnances`, { enabled: true });
+  const { data: ordonnancesData = [], loading, refetch } = useData(`/${prefix}/ordonnances`, { enabled: true });
+  const ordonnances = Array.isArray(ordonnancesData?.data) ? ordonnancesData.data : (Array.isArray(ordonnancesData) ? ordonnancesData : []);
+
+  const { data: patientsData = [] } = useData(`/${prefix}/patients`, { enabled: true });
+  const patients = Array.isArray(patientsData?.data) ? patientsData.data : (Array.isArray(patientsData) ? patientsData : []);
+
+  const STATUTS = {
+    EN_ATTENTE: { label: 'En attente', color: 'bg-slate-500/20 text-slate-400' },
+    EN_PREPARATION: { label: 'En préparation', color: 'bg-blue-500/20 text-blue-400' },
+    PRETE: { label: 'Prête', color: 'bg-emerald-500/20 text-emerald-400' },
+    LIVRE: { label: 'Livré', color: 'bg-green-500/20 text-green-400' },
+    ANNULE: { label: 'Annulé', color: 'bg-red-500/20 text-red-400' }
+  };
+  const badgeColor = {
+    EN_ATTENTE: 'bg-slate-500/20 text-slate-400',
+    EN_PREPARATION: 'bg-blue-500/20 text-blue-400',
+    PRETE: 'bg-emerald-500/20 text-emerald-400',
+    LIVRE: 'bg-green-500/20 text-green-400',
+    ANNULE: 'bg-red-500/20 text-red-400'
+  };
+
+  const openDelivery = (ordonnance) => {
+    setDeliveryLignes(ordonnance.lignes || []);
+    setDeliveryOpen(true);
+  };
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (ordonnances || []).filter(item =>
@@ -178,14 +198,14 @@ export default function OrdonnancesPage() {
                 <tr><td colSpan={5} className="text-center py-16 text-slate-500">Aucune ordonnance trouvée</td></tr>
               ) : paginated.map(o => {
                 const client = patients.find(p => p.id === o.clientId);
-                const s = STATUTS[o.statut] || STATUTS.EN_COURS;
+                const s = STATUTS[o.statut] || STATUTS.EN_ATTENTE;
                 return (
                   <tr key={o.id} className="hover:bg-slate-700/20 transition-colors">
                     <td className="px-5 py-4 text-white font-semibold text-sm">{client?.nom || ''}</td>
                     <td className="px-5 py-4 text-slate-300 text-sm">{o.medecin || ''}</td>
                     <td className="px-5 py-4 text-slate-400 text-sm">{o.dateEmise ? new Date(o.dateEmise).toLocaleDateString('fr-FR') : ''}</td>
                     <td className="px-5 py-4 text-center">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${badgeColor[s.color]}`}>{s.label}</span>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${s.color}`}>{s.label}</span>
                     </td>
                     <td className="px-5 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">

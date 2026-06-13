@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -79,10 +79,8 @@ export default function ProductionPage() {
   const STATUT_MAP = {};
   const { success, error: notifError } = useNotif();
 
-  const { data: items = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/production`, { enabled: true });
+  const { data: itemsData = [], loading, refetch } = useData(`/${prefix}/production`, { enabled: true });
+  const items = Array.isArray(itemsData?.data) ? itemsData.data : (Array.isArray(itemsData) ? itemsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (items || []).filter(item =>

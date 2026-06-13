@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -66,7 +66,7 @@ export default function ChargementForm({ isOpen, onClose, onSuccess, edit, metie
   const [errors, setErrors] = useState({});
 
   const [search, setSearch] = useState('');
-  const totalValeur = items.reduce((acc, i) => acc + (i.valeurStock || i.valeur || i.quantite * i.prix || 0), 0);
+  const totalValeur = lignes.reduce((acc, i) => acc + (i.valeurStock || i.valeur || i.quantite * i.prix || 0), 0);
 
 
   const prefix = `/${metier}`;

@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -83,7 +83,7 @@ export default function TelephonesPage() {
   const [filtreMarque, setFiltreMarque] = useState('');
 
   const [edit, setEdit] = useState(null);
-  const MARQUES = [];
+  const MARQUES = ['Samsung', 'Apple', 'Huawei', 'Xiaomi', 'Oppo', 'Vivo', 'Tecno', 'Infinix', 'Autre'];
 
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
@@ -91,10 +91,8 @@ export default function TelephonesPage() {
 
   const perm = usePermission(PERMISSIONS, 'telephones');
 
-  const { data: telephones = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/telephones`, { enabled: true });
+  const { data: telephonesData = [], loading, refetch } = useData(`/${prefix}/telephones`, { enabled: true });
+  const telephones = Array.isArray(telephonesData?.data) ? telephonesData.data : (Array.isArray(telephonesData) ? telephonesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (telephones || []).filter(item =>

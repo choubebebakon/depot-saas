@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -89,17 +89,18 @@ export default function RechargesPage() {
   const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
 
-  const OPERATEURS = [];
+  const OPERATEURS = ['Orange', 'MTN', 'Moov', 'Wave', 'Autre'];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'recharges');
 
-  const { data: recharges = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/recharges`, { enabled: true });
+  const { data: rechargesData = [], loading, refetch } = useData(`/${prefix}/recharges`, { enabled: true });
+  const recharges = Array.isArray(rechargesData?.data) ? rechargesData.data : (Array.isArray(rechargesData) ? rechargesData : []);
+
+  const { data: clientsData = [] } = useData(`/${prefix}/clients`, { enabled: true });
+  const clients = Array.isArray(clientsData?.data) ? clientsData.data : (Array.isArray(clientsData) ? clientsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (recharges || []).filter(item =>

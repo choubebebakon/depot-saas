@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -61,9 +61,6 @@ if (typeof window !== 'undefined') {
 
 export default function CaissePage() {
   const { metier } = useAuth();
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
-  }
 
   const [caisse, setCaisse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,8 +69,13 @@ export default function CaissePage() {
   const [mouvements, setMouvements] = useState([]);
   const [confirmFermer, setConfirmFermer] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [rapportData, setRapportData] = useState(null);
 
   const [isOpen, setIsOpen] = useState(false);
+
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,10 +93,11 @@ export default function CaissePage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleOuvrir() {
-    const montant = prompt('Montant de fonds de caisse initial :');
-    if (!montant || isNaN(montant)) return;
+    if (!formData.montant || isNaN(formData.montant)) return;
     try {
-      await depotApi.ouvrirCaisse({ montantInitial: parseInt(montant) });
+      await depotApi.ouvrirCaisse({ montantInitial: parseInt(formData.montant) });
+      setShowModal(null);
+      setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' });
       load();
     } catch (err) {
       console.error(err);
@@ -130,7 +133,8 @@ export default function CaissePage() {
   async function handleRapport() {
     try {
       const res = await depotApi.rapportJournalier();
-      alert(JSON.stringify(res.data, null, 2));
+      setRapportData(res.data);
+      setShowModal('rapport');
     } catch (err) {
       console.error(err);
     }
@@ -158,14 +162,18 @@ export default function CaissePage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {!estOuverte ? (
-            <button onClick={handleOuvrir}
+            <button onClick={() => { setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' }); setShowModal('ouvrir'); }}
               className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
               🔓 Ouvrir caisse
             </button>
           ) : (
             <>
-              <button onClick={() => setShowModal('mouvement')}
+              <button onClick={() => { setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' }); setShowModal('vente'); }}
                 className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
+                💰 Saisir vente
+              </button>
+              <button onClick={() => { setFormData({ montant: '', motif: '', typeMouvement: 'ENTREE' }); setShowModal('mouvement'); }}
+                className="px-4 py-2.5 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
                 ➕ Mouvement
               </button>
               <button onClick={() => setConfirmFermer(true)}
@@ -222,6 +230,48 @@ export default function CaissePage() {
         )}
       </div>
 
+      {showModal === 'ouvrir' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-lg font-black text-white mb-4">🔓 Ouverture de caisse</h2>
+            <div className="space-y-4">
+              <input type="number" placeholder="Montant initial (FCFA)" value={formData.montant}
+                onChange={e => setFormData({...formData, montant: e.target.value})}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
+              <input placeholder="Motif d'ouverture" value={formData.motif} onChange={e => setFormData({...formData, motif: e.target.value})}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowModal(null)}
+                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
+              <button onClick={handleOuvrir}
+                className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm">Ouvrir</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showModal === 'vente' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-lg font-black text-white mb-4">💰 Saisir une vente</h2>
+            <div className="space-y-4">
+              <input type="number" placeholder="Montant de la vente (FCFA)" value={formData.montant}
+                onChange={e => setFormData({...formData, montant: e.target.value})}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
+              <input placeholder="Description de la vente" value={formData.motif} onChange={e => setFormData({...formData, motif: e.target.value})}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowModal(null)}
+                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
+              <button onClick={handleMouvement}
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal === 'mouvement' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
@@ -244,6 +294,63 @@ export default function CaissePage() {
                 className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
               <button onClick={handleMouvement}
                 className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">Valider</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showModal === 'rapport' && rapportData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-black text-white mb-4">📊 Rapport journalier</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Statut</p>
+                  <p className={`text-lg font-black mt-1 ${rapportData.statut === 'OUVERTE' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {rapportData.statut || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Solde</p>
+                  <p className="text-lg font-black text-white mt-1">{(rapportData.solde || 0).toLocaleString('fr-FR')} FCFA</p>
+                </div>
+                <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Entrées du jour</p>
+                  <p className="text-lg font-black text-emerald-400 mt-1">+{(rapportData.entreesJour || 0).toLocaleString('fr-FR')} FCFA</p>
+                </div>
+                <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Sorties du jour</p>
+                  <p className="text-lg font-black text-red-400 mt-1">-{(rapportData.sortiesJour || 0).toLocaleString('fr-FR')} FCFA</p>
+                </div>
+              </div>
+              <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Mouvements</h3>
+                {rapportData.mouvements && rapportData.mouvements.length > 0 ? (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {rapportData.mouvements.map((m, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <span>{m.typeMouvement === 'ENTREE' ? '📥' : '📤'}</span>
+                          <div>
+                            <p className="text-sm text-white font-medium">{m.motif || 'Mouvement'}</p>
+                            <p className="text-xs text-slate-500">{new Date(m.date).toLocaleString('fr-FR')}</p>
+                          </div>
+                        </div>
+                        <span className={`font-bold text-sm ${m.typeMouvement === 'ENTREE' ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {m.typeMouvement === 'ENTREE' ? '+' : '-'}{(m.montant || 0).toLocaleString('fr-FR')} FCFA
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm text-center py-4">Aucun mouvement aujourd'hui</p>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowModal(null)}
+                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Fermer</button>
             </div>
           </div>
         </div>

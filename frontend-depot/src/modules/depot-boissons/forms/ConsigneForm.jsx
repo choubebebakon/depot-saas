@@ -35,7 +35,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -72,7 +72,7 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
   const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
 
 
-  useState(() => { api.get(`/${metier}/types-consigne`).then(r => setTypesConsigne(r.data?.data || r.data || [])).catch(() => {}); }, []);
+  // useState(() => { api.get(`/${metier}/types-consigne`).then(r => setTypesConsigne(r.data?.data || r.data || [])).catch(() => {}); }, []);
 
   const prefix = `/${metier}`;
 

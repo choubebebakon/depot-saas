@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -87,17 +87,17 @@ export default function MedecinsPage() {
   const [form, setForm] = useState({});
 
   const [filtreSpecialite, setFiltreSpecialite] = useState('');
-  const SPECIALITES = [];
+  const SPECIALITES = ['Médecine générale', 'Cardiologie', 'Dermatologie', 'Pédiatrie', 'Gynécologie', 'Ophtalmologie', 'ORL', 'Chirurgie', 'Radiologie', 'Anesthésie'];
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
+
+  const set = (field) => (value) => setFormData(prev => ({ ...prev, [field]: value }));
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'medecins');
 
-  const { data: medecins = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/medecins`, { enabled: true });
+  const { data: medecinsData = [], loading, refetch } = useData(`/${prefix}/medecins`, { enabled: true });
+  const medecins = Array.isArray(medecinsData?.data) ? medecinsData.data : (Array.isArray(medecinsData) ? medecinsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (medecins || []).filter(item =>

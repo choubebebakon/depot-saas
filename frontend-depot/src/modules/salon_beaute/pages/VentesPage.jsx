@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -84,14 +84,15 @@ export default function VentesPage() {
 
   const [encaissementOpen, setEncaissementOpen] = useState(false);
 
+  const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
+
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
 
   const { success, error: notifError } = useNotif();
 
-  const { data: ventes = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/ventes`, { enabled: true });
+  const { data: ventesData = [], loading, refetch } = useData(`/${prefix}/ventes`, { enabled: true });
+  const ventes = Array.isArray(ventesData?.data) ? ventesData.data : (Array.isArray(ventesData) ? ventesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (ventes || []).filter(item =>
@@ -166,9 +167,9 @@ export default function VentesPage() {
 
       <FormModal isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleSubmit} title="?? Nouvelle vente" loading={saving} submitLabel="Crer">
         {['clientNom','prestation','montant','notes'].map(f => (
-          <div key={f}><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">{f === 'clientNom' ? 'Client' : f === 'prestation' ? 'Prestation' : f === 'montant' ? 'Montant (FCFA)' : 'Notes'}</label><input type={f === 'montant' ? 'number' : 'text'} value={form[f]} onChange={set(f)} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm" required={f === 'montant'} /></div>
+          <div key={f}><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">{f === 'clientNom' ? 'Client' : f === 'prestation' ? 'Prestation' : f === 'montant' ? 'Montant (FCFA)' : 'Notes'}</label><input type={f === 'montant' ? 'number' : 'text'} value={form[f]} onChange={setF(f)} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm" required={f === 'montant'} /></div>
         ))}
-        <div><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">Mode de paiement</label><select value={form.modePaiement} onChange={set('modePaiement')} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm"><option value="ESPECES">Espces</option><option value="CARTE">Carte</option><option value="MOBILE">Mobile money</option></select></div>
+        <div><label className="text-slate-400 text-xs font-bold uppercase block mb-1.5">Mode de paiement</label><select value={form.modePaiement} onChange={setF('modePaiement')} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white w-full text-sm"><option value="ESPECES">Espces</option><option value="CARTE">Carte</option><option value="MOBILE">Mobile money</option></select></div>
       </FormModal>
 
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleting}

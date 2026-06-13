@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -78,10 +78,9 @@ export default function CategoriesPage() {
   const [edit, setEdit] = useState(null);
   const { success, error: notifError } = useNotif();
 
-  const { data: data = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/categories`, { enabled: true });
+  const { data: dataData = [], loading, refetch } = useData(`/${prefix}/categories`, { enabled: true });
+  const data = Array.isArray(dataData?.data) ? dataData.data : (Array.isArray(dataData) ? dataData : []);
+  const [confirm, setConfirm] = useState(null);
 
   const handleDelete = async () => {
     if (!confirmDelete) return;

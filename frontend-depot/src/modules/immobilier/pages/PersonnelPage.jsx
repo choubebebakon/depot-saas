@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -82,10 +82,8 @@ export default function PersonnelPage() {
 
   const perm = usePermission(PERMISSIONS, 'personnel');
 
-  const { data: items = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/personnel`, { enabled: true });
+  const { data: itemsData = [], loading, refetch } = useData(`/${prefix}/personnel`, { enabled: true });
+  const items = Array.isArray(itemsData?.data) ? itemsData.data : (Array.isArray(itemsData) ? itemsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (items || []).filter(item =>
@@ -108,6 +106,15 @@ export default function PersonnelPage() {
   const page = currentPage;
   const setPage = setCurrentPage;
 
+  const openCreate = () => { setEditItem(null); setFormData({ nom: '', poste: 'AGENT_IMMO', salaire: '', email: '', telephone: '' }); setFormOpen(true); };
+  const [formData, setFormData] = useState({ nom: '', poste: 'AGENT_IMMO', salaire: '', email: '', telephone: '' });
+  const setForm = (v) => setFormData(v || { nom: '', poste: 'AGENT_IMMO', salaire: '', email: '', telephone: '' });
+  const set = (field) => (e) => setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState(null);
+
+  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
+
   const handleDelete = async () => {
     if (!confirmDelete) return;
     setDeleting(true);
@@ -127,14 +134,6 @@ export default function PersonnelPage() {
     setForm(item);
     setFormOpen(true);
   };
-
-  const openCreate = () => { setEditItem(null); setFormData({ nom: '', poste: 'AGENT_IMMO', salaire: '', email: '', telephone: '' }); setFormOpen(true); };
-  const [formData, setFormData] = useState({ nom: '', poste: 'AGENT_IMMO', salaire: '', email: '', telephone: '' });
-  const setForm = (v) => setFormData(v || { nom: '', poste: 'AGENT_IMMO', salaire: '', email: '', telephone: '' });
-  const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState(null);
-
-  const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-full';
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true);

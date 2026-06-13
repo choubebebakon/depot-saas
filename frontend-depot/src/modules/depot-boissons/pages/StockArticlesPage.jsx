@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,9 +81,6 @@ const LIMIT = 20;
 
 export default function StockArticlesPage() {
   const { metier } = useAuth();
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accs non autoris</div>;
-  }
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +96,27 @@ export default function StockArticlesPage() {
 
   const [edit, setEdit] = useState(null);
 
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accs non autoris</div>;
+  }
+
+  const filtres = (articles || []).filter(item =>
+    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
+  );
+  const {
+    currentPage,
+    setCurrentPage,
+    goToPage,
+    nextPage,
+    prevPage,
+    totalPages,
+    totalItems,
+    paginatedData: paginated,
+  } = usePagination(filtres, 10);
+  const page = currentPage;
+  const setPage = setCurrentPage;
+
+  const familles = [...new Set(articles.map(a => a.famille).filter(Boolean))];
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -170,27 +188,6 @@ export default function StockArticlesPage() {
 
 
   if (loading && totalItems === 0) {
-
-  // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
-  const filtres = (articles || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
-  const {
-    currentPage,
-    setCurrentPage,
-    goToPage,
-    nextPage,
-    prevPage,
-    totalPages,
-    totalItems,
-    paginatedData: paginated,
-    hasNext,
-    hasPrev,
-    from,
-    to,
-  } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
     return (
       <div className="p-6 space-y-6">
         <div className="animate-pulse space-y-4">
@@ -199,28 +196,6 @@ export default function StockArticlesPage() {
       </div>
     );
   }
-
-
-  // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
-  const filtres = (articles || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
-  const {
-    currentPage,
-    setCurrentPage,
-    goToPage,
-    nextPage,
-    prevPage,
-    totalPages,
-    totalItems,
-    paginatedData: paginated,
-    hasNext,
-    hasPrev,
-    from,
-    to,
-  } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -279,27 +254,6 @@ export default function StockArticlesPage() {
               </tr>
             ) : paginated.map((a) => {
               const status = getStockStatus(a.quantite, a.seuil);
-
-  // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
-  const filtres = (articles || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
-  const {
-    currentPage,
-    setCurrentPage,
-    goToPage,
-    nextPage,
-    prevPage,
-    totalPages,
-    totalItems,
-    paginatedData: paginated,
-    hasNext,
-    hasPrev,
-    from,
-    to,
-  } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
               return (
                 <tr key={a.id} className="hover:bg-slate-800/40 transition-colors">
                   <td className="p-4 text-white font-medium">{a.designation}</td>

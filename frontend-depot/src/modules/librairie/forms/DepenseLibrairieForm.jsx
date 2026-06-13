@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -58,6 +58,8 @@ if (typeof window !== 'undefined') {
   });
 }
 
+
+const CATEGORIES_DEPENSES = ['FOURNITURES', 'LOYER', 'SALAIRES', 'ELECTRICITE', 'EAU', 'INTERNET', 'TRANSPORT', 'MARKETING', 'MAINTENANCE', 'AUTRE'];
 
 const initialState = { libelle: '', montant: '', date: '', categorie: 'FOURNITURES' };
 
@@ -87,7 +89,7 @@ export default function DepenseLibrairieForm({ isOpen, onClose, onSuccess, edit,
       <FormField label="Libellé *" name="libelle" value={form.libelle} onChange={set('libelle')} required error={errors.libelle} placeholder="Ex: Fournitures bureau" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Montant *" name="montant" type="number" value={form.montant} onChange={set('montant')} required min={0} unit="FCFA" error={errors.montant} />
-        <FormField label="Catégorie" name="categorie" type="select" value={form.categorie} onChange={set('categorie')} options={categories} />
+        <FormField label="Catégorie" name="categorie" type="select" value={form.categorie} onChange={set('categorie')} options={CATEGORIES_DEPENSES} />
       </div>
       <FormField label="Date" name="date" type="date" value={form.date} onChange={set('date')} />
     </FormModal>

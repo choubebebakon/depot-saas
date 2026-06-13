@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -79,10 +79,8 @@ export default function VentesPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const { success, error: notifError } = useNotif();
 
-  const { data: ventes = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/ventes`, { enabled: true });
+  const { data: ventesData = [], loading, refetch } = useData(`/${prefix}/ventes`, { enabled: true });
+  const ventes = Array.isArray(ventesData?.data) ? ventesData.data : (Array.isArray(ventesData) ? ventesData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (ventes || []).filter(item =>

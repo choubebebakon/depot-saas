@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -85,7 +85,7 @@ export default function StockPage() {
   const [rayonFiltre, setRayonFiltre] = useState('');
 
   const [edit, setEdit] = useState(null);
-  const STATUTS = [];
+  const STATUTS = ['Disponible', 'Rupture', 'Commandé', 'En transit'];
 
   const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
 
@@ -93,10 +93,11 @@ export default function StockPage() {
 
   const perm = usePermission(PERMISSIONS, 'stock');
 
-  const { data: produits = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/produits`, { enabled: true });
+  const { data: produitsData = [], loading, refetch } = useData(`/${prefix}/produits`, { enabled: true });
+  const produits = Array.isArray(produitsData?.data) ? produitsData.data : (Array.isArray(produitsData) ? produitsData : []);
+
+  const { data: rayonsData = [] } = useData(`/${prefix}/rayons`, { enabled: true });
+  const rayons = Array.isArray(rayonsData?.data) ? rayonsData.data : (Array.isArray(rayonsData) ? rayonsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (produits || []).filter(item =>

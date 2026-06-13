@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -86,10 +86,8 @@ export default function FournisseursPage() {
 
   const perm = usePermission(PERMISSIONS, 'fournisseurs');
 
-  const { data: fournisseurs = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/fournisseurs`, { enabled: true });
+  const { data: fournisseursData = [], loading, refetch } = useData(`/${prefix}/fournisseurs`, { enabled: true });
+  const fournisseurs = Array.isArray(fournisseursData?.data) ? fournisseursData.data : (Array.isArray(fournisseursData) ? fournisseursData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (fournisseurs || []).filter(item =>

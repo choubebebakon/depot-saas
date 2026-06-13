@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../../../api';
 import FormModal from '../../../shared/components/forms/FormModal';
+import FormField from '../../../shared/components/forms/FormField';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
 
@@ -34,7 +35,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }

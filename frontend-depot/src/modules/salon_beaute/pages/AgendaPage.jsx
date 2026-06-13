@@ -35,7 +35,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -83,10 +83,11 @@ export default function AgendaPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: events = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/agenda`, { enabled: true });
+  const { data: eventsData = [], loading, refetch } = useData(`/${prefix}/agenda`, { enabled: true });
+  const events = Array.isArray(eventsData?.data) ? eventsData.data : (Array.isArray(eventsData) ? eventsData : []);
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
 
 

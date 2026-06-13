@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -82,10 +82,8 @@ export default function StockPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: stock = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/stock`, { enabled: true });
+  const { data: stockData = [], loading, refetch } = useData(`/${prefix}/stock`, { enabled: true });
+  const stock = Array.isArray(stockData?.data) ? stockData.data : (Array.isArray(stockData) ? stockData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (stock || []).filter(item =>

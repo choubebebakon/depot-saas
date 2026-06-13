@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Query, Patch, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Patch, Request, Put } from '@nestjs/common';
 import { CommandesService } from './commandes.service';
 import { CreateCommandeDto } from './dto/create-commande.dto';
+import { UpdateCommandeDto } from './dto/update-commande.dto';
 import { StatutCommande } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ACCESS_LEVELS } from '../common/utils/rbac';
@@ -52,5 +53,15 @@ export class CommandesController {
     @Query('depotId') depotId: string,
   ) {
     return this.commandesService.updateStatut(id, statut, tenantId, depotId);
+  }
+
+  @Put(':id')
+  @Roles(...ACCESS_LEVELS.GERANT)
+  async update(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+    @Body() dto: UpdateCommandeDto,
+  ) {
+    return this.commandesService.update(tenantId, id, dto);
   }
 }

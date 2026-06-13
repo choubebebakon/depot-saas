@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -75,6 +75,7 @@ export default function RendezVousPage() {
 
   const perm = usePermission(PERMISSIONS, 'rendez-vous');
   const itemsPerPage = 20;
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => { setLoading(true); try { const res = await api.get('/clinique/rendez-vous'); setRdvs(res.data?.data || res.data || []); } catch (_) {} finally { setLoading(false); } }, []);
   useEffect(() => { load(); }, [load]);
@@ -87,6 +88,8 @@ export default function RendezVousPage() {
   };
 
   const filtres = rdvs.filter(r => { const q = search.toLowerCase(); return !q || r.patientNom?.toLowerCase().includes(q) || r.medecinNom?.toLowerCase().includes(q); });
+  const totalPages = Math.ceil(filtres.length / itemsPerPage);
+  const totalItems = filtres.length;
   const paginated = filtres.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const goToPage = (p) => setPage(Math.max(1, Math.min(p, totalPages)));
 

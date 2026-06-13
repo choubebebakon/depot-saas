@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -74,28 +74,29 @@ export default function InventairePage() {
 
   const [notif, setNotif] = useState(null);
 
+  const { success, error: notifError } = useNotif();
+
+  const { data: produitsData = [], loading, refetch } = useData(`/${prefix}/produits`, { enabled: true });
+  const produits = Array.isArray(produitsData?.data) ? produitsData.data : (Array.isArray(produitsData) ? produitsData : []);
+
+  const { data: rayonsData = [] } = useData(`/${prefix}/rayons`, { enabled: true });
+  const rayons = Array.isArray(rayonsData?.data) ? rayonsData.data : (Array.isArray(rayonsData) ? rayonsData : []);
+
   const [saving, setSaving] = useState(false);
   const [edits, setEdits] = useState({});
   const [dateInventaire, setDateInventaire] = useState('');
 
   const [rayonFiltre, setRayonFiltre] = useState('');
-  const ruptureCount = items.filter(i => (i.quantite || 0) === 0).length;
-  const faibleCount = items.filter(i => (i.quantite || 0) > 0 && (i.quantite || 0) <= (i.seuil || 5)).length;
+  const ruptureCount = produits.filter(i => (i.quantite || 0) === 0).length;
+  const faibleCount = produits.filter(i => (i.quantite || 0) > 0 && (i.quantite || 0) <= (i.seuil || 5)).length;
 
-  const totalValeur = items.reduce((acc, i) => acc + (i.valeurStock || i.valeur || i.quantite * i.prix || 0), 0);
-  const handleStockEdit = (item) => { setEditItem(item); setFormOpen(true); };
-  const saveStock = async () => { setSaving(true); try { await api.post(`/${prefix}/stock/edits`, edits); refetch(); success('Stock mis à jour'); setEdits({}); } catch { notifError('Erreur'); } finally { setSaving(false); } };
-  const showNotif = (msg, type = 'success') => { setNotif({ msg, type }); setTimeout(() => setNotif(null), 3500); };
+  const totalValeur = produits.reduce((acc, i) => acc + (i.valeurStock || i.valeur || i.quantite * i.prix || 0), 0);
 
-  const { success, error: notifError } = useNotif();
-
-  const { data: produits = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/produits`, { enabled: true });
-
-
-
+  const filtres = produits.filter(p => {
+    const matchSearch = !search || p.nom?.toLowerCase().includes(search.toLowerCase()) || p.reference?.toLowerCase().includes(search.toLowerCase());
+    const matchRayon = !rayonFiltre || p.rayonId === rayonFiltre;
+    return matchSearch && matchRayon;
+  });
 
   return (
     <div className="p-6">

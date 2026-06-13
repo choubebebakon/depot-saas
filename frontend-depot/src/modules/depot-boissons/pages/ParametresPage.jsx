@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -59,15 +59,16 @@ if (typeof window !== 'undefined') {
 
 export default function ParametresPage() {
   const { metier, user } = useAuth();
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
-  }
 
   const [nomDepot, setNomDepot] = useState('');
   const [adresse, setAdresse] = useState('');
   const [devise, setDevise] = useState('FCFA');
   const [tva, setTva] = useState(19.25);
   const [saved, setSaved] = useState(false);
+
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+  }
 
 
   function handleSave(e) {

@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { StatutVente, TypeMouvement, NotifType } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma.service';
 import { DlcService } from '../dlc/dlc.service';
 import { NotificationsService } from '../core/notifications/notifications.service';
+import { UpdateVenteDto } from './dto/update-vente.dto';
 
 @Injectable()
 export class VentesService {
@@ -308,5 +309,45 @@ export class VentesService {
 
       return venteUpdated;
     });
+  }
+
+  // 8. PUT /:id — Mise à jour statut vente (Phase 4)
+  async update(tenantId: string, id: string, dto: UpdateVenteDto) {
+    const vente = await this.prisma.vente.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!vente) {
+      throw new NotFoundException(`Vente with ID ${id} not found`);
+    }
+
+    return this.prisma.vente.update({
+      where: { id },
+      data: { ...dto },
+    });
+  }
+
+  // 9. GET /caisse — État de la caisse du jour (Phase 4)
+  async getCaisse(tenantId: string, depotId: string) {
+    const selectedDepotId = this.requireDepotId(depotId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const ventes = await this.prisma.vente.aggregate({
+      where: { 
+        tenantId, 
+        depotId: selectedDepotId, 
+        date: { gte: today }, 
+        statut: StatutVente.PAYE 
+      },
+      _sum: { total: true },
+      _count: true,
+    });
+
+    return {
+      montantTotal: ventes._sum?.total ?? 0,
+      nombreVentes: ventes._count,
+      date: today,
+    };
   }
 }

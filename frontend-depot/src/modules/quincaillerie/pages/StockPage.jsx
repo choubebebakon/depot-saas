@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -94,10 +94,11 @@ export default function StockPage() {
 
   const perm = usePermission(PERMISSIONS, 'stock');
 
-  const { data: mouvements = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/stock`, { enabled: true });
+  const { data: mouvementsData = [], loading, refetch } = useData(`/${prefix}/stock`, { enabled: true });
+  const mouvements = Array.isArray(mouvementsData?.data) ? mouvementsData.data : (Array.isArray(mouvementsData) ? mouvementsData : []);
+
+  const { data: produitsData = [] } = useData(`/${prefix}/produits`, { enabled: true });
+  const produits = Array.isArray(produitsData?.data) ? produitsData.data : (Array.isArray(produitsData) ? produitsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (mouvements || []).filter(item =>

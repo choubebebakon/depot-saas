@@ -112,4 +112,30 @@ export class AuditService {
             metadata: row.metadataText ? JSON.parse(row.metadataText) : null,
         }));
     }
+
+    // GET /resume — Résumé financier période (Phase 4)
+    async getResume(tenantId: string, from: Date, to: Date) {
+        const [revenus, depenses] = await Promise.all([
+            this.prisma.vente.aggregate({
+                where: { 
+                    tenantId, 
+                    date: { gte: from, lte: to }, 
+                    statut: 'PAYE' 
+                },
+                _sum: { total: true },
+            }),
+            this.prisma.commandeFournisseur.aggregate({
+                where: { 
+                    tenantId, 
+                    dateCommande: { gte: from, lte: to } 
+                },
+                _sum: { total: true },
+            }),
+        ]);
+        return {
+            revenus: revenus._sum.total ?? 0,
+            depenses: depenses._sum.total ?? 0,
+            resultat: (revenus._sum.total ?? 0) - (depenses._sum.total ?? 0),
+        };
+    }
 }

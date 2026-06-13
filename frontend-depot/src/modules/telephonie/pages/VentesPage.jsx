@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -94,10 +94,19 @@ export default function VentesPage() {
 
   const perm = usePermission(PERMISSIONS, 'ventes');
 
-  const { data: ventes = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/ventes`, { enabled: true });
+  const { data: ventesData = [], loading, refetch } = useData(`/${prefix}/ventes`, { enabled: true });
+  const ventes = Array.isArray(ventesData?.data) ? ventesData.data : (Array.isArray(ventesData) ? ventesData : []);
+
+  const total = ventes.reduce((acc, v) => acc + (v.montant || 0), 0);
+
+  const { data: telephonesData = [] } = useData(`/${prefix}/telephones`, { enabled: true });
+  const telephones = Array.isArray(telephonesData?.data) ? telephonesData.data : (Array.isArray(telephonesData) ? telephonesData : []);
+
+  const { data: accessoiresData = [] } = useData(`/${prefix}/accessoires`, { enabled: true });
+  const accessoires = Array.isArray(accessoiresData?.data) ? accessoiresData.data : (Array.isArray(accessoiresData) ? accessoiresData : []);
+
+  const { data: clientsData = [] } = useData(`/${prefix}/clients`, { enabled: true });
+  const clients = Array.isArray(clientsData?.data) ? clientsData.data : (Array.isArray(clientsData) ? clientsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (ventes || []).filter(item =>

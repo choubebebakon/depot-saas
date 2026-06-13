@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import MenuJourForm from '../forms/MenuJourForm';
+import PlatForm from '../forms/PlatForm';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -38,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -81,15 +82,12 @@ export default function MenuPage() {
   const [filtreCategorie, setFiltreCategorie] = useState('');
 
   const [edit, setEdit] = useState(null);
-  const CATEGORIES = [];
-
+  const CATEGORIES = ['Entrées', 'Plats', 'Desserts', 'Boissons', 'Snacks', 'Autre'];
 
   const { success, error: notifError } = useNotif();
 
-  const { data: plats = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/menu`, { enabled: true });
+  const { data: platsData = [], loading, refetch } = useData(`/${prefix}/menu`, { enabled: true });
+  const plats = Array.isArray(platsData?.data) ? platsData.data : (Array.isArray(platsData) ? platsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (plats || []).filter(item =>

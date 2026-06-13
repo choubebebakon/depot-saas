@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -83,10 +83,8 @@ export default function ClientsPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: clients = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/clients`, { enabled: true });
+  const { data: clientsData = [], loading, refetch } = useData(`/${prefix}/clients`, { enabled: true });
+  const clients = Array.isArray(clientsData?.data) ? clientsData.data : (Array.isArray(clientsData) ? clientsData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (clients || []).filter(item =>

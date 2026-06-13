@@ -38,7 +38,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -84,10 +84,8 @@ export default function ColisPage() {
 
   const { success, error: notifError } = useNotif();
 
-  const { data: colis = [],
-    loading,
-    refetch,
-   } = useData(`/${prefix}/colis`, { enabled: true });
+  const { data: colisData = [], loading, refetch } = useData(`/${prefix}/colis`, { enabled: true });
+  const colis = Array.isArray(colisData?.data) ? colisData.data : (Array.isArray(colisData) ? colisData : []);
 
   // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
   const filtres = (colis || []).filter(item =>

@@ -35,7 +35,7 @@ if (typeof window !== 'undefined') {
   });
   // Redirection des appels d'état globaux vers le gestionnaire sécurisé
   if (!window.__shield_initialized) {
-    Object.setPrototypeOf(window, window.safeHandler);
+    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
     window.__shield_initialized = true;
   }
 }
@@ -63,9 +63,6 @@ if (typeof window !== 'undefined') {
 
 export default function ClientsPage() {
   const { metier } = useAuth();
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accs non autoris</div>;
-  }
 
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +80,27 @@ export default function ClientsPage() {
 
   const [edit, setEdit] = useState(null);
 
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accs non autoris</div>;
+  }
+
   const perPage = 20;
+
+  const filtres = (clients || []).filter(item =>
+    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
+  );
+  const {
+    currentPage,
+    setCurrentPage,
+    goToPage,
+    nextPage,
+    prevPage,
+    totalPages,
+    totalItems,
+    paginatedData: paginated,
+  } = usePagination(filtres, 10);
+  const page = currentPage;
+  const setPage = setCurrentPage;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -141,55 +158,12 @@ export default function ClientsPage() {
 
 
   if (loading && totalItems === 0) {
-
-  // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
-  const filtres = (clients || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
-  const {
-    currentPage,
-    setCurrentPage,
-    goToPage,
-    nextPage,
-    prevPage,
-    totalPages,
-    totalItems,
-    paginatedData: paginated,
-    hasNext,
-    hasPrev,
-    from,
-    to,
-  } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
     return (
       <div className="p-6 space-y-4 animate-pulse">
         {[1,2,3,4].map(i => <div key={i} className="h-16 bg-slate-800/60 rounded-xl" />)}
       </div>
     );
   }
-
-
-  // Pagination centralisÃ©e â FIX: totalPages non dÃ©fini
-  const filtres = (clients || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
-  const {
-    currentPage,
-    setCurrentPage,
-    goToPage,
-    nextPage,
-    prevPage,
-    totalPages,
-    totalItems,
-    paginatedData: paginated,
-    hasNext,
-    hasPrev,
-    from,
-    to,
-  } = usePagination(filtres, 10);
-  const page = currentPage;
-  const setPage = setCurrentPage;
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
