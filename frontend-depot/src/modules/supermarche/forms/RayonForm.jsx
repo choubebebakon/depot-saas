@@ -1,116 +1,133 @@
-import { useState } from 'react';
-import api from '../../../api';
+import { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import NumberInput from '../../../shared/components/forms/NumberInput';
+import { supermarcheApi } from '../services/supermarcheApi';
 
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
-    }
+const rayonSchema = z.object({
+  nom: z.string().min(1, 'Le nom du rayon est requis'),
+  couleur: z.string().optional(),
+  ordre: z.coerce.number().min(0, 'L\'ordre ne peut pas être négatif'),
+});
+
+const defaultValues = {
+  nom: '',
+  couleur: '#6366f1',
+  ordre: 0,
+};
+
+export default function RayonForm({ isOpen, onClose, onSuccess, edit }) {
+  const queryClient = useQueryClient();
+  const notif = useNotif();
+
+  const { control, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(rayonSchema),
+    defaultValues,
   });
-}
 
+  useEffect(() => {
+    if (edit) {
+      reset({
+        nom: edit.nom || '',
+        couleur: edit.couleur || '#6366f1',
+        ordre: edit.ordre ?? 0,
+      });
+    } else {
+      reset(defaultValues);
+    }
+  }, [edit, isOpen, reset]);
 
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      const payload = {
+        nom: data.nom,
+        couleur: data.couleur || '#6366f1',
+        ordre: Number(data.ordre),
+      };
+      if (edit) {
+        const res = await supermarcheApi.updateRayon(edit.id, payload);
+        return res.data;
       }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
+      const res = await supermarcheApi.createRayon(payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supermarche-rayons'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'] });
+      notif.success(edit ? 'Rayon mis à jour' : 'Rayon créé avec succès');
+      onSuccess?.();
+      onClose();
+    },
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Une erreur est survenue');
+    },
   });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
-}
-
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
-  });
-}
-
-
-export default function RayonForm({ isOpen, onClose, onSuccess, edit, metier = 'supermarche' }) {
-  const [form, setForm] = useState({ nom: '', couleur: '#6366f1', ordre: 0 });
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-
-  const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
-
-
-
-
-  useState(() => {
-    if (edit) setForm({ nom: edit.nom || '', couleur: edit.couleur || '#6366f1', ordre: edit.ordre || 0 });
-  }, [edit]);
-
-  const prefix = `/${metier}`;
-
-  const validate = () => {
-    const errs = {};
-    if (!form.nom) errs.nom = 'Le nom du rayon est requis';
-    return errs;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errs = validate();
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-    setLoading(true);
-    try {
-      if (edit) await api.patch(`${prefix}/rayons/${edit.id}`, form);
-      else await api.post(`${prefix}/rayons`, form);
-      onSuccess(); onClose();
-    } catch (err) {
-      setErrors({ general: err.response?.data?.message || 'Erreur' });
-    } finally { setLoading(false); }
-  };
-
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier rayon' : '🏪 Nouveau rayon'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
-      {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom du rayon" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Boissons, Produits laitiers..." error={errors.nom} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Couleur</label>
-          <div className="flex items-center gap-3">
-            <input type="color" name="couleur" value={form.couleur} onChange={set('couleur')} className="w-12 h-12 rounded-xl border border-slate-600 bg-slate-800 cursor-pointer" />
-            <span className="text-white text-sm font-mono">{form.couleur}</span>
-          </div>
-        </div>
-        <NumberInput label="Ordre d'affichage" name="ordre" value={form.ordre} onChange={set('ordre')} min={0} />
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onSubmit={handleSubmit((data) => mutation.mutate(data))}
+      title={edit ? '✏️ Modifier rayon' : '🏪 Nouveau rayon'}
+      loading={mutation.isPending}
+      submitLabel={edit ? 'Modifier' : 'Créer'}
+    >
+      <Controller
+        name="nom"
+        control={control}
+        render={({ field }) => (
+          <FormField
+            label="Nom du rayon"
+            name="nom"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            required
+            placeholder="Ex: Boissons, Produits laitiers..."
+            error={errors.nom?.message}
+          />
+        )}
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        <Controller
+          name="couleur"
+          control={control}
+          render={({ field }) => (
+            <div>
+              <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Couleur</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  name="couleur"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  className="w-12 h-12 rounded-xl border border-slate-600 bg-slate-800 cursor-pointer"
+                />
+                <span className="text-white text-sm font-mono">{field.value}</span>
+              </div>
+            </div>
+          )}
+        />
+        <Controller
+          name="ordre"
+          control={control}
+          render={({ field }) => (
+            <NumberInput
+              label="Ordre d'affichage"
+              name="ordre"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              min={0}
+              error={errors.ordre?.message}
+            />
+          )}
+        />
       </div>
     </FormModal>
   );
