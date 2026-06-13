@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, Query, UseGuards, Req, Patch, Delete, Param, Put } from '@nestjs/common';
-import { SupermarcheService, PaginationDto, CreateRayonDto, UpdateRayonDto, AssignArticleDto, CreateCodeBarresDto, CreateArticleDto, UpdateArticleDto, UpdateStockDto, CreateClientDto, UpdateClientDto, CreateFournisseurDto, UpdateFournisseurDto, CreateDepenseDto, UpdateDepenseDto, CreatePromotionDto, UpdatePromotionDto, CreateReceptionDto, CreateVenteDto, InventaireDto } from './supermarche.service';
+import { SupermarcheService, PaginationDto, CreateRayonDto, UpdateRayonDto, AssignArticleDto, CreateCodeBarresDto, CreateArticleDto, UpdateArticleDto, UpdateStockDto, CreateClientDto, UpdateClientDto, CreateFournisseurDto, UpdateFournisseurDto, CreateDepenseDto, UpdateDepenseDto, CreatePromotionDto, UpdatePromotionDto, CreateReceptionDto, UpdateReceptionDto, CreateVenteDto, InventaireDto } from './supermarche.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -211,6 +211,11 @@ export class SupermarcheController {
   @Post('receptions')
   async createReception(@Req() req: any, @Body() data: CreateReceptionDto) {
     return this.service.createReception(req.user.tenantId, data);
+  }
+
+  @Patch('receptions/:id')
+  async updateReception(@Req() req: any, @Param('id') id: string, @Body() data: UpdateReceptionDto) {
+    return this.service.updateReception(req.user.tenantId, id, data);
   }
 
   // ── Paramètres ────────────────────────────────────────────────────────────

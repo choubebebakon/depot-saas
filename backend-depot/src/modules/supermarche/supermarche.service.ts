@@ -126,6 +126,15 @@ export class CreateReceptionDto {
   lignes: { articleId: string; quantiteLivree: number; prixAchatUnitaire: number }[];
 }
 
+export class UpdateReceptionDto {
+  statut?: 'EN_COURS' | 'VALIDEE' | 'ANNULEE';
+  fournisseurId?: string;
+  dateReception?: Date;
+  numBordereau?: string;
+  notes?: string;
+  motifAnnulation?: string;
+}
+
 export class CreateVenteDto {
   clientId?: string;
   modePaiement: string;
@@ -524,8 +533,49 @@ export class SupermarcheService {
           })),
         },
       },
-      include: { fournisseur: true, lignes: { include: { article: true } } },
+      include: { lignes: true },
     });
+  }
+
+  async updateReception(tenantId: string, id: string, data: UpdateReceptionDto) {
+    const { statut, fournisseurId, dateReception, numBordereau, notes, motifAnnulation } = data;
+
+    const reception = await this.prisma.receptionFournisseur.findFirst({
+      where: { id, tenantId },
+      include: { lignes: true },
+    });
+
+    if (!reception) throw new NotFoundException('Réception non trouvée');
+
+    if (statut === 'VALIDEE') {
+      return this.prisma.$transaction(async (tx) => {
+        for (const ligne of reception.lignes) {
+          await tx.stock.updateMany({
+            where: { articleId: ligne.articleId, depotId: reception.depotId },
+            data: { quantite: { increment: ligne.quantiteLivree + ligne.quantiteGratuite } },
+          });
+          await tx.mouvementStock.create({
+            data: {
+              type: 'ENTREE',
+              quantite: ligne.quantiteLivree + ligne.quantiteGratuite,
+              articleId: ligne.articleId,
+              depotId: reception.depotId,
+              tenantId,
+              motif: `Réception ${reception.reference}`,
+            },
+          });
+        }
+        return tx.receptionFournisseur.update({
+          where: { id },
+          data: { statut: 'VALIDEE', fournisseurId, numBordereau, notes },
+        });
+      });
+    } else {
+      return this.prisma.receptionFournisseur.update({
+        where: { id },
+        data: { fournisseurId, numBordereau, notes, motifAnnulation },
+      });
+    }
   }
 
   // ── Paramètres ──────────────────────────────────────────────────────────────
