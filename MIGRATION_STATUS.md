@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : 7ea3bdb "feat(shared): migrate Clients to useQuery + fix dynamic query keys"
+Dernier commit : bb9a6cd "feat(shared): migrate Fournisseurs to useQuery + fix dynamic query keys"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -27,6 +27,8 @@ Dernier commit : 7ea3bdb "feat(shared): migrate Clients to useQuery + fix dynami
 - Clients : ClientsPage.jsx migré vers useQuery + delete mutation ✅
 - Clients : ClientForm.jsx query keys corrigées (dynamiques selon metier) ✅
 - Clients : PAS de fields fidélité/crédit spécifiques dans schéma zod partagé (dette notée) ✅
+- Fournisseurs : FournisseursPage.jsx migré vers useQuery + delete mutation ✅
+- Fournisseurs : FournisseurForm.jsx query keys corrigées (dynamiques selon metier) ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -41,7 +43,7 @@ Dernier commit : 7ea3bdb "feat(shared): migrate Clients to useQuery + fix dynami
 - Dette : ces champs spécifiques au supermarché ne sont pas gérés dans le formulaire partagé
 
 ### Prochaine étape
-Sous-module 7 — Fournisseurs (même profil que Clients)
+Sous-module 8 — Réceptions
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -51,6 +53,6 @@ Sous-module 7 — Fournisseurs (même profil que Clients)
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-7. Fournisseurs  8. Réceptions
+8. Réceptions
 9. Inventaire  10. Dépenses  11. Rapports  12. Paramètres
 13. Dashboard  14. Shield cleanup global  15. Admin
