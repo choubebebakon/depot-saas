@@ -442,26 +442,50 @@ export class SupermarcheService {
       throw new BadRequestException('total vente invalide');
     }
     const reference = `VENTE-${Date.now()}`;
-    return this.prisma.vente.create({
-      data: {
-        reference,
-        total: data.total,
-        modePaiement: data.modePaiement as any,
-        tenantId,
-        depotId: data.depotId,
-        clientId: data.clientId,
-        createurId: userId,
-        lignes: {
-          create: data.panier.map((item) => ({
-            articleId: item.articleId,
-            quantite: item.quantite,
-            prix: item.prix,
-            remise: item.remise ?? 0,
-            total: item.quantite * item.prix - (item.remise ?? 0),
-          })),
+
+    return this.prisma.$transaction(async (tx) => {
+      const vente = await tx.vente.create({
+        data: {
+          reference,
+          total: data.total,
+          statut: 'PAYE',
+          modePaiement: data.modePaiement as any,
+          tenantId,
+          depotId: data.depotId,
+          clientId: data.clientId,
+          createurId: userId,
+          date: new Date(),
+          lignes: {
+            create: data.panier.map((item) => ({
+              articleId: item.articleId,
+              quantite: item.quantite,
+              prix: item.prix,
+              remise: item.remise ?? 0,
+              total: item.quantite * item.prix - (item.remise ?? 0),
+            })),
+          },
         },
-      },
-      include: { lignes: true, client: true },
+        include: { lignes: true, client: true },
+      });
+
+      for (const item of data.panier) {
+        await tx.stock.updateMany({
+          where: { articleId: item.articleId, depotId: data.depotId },
+          data: { quantite: { decrement: item.quantite } },
+        });
+        await tx.mouvementStock.create({
+          data: {
+            type: 'SORTIE_VENTE',
+            quantite: item.quantite,
+            articleId: item.articleId,
+            depotId: data.depotId,
+            tenantId,
+            motif: `Vente ${reference}`,
+          },
+        });
+      }
+
+      return vente;
     });
   }
 
