@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : 74a053f "feat(supermarche): migrate POS/Ventes to rhf+zod+useFieldArray pattern"
+Dernier commit : 36da611 "feat(supermarche): migrate Promotions to rhf+zod+useMutation pattern"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -22,9 +22,18 @@ Dernier commit : 74a053f "feat(supermarche): migrate POS/Ventes to rhf+zod+useFi
 - POS/Ventes : endpoint scan code-barres corrigé (supermarcheApi.scanCodeBarres) ✅
 - POS/Ventes : depotId passé via payload (pattern depot-boissons) ✅
 - POS/Ventes : query keys invalidations croisées implémentées ✅
+- Promotions : PromotionSupermarcheForm + PromotionsPage migrés, shield supprimé ✅
+- Promotions : query keys invalidations croisées implémentées ✅
+
+### Dette technique détectée (NON CORRIGÉE)
+**gestock_depotId vs depot_actif_id** :
+- `gestock_depotId` n'est JAMAIS défini dans l'app (0 setItem trouvés)
+- `depot-boissons` contourne ce bug en passant `depotId` dans le payload
+- Supermarché suit le même pattern (contournement)
+- Correction globale requise : aligner getTenantHeaders() sur `depot_actif_id` ou migrer tous les modules vers payload
 
 ### Prochaine étape
-Sous-module 5 — Promotions
+Sous-module 6 — Clients
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -34,6 +43,6 @@ Sous-module 5 — Promotions
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-5. Promotions  6. Clients  7. Fournisseurs  8. Réceptions
+6. Clients  7. Fournisseurs  8. Réceptions
 9. Inventaire  10. Dépenses  11. Rapports  12. Paramètres
 13. Dashboard  14. Shield cleanup global  15. Admin
