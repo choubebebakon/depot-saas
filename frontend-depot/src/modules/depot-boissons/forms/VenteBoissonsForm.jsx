@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useEffect } from 'react';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
@@ -8,13 +10,31 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const panierLigneSchema = z.object({
+  articleId: z.string().min(1, 'Article requis'),
+  designation: z.string().optional(),
+  quantite: z.coerce.number().min(1, 'Minimum 1'),
+  prixUnitaire: z.coerce.number().min(0, 'Prix invalide'),
+  remise: z.coerce.number().min(0).max(100).default(0),
+});
+
+const venteSchema = z.object({
+  clientId: z.string().optional().or(z.literal('')),
+  depotId: z.string().optional().or(z.literal('')),
+  modePaiement: z.enum(['CASH', 'ORANGE_MONEY', 'MTN_MOMO', 'MIXTE']),
+  remiseGlobale: z.coerce.number().min(0).max(100).default(0),
+  montantCash: z.coerce.number().min(0).optional().or(z.literal('')),
+  montantOM: z.coerce.number().min(0).optional().or(z.literal('')),
+  montantMoMo: z.coerce.number().min(0).optional().or(z.literal('')),
+  panier: z.array(panierLigneSchema).min(1, 'Ajoutez au moins un article au panier'),
+});
+
 export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, metier = 'depot', depotId }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
-  const [panier, setPanier] = useState([]);
-  const [localErrors, setLocalErrors] = useState({});
 
-  const { control, handleSubmit, watch, setValue, reset } = useForm({
+  const { control, handleSubmit, watch, reset, getValues, setValue, formState: { errors } } = useForm({
+    resolver: zodResolver(venteSchema),
     defaultValues: {
       clientId: '',
       depotId: depotId || '',
@@ -23,14 +43,17 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
       montantCash: '',
       montantOM: '',
       montantMoMo: '',
+      panier: [],
     }
   });
 
+  const { fields, append, remove } = useFieldArray({ control, name: 'panier' });
+
   const modePaiement = watch('modePaiement');
   const remiseGlobale = Number(watch('remiseGlobale')) || 0;
+  const panier = watch('panier') || [];
 
   useEffect(() => {
-    setPanier([]);
     reset({
       clientId: '',
       depotId: depotId || '',
@@ -39,8 +62,8 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
       montantCash: '',
       montantOM: '',
       montantMoMo: '',
+      panier: [],
     });
-    setLocalErrors({});
   }, [isOpen, depotId, reset]);
 
   const prefix = `/${metier}`;
@@ -56,21 +79,20 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
   };
 
   const ajouterAuPanier = (article) => {
-    const exist = panier.find(p => p.articleId === article.id);
-    if (exist) {
-      setPanier(panier.map(p => p.articleId === article.id ? { ...p, quantite: p.quantite + 1 } : p));
+    const current = getValues('panier') || [];
+    const idx = current.findIndex(p => p.articleId === article.id);
+    if (idx >= 0) {
+      setValue(`panier.${idx}.quantite`, Number(current[idx].quantite) + 1);
     } else {
-      setPanier([...panier, { articleId: article.id, designation: article.designation, quantite: 1, prixUnitaire: Number(article.prixVente) || 0, remise: 0 }]);
+      append({
+        articleId: article.id,
+        designation: article.designation,
+        quantite: 1,
+        prixUnitaire: Number(article.prixVente) || 0,
+        remise: 0,
+      });
     }
   };
-
-  const updatePanier = (idx, field) => (e) => {
-    const next = [...panier];
-    next[idx] = { ...next[idx], [field]: Number(e.target.value) || 0 };
-    setPanier(next);
-  };
-
-  const suppriméerDuPanier = (idx) => setPanier(panier.filter((_, i) => i !== idx));
 
   const sousTotal = panier.reduce((sum, p) => sum + (p.quantite * p.prixUnitaire * (1 - (p.remise || 0) / 100)), 0);
   const remiseMontant = sousTotal * (remiseGlobale / 100);
@@ -80,17 +102,14 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
 
   const mutation = useMutation({
     mutationFn: async (data) => {
-      if (panier.length === 0) {
-        throw new Error('Ajoutez au moins un article au panier');
-      }
       const payload = {
         ...data,
         remiseGlobale,
-        panier: panier.map(p => ({
+        panier: data.panier.map(p => ({
           articleId: p.articleId,
           quantite: p.quantite,
           prixUnitaire: p.prixUnitaire,
-          remise: p.remise
+          remise: p.remise,
         })),
         total,
       };
@@ -106,19 +125,15 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
     },
     onError: (err) => {
       const msg = err.response?.data?.message || err.message || 'Erreur lors de la vente';
-      setLocalErrors({ general: msg });
       notif.error(msg);
     }
   });
 
-  const onSubmit = (data) => {
-    setLocalErrors({});
-    mutation.mutate(data);
-  };
-
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier vente' : '💰 Nouvelle vente'} loading={mutation.isPending} size="xl" submitIcon="💵" submitLabel="Encaisser">
-      {localErrors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{localErrors.general}</div>}
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier vente' : '💰 Nouvelle vente'} loading={mutation.isPending} size="xl" submitIcon="💵" submitLabel="Encaisser">
+      {errors.panier?.message && (
+        <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl mb-4">{errors.panier.message}</div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <Controller
@@ -162,22 +177,42 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
         <AutocompleteInput name="addArticle" fetchSuggestions={fetchArticles} displayKey="designation" placeholder="Rechercher un article..." onSelect={ajouterAuPanier} />
       </div>
 
-      {panier.length === 0 && <p className="text-red-400 text-xs mb-3">⚠️ Ajoutez au moins un article au panier</p>}
+      {fields.length === 0 && (
+        <p className="text-red-400 text-xs mb-3">⚠️ {errors.panier?.message || 'Ajoutez au moins un article au panier'}</p>
+      )}
 
-      {panier.length > 0 && (
+      {fields.length > 0 && (
         <div className="space-y-2 mb-4">
-          {panier.map((p, idx) => (
-            <div key={idx} className="flex items-center gap-2 p-2 bg-slate-800/60 rounded-xl">
-              <span className="flex-1 text-white text-sm font-medium">{p.designation}</span>
-              <NumberInput name={`qte_${idx}`} value={p.quantite} onChange={updatePanier(idx, 'quantite')} min={1} />
-              <input type="number" value={p.prixUnitaire} onChange={updatePanier(idx, 'prixUnitaire')}
-                className="w-24 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1.5 text-sm text-right font-mono" />
-              <input type="number" value={p.remise} onChange={updatePanier(idx, 'remise')} placeholder="%"
-                className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1.5 text-sm text-right" />
+          {fields.map((field, idx) => (
+            <div key={field.id} className="flex items-center gap-2 p-2 bg-slate-800/60 rounded-xl">
+              <span className="flex-1 text-white text-sm font-medium">{panier[idx]?.designation}</span>
+              <Controller
+                name={`panier.${idx}.quantite`}
+                control={control}
+                render={({ field: f }) => (
+                  <NumberInput name={`qte_${idx}`} value={f.value} onChange={(e) => f.onChange(e.target.value)} min={1} />
+                )}
+              />
+              <Controller
+                name={`panier.${idx}.prixUnitaire`}
+                control={control}
+                render={({ field: f }) => (
+                  <input type="number" value={f.value} onChange={(e) => f.onChange(e.target.value)}
+                    className="w-24 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1.5 text-sm text-right font-mono" />
+                )}
+              />
+              <Controller
+                name={`panier.${idx}.remise`}
+                control={control}
+                render={({ field: f }) => (
+                  <input type="number" value={f.value} onChange={(e) => f.onChange(e.target.value)} placeholder="%"
+                    className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1.5 text-sm text-right" />
+                )}
+              />
               <span className="text-white font-bold font-mono text-sm w-24 text-right">
-                {((p.quantite * p.prixUnitaire * (1 - (p.remise || 0) / 100)) || 0).toLocaleString('fr-FR')} F
+                {((panier[idx]?.quantite * panier[idx]?.prixUnitaire * (1 - (panier[idx]?.remise || 0) / 100)) || 0).toLocaleString('fr-FR')} F
               </span>
-              <button type="button" onClick={() => suppriméerDuPanier(idx)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
+              <button type="button" onClick={() => remove(idx)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
             </div>
           ))}
         </div>

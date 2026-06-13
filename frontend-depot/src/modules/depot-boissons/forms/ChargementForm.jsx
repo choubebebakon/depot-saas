@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
@@ -6,11 +9,41 @@ import FormModal from '../../../shared/components/forms/FormModal';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const ligneChargementSchema = z.object({
+  articleId: z.string().min(1, 'Article requis'),
+  quantiteChargee: z.coerce.number().min(1, 'Minimum 1'),
+  designation: z.string().optional(),
+  prix: z.coerce.number().min(0).default(0),
+});
+
+const chargementSchema = z.object({
+  lignes: z.array(ligneChargementSchema)
+    .min(1, 'Ajoutez au moins un article avec une quantité valide')
+    .refine(
+      lignes => lignes.some(l => l.articleId && l.quantiteChargee > 0),
+      { message: 'Ajoutez au moins un article avec une quantité valide' },
+    ),
+});
+
 export default function ChargementForm({ isOpen, onClose, onSuccess, edit, metier = 'depot', tourneeId }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
-  const [lignes, setLignes] = useState([{ articleId: '', quantiteChargee: 1, designation: '', prix: 0 }]);
-  const [localErrors, setLocalErrors] = useState({});
+
+  const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+    resolver: zodResolver(chargementSchema),
+    defaultValues: {
+      lignes: [{ articleId: '', quantiteChargee: 1, designation: '', prix: 0 }],
+    }
+  });
+
+  const { fields, append, remove } = useFieldArray({ control, name: 'lignes' });
+  const lignes = watch('lignes') || [];
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({ lignes: [{ articleId: '', quantiteChargee: 1, designation: '', prix: 0 }] });
+    }
+  }, [isOpen, reset]);
 
   const totalValeur = lignes.reduce((acc, i) => acc + (Number(i.quantiteChargee || 0) * Number(i.prix || 0)), 0);
   const prefix = `/${metier}`;
@@ -20,45 +53,21 @@ export default function ChargementForm({ isOpen, onClose, onSuccess, edit, metie
     return r.data?.data || r.data || [];
   };
 
-  const validate = () => {
-    const errs = {};
-    const articlesValides = lignes.filter(l => l.articleId && Number(l.quantiteChargee) > 0);
-    if (articlesValides.length === 0) {
-      errs.lignes = 'Ajoutez au moins un article avec une quantité valide';
-    }
-    return errs;
-  };
-
   const updateLigneArticle = (idx, article) => {
-    const next = [...lignes];
-    next[idx] = {
-      ...next[idx],
-      articleId: article.id,
-      designation: article.designation,
-      prix: Number(article.prix) || Number(article.prixVente) || 0,
-    };
-    setLignes(next);
+    setValue(`lignes.${idx}.articleId`, article.id);
+    setValue(`lignes.${idx}.designation`, article.designation);
+    setValue(`lignes.${idx}.prix`, Number(article.prix) || Number(article.prixVente) || 0);
   };
-
-  const updateLigneQty = (idx, val) => {
-    const next = [...lignes];
-    next[idx] = { ...next[idx], quantiteChargee: Number(val) || 1 };
-    setLignes(next);
-  };
-
-  const ajouterLigne = () => setLignes([...lignes, { articleId: '', quantiteChargee: 1, designation: '', prix: 0 }]);
-  const suppriméerLigne = (idx) => setLignes(lignes.filter((_, i) => i !== idx));
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      const articlesPayload = lignes
+    mutationFn: async (data) => {
+      const articlesPayload = data.lignes
         .filter(l => l.articleId && Number(l.quantiteChargee) > 0)
         .map(l => ({
           articleId: l.articleId,
           quantite: Number(l.quantiteChargee),
         }));
 
-      // Fixed endpoint name to match NestJS router: /charger
       const r = await api.post(`${prefix}/tournees/${tourneeId}/charger`, { articles: articlesPayload });
       return r.data;
     },
@@ -71,59 +80,65 @@ export default function ChargementForm({ isOpen, onClose, onSuccess, edit, metie
     },
     onError: (err) => {
       const msg = err.response?.data?.message || 'Erreur lors du chargement';
-      setLocalErrors({ general: msg });
       notif.error(msg);
     }
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const errs = validate();
-    setLocalErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-    mutation.mutate();
-  };
-
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier chargement' : '📦 Chargement de tournée'} loading={mutation.isPending} size="lg" submitIcon="💾" submitLabel="Enregistrer le chargement">
-      {localErrors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl mb-4">{localErrors.general}</div>}
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier chargement' : '📦 Chargement de tournée'} loading={mutation.isPending} size="lg" submitIcon="💾" submitLabel="Enregistrer le chargement">
       <div className="space-y-3">
-        {lignes.map((ligne, idx) => (
-          <div key={idx} className="p-4 bg-slate-800/60 rounded-xl border border-slate-700/50">
+        {fields.map((field, idx) => (
+          <div key={field.id} className="p-4 bg-slate-800/60 rounded-xl border border-slate-700/50">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-slate-500 font-bold uppercase">Article {idx + 1}</span>
-              {lignes.length > 1 && (
-                <button type="button" onClick={() => suppriméerLigne(idx)} className="text-red-400 hover:text-red-300 text-xs font-bold">✕ Supprimer</button>
+              {fields.length > 1 && (
+                <button type="button" onClick={() => remove(idx)} className="text-red-400 hover:text-red-300 text-xs font-bold">✕ Supprimer</button>
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <AutocompleteInput
-                label="Article"
-                name={`article_${idx}`}
-                value={ligne.articleId}
-                onSelect={(article) => updateLigneArticle(idx, article)}
-                fetchSuggestions={fetchArticles}
-                displayKey="designation"
-                placeholder="Rechercher..."
-                required
+              <Controller
+                name={`lignes.${idx}.articleId`}
+                control={control}
+                render={({ field: f }) => (
+                  <AutocompleteInput
+                    label="Article"
+                    name={`article_${idx}`}
+                    value={f.value}
+                    onChange={f.onChange}
+                    onSelect={(article) => updateLigneArticle(idx, article)}
+                    fetchSuggestions={fetchArticles}
+                    displayKey="designation"
+                    placeholder="Rechercher..."
+                    required
+                    error={errors.lignes?.[idx]?.articleId?.message}
+                  />
+                )}
               />
-              <NumberInput
-                label="Quantité"
-                name={`qte_${idx}`}
-                value={ligne.quantiteChargee}
-                onChange={(e) => updateLigneQty(idx, e.target.value)}
-                min={1}
-                required
+              <Controller
+                name={`lignes.${idx}.quantiteChargee`}
+                control={control}
+                render={({ field: f }) => (
+                  <NumberInput
+                    label="Quantité"
+                    name={`qte_${idx}`}
+                    value={f.value}
+                    onChange={(e) => f.onChange(e.target.value)}
+                    min={1}
+                    required
+                    error={errors.lignes?.[idx]?.quantiteChargee?.message}
+                  />
+                )}
               />
             </div>
           </div>
         ))}
       </div>
-      <button type="button" onClick={ajouterLigne}
+      <button type="button" onClick={() => append({ articleId: '', quantiteChargee: 1, designation: '', prix: 0 })}
         className="w-full py-2.5 border-2 border-dashed border-slate-600 rounded-xl text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-all mt-3">
         + Ajouter un article
       </button>
-      {localErrors.lignes && <p className="text-red-400 text-xs mt-2">⚠️ {localErrors.lignes}</p>}
+      {errors.lignes?.message && <p className="text-red-400 text-xs mt-2">⚠️ {errors.lignes.message}</p>}
+      {errors.lignes?.root?.message && <p className="text-red-400 text-xs mt-2">⚠️ {errors.lignes.root.message}</p>}
       <div className="p-3 bg-slate-800 rounded-xl text-sm flex justify-between items-center mt-3">
         <span className="text-slate-400">Total valeur chargée</span>
         <span className="text-white font-bold font-mono">{totalValeur.toLocaleString('fr-FR')} FCFA</span>

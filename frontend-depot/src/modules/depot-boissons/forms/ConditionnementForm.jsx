@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
@@ -7,11 +9,19 @@ import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const conditionnementSchema = z.object({
+  nom: z.string().min(1, 'Le nom est requis'),
+  type: z.enum(['CASIER', 'PACK', 'PALETTE', 'UNITE'], { message: 'Le type est requis' }),
+  quantiteUnitaire: z.coerce.number().min(1, 'Minimum 1'),
+  prixVente: z.coerce.number().positive('Le prix doit être supérieur à 0'),
+});
+
 export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(conditionnementSchema),
     defaultValues: {
       nom: '',
       type: 'CASIER',
@@ -67,16 +77,11 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
     }
   });
 
-  const onSubmit = (data) => {
-    mutation.mutate(data);
-  };
-
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier conditionnement' : '📦 Nouveau conditionnement'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier conditionnement' : '📦 Nouveau conditionnement'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
       <Controller
         name="nom"
         control={control}
-        rules={{ required: 'Le nom est requis' }}
         render={({ field }) => (
           <FormField
             label="Nom"
@@ -93,7 +98,6 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
         <Controller
           name="type"
           control={control}
-          rules={{ required: 'Le type est requis' }}
           render={({ field }) => (
             <FormField
               label="Type"
@@ -115,7 +119,6 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
         <Controller
           name="quantiteUnitaire"
           control={control}
-          rules={{ required: 'Quantité requise', min: { value: 1, message: 'Minimum 1' } }}
           render={({ field }) => (
             <NumberInput
               label="Qté unitaire"
@@ -131,7 +134,6 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
         <Controller
           name="prixVente"
           control={control}
-          rules={{ required: 'Prix requis', min: { value: 0, message: 'Doit être positif' } }}
           render={({ field }) => (
             <FormField
               label="Prix vente"

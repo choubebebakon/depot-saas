@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
@@ -7,11 +9,19 @@ import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 
+const tourneeSchema = z.object({
+  tricycleId: z.string().min(1, 'Sélectionnez un tricycle'),
+  commercialId: z.string().min(1, 'Sélectionnez un commercial'),
+  depotId: z.string().optional().or(z.literal('')),
+  date: z.string().min(1, 'La date est requise'),
+});
+
 export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier = 'depot', depotId }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(tourneeSchema),
     defaultValues: {
       tricycleId: '',
       commercialId: '',
@@ -84,17 +94,12 @@ export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier =
     }
   });
 
-  const onSubmit = (data) => {
-    mutation.mutate(data);
-  };
-
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier tournée' : '🚚 Nouvelle tournée'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier tournée' : '🚚 Nouvelle tournée'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Controller
           name="tricycleId"
           control={control}
-          rules={{ required: 'Sélectionnez un tricycle' }}
           render={({ field }) => (
             <FormField
               label="Tricycle"
@@ -111,7 +116,6 @@ export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier =
         <Controller
           name="commercialId"
           control={control}
-          rules={{ required: 'Sélectionnez un commercial' }}
           render={({ field }) => (
             <FormField
               label="Commercial"
@@ -130,7 +134,6 @@ export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier =
         <Controller
           name="date"
           control={control}
-          rules={{ required: 'La date est requise' }}
           render={({ field }) => (
             <DateTimePicker
               label="Date de la tournée"

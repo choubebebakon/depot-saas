@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
@@ -8,11 +10,33 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const consigneSchema = z.object({
+  clientId: z.string().min(1, 'Veuillez sélectionner un client'),
+  typeConsigneId: z.string().min(1, 'Veuillez sélectionner un type de consigne'),
+  quantite: z.coerce.number().min(1, 'Minimum 1'),
+  estSortie: z.boolean(),
+  estRemboursement: z.boolean(),
+  montantRembourse: z.coerce.number().min(0, 'Montant invalide').optional().or(z.literal('')),
+  motif: z.string().optional().or(z.literal('')),
+}).superRefine((data, ctx) => {
+  if (data.estRemboursement) {
+    const montant = data.montantRembourse === '' ? 0 : Number(data.montantRembourse);
+    if (!montant || montant <= 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Montant requis pour un remboursement',
+        path: ['montantRembourse'],
+      });
+    }
+  }
+});
+
 export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
 
   const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(consigneSchema),
     defaultValues: {
       clientId: '',
       typeConsigneId: '',
@@ -100,7 +124,6 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
         <Controller
           name="clientId"
           control={control}
-          rules={{ required: 'Veuillez sélectionner un client' }}
           render={({ field }) => (
             <AutocompleteInput
               label="Client"
@@ -120,7 +143,6 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
         <Controller
           name="typeConsigneId"
           control={control}
-          rules={{ required: 'Veuillez sélectionner un type de consigne' }}
           render={({ field }) => (
             <FormField
               label="Type de consigne"
@@ -137,7 +159,6 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
         <Controller
           name="quantite"
           control={control}
-          rules={{ required: 'Quantité requise', min: { value: 1, message: 'Minimum 1' } }}
           render={({ field }) => (
             <NumberInput
               label="Quantité"
@@ -192,7 +213,6 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
           <Controller
             name="montantRembourse"
             control={control}
-            rules={{ min: { value: 0, message: 'Montant invalide' } }}
             render={({ field }) => (
               <FormField
                 label="Montant remboursement"
