@@ -92,8 +92,10 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier, d
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['depot-clients'] });
-      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      const clientQueryKey = metier ? [`${metier}-clients`] : ['clients'];
+      const dashboardQueryKey = metier ? [`${metier}-dashboard`] : ['dashboard'];
+      queryClient.invalidateQueries({ queryKey: clientQueryKey });
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey });
       notif.success(edit ? 'Client mis à jour' : 'Client créé avec succès');
       onSuccess?.();
       onClose();

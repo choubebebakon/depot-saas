@@ -1,7 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useData } from '../hooks/useData';
 import { useNotif } from '../context/NotifContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -22,10 +20,11 @@ function BadgeSolde({ solde, plafond }) {
   return <span className={`text-xs font-bold border px-2 py-1 rounded-lg ${classes[couleur]}`}>{solde.toLocaleString('fr-FR')} FCFA</span>;
 }
 
-function ModalNouveauClient({ tenantId, onSuccess, onClose }) {
+function ModalNouveauClient({ tenantId, depotId, onSuccess, onClose }) {
   const [form, setForm] = useState({ nom: '', telephone: '', adresse: '', plafondCredit: 0 });
   const { success, error: notifError } = useNotif();
   const { addToQueue } = useOfflineSync();
+  const queryClient = useQueryClient();
 
   const createClientMutation = useMutation({
     mutationFn: async (payload) => {
@@ -37,6 +36,8 @@ function ModalNouveauClient({ tenantId, onSuccess, onClose }) {
       return res.data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-stats'] });
       success('Client créé');
       onSuccess();
       onClose();
@@ -46,7 +47,7 @@ function ModalNouveauClient({ tenantId, onSuccess, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createClientMutation.mutate({ id: generateId(), ...form, tenantId });
+    createClientMutation.mutate({ id: generateId(), ...form, tenantId, depotId });
   };
 
   return (
@@ -96,6 +97,7 @@ function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
   const [montant, setMontant] = useState('');
   const { success, error: notifError } = useNotif();
   const { addToQueue } = useOfflineSync();
+  const queryClient = useQueryClient();
 
   const payerDetteMutation = useMutation({
     mutationFn: async (payload) => {
@@ -107,6 +109,8 @@ function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
       return res.data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-stats'] });
       success('Paiement enregistré');
       onSuccess();
       onClose();
@@ -159,12 +163,9 @@ function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
 }
 
 export default function ClientsPage() {
-  const { metier: metierParam } = useParams();
   const { metier: metierAuth, tenantId } = useAuth();
   const { depotId } = useDepot();
-  const metier = metierParam || metierAuth;
-  const prefix = metier ? metier.toLowerCase().replace(/_/g, '-') : '';
-
+  const queryClient = useQueryClient();
   const { success, error: notifError } = useNotif();
 
   const [recherche, setRecherche] = useState('');
@@ -172,15 +173,38 @@ export default function ClientsPage() {
   const [clientPaiement, setClientPaiement] = useState(null);
   const [filtreDetteOnly, setFiltreDetteOnly] = useState(false);
 
-  const { data: clients = [],
-    error: loadingClients,
-    refetch: refetchClients,
-   } = useData('/clients', { params: { tenantId, depotId }, enabled: !!tenantId });
+  const { data: clients = [], isLoading: loadingClients } = useQuery({
+    queryKey: ['clients', tenantId, depotId],
+    queryFn: async () => {
+      const res = await api.get('/clients', { params: { tenantId, depotId } });
+      return res.data;
+    },
+    enabled: !!tenantId,
+  });
 
-  const {
-    data: stats = { totalDu: 0, nbClientsEnDette: 0 },
-    loading: loadingStats,
-  } = useData('/clients/stats/ardoise', { params: { tenantId, depotId }, enabled: !!tenantId });
+  const { data: stats = { totalDu: 0, nbClientsEnDette: 0 }, isLoading: loadingStats } = useQuery({
+    queryKey: ['clients-stats', tenantId, depotId],
+    queryFn: async () => {
+      const res = await api.get('/clients/stats/ardoise', { params: { tenantId, depotId } });
+      return res.data;
+    },
+    enabled: !!tenantId,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await api.delete(`/clients/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-stats'] });
+      success('Client supprimé');
+    },
+    onError: () => {
+      notifError('Erreur lors de la suppression', 'Échec');
+    }
+  });
 
   const loading = loadingClients || loadingStats;
 
@@ -293,9 +317,9 @@ export default function ClientsPage() {
         )}
       </div>
 
-      {modalNouvel && <ModalNouveauClient tenantId={tenantId} onSuccess={refetchClients} onClose={() => setModalNouvel(false)} />}
+      {modalNouvel && <ModalNouveauClient tenantId={tenantId} depotId={depotId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['clients'] })} onClose={() => setModalNouvel(false)} />}
       {clientPaiement && (
-        <ModalPaiement client={clientPaiement} tenantId={tenantId} onSuccess={refetchClients} onClose={() => setClientPaiement(null)} />
+        <ModalPaiement client={clientPaiement} tenantId={tenantId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['clients'] })} onClose={() => setClientPaiement(null)} />
       )}
     </div>
   );
