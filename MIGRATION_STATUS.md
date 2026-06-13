@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : bb9a6cd "feat(shared): migrate Fournisseurs to useQuery + fix dynamic query keys"
+Dernier commit : ba7b03b "feat(supermarche): add PATCH receptions endpoint + migrate ReceptionsPage to useQuery"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -29,6 +29,10 @@ Dernier commit : bb9a6cd "feat(shared): migrate Fournisseurs to useQuery + fix d
 - Clients : PAS de fields fidélité/crédit spécifiques dans schéma zod partagé (dette notée) ✅
 - Fournisseurs : FournisseursPage.jsx migré vers useQuery + delete mutation ✅
 - Fournisseurs : FournisseurForm.jsx query keys corrigées (dynamiques selon metier) ✅
+- Réceptions : Backend PATCH endpoint ajouté avec transaction stock + MouvementStock ✅
+- Réceptions : ReceptionsPage.jsx migré vers useQuery + validateMutation ✅
+- Réceptions : Bouton Valider ajouté pour réceptions EN_COURS ✅
+- Réceptions : Shield supprimé + invalidations croisées (receptions, articles, dashboard) ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -43,7 +47,7 @@ Dernier commit : bb9a6cd "feat(shared): migrate Fournisseurs to useQuery + fix d
 - Dette : ces champs spécifiques au supermarché ne sont pas gérés dans le formulaire partagé
 
 ### Prochaine étape
-Sous-module 8 — Réceptions
+Sous-module 9 — Inventaire
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -53,6 +57,5 @@ Sous-module 8 — Réceptions
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-8. Réceptions
 9. Inventaire  10. Dépenses  11. Rapports  12. Paramètres
 13. Dashboard  14. Shield cleanup global  15. Admin
