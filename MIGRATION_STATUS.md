@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : e3830d0 "feat(supermarche): migrate InventaireForm + InventairePage to useFieldArray + zod + useQuery"
+Dernier commit : 4596a4c "feat(supermarche): extract DepenseForm + migrate DepensesPage to useQuery"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -37,6 +37,9 @@ Dernier commit : e3830d0 "feat(supermarche): migrate InventaireForm + Inventaire
 - Inventaire : InventaireForm.jsx migré vers useFieldArray + zod ✅
 - Inventaire : InventairePage.jsx migré vers useQuery ✅
 - Inventaire : Shield supprimé + invalidations croisées (inventaire, articles, dashboard) ✅
+- Dépenses : DepenseForm.jsx extrait + migré vers rhf + zod ✅
+- Dépenses : DepensesPage.jsx migré vers useQuery + delete mutation ✅
+- Dépenses : Shield supprimé + invalidations croisées (depenses, dashboard) ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -51,7 +54,7 @@ Dernier commit : e3830d0 "feat(supermarche): migrate InventaireForm + Inventaire
 - Dette : ces champs spécifiques au supermarché ne sont pas gérés dans le formulaire partagé
 
 ### Prochaine étape
-Sous-module 10 — Dépenses
+Sous-module 11 — Rapports
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -61,5 +64,5 @@ Sous-module 10 — Dépenses
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-10. Dépenses  11. Rapports  12. Paramètres
+11. Rapports  12. Paramètres
 13. Dashboard  14. Shield cleanup global  15. Admin
