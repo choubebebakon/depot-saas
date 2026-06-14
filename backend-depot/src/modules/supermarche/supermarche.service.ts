@@ -423,20 +423,43 @@ export class SupermarcheService {
   }
 
   async createInventaire(tenantId: string, data: InventaireDto) {
-    const results: any[] = [];
-    for (const ligne of data.lignes) {
-      const existing = await this.prisma.stock.findFirst({
-        where: { articleId: ligne.articleId, depotId: data.depotId },
-      });
-      if (existing) {
-        const updated = await this.prisma.stock.update({
+    return this.prisma.$transaction(async (tx) => {
+      const results: any[] = [];
+      for (const ligne of data.lignes) {
+        const existing = await tx.stock.findFirst({
+          where: {
+            articleId: ligne.articleId,
+            depotId: data.depotId,
+          },
+          include: { depot: true },
+        });
+        if (!existing || existing.depot.tenantId !== tenantId) {
+          throw new NotFoundException(`Stock introuvable pour article ${ligne.articleId}`);
+        }
+
+        const ecart = ligne.stockPhysique - existing.quantite;
+
+        const updated = await tx.stock.update({
           where: { id: existing.id },
           data: { quantite: ligne.stockPhysique },
         });
+
+        // Traçabilité — MouvementStock avec type AJUSTEMENT_INVENTAIRE
+        await tx.mouvementStock.create({
+          data: {
+            tenantId,
+            articleId: ligne.articleId,
+            depotId: data.depotId,
+            type: 'AJUSTEMENT_INVENTAIRE',
+            quantite: Math.abs(ecart),
+            motif: `Inventaire - Écart: ${ecart >= 0 ? '+' : ''}${ecart}`,
+          },
+        });
+
         results.push(updated);
       }
-    }
-    return { success: true, updated: results.length };
+      return { success: true, updated: results.length };
+    });
   }
 
   // ── Ventes ──────────────────────────────────────────────────────────────────
