@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : ba7b03b "feat(supermarche): add PATCH receptions endpoint + migrate ReceptionsPage to useQuery"
+Dernier commit : e3830d0 "feat(supermarche): migrate InventaireForm + InventairePage to useFieldArray + zod + useQuery"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -33,6 +33,10 @@ Dernier commit : ba7b03b "feat(supermarche): add PATCH receptions endpoint + mig
 - Réceptions : ReceptionsPage.jsx migré vers useQuery + validateMutation ✅
 - Réceptions : Bouton Valider ajouté pour réceptions EN_COURS ✅
 - Réceptions : Shield supprimé + invalidations croisées (receptions, articles, dashboard) ✅
+- Inventaire : Backend createInventaire corrigé avec transaction + MouvementStock ✅
+- Inventaire : InventaireForm.jsx migré vers useFieldArray + zod ✅
+- Inventaire : InventairePage.jsx migré vers useQuery ✅
+- Inventaire : Shield supprimé + invalidations croisées (inventaire, articles, dashboard) ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -47,7 +51,7 @@ Dernier commit : ba7b03b "feat(supermarche): add PATCH receptions endpoint + mig
 - Dette : ces champs spécifiques au supermarché ne sont pas gérés dans le formulaire partagé
 
 ### Prochaine étape
-Sous-module 9 — Inventaire
+Sous-module 10 — Dépenses
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -57,5 +61,5 @@ Sous-module 9 — Inventaire
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-9. Inventaire  10. Dépenses  11. Rapports  12. Paramètres
+10. Dépenses  11. Rapports  12. Paramètres
 13. Dashboard  14. Shield cleanup global  15. Admin
