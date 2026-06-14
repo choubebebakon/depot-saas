@@ -129,9 +129,7 @@ export class CreateReceptionDto {
 export class UpdateReceptionDto {
   statut?: 'EN_COURS' | 'VALIDEE' | 'ANNULEE';
   fournisseurId?: string;
-  dateReception?: Date;
   numBordereau?: string;
-  notes?: string;
   motifAnnulation?: string;
 }
 
@@ -538,7 +536,7 @@ export class SupermarcheService {
   }
 
   async updateReception(tenantId: string, id: string, data: UpdateReceptionDto) {
-    const { statut, fournisseurId, dateReception, numBordereau, notes, motifAnnulation } = data;
+    const { statut, fournisseurId, numBordereau, motifAnnulation } = data;
 
     const reception = await this.prisma.receptionFournisseur.findFirst({
       where: { id, tenantId },
@@ -567,13 +565,13 @@ export class SupermarcheService {
         }
         return tx.receptionFournisseur.update({
           where: { id },
-          data: { statut: 'VALIDEE', fournisseurId, numBordereau, notes },
+          data: { statut: 'VALIDEE', fournisseurId, numBordereau },
         });
       });
     } else {
       return this.prisma.receptionFournisseur.update({
         where: { id },
-        data: { fournisseurId, numBordereau, notes, motifAnnulation },
+        data: { fournisseurId, numBordereau, motifAnnulation },
       });
     }
   }
