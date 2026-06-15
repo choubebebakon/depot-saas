@@ -10,7 +10,7 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : a483dec "feat(supermarche): migrate RapportsPage to useQuery + remove shield"
+Dernier commit : 80a09ec "feat(supermarche): migrate ParametresPage to useQuery + remove shield"
 
 ### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
@@ -42,6 +42,9 @@ Dernier commit : a483dec "feat(supermarche): migrate RapportsPage to useQuery + 
 - Dépenses : Shield supprimé + invalidations croisées (depenses, dashboard) ✅
 - Rapports : RapportsPage.jsx migré vers useQuery ✅
 - Rapports : Shield supprimé ✅
+- Paramètres : ParametresPage.jsx migré vers useQuery + useMutation ✅
+- Paramètres : Shield supprimé ✅
+- Paramètres : Backend PUT parametres Phase 4 stub vérifié ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -56,7 +59,7 @@ Dernier commit : a483dec "feat(supermarche): migrate RapportsPage to useQuery + 
 - Dette : ces champs spécifiques au supermarché ne sont pas gérés dans le formulaire partagé
 
 ### Prochaine étape
-Sous-module 12 — Paramètres
+Sous-module 12 — Dashboard (nécessite validation utilisateur)
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -66,5 +69,5 @@ Sous-module 12 — Paramètres
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-12. Paramètres
-13. Dashboard  14. Shield cleanup global  15. Admin
+12. Dashboard (100% mock à reconnecter sur vrais endpoints)
+13. Shield cleanup global  14. Admin
