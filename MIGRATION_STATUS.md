@@ -9,6 +9,42 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 `frontend-depot/src/modules/depot-boissons/` — pattern à dupliquer
 tel quel pour les autres secteurs.
 
+## Module en cours : Boutique
+Dernier commit : dc52aab "feat(boutique): add CRUD endpoints — articles, stock, clients, fournisseurs, depenses, personnel"
+
+### Terminé (sous-modules 0, 1)
+- Infrastructure : boutiqueApi.js créé (modèle supermarcheApi.js) ✅
+- Backend socle : CRUD Articles, Stock, Clients, Fournisseurs, Dépenses, Personnel ✅
+- Backend socle : 26 endpoints créés + 2 existants mis à jour ✅
+- Backend socle : Tous les endpoints filtrent par tenantId ✅
+- Backend socle : NotFoundException sur lookups par id ✅
+
+### Dette technique détectée (NON CORRIGÉE)
+**COMMERCIAL vs VENDEUR** :
+- Le modèle `User` utilise l'enum `Role` avec valeur `COMMERCIAL`
+- Le fichier `permissions.js` de Boutique utilise `VENDEUR` au lieu de `COMMERCIAL`
+- Dette : Incohérence de nommage entre l'enum Prisma et les permissions frontend
+- Impact : Le filtre par rôle dans PersonnelService fonctionnera avec `COMMERCIAL`, mais le frontend attend `VENDEUR`
+- Correction requise : Mapper `VENDEUR` → `COMMERCIAL` dans le frontend ou mettre à jour l'enum Prisma
+
+### Prochaine étape
+Sous-module 2 — Stock/Articles (frontend migration)
+
+### Règles impératives
+- Un sous-module = un commit, avec build avant chaque commit
+- Ne PAS toucher depot-boissons (référence stable)
+- Chaque méthode backend DOIT filtrer par tenantId
+- Supprimer le shield UNIQUEMENT dans les fichiers migrés dans le
+  même commit — pas avant, pas après
+
+## Sous-modules restants (ordre)
+2. Stock/Articles
+3. Ventes/Caisse
+4. Promotions
+5. Clients
+6. Fournisseurs
+7. Personnel
+
 ## Module en cours : Supermarché
 Dernier commit : 87668b8 "feat(supermarche): remove shield runtime — 6 fichiers, −321 lignes"
 
