@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma.module'; // Chemin relatif
-import { PromotionsService, CreditClientService, ArticlesService, StockService, ClientsService, FournisseursService, DepensesService, PersonnelService } from './boutique.service';
+import { PromotionsService, CreditClientService, ArticlesService, StockService, ClientsService, FournisseursService, DepensesService, PersonnelService, VentesService } from './boutique.service';
 import { BoutiqueController } from './boutique.controller';
 
 @Module({
@@ -15,6 +15,7 @@ import { BoutiqueController } from './boutique.controller';
     FournisseursService,
     DepensesService,
     PersonnelService,
+    VentesService,
   ],
   exports: [
     PromotionsService,
@@ -25,6 +26,7 @@ import { BoutiqueController } from './boutique.controller';
     FournisseursService,
     DepensesService,
     PersonnelService,
+    VentesService,
   ],
 })
 export class BoutiqueModule {}

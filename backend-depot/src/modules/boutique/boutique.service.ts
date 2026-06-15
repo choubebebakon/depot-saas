@@ -355,3 +355,95 @@ export class PersonnelService {
     });
   }
 }
+
+@Injectable()
+export class VentesService {
+  constructor(private prisma: PrismaService) {}
+
+  async createVente(tenantId: string, data: any, userId?: string) {
+    if (!data.depotId) throw new Error('depotId est requis');
+    if (!Array.isArray(data.panier) || data.panier.length === 0) {
+      throw new Error('panier est requis');
+    }
+    if (!Number.isFinite(Number(data.total)) || Number(data.total) <= 0) {
+      throw new Error('total vente invalide');
+    }
+    const reference = `VENTE-${Date.now()}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      const vente = await tx.vente.create({
+        data: {
+          reference,
+          total: data.total,
+          statut: 'PAYE',
+          modePaiement: data.modePaiement as any,
+          tenantId,
+          depotId: data.depotId,
+          clientId: data.clientId,
+          createurId: userId,
+          date: new Date(),
+          lignes: {
+            create: data.panier.map((item) => ({
+              articleId: item.articleId,
+              quantite: item.quantite,
+              prix: item.prix,
+              remise: item.remise ?? 0,
+              total: item.quantite * item.prix - (item.remise ?? 0),
+            })),
+          },
+        },
+        include: { lignes: true, client: true },
+      });
+
+      for (const item of data.panier) {
+        await tx.stock.updateMany({
+          where: { articleId: item.articleId, depotId: data.depotId },
+          data: { quantite: { decrement: item.quantite } },
+        });
+        await tx.mouvementStock.create({
+          data: {
+            type: 'SORTIE_VENTE',
+            quantite: item.quantite,
+            articleId: item.articleId,
+            depotId: data.depotId,
+            tenantId,
+            motif: `Vente ${reference}`,
+          },
+        });
+      }
+
+      return vente;
+    });
+  }
+
+  async findAll(tenantId: string, params?: any) {
+    const { page = 1, limit = 50, statut, clientId } = params || {};
+    const skip = (page - 1) * limit;
+
+    const where: any = { tenantId };
+    if (statut) where.statut = statut;
+    if (clientId) where.clientId = clientId;
+
+    const [data, total] = await Promise.all([
+      this.prisma.vente.findMany({
+        where,
+        skip,
+        take: limit,
+        include: { lignes: { include: { article: true } }, client: true, depot: true },
+        orderBy: { date: 'desc' },
+      }),
+      this.prisma.vente.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
+  }
+
+  async findOne(id: string, tenantId: string) {
+    const vente = await this.prisma.vente.findFirst({
+      where: { id, tenantId },
+      include: { lignes: { include: { article: true } }, client: true, depot: true },
+    });
+    if (!vente) throw new NotFoundException('Vente non trouvée');
+    return vente;
+  }
+}

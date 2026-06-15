@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
-import { PromotionsService, ArticlesService, StockService, ClientsService, FournisseursService, DepensesService, PersonnelService } from './boutique.service';
+import { PromotionsService, ArticlesService, StockService, ClientsService, FournisseursService, DepensesService, PersonnelService, VentesService } from './boutique.service';
 
 @Controller('boutique')
 export class BoutiqueController {
@@ -11,6 +11,7 @@ export class BoutiqueController {
     private fournisseursService: FournisseursService,
     private depensesService: DepensesService,
     private personnelService: PersonnelService,
+    private ventesService: VentesService,
   ) {}
 
   // --- Promotions (existants) ---
@@ -159,6 +160,22 @@ export class BoutiqueController {
   @Delete('personnel/:id')
   async deletePersonnel(@Param('id') id: string, @Req() req: any) {
     return this.personnelService.delete(id, req.user.tenantId);
+  }
+
+  // --- Ventes ---
+  @Post('ventes')
+  async createVente(@Body() data: any, @Req() req: any) {
+    return this.ventesService.createVente(req.user.tenantId, data, req.user.id);
+  }
+
+  @Get('ventes')
+  async findAllVentes(@Req() req: any, @Query() params: any) {
+    return this.ventesService.findAll(req.user.tenantId, params);
+  }
+
+  @Get('ventes/:id')
+  async findOneVente(@Param('id') id: string, @Req() req: any) {
+    return this.ventesService.findOne(id, req.user.tenantId);
   }
 
   // --- Stubs Phase 2 (existants) ---
