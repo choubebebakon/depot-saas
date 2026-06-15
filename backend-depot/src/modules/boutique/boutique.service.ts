@@ -522,4 +522,53 @@ export class VentesService {
       topArticles,
     };
   }
+
+  // ── Stats / Dashboard ────────────────────────────────────────────────────────
+
+  async getStats(tenantId: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [
+      ventesJour,
+      caJour,
+      clientsActifs,
+      stockCritique,
+      totalProduits,
+    ] = await this.prisma.$transaction([
+      // Nombre de ventes aujourd'hui
+      this.prisma.vente.count({
+        where: { tenantId, date: { gte: today } },
+      }),
+      // CA jour (ventes PAYE)
+      this.prisma.vente.aggregate({
+        where: { tenantId, date: { gte: today }, statut: 'PAYE' },
+        _sum: { total: true },
+      }),
+      // Clients actifs (tous les clients, pas de champ actif)
+      this.prisma.client.count({
+        where: { tenantId },
+      }),
+      // Ruptures (quantite <= seuilCritique ou <= 0 si seuilCritique null)
+      this.prisma.stock.count({
+        where: {
+          article: { tenantId },
+          quantite: { lte: 0 },
+        },
+      }),
+      // Total produits (tous les articles, pas de champ actif)
+      this.prisma.article.count({
+        where: { tenantId },
+      }),
+    ]);
+
+    return {
+      ventesJour,
+      caJour: caJour._sum.total ?? 0,
+      clientsActifs,
+      stockCritique,
+      totalProduits,
+      caisseJour: caJour._sum.total ?? 0, // Alias pour compatibilité frontend
+    };
+  }
 }
