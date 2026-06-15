@@ -105,4 +105,10 @@ export const boutiqueApi = {
   // Rapports
   getRapports: (params) =>
     api.get('/boutique/rapports', { ...getTenantHeaders(), params }),
+
+  // Paramètres
+  getParametres: () =>
+    api.get('/boutique/parametres', getTenantHeaders()),
+  updateParametres: (data) =>
+    api.put('/boutique/parametres', data, getTenantHeaders()),
 };
