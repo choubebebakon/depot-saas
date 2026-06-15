@@ -25,6 +25,21 @@ export class BoutiqueController {
     return this.promotionsService.findAll(req.user.tenantId);
   }
 
+  @Get('promotions/:id')
+  async findOnePromotion(@Param('id') id: string, @Req() req: any) {
+    return this.promotionsService.findOne(id, req.user.tenantId);
+  }
+
+  @Put('promotions/:id')
+  async updatePromotion(@Param('id') id: string, @Body() data: any, @Req() req: any) {
+    return this.promotionsService.update(id, data, req.user.tenantId);
+  }
+
+  @Delete('promotions/:id')
+  async deletePromotion(@Param('id') id: string, @Req() req: any) {
+    return this.promotionsService.delete(id, req.user.tenantId);
+  }
+
   // --- Articles ---
   @Get('articles')
   async findAllArticles(@Req() req: any, @Query() params: any) {

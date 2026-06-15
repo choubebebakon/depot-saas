@@ -13,6 +13,29 @@ export class PromotionsService {
   async findAll(tenantId: string): Promise<Promotion[]> {
     return this.prisma.promotion.findMany({ where: { tenantId } });
   }
+
+  async findOne(id: string, tenantId: string) {
+    const promotion = await this.prisma.promotion.findFirst({
+      where: { id, tenantId },
+      include: { article: true },
+    });
+    if (!promotion) throw new NotFoundException('Promotion non trouvée');
+    return promotion;
+  }
+
+  async update(id: string, data: any, tenantId: string) {
+    await this.findOne(id, tenantId);
+    return this.prisma.promotion.update({
+      where: { id },
+      data,
+      include: { article: true },
+    });
+  }
+
+  async delete(id: string, tenantId: string) {
+    await this.findOne(id, tenantId);
+    return this.prisma.promotion.delete({ where: { id } });
+  }
 }
 
 @Injectable()
