@@ -10,25 +10,44 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Boutique
-Dernier commit : dc52aab "feat(boutique): add CRUD endpoints — articles, stock, clients, fournisseurs, depenses, personnel"
+Dernier commit : 7373f9b "feat(boutique): migrate Personnel to rhf + zod + VENDEUR/COMMERCIAL mapping"
 
-### Terminé (sous-modules 0, 1)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7)
 - Infrastructure : boutiqueApi.js créé (modèle supermarcheApi.js) ✅
 - Backend socle : CRUD Articles, Stock, Clients, Fournisseurs, Dépenses, Personnel ✅
 - Backend socle : 26 endpoints créés + 2 existants mis à jour ✅
 - Backend socle : Tous les endpoints filtrent par tenantId ✅
 - Backend socle : NotFoundException sur lookups par id ✅
+- Sous-module 2 : Stock/Articles frontend migré (StockPage.jsx + StockBoutiqueForm.jsx) ✅
+- Sous-module 3 : Ventes/Caisse backend + frontend migré ✅
+  - Backend : POST /boutique/ventes avec transaction Prisma (vente, lignes, stock décrément, MouvementStock) ✅
+  - Frontend : VenteBoutiqueForm.jsx (rhf + zod + useFieldArray) ✅
+  - Frontend : CaissePage.jsx (POS) ✅
+  - Frontend : FacturesPage.jsx (vue filtrée ventes PAYEES) ✅
+- Sous-module 4 : Promotions backend PUT/DELETE + frontend migré ✅
+  - Backend : PUT /boutique/promotions/:id, DELETE /boutique/promotions/:id ✅
+  - Frontend : PromotionsPage.jsx (useQuery + boutiqueApi) ✅
+- Sous-module 5 : Clients frontend migré ✅
+  - Frontend : ClientsPage.jsx (useQuery + boutiqueApi) ✅
+  - Query key : ['boutique-clients'] ✅
+- Sous-module 6 : Fournisseurs frontend migré ✅
+  - Frontend : FournisseursPage.jsx (useQuery + boutiqueApi) ✅
+  - Query key : ['boutique-fournisseurs'] ✅
+- Sous-module 7 : Personnel frontend + mapping VENDEUR/COMMERCIAL ✅
+  - Frontend : PersonnelPage.jsx (useQuery + boutiqueApi) ✅
+  - Frontend : PersonnelBoutiqueForm.jsx (rhf + zod + mapping bidirectionnel) ✅
+  - Mapping : VENDEUR (affichage utilisateur) ↔ COMMERCIAL (API) ✅
 
-### Dette technique détectée (NON CORRIGÉE)
+### Dette technique résolue (FRONTEND)
 **COMMERCIAL vs VENDEUR** :
 - Le modèle `User` utilise l'enum `Role` avec valeur `COMMERCIAL`
 - Le fichier `permissions.js` de Boutique utilise `VENDEUR` au lieu de `COMMERCIAL`
-- Dette : Incohérence de nommage entre l'enum Prisma et les permissions frontend
-- Impact : Le filtre par rôle dans PersonnelService fonctionnera avec `COMMERCIAL`, mais le frontend attend `VENDEUR`
-- Correction requise : Mapper `VENDEUR` → `COMMERCIAL` dans le frontend ou mettre à jour l'enum Prisma
-
-### Prochaine étape
-Sous-module 2 — Stock/Articles (frontend migration)
+- Solution : Mapping bidirectionnel dans PersonnelBoutiqueForm.jsx
+  - Schéma zod : role enum avec VENDEUR pour affichage utilisateur
+  - À la soumission : mapper VENDEUR → COMMERCIAL avant envoi API
+  - Au chargement (edit) : mapper COMMERCIAL → VENDEUR pour affichage
+- Dette documentée pour résolution propre future (renommer enum ou aligner permissions.js)
+- Impact : Fonctionnel via mapping frontend, pas de modification backend requise
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -38,12 +57,10 @@ Sous-module 2 — Stock/Articles (frontend migration)
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-2. Stock/Articles
-3. Ventes/Caisse
-4. Promotions
-5. Clients
-6. Fournisseurs
-7. Personnel
+8. Dépenses (frontend)
+9. Dashboard (frontend)
+10. Paramètres (frontend)
+11. Admin (validation finale du module Boutique)
 
 ## Module en cours : Supermarché
 Dernier commit : 87668b8 "feat(supermarche): remove shield runtime — 6 fichiers, −321 lignes"
