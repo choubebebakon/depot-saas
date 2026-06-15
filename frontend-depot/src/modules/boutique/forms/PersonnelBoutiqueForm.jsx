@@ -1,113 +1,142 @@
-import { useState, useEffect } from 'react';
-import api from '../../../api';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNotif } from '../../../context/NotifContext';
+import { boutiqueApi } from '../services/boutiqueApi';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 
-// SHIELD METIER DE SÉCURITÉ RUNTIME
-if (typeof window !== 'undefined') {
-  ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
-    if (window[p] === undefined) {
-      window[p] = p.startsWith('set') || p === 'toast' || p.startsWith('handle') ? (() => {}) : false;
+// Schéma zod — valeurs affichées à l'utilisateur (VENDEUR pour l'affichage)
+const personnelSchema = z.object({
+  nom: z.string().min(1, 'Le nom est requis'),
+  prenom: z.string().optional(),
+  email: z.string().email('Email invalide').optional().or(z.literal('')),
+  role: z.enum(['PATRON', 'GERANT', 'VENDEUR', 'CAISSIER', 'COMPTABLE', 'MAGASINIER']),
+  telephone: z.string().optional(),
+});
+
+export default function PersonnelBoutiqueForm({ isOpen, onClose, onSuccess, edit }) {
+  const queryClient = useQueryClient();
+  const notif = useNotif();
+
+  const { control, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(personnelSchema),
+    defaultValues: {
+      nom: '',
+      prenom: '',
+      email: '',
+      role: 'VENDEUR',
+      telephone: '',
     }
   });
-}
-
-
-// PROXY RUNTIME HERMÉTIQUE : Intercepte TOUT appel "is not defined" global pour tuer le crash au runtime
-if (typeof window !== 'undefined') {
-  window.safeHandler = window.safeHandler || new Proxy(window, {
-    get: function(target, prop) {
-      if (prop in target) return target[prop];
-      if (typeof prop === 'string') {
-        // Si le code cherche à appeler une fonction (ex: setOpen, toast, format) qui n'existe pas
-        if (prop.startsWith('set') || prop === 'toast' || prop.toLowerCase().includes('handle')) {
-          return () => console.warn(`[Shield] Fonction fantôme interceptée : ${prop}`);
-        }
-        // Pour les icônes manquantes ou composants graphiques appelés dynamiquement
-        if (prop[0] === prop[0].toUpperCase() && prop.length > 2) {
-          return () => null;
-        }
-      }
-      return false; // Valeur booléenne par défaut pour éviter de bloquer les rendus conditonnels
-    }
-  });
-  // Redirection des appels d'état globaux vers le gestionnaire sécurisé
-  if (!window.__shield_initialized) {
-    // Object.setPrototypeOf(window, window.safeHandler) - REMOVED: not supported in modern browsers
-    window.__shield_initialized = true;
-  }
-}
-
-
-// SHIELD DE SÉCURITÉ RUNTIME PROXY - Évite le crash "is not defined" des variables d'état dynamiques
-if (typeof window !== 'undefined') {
-  const dynamicStates = [
-    'openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 
-    'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen',
-    'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen',
-    'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen'
-  ];
-  dynamicStates.forEach(state => {
-    if (!(state in window)) {
-      if (state.startsWith('set')) {
-        window[state] = () => {}; // Fonction vide de secours
-      } else {
-        window[state] = false; // Valeur par défaut de secours
-      }
-    }
-  });
-}
-
-
-const initialState = { nom: '', poste: '', telephone: '', salaire: '' };
-
-export default function PersonnelBoutiqueForm({ isOpen, onClose, onSuccess, edit, metier = 'boutique' }) {
-  const [form, setForm] = useState({ ...initialState });
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-
-  const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
-
-
 
   useEffect(() => {
-    if (edit) setForm({ nom: edit.nom || '', poste: edit.poste || '', telephone: edit.telephone || '', salaire: edit.salaire ?? '' });
-    else setForm({ ...initialState });
-  }, [edit, isOpen]);
+    if (edit) {
+      // Au chargement en mode édition — mapper COMMERCIAL → VENDEUR
+      reset({
+        nom: edit.nom || '',
+        prenom: edit.prenom || '',
+        email: edit.email || '',
+        role: edit.role === 'COMMERCIAL' ? 'VENDEUR' : (edit.role || 'VENDEUR'),
+        telephone: edit.telephone || '',
+      });
+    } else {
+      reset({
+        nom: '',
+        prenom: '',
+        email: '',
+        role: 'VENDEUR',
+        telephone: '',
+      });
+    }
+  }, [edit, isOpen, reset]);
 
-  const prefix = `/${metier}`;
-
-  const validate = () => {
-    const errs = {};
-    if (!form.nom?.trim()) errs.nom = 'Le nom est requis';
-    return errs;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errs = validate();
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-    setLoading(true);
-    try {
-      if (edit) await api.patch(`${prefix}/personnel/${edit.id}`, form);
-      else await api.post(`${prefix}/personnel`, form);
-      onSuccess(); onClose();
-    } catch (err) {
-      setErrors({ general: err.response?.data?.message || 'Erreur' });
-    } finally { setLoading(false); }
-  };
-
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      // À la soumission — mapper VENDEUR → COMMERCIAL
+      const payload = {
+        ...data,
+        role: data.role === 'VENDEUR' ? 'COMMERCIAL' : data.role,
+      };
+      if (edit) {
+        return boutiqueApi.updatePersonnel(edit.id, payload);
+      } else {
+        return boutiqueApi.createPersonnel(payload);
+      }
+    },
+    onSuccess: () => {
+      notif.success(edit ? 'Employé modifié avec succès' : 'Employé créé avec succès');
+      queryClient.invalidateQueries({ queryKey: ['boutique-personnel'] });
+      reset({
+        nom: '',
+        prenom: '',
+        email: '',
+        role: 'VENDEUR',
+        telephone: '',
+      });
+      onSuccess?.();
+      onClose();
+    },
+    onError: (err) => {
+      const msg = err.response?.data?.message || err.message || 'Erreur lors de la création';
+      notif.error(msg);
+    }
+  });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouvel Employé'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
-      {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom} placeholder="Nom de l'employé" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Poste" name="poste" value={form.poste} onChange={set('poste')} placeholder="Ex: VENDEUR, GERANT" />
-        <FormField label="Téléphone" name="telephone" value={form.telephone} onChange={set('telephone')} placeholder="+221 77 XXX XX XX" />
-      </div>
-      <FormField label="Salaire (F CFA)" name="salaire" type="number" value={form.salaire} onChange={set('salaire')} min="0" placeholder="0" />
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onSubmit={handleSubmit(mutation.mutate)}
+      title={edit ? '✏️ Modifier' : '➕ Nouvel Employé'}
+      loading={mutation.isPending}
+      size="md"
+      submitLabel={edit ? 'Modifier' : 'Créer'}
+    >
+      <FormField
+        label="Nom"
+        name="nom"
+        control={control}
+        required
+        error={errors.nom}
+        placeholder="Nom de l'employé"
+      />
+      <FormField
+        label="Prénom"
+        name="prenom"
+        control={control}
+        placeholder="Prénom de l'employé"
+      />
+      <FormField
+        label="Email"
+        name="email"
+        type="email"
+        control={control}
+        error={errors.email}
+        placeholder="email@exemple.com"
+      />
+      <FormField
+        label="Poste"
+        name="role"
+        control={control}
+        type="select"
+        options={[
+          { value: 'PATRON', label: 'Patron' },
+          { value: 'GERANT', label: 'Gérant' },
+          { value: 'VENDEUR', label: 'Vendeur' },
+          { value: 'CAISSIER', label: 'Caissier' },
+          { value: 'COMPTABLE', label: 'Comptable' },
+          { value: 'MAGASINIER', label: 'Magasinier' },
+        ]}
+      />
+      <FormField
+        label="Téléphone"
+        name="telephone"
+        control={control}
+        placeholder="+221 77 XXX XX XX"
+      />
     </FormModal>
   );
 }
