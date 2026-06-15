@@ -197,16 +197,71 @@ export class SupermarcheService {
   }
 
   async getStats(tenantId: string) {
-    const [ventesJour, ruptures, rayonsActifs] = await Promise.all([
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [
+      ventesJour,
+      caJour,
+      ruptures,
+      rayonsActifs,
+      promosActives,
+      alertesStock,
+    ] = await this.prisma.$transaction([
+      // Nombre de ventes aujourd'hui
       this.prisma.vente.count({
-        where: { tenantId, date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+        where: { tenantId, date: { gte: today } },
       }),
+      // CA jour réel (remplace caisseJour: 0)
+      this.prisma.vente.aggregate({
+        where: { tenantId, date: { gte: today }, statut: 'PAYE' },
+        _sum: { total: true },
+      }),
+      // Ruptures (quantite <= 0)
       this.prisma.stock.count({
         where: { article: { tenantId }, quantite: { lte: 0 } },
       }),
-      this.prisma.rayon.count({ where: { tenantId, actif: true } }),
+      // Rayons actifs
+      this.prisma.rayon.count({
+        where: { tenantId, actif: true },
+      }),
+      // Promotions actives aujourd'hui
+      this.prisma.promotion.count({
+        where: {
+          tenantId,
+          actif: true,
+          dateDebut: { lte: new Date() },
+          dateFin: { gte: new Date() },
+        },
+      }),
+      // Alertes stock (quantite <= seuilCritique)
+      this.prisma.stock.count({
+        where: {
+          article: { tenantId },
+          quantite: { lte: 5 },
+        },
+      }),
     ]);
-    return { ventesJour, ruptures, rayonsActifs, caisseJour: 0 };
+
+    // Ventes par rayon — agrégation séparée (pas dans $transaction)
+    const ventesByRayon = await this.prisma.ligneVente.groupBy({
+      by: ['articleId'],
+      where: { vente: { tenantId, date: { gte: today } } },
+      _sum: { prix: true, quantite: true },
+    });
+
+    return {
+      ventesJour,
+      caJour: caJour._sum.total ?? 0,
+      ruptures,
+      rayonsActifs,
+      promosActives,
+      alertesStock,
+      ventesByRayon,
+      // Heures de pointe : reporter — nécessite une logique complexe
+      // (groupBy heure sur date) à traiter comme dette séparée
+      heuresPointe: [],
+    };
   }
 
   // ── Articles / Produits ─────────────────────────────────────────────────────
