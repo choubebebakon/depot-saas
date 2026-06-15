@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Boutique
-Dernier commit : 67692d6 "feat(boutique): migrate DashboardBoutique to useQuery with refetchInterval"
+Dernier commit : a22d237 "feat(boutique): remove shield runtime - 7 fichiers, -378 lignes"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
 - Infrastructure : boutiqueApi.js créé (modèle supermarcheApi.js) ✅
 - Backend socle : CRUD Articles, Stock, Clients, Fournisseurs, Dépenses, Personnel ✅
 - Backend socle : 26 endpoints créés + 2 existants mis à jour ✅
@@ -63,6 +63,16 @@ Dernier commit : 67692d6 "feat(boutique): migrate DashboardBoutique to useQuery 
   - Frontend : Top produits table section ✅
   - Frontend : Shield runtime code supprimé ✅
   - Query keys : ['boutique-dashboard-stats'], ['boutique-rapports'] ✅
+- Sous-module 12 : Shield cleanup global ✅
+  - Removed shield runtime code from CaisseBoutiqueForm.jsx ✅
+  - Removed shield runtime code from ClientBoutiqueForm.jsx ✅
+  - Removed shield runtime code from FactureBoutiqueForm.jsx ✅
+  - Removed shield runtime code from FournisseurBoutiqueForm.jsx ✅
+  - Removed shield runtime code from PromotionBoutiqueForm.jsx ✅
+  - Removed shield runtime code from VentesPage.jsx ✅
+  - Removed shield runtime code from routes.jsx ✅
+  - Total: 7 fichiers, 378 lignes supprimées ✅
+  - Build successful - aucun bug révélé ✅
 
 ### Dette technique résolue (FRONTEND)
 **COMMERCIAL vs VENDEUR** :
@@ -83,7 +93,7 @@ Dernier commit : 67692d6 "feat(boutique): migrate DashboardBoutique to useQuery 
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-12. Shield cleanup global (validation finale du module Boutique)
+Aucun - Module Boutique terminé ✅
 
 ## Module en cours : Supermarché
 Dernier commit : 87668b8 "feat(supermarche): remove shield runtime — 6 fichiers, −321 lignes"
