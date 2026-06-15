@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : 4596a4c "feat(supermarche): extract DepenseForm + migrate DepensesPage to useQuery"
+Dernier commit : a483dec "feat(supermarche): migrate RapportsPage to useQuery + remove shield"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -40,6 +40,8 @@ Dernier commit : 4596a4c "feat(supermarche): extract DepenseForm + migrate Depen
 - Dépenses : DepenseForm.jsx extrait + migré vers rhf + zod ✅
 - Dépenses : DepensesPage.jsx migré vers useQuery + delete mutation ✅
 - Dépenses : Shield supprimé + invalidations croisées (depenses, dashboard) ✅
+- Rapports : RapportsPage.jsx migré vers useQuery ✅
+- Rapports : Shield supprimé ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -54,7 +56,7 @@ Dernier commit : 4596a4c "feat(supermarche): extract DepenseForm + migrate Depen
 - Dette : ces champs spécifiques au supermarché ne sont pas gérés dans le formulaire partagé
 
 ### Prochaine étape
-Sous-module 11 — Rapports
+Sous-module 12 — Paramètres
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -64,5 +66,5 @@ Sous-module 11 — Rapports
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-11. Rapports  12. Paramètres
+12. Paramètres
 13. Dashboard  14. Shield cleanup global  15. Admin
