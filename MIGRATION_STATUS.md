@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Boutique
-Dernier commit : 7373f9b "feat(boutique): migrate Personnel to rhf + zod + VENDEUR/COMMERCIAL mapping"
+Dernier commit : 4c49819 "feat(boutique): migrate Rapports to useQuery + boutiqueApi"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 - Infrastructure : boutiqueApi.js créé (modèle supermarcheApi.js) ✅
 - Backend socle : CRUD Articles, Stock, Clients, Fournisseurs, Dépenses, Personnel ✅
 - Backend socle : 26 endpoints créés + 2 existants mis à jour ✅
@@ -37,6 +37,57 @@ Dernier commit : 7373f9b "feat(boutique): migrate Personnel to rhf + zod + VENDE
   - Frontend : PersonnelPage.jsx (useQuery + boutiqueApi) ✅
   - Frontend : PersonnelBoutiqueForm.jsx (rhf + zod + mapping bidirectionnel) ✅
   - Mapping : VENDEUR (affichage utilisateur) ↔ COMMERCIAL (API) ✅
+- Sous-module 8 : Dépenses frontend migré ✅
+  - Frontend : DepenseBoutiqueForm.jsx (rhf + zod) ✅
+  - Frontend : DepensesPage.jsx (useQuery + boutiqueApi) ✅
+  - Schema : libelle, montant (coerce number positive), categorie, modePaiement, notes ✅
+  - Query key : ['boutique-depenses'] → invalidate ['boutique-dashboard'] ✅
+- Sous-module 9 : Rapports backend endpoint + frontend migré ✅
+  - Backend : GET /boutique/rapports endpoint créé (pattern Supermarché) ✅
+  - Backend : Aggrégations CA, top articles, depenses sur période ✅
+  - Frontend : RapportsPage.jsx (useQuery + boutiqueApi) ✅
+  - Query key : ['boutique-rapports'] ✅
+- Sous-module 10 : Paramètres frontend migré ✅
+  - Frontend : ParametresPage.jsx (rhf + zod + useQuery + useMutation) ✅
+  - Backend : PUT /boutique/parametres stub existant ✅
+  - Query key : ['boutique-parametres'] ✅
+
+### Analyse - Sous-module 11 (Dashboard)
+**Backend Status:**
+- GET /boutique/stats endpoint does NOT exist (no "stats" or "getStats" found in boutique module)
+- The boutique.controller.ts has stub endpoints for parametres and caisse, but no stats endpoint
+
+**Frontend DashboardBoutique.jsx expects:**
+- caJour: CA du jour
+- ventesJour: Ventes du jour
+- clientsActifs: Clients actifs
+- stockCritique: Ruptures stock
+- totalProduits: Produits en stock
+- caisseJour: Caisse du jour
+
+**dashboard.config.js defines:**
+- Widgets with separate API paths:
+  - /boutique/stats/ventes-jour
+  - /boutique/stats/stock-critique
+  - /boutique/stats/clients-actifs
+  - /boutique/stats/caisse-jour
+- Graphs:
+  - /boutique/stats/ventes-mois
+  - /boutique/stats/ca-mensuel
+  - /boutique/stats/repartition-categories
+
+**Gap Analysis:**
+1. Boutique has NO stats endpoint at all - needs to be created from scratch
+2. DashboardBoutique.jsx uses a single endpoint (`/${prefix}/stats`) but dashboard.config.js suggests separate endpoints for each widget/graph
+3. Frontend expects data that doesn't exist in backend
+4. Need to decide whether to follow Supermarché pattern (single endpoint) or dashboard.config.js pattern (separate endpoints)
+
+**Recommendation:**
+- Follow Supermarché pattern: create GET /boutique/stats single endpoint returning all dashboard metrics
+- Use Prisma transactions for efficiency (like Supermarché getStats)
+- Metrics to include: caJour, ventesJour, clientsActifs, stockCritique, totalProduits, caisseJour
+- Migrate DashboardBoutique.jsx to useQuery with boutiqueApi
+- Remove shield runtime code
 
 ### Dette technique résolue (FRONTEND)
 **COMMERCIAL vs VENDEUR** :
@@ -57,10 +108,8 @@ Dernier commit : 7373f9b "feat(boutique): migrate Personnel to rhf + zod + VENDE
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-8. Dépenses (frontend)
-9. Dashboard (frontend)
-10. Paramètres (frontend)
-11. Admin (validation finale du module Boutique)
+11. Dashboard (backend endpoint + frontend) - Analyse effectuée, endpoint à créer
+12. Admin (validation finale du module Boutique)
 
 ## Module en cours : Supermarché
 Dernier commit : 87668b8 "feat(supermarche): remove shield runtime — 6 fichiers, −321 lignes"
@@ -126,6 +175,5 @@ Sous-module 14 — Admin (validation finale du module Supermarché)
 - Chaque méthode backend DOIT filtrer par tenantId
 - Supprimer le shield UNIQUEMENT dans les fichiers migrés dans le
   même commit — pas avant, pas après
-
 ## Sous-modules restants (ordre)
 14. Admin (validation finale)
