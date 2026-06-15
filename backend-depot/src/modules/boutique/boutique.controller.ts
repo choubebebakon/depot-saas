@@ -193,6 +193,12 @@ export class BoutiqueController {
     return this.ventesService.findOne(id, req.user.tenantId);
   }
 
+  // --- Rapports ---
+  @Get('rapports')
+  async getRapports(@Req() req: any, @Query() params: any) {
+    return this.ventesService.getRapports(req.user.tenantId, params.periode, params.dateDebut, params.dateFin);
+  }
+
   // --- Stubs Phase 2 (existants) ---
   @Get('parametres')
   async getParametres() {

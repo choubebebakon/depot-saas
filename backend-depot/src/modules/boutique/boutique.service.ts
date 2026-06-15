@@ -469,4 +469,57 @@ export class VentesService {
     if (!vente) throw new NotFoundException('Vente non trouvée');
     return vente;
   }
+
+  // ── Rapports ────────────────────────────────────────────────────────────────
+
+  async getRapports(tenantId: string, periode?: string, dateDebut?: string, dateFin?: string) {
+    const end = dateFin ? new Date(dateFin) : new Date();
+    const start = dateDebut
+      ? new Date(dateDebut)
+      : periode === 'mois'
+        ? new Date(end.getFullYear(), end.getMonth(), 1)
+        : periode === 'annee'
+          ? new Date(end.getFullYear(), 0, 1)
+          : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [ventes, depenses, totalVentes, totalDepenses, topArticles] = await Promise.all([
+      this.prisma.vente.findMany({
+        where: { tenantId, date: { gte: start, lte: end }, statut: 'PAYE' },
+        include: { lignes: { include: { article: true } } },
+        orderBy: { date: 'desc' },
+      }),
+      this.prisma.depense.findMany({
+        where: { tenantId, createdAt: { gte: start, lte: end } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.vente.aggregate({
+        where: { tenantId, date: { gte: start, lte: end }, statut: 'PAYE' },
+        _sum: { total: true },
+      }),
+      this.prisma.depense.aggregate({
+        where: { tenantId, createdAt: { gte: start, lte: end } },
+        _sum: { montant: true },
+      }),
+      this.prisma.ligneVente.groupBy({
+        by: ['articleId'],
+        where: { vente: { tenantId, date: { gte: start, lte: end }, statut: 'PAYE' } },
+        _sum: { quantite: true, total: true },
+        orderBy: { _sum: { quantite: 'desc' } },
+        take: 10,
+      }),
+    ]);
+
+    const chiffreAffaires = totalVentes._sum.total ?? 0;
+    const totalDep = totalDepenses._sum.montant ?? 0;
+
+    return {
+      periode: { debut: start, fin: end },
+      chiffreAffaires,
+      totalDepenses: totalDep,
+      benefice: chiffreAffaires - totalDep,
+      ventes,
+      depenses,
+      topArticles,
+    };
+  }
 }
