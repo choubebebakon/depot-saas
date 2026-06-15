@@ -53,12 +53,6 @@ Dernier commit : 87668b8 "feat(supermarche): remove shield runtime — 6 fichier
 - Shield cleanup global : Build réussi — aucun bug caché révélé ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
-**gestock_depotId vs depot_actif_id** :
-- `gestock_depotId` n'est JAMAIS défini dans l'app (0 setItem trouvés)
-- `depot-boissons` contourne ce bug en passant `depotId` dans le payload
-- Supermarché suit le même pattern (contournement)
-- Correction globale requise : aligner getTenantHeaders() sur `depot_actif_id` ou migrer tous les modules vers payload
-
 **ProgrammeFidelite/CreditClient** :
 - Schéma zod partagé ClientForm ne contient PAS de champs spécifiques ProgrammeFidelite/CreditClient
 - Seulement `plafondCredit` générique présent
