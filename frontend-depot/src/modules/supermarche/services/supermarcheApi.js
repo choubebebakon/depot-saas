@@ -2,7 +2,7 @@ import api from '../../../api/axios';
 
 function getTenantHeaders() {
   const tenantId = localStorage.getItem('gestock_tenantId');
-  const depotId = localStorage.getItem('gestock_depotId');
+  const depotId = localStorage.getItem('depot_actif_id');
   return {
     headers: {
       'X-Tenant-Id': tenantId || '',
