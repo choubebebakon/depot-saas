@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : 80a09ec "feat(supermarche): migrate ParametresPage to useQuery + remove shield"
+Dernier commit : 505edbc "feat(supermarche): migrate DashboardSupermarche from mock to useQuery + refetchInterval"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -45,6 +45,10 @@ Dernier commit : 80a09ec "feat(supermarche): migrate ParametresPage to useQuery 
 - Paramètres : ParametresPage.jsx migré vers useQuery + useMutation ✅
 - Paramètres : Shield supprimé ✅
 - Paramètres : Backend PUT parametres Phase 4 stub vérifié ✅
+- Dashboard : Backend getStats enrichi avec caJour, promosActives, alertesStock, ventesByRayon ✅
+- Dashboard : Frontend DashboardSupermarche migré vers useQuery + refetchInterval: 15_000 ✅
+- Dashboard : Shield supprimé + indicateur 'En direct' ajouté ✅
+- Dashboard : heuresPointe reporté comme dette technique (agrégation temporelle complexe) ⚠️
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -58,8 +62,14 @@ Dernier commit : 80a09ec "feat(supermarche): migrate ParametresPage to useQuery 
 - Seulement `plafondCredit` générique présent
 - Dette : ces champs spécifiques au supermarché ne sont pas gérés dans le formulaire partagé
 
+**heuresPointe (Dashboard)** :
+- Agrégation temporelle complexe (groupBy heure sur date) non implémentée
+- Frontend affiche placeholder propre "Données non disponibles (dette technique)"
+- Backend retourne heuresPointe: [] dans getStats()
+- Dette à traiter séparément si requis
+
 ### Prochaine étape
-Sous-module 12 — Dashboard (nécessite validation utilisateur)
+Sous-module 13 — Shield cleanup global
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -69,5 +79,4 @@ Sous-module 12 — Dashboard (nécessite validation utilisateur)
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-12. Dashboard (100% mock à reconnecter sur vrais endpoints)
 13. Shield cleanup global  14. Admin
