@@ -10,9 +10,9 @@ du "Shield Runtime" (code mort défensif ~54 lignes/fichier).
 tel quel pour les autres secteurs.
 
 ## Module en cours : Supermarché
-Dernier commit : 505edbc "feat(supermarche): migrate DashboardSupermarche from mock to useQuery + refetchInterval"
+Dernier commit : 87668b8 "feat(supermarche): remove shield runtime — 6 fichiers, −321 lignes"
 
-### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+### Terminé (sous-modules 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
 - Infrastructure : useSectorQuery.js, supermarcheApi.js ✅
 - Stock/Articles : ArticleSupermarcheForm + StockPage migrés, shield supprimé ✅
 - Rayons : RayonForm + RayonsPage migrés, shield supprimé ✅
@@ -49,6 +49,8 @@ Dernier commit : 505edbc "feat(supermarche): migrate DashboardSupermarche from m
 - Dashboard : Frontend DashboardSupermarche migré vers useQuery + refetchInterval: 15_000 ✅
 - Dashboard : Shield supprimé + indicateur 'En direct' ajouté ✅
 - Dashboard : heuresPointe reporté comme dette technique (agrégation temporelle complexe) ⚠️
+- Shield cleanup global : 6 fichiers restants traités, 321 lignes supprimées ✅
+- Shield cleanup global : Build réussi — aucun bug caché révélé ✅
 
 ### Dette technique détectée (NON CORRIGÉE)
 **gestock_depotId vs depot_actif_id** :
@@ -69,7 +71,7 @@ Dernier commit : 505edbc "feat(supermarche): migrate DashboardSupermarche from m
 - Dette à traiter séparément si requis
 
 ### Prochaine étape
-Sous-module 13 — Shield cleanup global
+Sous-module 14 — Admin (validation finale du module Supermarché)
 
 ### Règles impératives
 - Un sous-module = un commit, avec build avant chaque commit
@@ -79,4 +81,4 @@ Sous-module 13 — Shield cleanup global
   même commit — pas avant, pas après
 
 ## Sous-modules restants (ordre)
-13. Shield cleanup global  14. Admin
+14. Admin (validation finale)
