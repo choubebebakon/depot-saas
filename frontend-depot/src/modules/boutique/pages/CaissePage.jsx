@@ -4,7 +4,8 @@ import { usePermission } from '../../../shared/hooks/usePermission';
 import VenteBoutiqueForm from '../forms/VenteBoutiqueForm';
 
 export default function CaissePage() {
-  const { depotActif } = useDepot();
+  const depotData = useDepot();
+  const depotActif = depotData?.depotActif;
   const perm = usePermission(PERMISSIONS, 'caisse');
 
   if (!perm.canCreate) {
