@@ -72,6 +72,10 @@ export const depotApi = {
   deleteLivraison: (id) =>
     api.delete(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
 
+  // Dépôts
+  getDepots: () =>
+    api.get('/depot-boissons/depots', getTenantHeaders()),
+
   // Tournées
   getTournees: (params) =>
     api.get('/depot-boissons/tournees', { ...getTenantHeaders(), params }),

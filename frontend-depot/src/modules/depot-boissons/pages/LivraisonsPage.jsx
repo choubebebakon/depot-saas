@@ -9,12 +9,12 @@ import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 const LIMIT = 100;
 
 export default function LivraisonsPage() {
-  const { metier } = useAuth();
+  const { metier, user } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
 
   const [showModal, setShowModal] = useState(null);
-  const [formData, setFormData] = useState({ fournisseurId: '', articles: '', dateLivraison: '', notes: '' });
+  const [formData, setFormData] = useState({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId: '' });
   const [filtreStatut, setFiltreStatut] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -43,6 +43,16 @@ export default function LivraisonsPage() {
     enabled: !!showModal,
   });
 
+  // Fetch depots for the user
+  const { data: depotsData = [] } = useQuery({
+    queryKey: ['depot-depots'],
+    queryFn: async () => {
+      const res = await depotApi.getDepots();
+      return res.data?.data || res.data || [];
+    },
+    enabled: !!showModal,
+  });
+
   const livraisons = Array.isArray(deliveriesData) ? deliveriesData : (deliveriesData?.data || []);
   const total = livraisons.length;
 
@@ -63,7 +73,7 @@ export default function LivraisonsPage() {
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
       notif.success('Nouvelle livraison créée');
       setShowModal(null);
-      setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '' });
+      setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId: '' });
     },
     onError: (err) => {
       notif.error(err.response?.data?.message || 'Erreur lors de la création');
@@ -86,6 +96,10 @@ export default function LivraisonsPage() {
   const handleCreate = () => {
     if (!formData.fournisseurId) {
       notif.warning('Veuillez sélectionner un fournisseur');
+      return;
+    }
+    if (!formData.depotId) {
+      notif.warning('Veuillez sélectionner un dépôt');
       return;
     }
     createMutation.mutate(formData);
@@ -112,7 +126,11 @@ export default function LivraisonsPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">Livraisons</h1>
           <p className="text-slate-400 text-sm mt-1">Suivi des entrées marchandises ({total} livraison{total > 1 ? 's' : ''})</p>
         </div>
-        <button onClick={() => setShowModal('create')}
+        <button onClick={() => {
+          const depotId = user?.depotActif?.id || '';
+          setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId });
+          setShowModal('create');
+        }}
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
           ➕ Nouvelle livraison
         </button>
@@ -188,6 +206,11 @@ export default function LivraisonsPage() {
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
             <h2 className="text-lg font-black text-white mb-4">Nouvelle livraison</h2>
             <div className="space-y-4">
+              <select value={formData.depotId} onChange={e => setFormData({...formData, depotId: e.target.value})}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500">
+                <option value="">Sélectionner un dépôt</option>
+                {depotsData.map(d => <option key={d.id} value={d.id}>{d.nom}</option>)}
+              </select>
               <select value={formData.fournisseurId} onChange={e => setFormData({...formData, fournisseurId: e.target.value})}
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500">
                 <option value="">Sélectionner un fournisseur</option>
