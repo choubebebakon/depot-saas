@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
@@ -17,6 +17,7 @@ const articleSchema = z.object({
   unite: z.string().default('PIECE'),
   familleId: z.string().optional(),
   marqueId: z.string().optional(),
+  categorieId: z.string().uuid('Catégorie invalide').optional(),
 });
 
 const defaultValues = {
@@ -28,11 +29,21 @@ const defaultValues = {
   unite: 'PIECE',
   familleId: '',
   marqueId: '',
+  categorieId: '',
 };
 
 export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
+
+  const { data: categories } = useQuery({
+    queryKey: ['boutique-categories'],
+    queryFn: async () => {
+      const res = await boutiqueApi.getCategories();
+      const raw = res.data?.data ?? res.data;
+      return Array.isArray(raw) ? raw : [];
+    },
+  });
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(articleSchema),
@@ -50,6 +61,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
         unite: edit.unite || 'PIECE',
         familleId: edit.familleId || '',
         marqueId: edit.marqueId || '',
+        categorieId: edit.categorieId ?? '',
       });
     } else {
       reset(defaultValues);
@@ -138,6 +150,26 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
           error={errors.codeBarres}
         />
       </div>
+      <Controller
+        name="categorieId"
+        control={control}
+        render={({ field }) => (
+          <div>
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Catégorie</label>
+            <select
+              {...field}
+              disabled={mutation.isPending}
+              className="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
+            >
+              <option value="">Sans catégorie</option>
+              {categories?.map(c => (
+                <option key={c.id} value={c.id}>{c.icone} {c.nom}</option>
+              ))}
+            </select>
+            {errors.categorieId && <span className="text-red-400 text-xs mt-1">{errors.categorieId.message}</span>}
+          </div>
+        )}
+      />
     </FormModal>
   );
 }
