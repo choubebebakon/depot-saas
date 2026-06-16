@@ -28,7 +28,7 @@ export default function ConfirmModal({
       <div className={`relative bg-slate-900 border rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center ${danger ? 'border-red-500/30' : 'border-amber-500/30'}`}>
         <span className="text-5xl">{danger ? '⚠️' : 'ℹ️'}</span>
         <h3 className="text-white font-black text-lg mt-4 mb-2">{title}</h3>
-        {message && <p className="text-slate-400 text-sm mb-6">{message}</p>}
+        {message && <div className="text-slate-400 text-sm mb-6">{message}</div>}
         <div className="flex gap-3">
           <button type="button" onClick={onCancel} disabled={loading}
             className="flex-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 font-bold py-3 rounded-xl transition-colors">
