@@ -189,7 +189,7 @@ export default function CategoriesPage() {
         title="Initialiser les catégories"
         message={
           <div className="space-y-3">
-            <p className="text-slate-300">Choisissez le type de boutique pour initialiser les catégories prédéfinies :</p>
+            <div className="text-slate-300">Choisissez le type de boutique pour initialiser les catégories prédéfinies :</div>
             <div className="grid grid-cols-2 gap-3 mt-4">
               {TYPES_BOUTIQUE.map((type) => (
                 <button
