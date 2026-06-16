@@ -7,6 +7,8 @@ import { depotApi } from '../services/depotApi';
 import ArticleBoissonsForm from '../forms/ArticleBoissonsForm';
 import ConditionnementForm from '../forms/ConditionnementForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import FormModal from '../../../shared/components/forms/FormModal';
+import FormField from '../../../shared/components/forms/FormField';
 
 const STATUS_COLORS = {
   critique: 'bg-red-500/10 text-red-400 border-red-500/30',
@@ -37,6 +39,9 @@ export default function StockArticlesPage() {
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [conditionnementOpen, setConditionnementOpen] = useState(false);
+  const [activeStockAction, setActiveStockAction] = useState(null);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [historyData, setHistoryData] = useState(null);
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
@@ -92,6 +97,8 @@ export default function StockArticlesPage() {
       queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
       notif.success('Entrée de stock enregistrée');
+      setActiveStockAction(null);
+      setSelectedArticle(null);
     },
     onError: (err) => {
       notif.error(err.response?.data?.message || 'Erreur lors de l\'entrée de stock');
@@ -104,6 +111,8 @@ export default function StockArticlesPage() {
       queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
       notif.success('Sortie de stock enregistrée');
+      setActiveStockAction(null);
+      setSelectedArticle(null);
     },
     onError: (err) => {
       notif.error(err.response?.data?.message || 'Erreur lors de la sortie de stock');
@@ -116,6 +125,8 @@ export default function StockArticlesPage() {
       queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
       notif.success('Transfert de stock enregistré');
+      setActiveStockAction(null);
+      setSelectedArticle(null);
     },
     onError: (err) => {
       notif.error(err.response?.data?.message || 'Erreur lors du transfert');
@@ -128,24 +139,46 @@ export default function StockArticlesPage() {
     }
   };
 
-  const handleEntreeStock = (id) => {
-    const qte = prompt('Quantité à ajouter :');
-    if (!qte || isNaN(qte)) return;
-    entreeMutation.mutate({ articleId: id, quantite: parseInt(qte) });
+  const handleEntreeStock = (article) => {
+    setSelectedArticle(article);
+    setActiveStockAction('entree');
   };
 
-  const handleSortieStock = (id) => {
-    const qte = prompt('Quantité à retirer :');
-    if (!qte || isNaN(qte)) return;
-    sortieMutation.mutate({ articleId: id, quantite: parseInt(qte) });
+  const handleSortieStock = (article) => {
+    setSelectedArticle(article);
+    setActiveStockAction('sortie');
   };
 
-  const handleTransfert = (id) => {
-    const qte = prompt('Quantité à transférer :');
-    if (!qte || isNaN(qte)) return;
-    const depotDest = prompt('Dépôt de destination :');
-    if (!depotDest) return;
-    transfertMutation.mutate({ articleId: id, quantite: parseInt(qte), depotDestination: depotDest });
+  const handleTransfert = (article) => {
+    setSelectedArticle(article);
+    setActiveStockAction('transfert');
+  };
+
+  const handleHistory = async (article) => {
+    setSelectedArticle(article);
+    try {
+      const res = await depotApi.getStockHistory(article.id);
+      setHistoryData(res.data?.data || res.data || []);
+      setActiveStockAction('history');
+    } catch (err) {
+      notif.error('Erreur lors de la récupération de l\'historique');
+    }
+  };
+
+  const handleStockActionSubmit = (data) => {
+    const payload = {
+      articleId: selectedArticle.id,
+      depotId: selectedArticle.depotId,
+      ...data,
+    };
+
+    if (activeStockAction === 'entree') {
+      entreeMutation.mutate(payload);
+    } else if (activeStockAction === 'sortie') {
+      sortieMutation.mutate(payload);
+    } else if (activeStockAction === 'transfert') {
+      transfertMutation.mutate(payload);
+    }
   };
 
   if (isLoading && totalItems === 0) {
@@ -236,10 +269,10 @@ export default function StockArticlesPage() {
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => openEdit(a)} title="Modifier" className="p-1.5 hover:bg-orange-500/20 rounded-lg text-slate-400 hover:text-orange-400 transition-all text-xs">✏️ Modifier</button>
-                      <button onClick={() => handleEntreeStock(a.id)} title="Entrée stock" className="p-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all text-xs">📥 Entrée</button>
-                      <button onClick={() => handleSortieStock(a.id)} title="Sortie stock" className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all text-xs">📤 Sortie</button>
-                      <button onClick={() => handleTransfert(a.id)} title="Transférer" className="p-1.5 hover:bg-purple-500/20 rounded-lg text-slate-400 hover:text-purple-400 transition-all text-xs">🔄 Transfert</button>
-                      <button onClick={() => depotApi.getStockHistory(a.id).then(r => alert(JSON.stringify(r.data, null, 2)))} title="Historique" className="p-1.5 hover:bg-cyan-500/20 rounded-lg text-slate-400 hover:text-cyan-400 transition-all text-xs">📋 Hist.</button>
+                      <button onClick={() => handleEntreeStock(a)} title="Entrée stock" className="p-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all text-xs">📥 Entrée</button>
+                      <button onClick={() => handleSortieStock(a)} title="Sortie stock" className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all text-xs">📤 Sortie</button>
+                      <button onClick={() => handleTransfert(a)} title="Transférer" className="p-1.5 hover:bg-purple-500/20 rounded-lg text-slate-400 hover:text-purple-400 transition-all text-xs">🔄 Transfert</button>
+                      <button onClick={() => handleHistory(a)} title="Historique" className="p-1.5 hover:bg-cyan-500/20 rounded-lg text-slate-400 hover:text-cyan-400 transition-all text-xs">📋 Hist.</button>
                       <button onClick={() => setConfirmDelete(a)} title="Archiver" className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">🗑️</button>
                     </div>
                   </td>
@@ -262,6 +295,133 @@ export default function StockArticlesPage() {
       <ConditionnementForm isOpen={conditionnementOpen} onClose={() => setConditionnementOpen(false)} metier="depot-boissons" />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={archiveMutation.isPending}
         title="Archiver l'article" message={`Archiver ${confirmDelete?.designation} ? Cette action est irréversible.`} />
+
+      {/* Modal Entrée Stock */}
+      <FormModal
+        isOpen={activeStockAction === 'entree'}
+        onClose={() => { setActiveStockAction(null); setSelectedArticle(null); }}
+        onSubmit={(data) => handleStockActionSubmit({ quantite: parseInt(data.quantite) })}
+        title="📥 Entrée de stock"
+        loading={entreeMutation.isPending}
+        size="sm"
+        submitLabel="Valider"
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-800/50 rounded-lg p-3">
+            <p className="text-slate-400 text-sm">Article: <span className="text-white font-semibold">{selectedArticle?.designation}</span></p>
+            <p className="text-slate-400 text-sm">Stock actuel: <span className="text-emerald-400 font-bold">{selectedArticle?.quantite}</span></p>
+          </div>
+          <FormField
+            label="Quantité à ajouter"
+            name="quantite"
+            type="number"
+            min="1"
+            required
+            placeholder="0"
+          />
+        </div>
+      </FormModal>
+
+      {/* Modal Sortie Stock */}
+      <FormModal
+        isOpen={activeStockAction === 'sortie'}
+        onClose={() => { setActiveStockAction(null); setSelectedArticle(null); }}
+        onSubmit={(data) => handleStockActionSubmit({ quantite: parseInt(data.quantite) })}
+        title="📤 Sortie de stock"
+        loading={sortieMutation.isPending}
+        size="sm"
+        submitLabel="Valider"
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-800/50 rounded-lg p-3">
+            <p className="text-slate-400 text-sm">Article: <span className="text-white font-semibold">{selectedArticle?.designation}</span></p>
+            <p className="text-slate-400 text-sm">Stock actuel: <span className="text-emerald-400 font-bold">{selectedArticle?.quantite}</span></p>
+          </div>
+          <FormField
+            label="Quantité à retirer"
+            name="quantite"
+            type="number"
+            min="1"
+            max={selectedArticle?.quantite}
+            required
+            placeholder="0"
+          />
+        </div>
+      </FormModal>
+
+      {/* Modal Transfert Stock */}
+      <FormModal
+        isOpen={activeStockAction === 'transfert'}
+        onClose={() => { setActiveStockAction(null); setSelectedArticle(null); }}
+        onSubmit={(data) => handleStockActionSubmit({ quantite: parseInt(data.quantite), depotDestination: data.depotDestination })}
+        title="🔄 Transfert de stock"
+        loading={transfertMutation.isPending}
+        size="sm"
+        submitLabel="Valider"
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-800/50 rounded-lg p-3">
+            <p className="text-slate-400 text-sm">Article: <span className="text-white font-semibold">{selectedArticle?.designation}</span></p>
+            <p className="text-slate-400 text-sm">Stock actuel: <span className="text-emerald-400 font-bold">{selectedArticle?.quantite}</span></p>
+          </div>
+          <FormField
+            label="Quantité à transférer"
+            name="quantite"
+            type="number"
+            min="1"
+            max={selectedArticle?.quantite}
+            required
+            placeholder="0"
+          />
+          <FormField
+            label="Dépôt de destination"
+            name="depotDestination"
+            required
+            placeholder="ID ou nom du dépôt"
+          />
+        </div>
+      </FormModal>
+
+      {/* Modal Historique */}
+      <FormModal
+        isOpen={activeStockAction === 'history'}
+        onClose={() => { setActiveStockAction(null); setSelectedArticle(null); setHistoryData(null); }}
+        onSubmit={() => { setActiveStockAction(null); setSelectedArticle(null); setHistoryData(null); }}
+        title="📋 Historique des mouvements"
+        size="md"
+        submitLabel="Fermer"
+        showCancel={false}
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-800/50 rounded-lg p-3">
+            <p className="text-slate-400 text-sm">Article: <span className="text-white font-semibold">{selectedArticle?.designation}</span></p>
+          </div>
+          {historyData && historyData.length > 0 ? (
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {historyData.map((h, idx) => (
+                <div key={idx} className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-white font-semibold text-sm">{h.type || 'Mouvement'}</p>
+                      <p className="text-slate-400 text-xs">{h.date || new Date().toLocaleString('fr-FR')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold ${h.type === 'entree' ? 'text-emerald-400' : h.type === 'sortie' ? 'text-red-400' : 'text-slate-400'}`}>
+                        {h.quantite ? `${h.quantite > 0 ? '+' : ''}${h.quantite}` : '-'}
+                      </p>
+                      <p className="text-slate-500 text-xs">{h.depot || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-slate-500 py-8">
+              <p className="text-sm">Aucun mouvement enregistré</p>
+            </div>
+          )}
+        </div>
+      </FormModal>
     </div>
   );
 }
