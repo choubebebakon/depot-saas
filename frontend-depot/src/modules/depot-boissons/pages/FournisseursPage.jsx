@@ -6,11 +6,13 @@ import { useNotif } from '../../../context/NotifContext';
 import { depotApi } from '../services/depotApi';
 import FournisseurForm from '../../../shared/forms/FournisseurForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import FormModal from '../../../shared/components/forms/FormModal';
+import FormField from '../../../shared/components/forms/FormField';
 
 const LIMIT = 100;
 
 export default function FournisseursPage() {
-  const { metier } = useAuth();
+  const { metier, user } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
 
@@ -21,6 +23,8 @@ export default function FournisseursPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [commandeData, setCommandeData] = useState({ articles: '' });
+  const [receptionData, setReceptionData] = useState({ articles: '' });
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
@@ -53,11 +57,16 @@ export default function FournisseursPage() {
   const openEdit = (f) => { setEditItem(f); setFormOpen(true); };
 
   const commanderMutation = useMutation({
-    mutationFn: ({ fournisseurId, articles }) =>
-      depotApi.passerCommandeFournisseur({ fournisseurId, articles }),
+    mutationFn: ({ fournisseurId, articles, depotId, userId }) =>
+      depotApi.passerCommandeFournisseur({ fournisseurId, articles, depotId, userId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs-commandes'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
       notif.success('Commande envoyée avec succès');
+      setShowModal(null);
+      setCommandeData({ articles: '' });
+      setSelectedFournisseur(null);
     },
     onError: (err) => {
       notif.error(err.response?.data?.message || 'Erreur lors de l\'envoi de la commande');
@@ -65,12 +74,16 @@ export default function FournisseursPage() {
   });
 
   const receptionnerMutation = useMutation({
-    mutationFn: ({ fournisseurId, articles }) =>
-      depotApi.receptionnerLivraison(fournisseurId, { articles }),
+    mutationFn: ({ fournisseurId, articles, depotId }) =>
+      depotApi.receptionnerLivraison(fournisseurId, { articles, depotId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs-commandes'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
       notif.success('Livraison réceptionnée avec succès');
+      setShowModal(null);
+      setReceptionData({ articles: '' });
+      setSelectedFournisseur(null);
     },
     onError: (err) => {
       notif.error(err.response?.data?.message || 'Erreur lors de la réception');
@@ -93,17 +106,41 @@ export default function FournisseursPage() {
     }
   });
 
-  const handleCommander = (fournisseurId) => {
-    const articles = prompt('Articles à commander :');
-    if (!articles) return;
-    commanderMutation.mutate({ fournisseurId, articles });
+  const handleCommander = (fournisseur) => {
+    setSelectedFournisseur(fournisseur);
+    setShowModal('commander');
   };
 
-  const handleReceptionner = (fournisseurId) => {
-    if (!confirm('Réceptionner la livraison ?')) return;
-    const articles = prompt('Articles reçus :');
-    if (!articles) return;
-    receptionnerMutation.mutate({ fournisseurId, articles });
+  const handleReceptionner = (fournisseur) => {
+    setSelectedFournisseur(fournisseur);
+    setShowModal('receptionner');
+  };
+
+  const handleCommanderSubmit = (data) => {
+    const depotId = user?.depotActif?.id;
+    if (!depotId) {
+      notif.error('Dépôt actif non trouvé');
+      return;
+    }
+    commanderMutation.mutate({
+      fournisseurId: selectedFournisseur.id,
+      articles: data.articles,
+      depotId,
+      userId: user?.id,
+    });
+  };
+
+  const handleReceptionnerSubmit = (data) => {
+    const depotId = user?.depotActif?.id;
+    if (!depotId) {
+      notif.error('Dépôt actif non trouvé');
+      return;
+    }
+    receptionnerMutation.mutate({
+      fournisseurId: selectedFournisseur.id,
+      articles: data.articles,
+      depotId,
+    });
   };
 
   const handleReglerDette = (fournisseurId) => {
@@ -173,9 +210,9 @@ export default function FournisseursPage() {
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5 mt-4">
-                <button onClick={() => handleCommander(f.id)} disabled={commanderMutation.isPending}
+                <button onClick={() => handleCommander(f)} disabled={commanderMutation.isPending}
                   className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] transition-all">Commander</button>
-                <button onClick={() => handleReceptionner(f.id)} disabled={receptionnerMutation.isPending}
+                <button onClick={() => handleReceptionner(f)} disabled={receptionnerMutation.isPending}
                   className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Réceptionner</button>
                 {dette > 0 && (
                   <button onClick={() => { setSelectedFournisseur(f); setShowModal('regler'); }}
@@ -199,7 +236,65 @@ export default function FournisseursPage() {
         </div>
       )}
 
-      {selectedFournisseur && showModal !== 'regler' && (
+      {/* Modal Commander */}
+      <FormModal
+        isOpen={showModal === 'commander'}
+        onClose={() => { setShowModal(null); setCommandeData({ articles: '' }); setSelectedFournisseur(null); }}
+        onSubmit={handleCommanderSubmit}
+        title="📦 Commander au fournisseur"
+        loading={commanderMutation.isPending}
+        size="sm"
+        submitLabel="Envoyer commande"
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-800/50 rounded-lg p-3">
+            <p className="text-slate-400 text-sm">Fournisseur: <span className="text-white font-semibold">{selectedFournisseur?.nom}</span></p>
+            <p className="text-slate-400 text-sm">Dépôt ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non défini"}</span></p>
+          </div>
+          {!user?.depotActif?.id && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
+              ⚠️ Dépôt actif non trouvé. Veuillez sélectionner un dépôt actif.
+            </div>
+          )}
+          <FormField
+            label="Articles à commander"
+            name="articles"
+            required
+            placeholder="Liste des articles (ex: 10x Bouteille 1L, 5x Casier)"
+          />
+        </div>
+      </FormModal>
+
+      {/* Modal Réceptionner */}
+      <FormModal
+        isOpen={showModal === 'receptionner'}
+        onClose={() => { setShowModal(null); setReceptionData({ articles: '' }); setSelectedFournisseur(null); }}
+        onSubmit={handleReceptionnerSubmit}
+        title="📥 Réceptionner livraison"
+        loading={receptionnerMutation.isPending}
+        size="sm"
+        submitLabel="Réceptionner"
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-800/50 rounded-lg p-3">
+            <p className="text-slate-400 text-sm">Fournisseur: <span className="text-white font-semibold">{selectedFournisseur?.nom}</span></p>
+            <p className="text-slate-400 text-sm">Dépôt ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non défini"}</span></p>
+          </div>
+          {!user?.depotActif?.id && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
+              ⚠️ Dépôt actif non trouvé. Veuillez sélectionner un dépôt actif.
+            </div>
+          )}
+          <FormField
+            label="Articles reçus"
+            name="articles"
+            required
+            placeholder="Liste des articles reçus (ex: 10x Bouteille 1L, 5x Casier)"
+          />
+        </div>
+      </FormModal>
+
+      {selectedFournisseur && showModal !== 'regler' && showModal !== 'commander' && showModal !== 'receptionner' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setSelectedFournisseur(null); setCommandes([]); }}>
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
