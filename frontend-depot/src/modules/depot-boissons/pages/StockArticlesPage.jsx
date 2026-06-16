@@ -166,11 +166,34 @@ export default function StockArticlesPage() {
   };
 
   const handleStockActionSubmit = (data) => {
+    console.log("Article sélectionné:", selectedArticle);
+    
+    let depotId = selectedArticle?.depotId;
+    
+    // Fallback: try to get depotId from other sources if not available
+    if (!depotId) {
+      console.warn("depotId non trouvé dans selectedArticle, recherche dans le contexte...");
+      // Try to get from user context if available
+      const { user } = useAuth();
+      if (user?.depotActif?.id) {
+        depotId = user.depotActif.id;
+        console.log("depotId récupéré depuis user.depotActif:", depotId);
+      }
+    }
+    
+    // Prevent submission if depotId is still not found
+    if (!depotId) {
+      notif.error("Impossible de déterminer le dépôt. Veuillez sélectionner un dépôt actif.");
+      return;
+    }
+    
     const payload = {
       articleId: selectedArticle.id,
-      depotId: selectedArticle.depotId,
+      depotId: depotId,
       ...data,
     };
+
+    console.log("Payload envoyé:", payload);
 
     if (activeStockAction === 'entree') {
       entreeMutation.mutate(payload);
@@ -305,12 +328,19 @@ export default function StockArticlesPage() {
         loading={entreeMutation.isPending}
         size="sm"
         submitLabel="Valider"
+        submitDisabled={!selectedArticle?.depotId}
       >
         <div className="space-y-4">
           <div className="bg-slate-800/50 rounded-lg p-3">
             <p className="text-slate-400 text-sm">Article: <span className="text-white font-semibold">{selectedArticle?.designation}</span></p>
             <p className="text-slate-400 text-sm">Stock actuel: <span className="text-emerald-400 font-bold">{selectedArticle?.quantite}</span></p>
+            <p className="text-slate-400 text-sm">Dépôt ID: <span className={selectedArticle?.depotId ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{selectedArticle?.depotId || "Non défini"}</span></p>
           </div>
+          {!selectedArticle?.depotId && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
+              ⚠️ Dépôt non défini pour cet article. Veuillez sélectionner un dépôt actif.
+            </div>
+          )}
           <FormField
             label="Quantité à ajouter"
             name="quantite"
@@ -331,12 +361,19 @@ export default function StockArticlesPage() {
         loading={sortieMutation.isPending}
         size="sm"
         submitLabel="Valider"
+        submitDisabled={!selectedArticle?.depotId}
       >
         <div className="space-y-4">
           <div className="bg-slate-800/50 rounded-lg p-3">
             <p className="text-slate-400 text-sm">Article: <span className="text-white font-semibold">{selectedArticle?.designation}</span></p>
             <p className="text-slate-400 text-sm">Stock actuel: <span className="text-emerald-400 font-bold">{selectedArticle?.quantite}</span></p>
+            <p className="text-slate-400 text-sm">Dépôt ID: <span className={selectedArticle?.depotId ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{selectedArticle?.depotId || "Non défini"}</span></p>
           </div>
+          {!selectedArticle?.depotId && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
+              ⚠️ Dépôt non défini pour cet article. Veuillez sélectionner un dépôt actif.
+            </div>
+          )}
           <FormField
             label="Quantité à retirer"
             name="quantite"
@@ -358,12 +395,19 @@ export default function StockArticlesPage() {
         loading={transfertMutation.isPending}
         size="sm"
         submitLabel="Valider"
+        submitDisabled={!selectedArticle?.depotId}
       >
         <div className="space-y-4">
           <div className="bg-slate-800/50 rounded-lg p-3">
             <p className="text-slate-400 text-sm">Article: <span className="text-white font-semibold">{selectedArticle?.designation}</span></p>
             <p className="text-slate-400 text-sm">Stock actuel: <span className="text-emerald-400 font-bold">{selectedArticle?.quantite}</span></p>
+            <p className="text-slate-400 text-sm">Dépôt ID: <span className={selectedArticle?.depotId ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{selectedArticle?.depotId || "Non défini"}</span></p>
           </div>
+          {!selectedArticle?.depotId && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
+              ⚠️ Dépôt non défini pour cet article. Veuillez sélectionner un dépôt actif.
+            </div>
+          )}
           <FormField
             label="Quantité à transférer"
             name="quantite"
