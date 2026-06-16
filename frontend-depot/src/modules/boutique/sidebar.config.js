@@ -4,6 +4,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Stock',           icon: '📦', path: '/boutique/stock' },
   { label: 'Clients',         icon: '👤', path: '/boutique/clients' },
   { label: 'Caisse',          icon: '🏧', path: '/boutique/caisse' },
+  { label: 'Catégories',      icon: '🏷️', path: '/boutique/categories' },
   { label: 'Promotions',      icon: '🏷️', path: '/boutique/promotions' },
   { label: 'Factures',        icon: '📄', path: '/boutique/factures' },
   { label: 'Fournisseurs',    icon: '🏭', path: '/boutique/fournisseurs' },

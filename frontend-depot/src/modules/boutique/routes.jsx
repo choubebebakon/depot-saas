@@ -23,6 +23,7 @@ const DepensesPage      = lazy(() => import('./pages/DepensesPage'));
 const RapportsPage      = lazy(() => import('./pages/RapportsPage'));
 const PersonnelPage     = lazy(() => import('./pages/PersonnelPage'));
 const ParametresPage    = lazy(() => import('./pages/ParametresPage'));
+const CategoriesPage    = lazy(() => import('./pages/CategoriesPage'));
 
 function Loader() { return <div className="flex items-center justify-center py-32"><div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>; }
 
@@ -80,6 +81,7 @@ export default function BoutiqueRoutes() {
           <Route path="rapports"     element={<RapportsPage />} />
           <Route path="personnel"    element={<PersonnelPage />} />
           <Route path="parametres"   element={<ParametresPage />} />
+          <Route path="categories"   element={<CategoriesPage />} />
            <Route path="utilisateurs" element={<UtilisateursPage />} />
             <Route path="depots"       element={<DepotsPage />} />
             <Route path="abonnement"   element={<AbonnementPage />} />
