@@ -45,6 +45,24 @@ model Marque {
   @@index([tenantId])
 }
 
+model Categorie {
+  id          String    @id @default(uuid())
+  tenantId    String
+  nom         String
+  description String?
+  couleur     String?   @default("#6366f1")
+  icone       String?   @default("🏷️")
+  actif       Boolean   @default(true)
+  ordre       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  articles    Article[]
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, actif])
+}
+
 model Article {
   id                 String                     @id @default(uuid())
   designation        String
@@ -59,10 +77,12 @@ model Article {
   uniteParPalette    Int                        @default(120)
   familleId          String?
   marqueId           String?
+  categorieId        String?
   tenantId           String
   createdAt          DateTime                   @default(now())
   famille            Famille?                   @relation(fields: [familleId], references: [id])
   marque             Marque?                    @relation(fields: [marqueId], references: [id])
+  categorie          Categorie?                 @relation(fields: [categorieId], references: [id])
   tenant             Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   conditionnements   Conditionnement[]
   lignesChargement   LigneChargement[]
@@ -95,6 +115,7 @@ model Article {
   @@index([tenantId])
   @@index([familleId])
   @@index([marqueId])
+  @@index([categorieId])
 }
 
 model Conditionnement {
@@ -751,6 +772,7 @@ model Tenant {
   conditionnements     Conditionnement[]
   parametresCommission ParametreCommission[]
   marques              Marque[]
+  categories           Categorie[]
   fournisseurs         Fournisseur[]
   receptions           ReceptionFournisseur[]
   commandes            CommandeFournisseur[]
