@@ -12,16 +12,26 @@ export default function StockPage() {
   const notif = useNotif();
 
   const [search, setSearch] = useState('');
+  const [categorieFiltre, setCategorieFiltre] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const perm = usePermission(PERMISSIONS, 'stock');
 
-  const { data: stockData, isLoading } = useQuery({
-    queryKey: ['boutique-stock', search],
+  const { data: categories } = useQuery({
+    queryKey: ['boutique-categories'],
     queryFn: async () => {
-      const res = await boutiqueApi.getStock({ search });
+      const res = await boutiqueApi.getCategories();
+      const raw = res.data?.data ?? res.data;
+      return Array.isArray(raw) ? raw : [];
+    },
+  });
+
+  const { data: stockData, isLoading } = useQuery({
+    queryKey: ['boutique-stock', { search, categorieId: categorieFiltre }],
+    queryFn: async () => {
+      const res = await boutiqueApi.getStock({ search, categorieId: categorieFiltre });
       return res.data;
     },
   });
@@ -72,7 +82,7 @@ export default function StockPage() {
           )}
         </div>
       </div>
-      <div className="mb-6">
+      <div className="mb-6 flex gap-3">
         <input
           type="text"
           placeholder="🔍 Nom produit..."
@@ -80,6 +90,16 @@ export default function StockPage() {
           onChange={e => setSearch(e.target.value)}
           className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"
         />
+        <select
+          value={categorieFiltre}
+          onChange={e => setCategorieFiltre(e.target.value)}
+          className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
+        >
+          <option value="">Toutes catégories</option>
+          {categories?.map(c => (
+            <option key={c.id} value={c.id}>{c.icone} {c.nom}</option>
+          ))}
+        </select>
       </div>
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
