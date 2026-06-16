@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { Promotion, Article, Stock, Client, Fournisseur, Depense, User } from '@prisma/client';
+import { CATEGORIES_PAR_TYPE } from '../../../prisma/seeds/categoriesBoutique';
 
 @Injectable()
 export class PromotionsService {
@@ -570,5 +571,61 @@ export class VentesService {
       totalProduits,
       caisseJour: caJour._sum.total ?? 0, // Alias pour compatibilité frontend
     };
+  }
+
+  // ── Catégories ───────────────────────────────────────────────────────────────
+
+  async findAllCategories(tenantId: string, query?: any) {
+    return this.prisma.categorie.findMany({
+      where: { tenantId, actif: true },
+      orderBy: [{ ordre: 'asc' }, { nom: 'asc' }],
+      include: { _count: { select: { articles: true } } },
+    });
+  }
+
+  async findOneCategorie(tenantId: string, id: string) {
+    const cat = await this.prisma.categorie.findFirst({
+      where: { id, tenantId },
+      include: { articles: true },
+    });
+    if (!cat) throw new NotFoundException(`Catégorie ${id} introuvable`);
+    return cat;
+  }
+
+  async createCategorie(tenantId: string, dto: any) {
+    return this.prisma.categorie.create({
+      data: { ...dto, tenantId },
+    });
+  }
+
+  async updateCategorie(tenantId: string, id: string, dto: any) {
+    await this.findOneCategorie(tenantId, id);
+    return this.prisma.categorie.update({ where: { id }, data: dto });
+  }
+
+  async deleteCategorie(tenantId: string, id: string) {
+    await this.findOneCategorie(tenantId, id);
+    // Vérifier qu'aucun article n'utilise cette catégorie
+    const count = await this.prisma.article.count({
+      where: { categorieId: id, tenantId },
+    });
+    if (count > 0) {
+      throw new BadRequestException(
+        `Impossible de supprimer : ${count} article(s) utilisent cette catégorie`
+      );
+    }
+    return this.prisma.categorie.delete({ where: { id } });
+  }
+
+  async seedCategoriesByType(tenantId: string, typeBoutique: string) {
+    const cats = CATEGORIES_PAR_TYPE[typeBoutique] ?? CATEGORIES_PAR_TYPE.generique;
+    const created = await this.prisma.$transaction(
+      cats.map((cat, index) =>
+        this.prisma.categorie.create({
+          data: { ...cat, tenantId, ordre: index },
+        })
+      )
+    );
+    return { created: created.length, type: typeBoutique };
   }
 }

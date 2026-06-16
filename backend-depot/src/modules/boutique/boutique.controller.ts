@@ -205,6 +205,37 @@ export class BoutiqueController {
     return this.ventesService.getStats(req.user.tenantId);
   }
 
+  // --- Catégories ---
+  @Get('categories')
+  getCategories(@Req() req: any, @Query() query: any) {
+    return this.ventesService.findAllCategories(req.user.tenantId, query);
+  }
+
+  @Get('categories/:id')
+  getCategorie(@Req() req: any, @Param('id') id: string) {
+    return this.ventesService.findOneCategorie(req.user.tenantId, id);
+  }
+
+  @Post('categories')
+  createCategorie(@Req() req: any, @Body() dto: any) {
+    return this.ventesService.createCategorie(req.user.tenantId, dto);
+  }
+
+  @Put('categories/:id')
+  updateCategorie(@Req() req: any, @Param('id') id: string, @Body() dto: any) {
+    return this.ventesService.updateCategorie(req.user.tenantId, id, dto);
+  }
+
+  @Delete('categories/:id')
+  deleteCategorie(@Req() req: any, @Param('id') id: string) {
+    return this.ventesService.deleteCategorie(req.user.tenantId, id);
+  }
+
+  @Post('categories/seed/:typeBoutique')
+  seedCategories(@Req() req: any, @Param('typeBoutique') typeBoutique: string) {
+    return this.ventesService.seedCategoriesByType(req.user.tenantId, typeBoutique);
+  }
+
   // --- Stubs Phase 2 (existants) ---
   @Get('parametres')
   async getParametres() {
