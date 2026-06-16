@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
@@ -14,11 +14,21 @@ const conditionnementSchema = z.object({
   type: z.enum(['CASIER', 'PACK', 'PALETTE', 'UNITE'], { message: 'Le type est requis' }),
   quantiteUnitaire: z.coerce.number().min(1, 'Minimum 1'),
   prixVente: z.coerce.number().positive('Le prix doit être supérieur à 0'),
+  articleId: z.string().uuid('Article invalide').optional(),
 });
 
 export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
+
+  const { data: articles } = useQuery({
+    queryKey: ['depot-articles'],
+    queryFn: async () => {
+      const res = await api.get(`/${metier}/articles`);
+      return res.data?.data || res.data || [];
+    },
+    enabled: isOpen,
+  });
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(conditionnementSchema),
@@ -27,6 +37,7 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
       type: 'CASIER',
       quantiteUnitaire: 12,
       prixVente: '',
+      articleId: '',
     }
   });
 
@@ -37,6 +48,7 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
         type: edit.type || 'CASIER',
         quantiteUnitaire: edit.quantiteUnitaire || 12,
         prixVente: edit.prixVente || '',
+        articleId: edit.articleId || '',
       });
     } else {
       reset({
@@ -44,6 +56,7 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
         type: 'CASIER',
         quantiteUnitaire: 12,
         prixVente: '',
+        articleId: '',
       });
     }
   }, [edit, isOpen, reset]);
@@ -92,6 +105,25 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
             placeholder="Ex: Casier 12 bouteilles"
             error={errors.nom?.message}
           />
+        )}
+      />
+      <Controller
+        name="articleId"
+        control={control}
+        render={({ field }) => (
+          <div className="mt-4">
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Article</label>
+            <select
+              {...field}
+              className="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
+            >
+              <option value="">Sans article</option>
+              {articles?.map(a => (
+                <option key={a.id} value={a.id}>{a.designation}</option>
+              ))}
+            </select>
+            {errors.articleId && <span className="text-red-400 text-xs mt-1">{errors.articleId.message}</span>}
+          </div>
         )}
       />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">

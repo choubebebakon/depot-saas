@@ -255,6 +255,9 @@ export class DepotBoissonsService {
   }
 
   async createConditionnement(tenantId: string, data: any) {
+    if (!data.articleId) {
+      throw new BadRequestException('articleId est requis');
+    }
     return this.prisma.conditionnement.create({ data: { ...data, tenantId } });
   }
 
