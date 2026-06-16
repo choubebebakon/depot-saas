@@ -50,7 +50,7 @@ export class ArticlesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string, params?: any) {
-    const { page = 1, limit = 50, search } = params || {};
+    const { page = 1, limit = 50, search, categorieId } = params || {};
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
@@ -60,13 +60,16 @@ export class ArticlesService {
         { codeBarres: { contains: search, mode: 'insensitive' } },
       ];
     }
+    if (categorieId) {
+      where.categorieId = categorieId;
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.article.findMany({
         where,
         skip,
         take: limit,
-        include: { famille: true, marque: true },
+        include: { famille: true, marque: true, categorie: true },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.article.count({ where }),
