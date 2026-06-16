@@ -111,4 +111,18 @@ export const boutiqueApi = {
     api.get('/boutique/parametres', getTenantHeaders()),
   updateParametres: (data) =>
     api.put('/boutique/parametres', data, getTenantHeaders()),
+
+  // Catégories
+  getCategories: () =>
+    api.get('/boutique/categories', getTenantHeaders()),
+  getCategorie: (id) =>
+    api.get(`/boutique/categories/${id}`, getTenantHeaders()),
+  createCategorie: (data) =>
+    api.post('/boutique/categories', data, getTenantHeaders()),
+  updateCategorie: (id, data) =>
+    api.put(`/boutique/categories/${id}`, data, getTenantHeaders()),
+  deleteCategorie: (id) =>
+    api.delete(`/boutique/categories/${id}`, getTenantHeaders()),
+  seedCategories: (type) =>
+    api.post(`/boutique/categories/seed/${type}`, {}, getTenantHeaders()),
 };
