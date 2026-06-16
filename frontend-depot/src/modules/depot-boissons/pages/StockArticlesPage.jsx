@@ -28,7 +28,7 @@ function getStockStatus(quantite, seuil) {
 const LIMIT = 100; // Increase backend limit so client-side pagination has full access to filtered dataset
 
 export default function StockArticlesPage() {
-  const { metier } = useAuth();
+  const { metier, user } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
 
@@ -174,7 +174,6 @@ export default function StockArticlesPage() {
     if (!depotId) {
       console.warn("depotId non trouvé dans selectedArticle, recherche dans le contexte...");
       // Try to get from user context if available
-      const { user } = useAuth();
       if (user?.depotActif?.id) {
         depotId = user.depotActif.id;
         console.log("depotId récupéré depuis user.depotActif:", depotId);
