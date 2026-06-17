@@ -6,6 +6,7 @@ import { useNotif } from '../../../context/NotifContext';
 import { depotApi } from '../services/depotApi';
 import TourneeForm from '../forms/TourneeForm';
 import ChargementForm from '../forms/ChargementForm';
+import TricycleForm from '../forms/TricycleForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
 const STATUT_COLORS = {
@@ -29,6 +30,8 @@ export default function TourneesPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [chargementOpen, setChargementOpen] = useState(false);
   const [chargementTourneeId, setChargementTourneeId] = useState(null);
+  const [tricycleFormOpen, setTricycleFormOpen] = useState(false);
+  const [tricycleEditItem, setTricycleEditItem] = useState(null);
   const [search, setSearch] = useState('');
 
   if (metier !== 'DEPOT_BOISSONS') {
@@ -64,6 +67,7 @@ export default function TourneesPage() {
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (t) => { setEditItem(t); setFormOpen(true); };
+  const openTricycleCreate = () => { setTricycleEditItem(null); setTricycleFormOpen(true); };
 
   const demarrerMutation = useMutation({
     mutationFn: (id) => depotApi.demarrerTournee(id),
@@ -128,10 +132,16 @@ export default function TourneesPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">Tournées</h1>
           <p className="text-slate-400 text-sm mt-1">Planification et suivi des tournées tricycle ({total} tournée{total > 1 ? 's' : ''})</p>
         </div>
-        <button onClick={openCreate}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-          ➕ Nouvelle tournée
-        </button>
+        <div className="flex gap-3">
+          <button onClick={openTricycleCreate}
+            className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20">
+            🚚 Nouveau tricycle
+          </button>
+          <button onClick={openCreate}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+            ➕ Nouvelle tournée
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-3">
@@ -230,6 +240,7 @@ export default function TourneesPage() {
 
       <TourneeForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" />
       <ChargementForm isOpen={chargementOpen} onClose={() => { setChargementOpen(false); setChargementTourneeId(null); }} metier="depot-boissons" tourneeId={chargementTourneeId} />
+      <TricycleForm isOpen={tricycleFormOpen} onClose={() => setTricycleFormOpen(false)} edit={tricycleEditItem} metier="depot-boissons" />
       <ConfirmModal isOpen={false} onConfirm={() => {}} onCancel={() => {}}
         title="Supprimer" message={`Supprimer cette tournée ? Cette action est irréversible.`} />
     </div>

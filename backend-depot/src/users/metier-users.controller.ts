@@ -24,6 +24,14 @@ export class MetierUsersController {
     return this.usersService.findCommerciaux(tenantId);
   }
 
+  @Get(':id')
+  async findOne(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+  ) {
+    return this.usersService.findOne(tenantId, id);
+  }
+
   @Patch(':id/status')
   async updateStatus(@Param('id') id: string, @Body() body: { isActive: boolean }) {
     return this.usersService.updateStatus(id, body.isActive);

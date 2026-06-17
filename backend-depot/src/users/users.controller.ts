@@ -27,18 +27,18 @@ export class UsersController {
     return this.usersService.findAll(tenantId, depotId);
   }
 
+  // Retourne uniquement les utilisateurs avec le rôle COMMERCIAL
+  @Get('commerciaux')
+  async findCommerciaux(@Query('tenantId') tenantId: string) {
+    return this.usersService.findCommerciaux(tenantId);
+  }
+
   @Get(':id')
   async findOne(
     @Param('id') id: string,
     @Query('tenantId') tenantId: string,
   ) {
     return this.usersService.findOne(tenantId, id);
-  }
-
-  // Retourne uniquement les utilisateurs avec le rôle COMMERCIAL
-  @Get('commerciaux')
-  async findCommerciaux(@Query('tenantId') tenantId: string) {
-    return this.usersService.findCommerciaux(tenantId);
   }
 
   // Activation / Désactivation d'un utilisateur
