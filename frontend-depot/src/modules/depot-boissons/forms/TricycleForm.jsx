@@ -73,6 +73,7 @@ export default function TricycleForm({ isOpen, onClose, onSuccess, edit, metier 
     mutationFn: async (data) => {
       const payload = {
         ...data,
+        nom: data.immatriculation, // Use immatriculation as nom
         tenantId: user?.tenantId,
       };
       if (edit) {
