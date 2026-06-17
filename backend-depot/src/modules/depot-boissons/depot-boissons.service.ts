@@ -53,7 +53,7 @@ export class DepotBoissonsService {
   }
 
   private async getVentesJour(tenantId: string, depotId: string | undefined, today: Date) {
-    const where: any = { tenantId, date: { gte: today }, statut: { in: ['PAYE', 'VALIDE', 'TERMINEE'] } };
+    const where: any = { tenantId, date: { gte: today }, statut: { in: ['PAYE'] } };
     if (depotId) where.depotId = depotId;
     const ventes = await this.prisma.vente.findMany({ where, select: { total: true } });
     return ventes.reduce((sum, v) => sum + v.total, 0);
@@ -68,7 +68,7 @@ export class DepotBoissonsService {
   }
 
   private async getLivraisonsEnCours(tenantId: string, depotId: string | undefined) {
-    const where: any = { tenantId, statut: { in: ['ENVOYE', 'EN_ATTENTE', 'EN_COURS'] } };
+    const where: any = { tenantId, statut: { in: ['ENVOYE'] } };
     if (depotId) where.depotId = depotId;
     return this.prisma.commandeFournisseur.count({ where });
   }
@@ -87,7 +87,7 @@ export class DepotBoissonsService {
   }
 
   private async getTourneesActives(tenantId: string, depotId: string | undefined) {
-    const where: any = { tenantId, statut: { in: ['OUVERTE', 'EN_COURS', 'PLANIFIEE'] } };
+    const where: any = { tenantId, statut: { in: ['OUVERTE', 'CLOTURE_COMMERCIALE'] } };
     if (depotId) where.depotId = depotId;
     return this.prisma.tournee.count({ where });
   }
@@ -95,7 +95,7 @@ export class DepotBoissonsService {
   private async getVentes30Jours(tenantId: string, depotId: string | undefined, today: Date) {
     const start = new Date(today);
     start.setDate(start.getDate() - 30);
-    const where: any = { tenantId, date: { gte: start }, statut: { in: ['PAYE', 'VALIDE', 'TERMINEE'] } };
+    const where: any = { tenantId, date: { gte: start }, statut: { in: ['PAYE'] } };
     if (depotId) where.depotId = depotId;
     const ventes = await this.prisma.vente.findMany({ where, orderBy: { date: 'asc' }, select: { date: true, total: true } });
     const grouped: Record<string, number> = {};
@@ -107,7 +107,7 @@ export class DepotBoissonsService {
   }
 
   private async getTopArticles(tenantId: string, depotId: string | undefined) {
-    const where: any = { vente: { tenantId, statut: { in: ['PAYE', 'VALIDE', 'TERMINEE'] } } };
+    const where: any = { vente: { tenantId, statut: { in: ['PAYE'] } } };
     if (depotId) where.vente = { ...where.vente, depotId };
     const lignes = await this.prisma.ligneVente.groupBy({
       by: ['articleId'],
