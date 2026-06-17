@@ -13,8 +13,11 @@ function getTenantHeaders() {
 
 export const depotApi = {
   // Dashboard
-  getDashboardStats: () =>
-    api.get('/depot-boissons/dashboard', getTenantHeaders()),
+  getDashboardStats: () => {
+    const depotId = localStorage.getItem('depot_actif_id');
+    const params = depotId ? { depotId } : {};
+    return api.get('/depot-boissons/dashboard', { ...getTenantHeaders(), params });
+  },
 
   // Articles / Stock
   getArticles: (params) =>
