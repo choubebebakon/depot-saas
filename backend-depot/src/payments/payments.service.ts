@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
-import { BillingCycle, Payment, PaymentMethod, PaymentStatus, PlanType, NotifType, StatutAbonnement } from '@prisma/client'; // FIX #3: Import de StatutAbonnement pour typage de l'activation
+import { BillingCycle, Payment, PaymentMethod, PaymentStatus, PlanType, NotifType, StatutAbonnement } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { EmailService } from '../common/email/email.service';
 import { NotchPayService } from './notchpay.service';
@@ -17,6 +17,13 @@ interface CreatePendingPaymentInput {
   momoPhoneNumber?: string | null;
 }
 
+// Pricing structure for Site Vitrine subscription plans
+const SITE_VITRINE_PRICING = {
+  SOLO: 5000,
+  PME: 15000,
+  PREMIUM: 25000,
+};
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -27,6 +34,13 @@ export class PaymentsService {
     private readonly emailService: EmailService,
     private readonly notifService: NotificationsService,
   ) {}
+
+  /**
+   * Calculate amount based on plan (for Site Vitrine pricing)
+   */
+  public calculateSiteVitrineAmount(plan: PlanType): number {
+    return SITE_VITRINE_PRICING[plan] || 5000;
+  }
 
   public calculateAmount(plan: PlanType, billingCycle: BillingCycle) {
     const amount = billingCycle === BillingCycle.MONTHLY ? 20000 : 200000;
@@ -99,6 +113,51 @@ export class PaymentsService {
     } catch (error: any) {
       this.logger.error(`Erreur NotchPay: ${error.message}`);
       await this.markPaymentFailed(payment.id);
+      throw new InternalServerErrorException('Impossible d\'initier le paiement.');
+    }
+  }
+
+  /**
+   * Initialize payment for Site Vitrine (simplified pricing structure)
+   */
+  public async initializeSiteVitrinePayment(input: {
+    tenantId: string;
+    email: string;
+    plan: PlanType;
+    amount: number;
+    currency: string;
+    channel: string;
+  }) {
+    const tenant = await this.prisma.tenant.findUnique({ 
+      where: { id: input.tenantId }, 
+      select: { id: true, name: true } 
+    });
+    if (!tenant) throw new NotFoundException('Tenant introuvable.');
+
+    const reference = `GST-SV-${Date.now()}-${input.tenantId.slice(0, 8)}`;
+
+    try {
+      const notchPayResponse = await this.notchPayService.initializePayment({
+        amount: input.amount,
+        currency: input.currency,
+        customer: { email: input.email, name: tenant.name ?? 'Client' },
+        channel: input.channel,
+        reference,
+        description: `Abonnement ${input.plan}`,
+        tenantId: input.tenantId,
+        plan: input.plan,
+      });
+
+      const authorizationUrl = notchPayResponse.authorization_url || notchPayResponse.checkout_url;
+
+      return {
+        authorization_url: authorizationUrl,
+        reference,
+        amount: input.amount,
+        currency: input.currency,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erreur NotchPay: ${error.message}`);
       throw new InternalServerErrorException('Impossible d\'initier le paiement.');
     }
   }
@@ -204,22 +263,47 @@ export class PaymentsService {
 
   /**
    * Traite les notifications asynchrones envoyées par le Webhook NotchPay standard.
+   * Includes signature verification for security.
    */
   public async handleWebhookNotification(payload: any, signature?: string): Promise<{ success: boolean }> {
     this.logger.log(`[Webhook] Notification NotchPay reçue. Événement: ${payload?.event}`);
+
+    // Verify signature if provided
+    if (signature) {
+      const payloadString = JSON.stringify(payload);
+      const isValid = this.notchPayService.verifyWebhookSignature(payloadString, signature);
+      if (!isValid) {
+        this.logger.warn('[Webhook] Signature NotchPay invalide - Rejet de la notification');
+        throw new BadRequestException('Signature invalide');
+      }
+      this.logger.log('[Webhook] Signature NotchPay vérifiée avec succès');
+    }
 
     const transaction = payload?.data || payload?.transaction;
     const reference = transaction?.reference;
     const notchPayId = transaction?.id;
     const status = transaction?.status || payload?.status;
+    
+    // Extract metadata from NotchPay
+    const meta = transaction?.meta || payload?.meta || {};
+    const tenantId = meta.tenantId;
+    const plan = meta.plan;
 
-    if (!reference) {
-      this.logger.warn('[Webhook] Référence manquante dans le payload NotchPay');
-      throw new BadRequestException('Référence manquante');
+    if (!reference && !tenantId) {
+      this.logger.warn('[Webhook] Référence et tenantId manquants dans le payload NotchPay');
+      throw new BadRequestException('Référence ou tenantId manquant');
     }
 
     const isSuccess = ['complete', 'accepted', 'approved', 'success'].includes(status?.toLowerCase());
 
+    // If we have tenantId and plan from metadata, directly update tenant
+    if (tenantId && plan && isSuccess) {
+      await this.updateTenantSubscription(tenantId, plan as PlanType);
+      this.logger.log(`[Webhook] Tenant ${tenantId} mis à jour avec le plan ${plan}`);
+      return { success: true };
+    }
+
+    // Fallback to existing payment lookup logic
     const result = await this.markNotchPayComplete({
       reference,
       notchPayId,
@@ -232,6 +316,27 @@ export class PaymentsService {
     }
 
     return { success: true };
+  }
+
+  /**
+   * Update tenant subscription directly from webhook metadata
+   */
+  private async updateTenantSubscription(tenantId: string, plan: PlanType) {
+    const now = new Date();
+    const nextExp = new Date(now);
+    nextExp.setMonth(nextExp.getMonth() + 1); // 1 month subscription
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        statutAbonnement: StatutAbonnement.ACTIVE,
+        planType: plan,
+        dateExpiration: nextExp,
+        subscriptionEnd: nextExp,
+        estActif: true,
+        graceUntil: null,
+      },
+    });
   }
 
   /**

@@ -1,6 +1,6 @@
-import { BadRequestException, Controller, Headers, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { BadRequestException, Controller, Headers, HttpCode, HttpStatus, Post, Req, Logger } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus } from '@prisma/client'; 
 import { Request } from 'express';
 import Stripe from 'stripe';
 import { Public } from '../auth/decorators/public.decorator';
@@ -12,53 +12,28 @@ interface RequestWithRawBody extends Request {
   rawBody?: Buffer;
 }
 
-/**
- * Controleur webhook pour les notifications Stripe (Visa/MasterCard).
- *
- * Validation Webhook Stripe (Anti-fraude obligatoire):
- * ① stripe.webhooks.constructEvent(rawBody, sig, STRIPE_WEBHOOK_SECRET)
- * ② Si erreur de signature → HTTP 400 + log Sentry
- * ③ Events a ecouter :
- *   → payment_intent.succeeded   : activer/prolonger l'abonnement
- *   → payment_intent.payment_failed : marquer Payment FAILED + notifier
- *
- * Idempotence Stripe :
- * → Verifier si Payment.stripePaymentIntentId existe deja en base avec status SUCCESS
- * → Si oui : return HTTP 200 immediatement (aucune modification)
- * → Si non : creer + mettre a jour l'acces tenant
- */
 @ApiTags('Payments Webhooks')
 @Controller('payments/webhooks/stripe')
 export class StripeWebhookController {
+  private readonly logger = new Logger(StripeWebhookController.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
     private readonly stripePaymentsService: StripePaymentsService,
   ) {}
 
-  /**
-   * Recoit les evenements Stripe apres verification de signature.
-   * Route publique protegee par verification de signature Stripe.
-   *
-   * @param request - Requete Express avec rawBody pour validation
-   * @param signature - Signature Stripe-Signature du header
-   * @returns Statut de traitement du webhook
-   */
   @Public()
   @Post()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Webhook Stripe carte bancaire' })
-  @ApiResponse({ status: 200, description: 'Webhook traite avec succes' })
-  @ApiResponse({ status: 400, description: 'Signature invalide' })
+  @ApiResponse({ status: 200, description: 'Webhook traité avec succès' })
   async handleWebhook(
     @Req() request: RequestWithRawBody,
     @Headers('stripe-signature') signature: string | undefined,
   ): Promise<{ received: true; status: string }> {
     if (!request.rawBody || !signature) {
-      throw new BadRequestException({
-        error: 'WEBHOOK_INVALID',
-        message: 'Signature Stripe manquante.',
-      });
+      throw new BadRequestException('Signature Stripe manquante.');
     }
 
     let event: Stripe.Event;
@@ -66,10 +41,7 @@ export class StripeWebhookController {
     try {
       event = this.stripePaymentsService.constructWebhookEvent(request.rawBody, signature);
     } catch {
-      throw new BadRequestException({
-        error: 'WEBHOOK_INVALID',
-        message: 'Signature Stripe invalide.',
-      });
+      throw new BadRequestException('Signature Stripe invalide.');
     }
 
     if (event.type === 'payment_intent.succeeded') {
@@ -87,44 +59,31 @@ export class StripeWebhookController {
     return { received: true, status: 'IGNORED' };
   }
 
-  /**
-   * Active l'abonnement lie a un PaymentIntent Stripe reussi.
-   * Verifie l'idempotence avant traitement.
-   *
-   * @param paymentIntent - PaymentIntent Stripe succeeded
-   */
   private async handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
-    const paymentId = paymentIntent.metadata.paymentId;
+    const { paymentId, tenantId } = paymentIntent.metadata;
 
-    if (!paymentId) {
-      return;
-    }
+    if (!paymentId || !tenantId) return;
 
-    // Idempotence: verifier si le PaymentIntent a deja ete traite
+    // 1. Idempotence sécurisée : On utilise l'ID unique du paiement (paymentId) qui existe forcément
     const existingPayment = await this.prisma.payment.findUnique({
-      where: { stripePaymentIntentId: paymentIntent.id },
-      select: { id: true, status: true },
+      where: { id: paymentId },
     });
 
-    if (existingPayment?.status === PaymentStatus.SUCCESS) {
-      return;
-    }
+    if (existingPayment?.status === PaymentStatus.SUCCESS) return;
 
+    // 2. Traitement centralisé
+    // Cette méthode de ton PaymentsService s'occupe DÉJÀ de passer le statut à SUCCESS,
+    // de basculer le tenant en ACTIVE, de calculer la date d'expiration exacte,
+    // et de déclencher les e-mails / notifications.
     await this.paymentsService.markPaymentSuccess(paymentId, paymentIntent.id);
+    
+    this.logger.log(`[Stripe Webhook] Flux de paiement complété avec succès pour le tenant ${tenantId}`);
   }
 
-  /**
-   * Marque le paiement lie comme echoue.
-   *
-   * @param paymentIntent - PaymentIntent Stripe failed
-   */
   private async handlePaymentFailed(paymentIntent: Stripe.PaymentIntent): Promise<void> {
-    const paymentId = paymentIntent.metadata.paymentId;
-
-    if (!paymentId) {
-      return;
+    const { paymentId } = paymentIntent.metadata;
+    if (paymentId) {
+      await this.paymentsService.markPaymentFailed(paymentId);
     }
-
-    await this.paymentsService.markPaymentFailed(paymentId);
   }
 }

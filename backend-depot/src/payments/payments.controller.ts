@@ -4,14 +4,36 @@ import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagg
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Public } from '../auth/decorators/public.decorator'; // Utilise ton décorateur Public existant
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  /**
+   * Initialize payment for Site Vitrine (public endpoint)
+   * Used by the pricing page to initiate NotchPay payment
+   */
+  @Public()
+  @Post('initialize')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Initialiser un paiement NotchPay pour Site Vitrine' })
+  @ApiResponse({ status: 201, description: 'Paiement initié avec succès.' })
+  @ApiResponse({ status: 400, description: 'Données de paiement invalides.' })
+  async initializeSiteVitrinePayment(@Body() dto: InitializePaymentDto) {
+    return this.paymentsService.initializeSiteVitrinePayment({
+      tenantId: dto.tenantId,
+      email: dto.email,
+      plan: dto.plan,
+      amount: dto.amount,
+      currency: dto.currency,
+      channel: dto.channel,
+    });
+  }
 
   /**
    * Crée un paiement en attente avant confirmation via NotchPay/Campay.
@@ -46,13 +68,13 @@ export class PaymentsController {
   /**
    * Webhook global ou NotchPay pour capturer les confirmations de transaction.
    * Doit être public car appelé directement par le serveur NotchPay/Campay.
+   * Includes signature verification for security.
    */
-  @Public() // Court-circuite le JwtAuthGuard global s'il est configuré
+  @Public()
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Capture le webhook de confirmation de paiement standard' })
   async handleWebhook(@Body() payload: any, @Req() req: any) {
-    // On extrait la signature si nécessaire pour validation dans le service
     const signature = req.headers['x-notchpay-signature'] || req.headers['signature'];
     return this.paymentsService.handleWebhookNotification(payload, signature);
   }

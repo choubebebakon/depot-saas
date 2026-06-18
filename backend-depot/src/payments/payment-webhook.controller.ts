@@ -87,7 +87,7 @@ export class PaymentWebhookController {
   }
 
   private assertValidSignature(request: RequestWithRawBody, signature: string | undefined): void {
-    const hashKey = this.notchPayService.getWebhookHashKey();
+    const hashKey = this.notchPayService.getWebhookSecret();
     const payload = request.rawBody?.toString('utf8') ?? JSON.stringify(request.body);
 
     if (!payload || !signature) {
