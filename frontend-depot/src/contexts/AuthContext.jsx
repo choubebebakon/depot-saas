@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -14,7 +14,6 @@ function loadStoredUser() {
         const parsedUser = JSON.parse(savedUser);
         api.defaults.headers.common.Authorization = `Bearer ${token}`;
 
-        // Sync gestock_metier from stored user
         if (parsedUser?.metier) {
             localStorage.setItem('gestock_metier', parsedUser.metier);
         }
@@ -30,26 +29,38 @@ function loadStoredUser() {
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(loadStoredUser);
-    // FIX M4 : Vrai état de chargement initialisé à true si un token existe (en attente de validation)
     const [loading, setLoading] = useState(!!localStorage.getItem('depot_token'));
+
+    // 🔥 AJOUT : Fonction pour rafraîchir instantanément les infos de l'utilisateur depuis le serveur
+    const refreshUser = useCallback(async () => {
+        const token = localStorage.getItem('depot_token');
+        if (!token) return null;
+        
+        try {
+            const response = await api.get('/auth/me');
+            const userData = response.data;
+            
+            localStorage.setItem('depot_user', JSON.stringify(userData));
+            if (userData?.metier) {
+                localStorage.setItem('gestock_metier', userData.metier);
+            }
+            setUser(userData);
+            return userData;
+        } catch (error) {
+            console.error('[AuthContext] Échec du rafraîchissement du profil:', error);
+            return null;
+        }
+    }, []);
 
     useEffect(() => {
         const verifyAuth = async () => {
             const token = localStorage.getItem('depot_token');
             if (token) {
                 try {
-                    // On profite du boot pour rafraîchir le profil et le statut de l'abonnement du tenant
-                    const response = await api.get('/auth/me');
-                    const userData = response.data;
-                    
-                    localStorage.setItem('depot_user', JSON.stringify(userData));
-                    if (userData?.metier) {
-                        localStorage.setItem('gestock_metier', userData.metier);
-                    }
-                    setUser(userData);
+                    // On utilise le refreshUser ici aussi pour éviter la duplication de code
+                    await refreshUser();
                 } catch (error) {
                     console.error('[AuthContext] Session expirée ou invalide au démarrage:', error);
-                    // Si l'API renvoie une erreur (ex: token expiré), on nettoie tout
                     localStorage.removeItem('depot_token');
                     localStorage.removeItem('depot_user');
                     localStorage.removeItem('gestock_metier');
@@ -61,7 +72,7 @@ export function AuthProvider({ children }) {
         };
 
         verifyAuth();
-    }, []);
+    }, [refreshUser]);
 
     const login = async (email, password) => {
         const response = await api.post('/auth/login', { email, password });
@@ -98,10 +109,12 @@ export function AuthProvider({ children }) {
     return (
         <AuthContext.Provider value={{
             user, login, logout, loading,
+            refreshUser, // 👈 On partage la fonction magique ici
             tenantId: user?.tenantId || null,
             role: user?.role || null,
             metier: user?.metier || null,
             nomEntreprise: user?.nomEntreprise || null,
+            planType: user?.planType || user?.plan || 'FREE', // 👈 Sécurité pour centraliser le planType
             isAuthenticated: !!user,
         }}>
             {children}

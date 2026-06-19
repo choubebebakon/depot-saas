@@ -78,11 +78,17 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier, d
 
   const mutation = useMutation({
     mutationFn: async (data) => {
+      // Nettoyage sécurisé pour Prisma
       const payload = {
-        ...data,
-        plafondCredit: Number(data.plafondCredit),
-        depotId: data.depotId || depotId,
+        nom: data.nom,
+        telephone: data.telephone || null,
+        email: data.email || null,
+        adresse: data.adresse || null,
+        plafondCredit: Number(data.plafondCredit) || 0,
+        depotId: (data.depotId && data.depotId !== "") ? data.depotId : null,
+        notes: data.notes || null,
       };
+
       if (edit) {
         const r = await api.patch(`${prefix}/clients/${edit.id}`, payload);
         return r.data;
@@ -93,9 +99,7 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier, d
     },
     onSuccess: () => {
       const clientQueryKey = metier ? [`${metier}-clients`] : ['clients'];
-      const dashboardQueryKey = metier ? [`${metier}-dashboard`] : ['dashboard'];
       queryClient.invalidateQueries({ queryKey: clientQueryKey });
-      queryClient.invalidateQueries({ queryKey: dashboardQueryKey });
       notif.success(edit ? 'Client mis à jour' : 'Client créé avec succès');
       onSuccess?.();
       onClose();
@@ -105,128 +109,38 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier, d
     }
   });
 
-  const onSubmit = (data) => {
-    mutation.mutate(data);
-  };
-
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier le client' : '👤 Nouveau client'} loading={mutation.isPending} submitIcon={edit ? '💾' : '➕'} submitLabel={edit ? 'Modifier' : 'Créer'}>
-      <Controller
-        name="nom"
-        control={control}
-        render={({ field }) => (
-          <FormField
-            label="Nom"
-            name="nom"
-            value={field.value}
-            onChange={(e) => field.onChange(e.target.value)}
-            required
-            error={errors.nom?.message}
-            placeholder="Nom complet du client"
-          />
-        )}
-      />
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(mutation.mutate)} title={edit ? '✏️ Modifier le client' : '👤 Nouveau client'} loading={mutation.isPending} submitIcon={edit ? '💾' : '➕'} submitLabel={edit ? 'Modifier' : 'Créer'}>
+      <Controller name="nom" control={control} render={({ field }) => (
+        <FormField label="Nom" name="nom" value={field.value} onChange={(e) => field.onChange(e.target.value)} required error={errors.nom?.message} placeholder="Nom complet du client" />
+      )} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <Controller
-          name="telephone"
-          control={control}
-          render={({ field }) => (
-            <FormField
-              label="Téléphone"
-              name="telephone"
-              type="tel"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              error={errors.telephone?.message}
-              placeholder="6XXXXXXXX"
-              hint="Format camerounais : 6XXXXXXXX"
-            />
-          )}
-        />
-        <Controller
-          name="email"
-          control={control}
-          render={({ field }) => (
-            <FormField
-              label="Email"
-              name="email"
-              type="email"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              error={errors.email?.message}
-              placeholder="client@exemple.com"
-            />
-          )}
-        />
+        <Controller name="telephone" control={control} render={({ field }) => (
+          <FormField label="Téléphone" name="telephone" type="tel" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.telephone?.message} placeholder="6XXXXXXXX" />
+        )} />
+        <Controller name="email" control={control} render={({ field }) => (
+          <FormField label="Email" name="email" type="email" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.email?.message} placeholder="client@exemple.com" />
+        )} />
       </div>
       <div className="mt-4">
-        <Controller
-          name="adresse"
-          control={control}
-          render={({ field }) => (
-            <FormField
-              label="Adresse"
-              name="adresse"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              placeholder="Adresse complète"
-              error={errors.adresse?.message}
-            />
-          )}
-        />
+        <Controller name="adresse" control={control} render={({ field }) => (
+          <FormField label="Adresse" name="adresse" value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="Adresse complète" error={errors.adresse?.message} />
+        )} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <Controller
-          name="plafondCredit"
-          control={control}
-          render={({ field }) => (
-            <FormField
-              label="Plafond crédit"
-              name="plafondCredit"
-              type="number"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              min={0}
-              unit="FCFA"
-              error={errors.plafondCredit?.message}
-            />
-          )}
-        />
+        <Controller name="plafondCredit" control={control} render={({ field }) => (
+          <FormField label="Plafond crédit" name="plafondCredit" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={0} unit="FCFA" error={errors.plafondCredit?.message} />
+        )} />
         {depots.length > 0 && (
-          <Controller
-            name="depotId"
-            control={control}
-            render={({ field }) => (
-              <FormField
-                label="Dépôt"
-                name="depotId"
-                type="select"
-                value={field.value}
-                onChange={(e) => field.onChange(e.target.value)}
-                options={depots.map(d => ({ value: d.id, label: d.nom }))}
-                error={errors.depotId?.message}
-              />
-            )}
-          />
+          <Controller name="depotId" control={control} render={({ field }) => (
+            <FormField label="Dépôt" name="depotId" type="select" value={field.value} onChange={(e) => field.onChange(e.target.value)} options={depots.map(d => ({ value: d.id, label: d.nom }))} error={errors.depotId?.message} />
+          )} />
         )}
       </div>
       <div className="mt-4">
-        <Controller
-          name="notes"
-          control={control}
-          render={({ field }) => (
-            <FormField
-              label="Notes"
-              name="notes"
-              type="textarea"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              rows={2}
-              placeholder="Notes optionnelles..."
-              error={errors.notes?.message}
-            />
-          )}
-        />
+        <Controller name="notes" control={control} render={({ field }) => (
+          <FormField label="Notes" name="notes" type="textarea" value={field.value} onChange={(e) => field.onChange(e.target.value)} rows={2} placeholder="Notes optionnelles..." error={errors.notes?.message} />
+        )} />
       </div>
     </FormModal>
   );

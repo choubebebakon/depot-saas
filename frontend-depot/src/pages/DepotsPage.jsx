@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useData } from '../hooks/useData';
 import { useNotif } from '../context/NotifContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,12 +7,21 @@ import { useDepot } from '../contexts/DepotContext';
 import api from '../api/axios';
 import {
   Plus, Edit, Trash2, MapPin, Building2, Save, X,
-  AlertTriangle, RefreshCw, Hash
+  AlertTriangle, RefreshCw, Hash, Crown
 } from 'lucide-react';
+
+// 🔥 CONFIGURATION DES LIMITES RÉELLES DE GESTOCK
+const PLAN_DEPOT_LIMITS = {
+  FREE: 1,
+  SOLO: 1,
+  PME: 10,       // 👈 Ton offre PME donne droit à 10 dépôts max !
+  PREMIUM: 20,
+  ENTERPRISE: Infinity
+};
 
 export default function DepotsPage() {
   const { metier: metierParam } = useParams();
-  const { metier: metierAuth, tenantId } = useAuth();
+  const { metier: metierAuth, tenantId, planType, refreshUser } = useAuth(); // 👈 Récupération de planType et refreshUser
   const { depotActif, changerDepot } = useDepot();
   const metier = metierParam || metierAuth;
   const prefix = metier ? metier.toLowerCase().replace(/_/g, '-') : '';
@@ -23,12 +32,22 @@ export default function DepotsPage() {
     nom: '', adresse: '', emplacement: '', codePrefix: 'DEP'
   });
 
-  const { success, error: notifError } = useNotif();
+  const { success, error: notifError, info } = useNotif();
 
-  const { data: depots = [],
-    loading,
-    refetch,
-   } = useData('/depots', { params: { tenantId }, enabled: !!tenantId });
+  // Chargement des dépôts du tenant actuel
+  const { data: depots = [], loading, refetch } = useData('/depots', { params: { tenantId }, enabled: !!tenantId });
+
+  // 🔥 ACTION : Au chargement de la page, on va vérifier silencieusement en base de données si le plan a changé
+  useEffect(() => {
+    if (refreshUser) {
+      refreshUser();
+    }
+  }, [refreshUser]);
+
+  // Calcul dynamique de la limite actuelle de l'utilisateur
+  const currentPlan = planType || 'FREE';
+  const maxAllowedDepots = PLAN_DEPOT_LIMITS[currentPlan] ?? 1;
+  const isLimitReached = depots.length >= maxAllowedDepots;
 
   const openModal = (depot = null) => {
     if (depot) {
@@ -37,11 +56,17 @@ export default function DepotsPage() {
         nom: depot.nom, adresse: depot.adresse,
         emplacement: depot.emplacement, codePrefix: depot.codePrefix || 'DEP'
       });
+      setIsModalOpen(true);
     } else {
+      // Si c'est une création, on vérifie d'abord la limite côté client
+      if (isLimitReached) {
+        notifError(`Votre formule actuelle (${currentPlan}) est limitée à ${maxAllowedDepots} dépôt(s). Veuillez améliorer votre abonnement.`, 'Limite atteinte');
+        return;
+      }
       setEditingDepot(null);
       setFormData({ nom: '', adresse: '', emplacement: '', codePrefix: 'DEP' });
+      setIsModalOpen(true);
     }
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -78,6 +103,27 @@ export default function DepotsPage() {
 
   return (
     <div className="p-6 space-y-8 bg-slate-900 min-h-screen text-slate-200">
+      
+      {/* 📊 BANDEAU DE STATUT D'ABONNEMENT ET QUOTA */}
+      <div className="bg-slate-800/40 border border-slate-700/60 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-amber-500/10 text-amber-400 rounded-xl flex items-center justify-center">
+            <Crown size={20} />
+          </div>
+          <div>
+            <p className="font-bold text-white text-xs uppercase tracking-wider">Formule Actuelle</p>
+            <p className="text-slate-400 font-medium">Plan : <span className="text-amber-400 font-black">{currentPlan}</span></p>
+          </div>
+        </div>
+
+        <div className="text-center sm:text-right">
+          <p className="font-bold text-white text-xs uppercase tracking-wider">Quota d'utilisation</p>
+          <p className="text-slate-400 font-medium">
+            <span className="text-white font-black">{depots.length}</span> sur <span className="text-indigo-400 font-black">{maxAllowedDepots === Infinity ? 'Illimité' : maxAllowedDepots}</span> dépôt(s) activé(s)
+          </p>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
@@ -88,15 +134,31 @@ export default function DepotsPage() {
             Configurez vos entrepôts de stockage et points de vente physiques.
           </p>
         </div>
+
+        {/* Bouton stylisé ou bloqué selon la limite */}
         <button
           onClick={() => openModal()}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-6 py-3 rounded-2xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+          disabled={!editingDepot && isLimitReached}
+          className={`font-black px-6 py-3 rounded-2xl transition-all shadow-lg flex items-center gap-2 ${
+            isLimitReached 
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 shadow-none' 
+              : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
+          }`}
         >
           <Plus size={20} />
           Nouveau Dépôt
         </button>
       </div>
 
+      {/* Message d'avertissement si quota atteint */}
+      {isLimitReached && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 text-amber-400 text-xs font-semibold">
+          <AlertTriangle size={18} className="shrink-0" />
+          <span>Vous avez atteint la limite maximale de votre plan actuel ({maxAllowedDepots} dépôt). Pour débloquer plus d'emplacements, passez à une offre supérieure.</span>
+        </div>
+      )}
+
+      {/* Grille des dépôts */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           [1, 2, 3].map(i => (
@@ -178,6 +240,7 @@ export default function DepotsPage() {
         ))}
       </div>
 
+      {/* Modal d'ajout / modification */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={closeModal} />

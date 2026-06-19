@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'; import api from '../../api';
+import { useState, useEffect, useCallback } from 'react'; 
+import api from '../../api';
 import FormModal from '../../shared/components/forms/FormModal';
 import ConfirmModal from '../../shared/components/forms/ConfirmModal';
+import { useTenant } from '../../hooks/useTenant'; // 🆕 1. Import du hook (Ajuste le chemin si besoin)
 
 const ROLE_OPTIONS = [
   { value: 'GERANT', label: 'Gérant' },
@@ -12,11 +14,13 @@ const ROLE_OPTIONS = [
 ];
 
 export default function UtilisateursPage() {
+  const { tenant } = useTenant(); // 🆕 2. Récupération de l'entreprise connectée
+
   const [users, setUsers] = useState([]);
   const [depots, setDepots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ nom: '', prenom: '', email: '', password: '', role: 'GERANT', depotId: '' });
+  const [form, setForm] = useState({ nom: '', prenom: '', email: '', password: '', role: 'GERANT', depotId: '', tenantId: '' });
   const [formLoading, setFormLoading] = useState(false);
   const [notif, setNotif] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -33,19 +37,25 @@ export default function UtilisateursPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      // 🆕 On n'a plus besoin d'envoyer le tenantId, le backend le devine tout seul via le Token
       const [u, d] = await Promise.all([
         api.get(`/${apiBase}/utilisateurs`).catch(() => ({ data: [] })),
         api.get('/depots').catch(() => ({ data: [] })),
       ]);
       setUsers(u.data?.data || u.data || []);
       setDepots(d.data?.data || d.data || []);
-    } catch { setUsers([]); } finally { setLoading(false); }
+    } catch { 
+      setUsers([]); 
+    } finally { 
+      setLoading(false); 
+    }
   }, [apiBase]);
 
   useEffect(() => { load(); }, [load]);
 
   const openCreate = () => {
-    setForm({ nom: '', prenom: '', email: '', password: '', role: 'GERANT', depotId: '' });
+    // 🆕 5. On assigne automatiquement le nouvel utilisateur à l'entreprise en cours
+    setForm({ nom: '', prenom: '', email: '', password: '', role: 'GERANT', depotId: '', tenantId: tenant?.id });
     setFormOpen(true);
   };
 

@@ -46,6 +46,10 @@ export const supermarcheApi = {
   getStock: (params) =>
     api.get('/supermarche/stock', { ...getTenantHeaders(), params }),
 
+  // Ventes
+  createVente: (data) =>
+    api.post('/supermarche/ventes', data, getTenantHeaders()),
+
   // Codes-barres
   scanCodeBarres: (code) =>
     api.get(`/supermarche/codes-barres/scan/${code}`, getTenantHeaders()),

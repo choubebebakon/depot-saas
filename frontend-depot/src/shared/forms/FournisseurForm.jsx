@@ -9,17 +9,12 @@ import FormModal from '../components/forms/FormModal';
 import FormField from '../components/forms/FormField';
 
 const fournisseurSchema = z.object({
-  nom: z.string().min(2, 'Le nom du fournisseur est obligatoire (min 2 caractères)'),
-  telephone: z.string().refine(
-    val => !val || /^(\+?237)?[6][0-9]{8}$/.test(val.replace(/\s/g, '')),
-    { message: 'Format attendu : 6XXXXXXXX ou 237XXXXXXXXX' }
-  ).optional().or(z.literal('')),
-  email: z.string().refine(
-    val => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
-    { message: 'Format d\'email invalide' }
-  ).optional().or(z.literal('')),
+  nom: z.string().min(2, 'Le nom est obligatoire'),
+  telephone: z.string().optional().or(z.literal('')),
+  email: z.string().email('Format email invalide').optional().or(z.literal('')),
   adresse: z.string().optional().or(z.literal('')),
-  soldeInitial: z.coerce.number().min(0, 'Le solde doit être positif ou nul'),
+  // Force la conversion en nombre dès la validation Zod
+  soldeInitial: z.coerce.number().min(0, 'Le solde doit être positif'),
   depotId: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
 });
@@ -28,7 +23,7 @@ export default function FournisseurForm({ isOpen, onClose, onSuccess, edit, meti
   const queryClient = useQueryClient();
   const notif = useNotif();
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(fournisseurSchema),
     defaultValues: {
       nom: '',
@@ -50,18 +45,22 @@ export default function FournisseurForm({ isOpen, onClose, onSuccess, edit, meti
     enabled: !!metier && isOpen,
   });
 
-  useEffect(() => {
+  // Mise à jour des valeurs lors de l'ouverture ou du changement d'édition
+ useEffect(() => {
+  if (isOpen) {
     if (edit) {
+      // Si on modifie, on met les données existantes
       reset({
         nom: edit.nom || '',
         telephone: edit.telephone || '',
         email: edit.email || '',
         adresse: edit.adresse || '',
-        soldeInitial: edit.soldeInitial || 0,
+        soldeInitial: edit.solde || edit.soldeInitial || 0, // On accepte les deux noms
         depotId: edit.depotId || depotId || '',
         notes: edit.notes || '',
       });
     } else {
+      // Si on crée, on réinitialise à vide (sauf le depotId par défaut)
       reset({
         nom: '',
         telephone: '',
@@ -72,32 +71,23 @@ export default function FournisseurForm({ isOpen, onClose, onSuccess, edit, meti
         notes: '',
       });
     }
-  }, [edit, isOpen, depotId, reset]);
+  }
+}, [isOpen, edit, depotId, reset]);
 
   const prefix = metier ? `/${metier}` : '';
 
   const mutation = useMutation({
     mutationFn: async (data) => {
-      const payload = {
-        ...data,
-        soldeInitial: Number(data.soldeInitial),
-        depotId: data.depotId || depotId,
-      };
+      // Conversion explicite en nombre
+      const payload = { ...data, soldeInitial: Number(data.soldeInitial) };
       if (edit) {
-        const r = await api.patch(`${prefix}/fournisseurs/${edit.id}`, payload);
-        return r.data;
-      } else {
-        const r = await api.post(`${prefix}/fournisseurs`, payload);
-        return r.data;
+        return (await api.patch(`${prefix}/fournisseurs/${edit.id}`, payload)).data;
       }
+      return (await api.post(`${prefix}/fournisseurs`, payload)).data;
     },
     onSuccess: () => {
-      // Préserver compatibilité depot-boissons : utiliser 'depot-fournisseurs' pour metier='depot-boissons'
-      const fournisseurQueryKey = metier === 'depot-boissons' ? ['depot-fournisseurs'] : metier ? [`${metier}-fournisseurs`] : ['fournisseurs'];
-      const dashboardQueryKey = metier === 'depot-boissons' ? ['depot-dashboard'] : metier ? [`${metier}-dashboard`] : ['dashboard'];
-      queryClient.invalidateQueries({ queryKey: fournisseurQueryKey });
-      queryClient.invalidateQueries({ queryKey: dashboardQueryKey });
-      notif.success(edit ? 'Fournisseur mis à jour' : 'Fournisseur créé avec succès');
+      queryClient.invalidateQueries({ queryKey: [metier, 'fournisseurs'] });
+      notif.success(edit ? 'Fournisseur mis à jour' : 'Fournisseur créé');
       onSuccess?.();
       onClose();
     },
@@ -106,91 +96,53 @@ export default function FournisseurForm({ isOpen, onClose, onSuccess, edit, meti
     }
   });
 
-  const onSubmit = (data) => {
-    mutation.mutate(data);
-  };
-
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier le fournisseur' : '🏭 Nouveau fournisseur'} loading={mutation.isPending} submitIcon={edit ? '💾' : '➕'} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      onSubmit={handleSubmit((d) => mutation.mutate(d))} 
+      title={edit ? '✏️ Modifier le fournisseur' : '🏭 Nouveau fournisseur'} 
+      loading={mutation.isPending}
+    >
       <Controller
         name="nom"
         control={control}
-        render={({ field }) => (
-          <FormField
-            label="Nom"
-            name="nom"
-            value={field.value}
-            onChange={(e) => field.onChange(e.target.value)}
-            required
-            error={errors.nom?.message}
-            placeholder="Nom de l'entreprise ou du fournisseur"
-          />
-        )}
+        render={({ field }) => <FormField label="Nom" {...field} error={errors.nom?.message} required />}
       />
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <Controller
           name="telephone"
           control={control}
-          render={({ field }) => (
-            <FormField
-              label="Téléphone"
-              name="telephone"
-              type="tel"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              error={errors.telephone?.message}
-              placeholder="6XXXXXXXX"
-              hint="Format camerounais"
-            />
-          )}
+          render={({ field }) => <FormField label="Téléphone" type="tel" {...field} error={errors.telephone?.message} />}
         />
         <Controller
           name="email"
           control={control}
-          render={({ field }) => (
-            <FormField
-              label="Email"
-              name="email"
-              type="email"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              error={errors.email?.message}
-              placeholder="fournisseur@exemple.com"
-            />
-          )}
+          render={({ field }) => <FormField label="Email" type="email" {...field} error={errors.email?.message} />}
         />
       </div>
+
       <div className="mt-4">
         <Controller
           name="adresse"
           control={control}
-          render={({ field }) => (
-            <FormField
-              label="Adresse"
-              name="adresse"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              placeholder="Adresse complète"
-              error={errors.adresse?.message}
-            />
-          )}
+          render={({ field }) => <FormField label="Adresse" {...field} error={errors.adresse?.message} />}
         />
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <Controller
           name="soldeInitial"
           control={control}
           render={({ field }) => (
-            <FormField
-              label="Solde initial"
-              name="soldeInitial"
-              type="number"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              min={0}
-              unit="FCFA"
-              error={errors.soldeInitial?.message}
-              hint="Solde fournisseur au démarrage"
+            <FormField 
+              label="Solde initial" 
+              type="number" 
+              {...field} 
+              // S'assure que le changement renvoie un nombre
+              onChange={(e) => field.onChange(Number(e.target.value))} 
+              error={errors.soldeInitial?.message} 
             />
           )}
         />
@@ -201,34 +153,14 @@ export default function FournisseurForm({ isOpen, onClose, onSuccess, edit, meti
             render={({ field }) => (
               <FormField
                 label="Dépôt"
-                name="depotId"
                 type="select"
-                value={field.value}
-                onChange={(e) => field.onChange(e.target.value)}
+                {...field}
                 options={depots.map(d => ({ value: d.id, label: d.nom }))}
                 error={errors.depotId?.message}
               />
             )}
           />
         )}
-      </div>
-      <div className="mt-4">
-        <Controller
-          name="notes"
-          control={control}
-          render={({ field }) => (
-            <FormField
-              label="Notes"
-              name="notes"
-              type="textarea"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              rows={2}
-              placeholder="Notes optionnelles..."
-              error={errors.notes?.message}
-            />
-          )}
-        />
       </div>
     </FormModal>
   );

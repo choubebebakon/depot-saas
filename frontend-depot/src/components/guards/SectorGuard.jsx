@@ -9,19 +9,19 @@ const SECTOR_ROUTES = {
   RESTAURANT:        { prefix: '/restaurant',   label: 'Restaurant' },
   TELEPHONIE:        { prefix: '/telephonie',   label: 'Téléphonie' },
   SUPERMARCHE:       { prefix: '/supermarche',  label: 'Supermarché' },
-  CIMENT_BTP:        { prefix: '/ciment-btp',   label: 'Ciment BTP' },
+  CIMENT_BTP:        { prefix: '/ciment-btp',   label: 'Ciment BTP' }, // Aligné
   PRESSING:          { prefix: '/pressing',     label: 'Pressing' },
-  GARAGE_AUTOMOBILE: { prefix: '/garage',       label: 'Garage' },
+  GARAGE:            { prefix: '/garage',       label: 'Garage' },
   ELEVAGE:           { prefix: '/elevage',      label: 'Élevage' },
-  SALON_BEAUTE:      { prefix: '/salon',        label: 'Salon' },
+  SALON:             { prefix: '/salon',        label: 'Salon' },
   PARFUMERIE:        { prefix: '/parfumerie',   label: 'Parfumerie' },
   BOULANGERIE:       { prefix: '/boulangerie',  label: 'Boulangerie' },
-  GLACIER_SNACK:     { prefix: '/glacier',      label: 'Glacier' },
+  GLACIER:           { prefix: '/glacier',      label: 'Glacier' },
   LIBRAIRIE:         { prefix: '/librairie',    label: 'Librairie' },
   CLINIQUE:          { prefix: '/clinique',     label: 'Clinique' },
   TRANSPORT:         { prefix: '/transport',    label: 'Transport' },
   IMMOBILIER:        { prefix: '/immobilier',   label: 'Immobilier' },
-  HOTEL:             { prefix: '/hotel',        label: 'Hôtel' },
+  HOTELLERIE:        { prefix: '/hotel',        label: 'Hôtel' }, // Aligné avec backend
 };
 
 export function getSectorPrefix(metier) {

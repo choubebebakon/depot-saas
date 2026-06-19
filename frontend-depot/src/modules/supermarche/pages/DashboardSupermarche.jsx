@@ -116,9 +116,9 @@ export default function DashboardSupermarche() {
       </div>
 
       {/* Alertes */}
-      {ALERTES.length > 0 && (
+      {alertes.length > 0 && (
         <div className="flex gap-3 flex-wrap">
-          {ALERTES.map((a, i) => (
+          {alertes.map((a, i) => (
             <div key={i} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border ${
               a.color === 'red' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
               a.color === 'amber' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // 👈 Ajout de useNavigate pour une navigation fluide
 import api from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../shared/hooks/usePermission';
@@ -11,8 +11,6 @@ const PLAN_DEPOT_LIMITS = {
   PME: 3, PREMIUM: 5, ENTERPRISE: 20, UNLIMITED: Infinity,
 };
 
-const ABONNEMENT_URL = import.meta.env.VITE_ABONNEMENT_URL || 'https://gestock.app/tarifs';
-
 const ADMIN_PERMS = {
   PATRON: { canView: ['*'], canCreate: ['*'], canEdit: ['*'], canDelete: ['*'] },
   GERANT: { canView: ['depots', 'utilisateurs'], canCreate: ['depots'], canEdit: [], canDelete: ['depots'] },
@@ -21,9 +19,13 @@ const ADMIN_PERMS = {
 export default function DepotsPage() {
   const { metier: metierParam } = useParams();
   const { metier: metierCtx, user } = useAuth();
+  const navigate = useNavigate(); // 👈 Pour rediriger proprement sans recharger la page
+  
   const metier = metierParam || metierCtx || localStorage.getItem('gestock_metier') || '';
   const apiBase = metier.toLowerCase().replace(/_/g, '-');
-  const planType = user?.planType || 'FREE';
+  
+  // 🔥 CORRECTION : On vérifie 'planType' OU 'plan' selon ce que renvoie ton JWT
+  const planType = user?.planType || user?.plan || 'FREE';
   const maxDepots = PLAN_DEPOT_LIMITS[planType] ?? 1;
   const perm = usePermission(ADMIN_PERMS, 'depots');
 
@@ -186,10 +188,13 @@ export default function DepotsPage() {
               <span className="text-slate-600">|</span>
               <span>Dépôts : <strong className="text-red-400">{quotaAlert.current}/{quotaAlert.limit}</strong></span>
             </div>
-            <a href={ABONNEMENT_URL} target="_blank" rel="noopener noreferrer"
-              className="inline-block bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-4 py-2 rounded-lg text-xs transition-colors">
+            {/* 🔥 CORRECTION : Utilisation d'un bouton de navigation interne fluide au lieu du lien mort */}
+            <button 
+              type="button"
+              onClick={() => { setFormOpen(false); navigate('/depot/abonnement'); }}
+              className="w-full text-center bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-4 py-2 rounded-lg text-xs transition-colors">
               🚀 Mettre à niveau mon offre
-            </a>
+            </button>
           </div>
         )}
         {!quotaAlert && (

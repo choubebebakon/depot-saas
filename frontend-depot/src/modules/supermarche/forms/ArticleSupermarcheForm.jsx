@@ -235,13 +235,51 @@ export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edi
         />
       </div>
 
-      <div className="space-y-2 mt-4">
-        <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Code-barres</label>
-        <BarcodeScanner
-          onScan={(code) => setValue('codeBarres', code)}
-          placeholder="Saisir ou scanner le code-barres"
-          mode="both"
+      <div className="grid grid-cols-1 gap-4 mt-4">
+        <Controller
+          name="codeBarres"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Code-barres"
+              name="codeBarres"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              placeholder="Saisir le code-barres"
+              hint="Saisie manuelle ou scan direct"
+              error={errors.codeBarres?.message}
+            />
+          )}
         />
+        
+        {/* 🔥 TRUC DE SIUX : Le composant BarcodeScanner génère son propre <form>.
+          Pour casser la relation d'imbrication HTML interdite par React sans casser l'interface,
+          on utilise "display: contents" ou un isolement d'événement strict pour couper court aux erreurs.
+          On utilise également un formulaire factice local pour neutraliser le comportement du bouton de soumission s'il y en a un.
+        */}
+        <div 
+          className="p-4 bg-slate-900/40 rounded-xl border border-slate-700/40 isolation-auto"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault(); 
+              e.stopPropagation();
+            }
+          }}
+        >
+          <p className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">
+            Option alternative : Scanner / Douchette externe
+          </p>
+          
+          {/* On crée un environnement étanche pour le scanner */}
+          <div className="contents">
+            <BarcodeScanner
+              onScan={(code) => setValue('codeBarres', code, { shouldValidate: true })}
+              placeholder="Cliquez ici puis flashez l'article"
+              mode="both"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">

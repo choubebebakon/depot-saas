@@ -114,6 +114,12 @@ export default function StockPage() {
     }
   };
 
+  // Centralisation de la fermeture propre du formulaire
+  const handleCloseForm = () => {
+    setFormOpen(false);
+    setEditItem(null);
+  };
+
   return (
     <div className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -271,6 +277,7 @@ export default function StockPage() {
                   if (pNum > totalPages) return null;
                   return (
                     <button
+                       Goldman
                       key={pNum}
                       onClick={() => goToPage(pNum)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
@@ -294,14 +301,17 @@ export default function StockPage() {
         </div>
       )}
 
+      {/* Formulaire d'Article avec fermeture et remise à zéro propres */}
       <ArticleSupermarcheForm
         isOpen={formOpen}
-        onClose={() => setFormOpen(false)}
+        onClose={handleCloseForm}
         onSuccess={() => {
+          handleCloseForm();
           queryClient.invalidateQueries({ queryKey: ['supermarche-articles'] });
         }}
         edit={editItem}
       />
+
       <ConfirmModal
         isOpen={!!confirmDelete}
         onConfirm={handleDelete}

@@ -100,19 +100,44 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
 
   const isMixte = modePaiement === 'MIXTE';
 
-  const mutation = useMutation({
+ const mutation = useMutation({
     mutationFn: async (data) => {
+      // 1. 🔍 Extraction sécurisée du depotId depuis l'objet complexe 'depot_user'
+      const userString = localStorage.getItem('depot_user');
+      let extractedDepotId = null;
+      
+      if (userString) {
+        try {
+          const userData = JSON.parse(userString);
+          extractedDepotId = userData.depotId || userData.depot_id;
+        } catch (e) {
+          console.error("Erreur lors de l'analyse de depot_user dans le formulaire", e);
+        }
+      }
+
+      // 2. Construction du payload ultra-propre attendu par NestJS
       const payload = {
-        ...data,
-        remiseGlobale,
-        panier: data.panier.map(p => ({
+        clientId: data.clientId || undefined,
+        modePaiement: data.modePaiement,
+        remiseGlobale: Number(remiseGlobale || 0),
+        montantCash: data.montantCash ? Number(data.montantCash) : undefined,
+        montantOM: data.montantOM ? Number(data.montantOM) : undefined,
+        montantMoMo: data.montantMoMo ? Number(data.montantMoMo) : undefined,
+        total: Number(total),
+        
+        // 🏢 On utilise l'ID extrait ou celui passé par la prop
+        depotId: depotId || data.depotId || extractedDepotId,
+        
+        // 🛒 Le panier traduit en articles (déjà validé)
+        articles: data.panier.map(p => ({
           articleId: p.articleId,
-          quantite: p.quantite,
-          prixUnitaire: p.prixUnitaire,
-          remise: p.remise,
+          quantite: Number(p.quantite),
+          prixUnitaire: Number(p.prixUnitaire),
+          remise: Number(p.remise || 0),
         })),
-        total,
       };
+
+      // 3. Envoi au serveur
       const r = await api.post(`${prefix}/ventes`, payload);
       return r.data;
     },
@@ -128,7 +153,6 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
       notif.error(msg);
     }
   });
-
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier vente' : '💰 Nouvelle vente'} loading={mutation.isPending} size="xl" submitIcon="💵" submitLabel="Encaisser">
       {errors.panier?.message && (
