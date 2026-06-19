@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { StatutVente, TypeMouvement, NotifType } from '@prisma/client';
+import { StatutVente, TypeMouvement, NotifType, ModePaiement } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma.service';
 import { DlcService } from '../dlc/dlc.service';
@@ -26,7 +26,18 @@ export class VentesService {
 
   // 1. CRÉATION DE VENTE
   async createVente(dto: any, actor: { userId: string; email: string; role: string }) {
-    const { id, reference: clientRef, createdAt, depotId, tenantId, lignes, clientId, modePaiement, tourneeId } = dto;
+    const { 
+      id, 
+      reference: clientRef, 
+      createdAt, 
+      depotId, 
+      tenantId, 
+      lignes, 
+      clientId, 
+      modePaiement, 
+      tourneeId,
+      retoursConsigne 
+    } = dto;
 
     return await this.prisma.$transaction(async (tx) => {
       let totalVente = 0;
@@ -62,13 +73,14 @@ export class VentesService {
         reference = `FAC-${annee}-${String(count + 1).padStart(6, '0')}`;
       }
 
+      // Création de la vente (Statut PAYE par défaut pour le POS)
       const vente = await tx.vente.create({
         data: {
           id: id || undefined,
           reference,
           total: totalVente,
-          statut: StatutVente.ATTENTE,
-          modePaiement: modePaiement || 'CASH',
+          statut: StatutVente.PAYE,
+          modePaiement: modePaiement || ModePaiement.CASH,
           depotId,
           tenantId,
           createurId: actor.userId,
@@ -79,6 +91,50 @@ export class VentesService {
         },
         include: { lignes: { include: { article: true } }, client: true }
       });
+
+      // --- LOGIQUE ATOMIQUE : STOCKS ET MOUVEMENTS ---
+      for (const ligne of lignesData) {
+        // 1. Mise à jour physique du stock
+        await tx.stock.upsert({
+          where: { articleId_depotId: { articleId: ligne.articleId, depotId } },
+          update: { quantite: { decrement: ligne.quantite } },
+          create: { articleId: ligne.articleId, depotId, quantite: -ligne.quantite }
+        });
+
+        // 2. Création du Mouvement de Stock (Pour le Dashboard)
+        await tx.mouvementStock.create({
+          data: {
+            type: TypeMouvement.SORTIE_VENTE,
+            quantite: ligne.quantite,
+            articleId: ligne.articleId,
+            depotId,
+            tenantId,
+            motif: `Vente POS ${reference}`,
+          }
+        });
+      }
+
+      // --- LOGIQUE ATOMIQUE : CONSIGNES (RETOURS VIDES) ---
+      if (retoursConsigne && Array.isArray(retoursConsigne) && clientId) {
+        for (const retour of retoursConsigne) {
+          await tx.mouvementConsigne.create({
+            data: {
+              quantite: retour.quantite,
+              motif: `Retour vide sur vente ${reference}`,
+              estSortie: false, // C'est un retour, donc ce n'est pas une sortie
+              tenantId: tenantId,
+              typeConsigne: { connect: { id: retour.typeConsigneId } }
+            }
+          });
+
+          // Mise à jour du portefeuille consigne du client
+          await tx.portefeuilleConsigne.upsert({
+            where: { clientId_typeConsigneId: { clientId, typeConsigneId: retour.typeConsigneId } },
+            update: { quantite: { decrement: retour.quantite } },
+            create: { clientId, typeConsigneId: retour.typeConsigneId, quantite: -retour.quantite }
+          });
+        }
+      }
 
       // Audit remise
       const remiseTotale = lignes.reduce((acc: number, l: any) => acc + (l.remise || 0), 0);

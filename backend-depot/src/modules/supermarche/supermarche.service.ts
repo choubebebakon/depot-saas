@@ -1,18 +1,32 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { IsOptional, IsInt, Min, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
 export class PaginationDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   limit?: number = 20;
+
+  @IsOptional()
+  @IsString()
   search?: string;
 }
 
 export class CreateRayonDto {
   nom: string;
   couleur?: string;
-  ordre: number;
+  ordre?: number;
 }
 
 export class UpdateRayonDto {
@@ -157,20 +171,44 @@ export class SupermarcheService {
   // ── Rayons ──────────────────────────────────────────────────────────────────
 
   async findAllRayons(tenantId: string, pagination: PaginationDto) {
-    const page = Number(pagination.page) || 1;
-    const limit = Number(pagination.limit) || 20;
+    const page = Math.max(1, pagination?.page || 1);
+    const limit = Math.max(1, pagination?.limit || 20);
+    const search = pagination?.search;
     const skip = (page - 1) * limit;
+    
     const where: any = { tenantId };
-    if (pagination.search) where.nom = { contains: pagination.search, mode: 'insensitive' };
+    
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      where.nom = { contains: search.trim() };
+    }
+
     const [data, total] = await Promise.all([
-      this.prisma.rayon.findMany({ where, skip, take: limit }),
+      this.prisma.rayon.findMany({ 
+        where, 
+        skip, 
+        take: limit 
+      }),
       this.prisma.rayon.count({ where }),
     ]);
+
     return { data, total, page, limit };
   }
 
-  async createRayon(tenantId: string, data: CreateRayonDto) {
-    return this.prisma.rayon.create({ data: { ...data, tenantId } });
+  async createRayon(tenantId: string, data: any) {
+    const createData: any = {
+      nom: data.nom,
+      tenantId,
+    };
+    
+    if (data.couleur) {
+      createData.couleur = data.couleur;
+    }
+    
+    if (data.ordre !== undefined && data.ordre !== null) {
+      createData.ordre = Math.floor(Number(data.ordre));
+    }
+    
+    return this.prisma.rayon.create({ data: createData });
   }
 
   async updateRayon(id: string, tenantId: string, data: UpdateRayonDto) {
@@ -182,8 +220,14 @@ export class SupermarcheService {
   }
 
   async assignArticleToRayon(rayonId: string, articleId: string, tenantId: string) {
+    if (!articleId || typeof articleId !== 'string') {
+      throw new BadRequestException('articleId invalide');
+    }
+    
     return this.prisma.rayonArticle.create({ data: { rayonId, articleId } });
   }
+
+  // ── Codes-Barres ──────────────────────────────────────────────────────────
 
   async scanCodeBarres(code: string, tenantId: string) {
     return this.prisma.codeBarresArticle.findFirst({
@@ -192,9 +236,11 @@ export class SupermarcheService {
     });
   }
 
-  async createCodeBarres(data: CreateCodeBarresDto, tenantId: string) {
+  async createCodeBarres(data: any, tenantId: string) {
     return this.prisma.codeBarresArticle.create({ data: { ...data, tenantId } });
   }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
 
   async getStats(tenantId: string) {
     const today = new Date();
@@ -208,24 +254,19 @@ export class SupermarcheService {
       promosActives,
       alertesStock,
     ] = await this.prisma.$transaction([
-      // Nombre de ventes aujourd'hui
       this.prisma.vente.count({
         where: { tenantId, date: { gte: today } },
       }),
-      // CA jour réel (remplace caisseJour: 0)
       this.prisma.vente.aggregate({
         where: { tenantId, date: { gte: today }, statut: 'PAYE' },
         _sum: { total: true },
       }),
-      // Ruptures (quantite <= 0)
       this.prisma.stock.count({
         where: { article: { tenantId }, quantite: { lte: 0 } },
       }),
-      // Rayons actifs
       this.prisma.rayon.count({
         where: { tenantId, actif: true },
       }),
-      // Promotions actives aujourd'hui
       this.prisma.promotion.count({
         where: {
           tenantId,
@@ -234,7 +275,6 @@ export class SupermarcheService {
           dateFin: { gte: new Date() },
         },
       }),
-      // Alertes stock (quantite <= seuilCritique)
       this.prisma.stock.count({
         where: {
           article: { tenantId },
@@ -243,7 +283,6 @@ export class SupermarcheService {
       }),
     ]);
 
-    // Ventes par rayon — agrégation séparée (pas dans $transaction)
     const ventesByRayon = await this.prisma.ligneVente.groupBy({
       by: ['articleId'],
       where: { vente: { tenantId, date: { gte: today } } },
@@ -258,8 +297,6 @@ export class SupermarcheService {
       promosActives,
       alertesStock,
       ventesByRayon,
-      // Heures de pointe : reporter — nécessite une logique complexe
-      // (groupBy heure sur date) à traiter comme dette séparée
       heuresPointe: [],
     };
   }
@@ -268,9 +305,11 @@ export class SupermarcheService {
 
   async findAllArticles(tenantId: string, search?: string, limit?: number) {
     const where: any = { tenantId };
-    if (search) where.designation = { contains: search, mode: 'insensitive' };
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      where.designation = { contains: search.trim() };
+    }
     const take = Number(limit) || 50;
-    const data = await this.prisma.article.findMany({
+    return this.prisma.article.findMany({
       where,
       take: Math.min(take, 100),
       include: {
@@ -281,7 +320,6 @@ export class SupermarcheService {
       },
       orderBy: { designation: 'asc' },
     });
-    return data;
   }
 
   async findArticleById(id: string, tenantId: string) {
@@ -293,19 +331,28 @@ export class SupermarcheService {
     return article;
   }
 
-  async createArticle(tenantId: string, data: CreateArticleDto) {
-    return this.prisma.article.create({
-      data: {
-        designation: data.designation,
-        codeBarres: data.codeBarres,
-        prixVente: data.prixVente,
-        prixAchat: data.prixAchat ?? 0,
-        seuilCritique: data.seuilCritique ?? 0,
-        familleId: data.familleId,
-        marqueId: data.marqueId,
-        tenantId,
-      },
-    });
+  async createArticle(tenantId: string, data: any) {
+    const createData: any = {
+      designation: data.designation,
+      prixVente: Number(data.prixVente),
+      prixAchat: data.prixAchat !== undefined ? Number(data.prixAchat) : 0,
+      seuilCritique: data.seuilCritique !== undefined ? Number(data.seuilCritique) : 0,
+      tenantId,
+    };
+    
+    if (data.codeBarres) {
+      createData.codeBarres = data.codeBarres;
+    }
+    
+    if (data.familleId) {
+      createData.familleId = data.familleId;
+    }
+    
+    if (data.marqueId) {
+      createData.marqueId = data.marqueId;
+    }
+    
+    return this.prisma.article.create({ data: createData });
   }
 
   async updateArticle(id: string, tenantId: string, data: UpdateArticleDto) {
@@ -332,7 +379,9 @@ export class SupermarcheService {
 
   async findAllClients(tenantId: string, search?: string, limit?: number) {
     const where: any = { tenantId };
-    if (search) where.nom = { contains: search, mode: 'insensitive' };
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      where.nom = { contains: search.trim() };
+    }
     const take = Number(limit) || 50;
     return this.prisma.client.findMany({
       where,
@@ -341,7 +390,7 @@ export class SupermarcheService {
     });
   }
 
-  async createClient(tenantId: string, data: CreateClientDto) {
+  async createClient(tenantId: string, data: any) {
     return this.prisma.client.create({
       data: {
         nom: data.nom,
@@ -353,7 +402,7 @@ export class SupermarcheService {
     });
   }
 
-  async updateClient(id: string, tenantId: string, data: UpdateClientDto) {
+  async updateClient(id: string, tenantId: string, data: any) {
     return this.prisma.client.update({ where: { id, tenantId }, data });
   }
 
@@ -370,7 +419,7 @@ export class SupermarcheService {
     });
   }
 
-  async createFournisseur(tenantId: string, data: CreateFournisseurDto) {
+  async createFournisseur(tenantId: string, data: any) {
     return this.prisma.fournisseur.create({
       data: {
         nom: data.nom,
@@ -381,7 +430,7 @@ export class SupermarcheService {
     });
   }
 
-  async updateFournisseur(id: string, tenantId: string, data: UpdateFournisseurDto) {
+  async updateFournisseur(id: string, tenantId: string, data: any) {
     return this.prisma.fournisseur.update({ where: { id, tenantId }, data });
   }
 
@@ -398,11 +447,11 @@ export class SupermarcheService {
     });
   }
 
-  async createDepense(tenantId: string, data: CreateDepenseDto) {
+  async createDepense(tenantId: string, data: any) {
     return this.prisma.depense.create({
       data: {
         categorie: data.categorie,
-        montant: data.montant,
+        montant: Number(data.montant),
         motif: data.motif,
         photoUrl: data.photoUrl,
         depotId: data.depotId,
@@ -411,7 +460,7 @@ export class SupermarcheService {
     });
   }
 
-  async updateDepense(id: string, tenantId: string, data: UpdateDepenseDto) {
+  async updateDepense(id: string, tenantId: string, data: any) {
     return this.prisma.depense.update({ where: { id, tenantId }, data });
   }
 
@@ -429,13 +478,13 @@ export class SupermarcheService {
     });
   }
 
-  async createPromotion(tenantId: string, data: CreatePromotionDto) {
+  async createPromotion(tenantId: string, data: any) {
     return this.prisma.promotion.create({
       data: {
         nom: data.nom,
         type: data.type as any,
-        valeur: data.valeur,
-        prixPromo: data.prixPromo,
+        valeur: Number(data.valeur),
+        prixPromo: Number(data.prixPromo),
         dateDebut: new Date(data.dateDebut),
         dateFin: new Date(data.dateFin),
         actif: data.actif ?? true,
@@ -445,7 +494,7 @@ export class SupermarcheService {
     });
   }
 
-  async updatePromotion(id: string, tenantId: string, data: UpdatePromotionDto) {
+  async updatePromotion(id: string, tenantId: string, data: any) {
     const updateData: any = { ...data };
     if (data.dateDebut) updateData.dateDebut = new Date(data.dateDebut);
     if (data.dateFin) updateData.dateFin = new Date(data.dateFin);
@@ -477,7 +526,7 @@ export class SupermarcheService {
     });
   }
 
-  async createInventaire(tenantId: string, data: InventaireDto) {
+  async createInventaire(tenantId: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
       const results: any[] = [];
       for (const ligne of data.lignes) {
@@ -492,14 +541,13 @@ export class SupermarcheService {
           throw new NotFoundException(`Stock introuvable pour article ${ligne.articleId}`);
         }
 
-        const ecart = ligne.stockPhysique - existing.quantite;
+        const ecart = Number(ligne.stockPhysique) - existing.quantite;
 
         const updated = await tx.stock.update({
           where: { id: existing.id },
-          data: { quantite: ligne.stockPhysique },
+          data: { quantite: Number(ligne.stockPhysique) },
         });
 
-        // Traçabilité — MouvementStock avec type AJUSTEMENT_INVENTAIRE
         await tx.mouvementStock.create({
           data: {
             tenantId,
@@ -519,7 +567,8 @@ export class SupermarcheService {
 
   // ── Ventes ──────────────────────────────────────────────────────────────────
 
-  async createVente(tenantId: string, data: CreateVenteDto, userId?: string) {
+  async createVente(tenantId: string, data: any, userId?: string) {
+    console.log('=== CREATE VENTE DEBUG ===');
     if (!data.depotId) throw new BadRequestException('depotId est requis');
     if (!Array.isArray(data.panier) || data.panier.length === 0) {
       throw new BadRequestException('panier est requis');
@@ -527,58 +576,95 @@ export class SupermarcheService {
     if (!Number.isFinite(Number(data.total)) || Number(data.total) <= 0) {
       throw new BadRequestException('total vente invalide');
     }
+    
+    const depot = await this.prisma.depot.findFirst({
+      where: { id: data.depotId, tenantId },
+    });
+    if (!depot) throw new BadRequestException('Dépôt introuvable ou non autorisé');
+    
+    if (data.clientId) {
+      const client = await this.prisma.client.findFirst({
+        where: { id: data.clientId, tenantId },
+      });
+      if (!client) throw new BadRequestException('Client introuvable ou non autorisé');
+    }
+    
+    for (const item of data.panier) {
+      const article = await this.prisma.article.findFirst({
+        where: { id: item.articleId, tenantId },
+      });
+      if (!article) throw new BadRequestException(`Article ${item.articleId} introuvable ou non autorisé`);
+      
+      const stock = await this.prisma.stock.findFirst({
+        where: { articleId: item.articleId, depotId: data.depotId },
+      });
+      if (!stock) throw new BadRequestException(`Stock introuvable pour article ${item.articleId} dans le dépôt ${data.depotId}`);
+    }
+    
+    let validUserId: string | null = null;
+    if (userId) {
+      const user = await this.prisma.user.findFirst({ where: { id: userId } });
+      if (user) validUserId = userId;
+    }
+    
     const reference = `VENTE-${Date.now()}`;
 
-    return this.prisma.$transaction(async (tx) => {
-      const vente = await tx.vente.create({
-        data: {
-          reference,
-          total: data.total,
-          statut: 'PAYE',
-          modePaiement: data.modePaiement as any,
-          tenantId,
-          depotId: data.depotId,
-          clientId: data.clientId,
-          createurId: userId,
-          date: new Date(),
-          lignes: {
-            create: data.panier.map((item) => ({
-              articleId: item.articleId,
-              quantite: item.quantite,
-              prix: item.prix,
-              remise: item.remise ?? 0,
-              total: item.quantite * item.prix - (item.remise ?? 0),
-            })),
-          },
-        },
-        include: { lignes: true, client: true },
-      });
-
-      for (const item of data.panier) {
-        await tx.stock.updateMany({
-          where: { articleId: item.articleId, depotId: data.depotId },
-          data: { quantite: { decrement: item.quantite } },
-        });
-        await tx.mouvementStock.create({
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const vente = await tx.vente.create({
           data: {
-            type: 'SORTIE_VENTE',
-            quantite: item.quantite,
-            articleId: item.articleId,
-            depotId: data.depotId,
+            reference,
+            total: Number(data.total),
+            statut: 'PAYE',
+            modePaiement: data.modePaiement as any,
             tenantId,
-            motif: `Vente ${reference}`,
+            depotId: data.depotId,
+            clientId: data.clientId,
+            createurId: validUserId,
+            date: new Date(),
+            lignes: {
+              create: data.panier.map((item: any) => ({
+                articleId: item.articleId,
+                quantite: Number(item.quantite),
+                prix: Number(item.prix),
+                remise: item.remise ? Number(item.remise) : 0,
+                total: Number(item.quantite) * Number(item.prix) - (item.remise ? Number(item.remise) : 0),
+              })),
+            },
           },
+          include: { lignes: true, client: true },
         });
-      }
 
-      return vente;
-    });
+        for (const item of data.panier) {
+          await tx.stock.updateMany({
+            where: { articleId: item.articleId, depotId: data.depotId },
+            data: { quantite: { decrement: Number(item.quantite) } },
+          });
+          
+          await tx.mouvementStock.create({
+            data: {
+              type: 'SORTIE_VENTE',
+              quantite: Number(item.quantite),
+              articleId: item.articleId,
+              depotId: data.depotId,
+              tenantId,
+              motif: `Vente ${reference}`,
+            },
+          });
+        }
+
+        return vente;
+      });
+    } catch (error: any) {
+      console.error('=== TRANSACTION ERROR ===', error);
+      throw error;
+    }
   }
 
-  // ── Réceptions ──────────────────────────────────────────────────────────────
+ // ── Réceptions (SOLUTION MULTI-TENANT DURABLE & SÉCURISÉE) ─────────────────
 
   async findAllReceptions(tenantId: string) {
-    return this.prisma.receptionFournisseur.findMany({
+    const receptions = await this.prisma.receptionFournisseur.findMany({
       where: { tenantId },
       include: {
         fournisseur: true,
@@ -587,34 +673,112 @@ export class SupermarcheService {
       },
       orderBy: { createdAt: 'desc' },
     });
-  }
 
-  async createReception(tenantId: string, data: CreateReceptionDto) {
-    const reference = `REC-${Date.now()}`;
-    return this.prisma.receptionFournisseur.create({
-      data: {
-        reference,
-        modePaiement: (data.modePaiement as any) ?? 'CASH',
-        montantPaye: data.montantPaye ?? 0,
-        numBordereau: data.numBordereau,
-        fournisseurId: data.fournisseurId,
-        depotId: data.depotId,
-        tenantId,
-        lignes: {
-          create: data.lignes.map((l) => ({
-            articleId: l.articleId,
-            quantiteLivree: l.quantiteLivree,
-            quantiteCommandee: l.quantiteLivree,
-            prixAchatUnitaire: l.prixAchatUnitaire,
-          })),
-        },
-      },
-      include: { lignes: true },
+    return receptions.map((reception) => {
+      // 1. Utilisation prioritaire de la somme stockée en base de données
+      let total = (reception.montantPaye || 0) + (reception.montantDette || 0);
+
+      // 2. FIABILITÉ HISTORIQUE : Si le total est à 0 mais que des lignes existent,
+      // on force le recalcul dynamique pour corriger l'affichage des anciens tests.
+      if (total === 0 && reception.lignes && reception.lignes.length > 0) {
+        total = reception.lignes.reduce((sum, ligne) => {
+          const qte = Number(ligne.quantiteLivree) || 0;
+          const prix = Number(ligne.prixAchatUnitaire) || 0;
+          return sum + (qte * prix);
+        }, 0);
+      }
+
+      return {
+        ...reception,
+        montant: total, // Aligné avec 'reception.montant' dans ton frontend
+        total: total,   // Double sécurité si ton frontend appelle 'reception.total'
+      };
     });
   }
 
-  async updateReception(tenantId: string, id: string, data: UpdateReceptionDto) {
-    const { statut, fournisseurId, numBordereau, motifAnnulation } = data;
+  async createReception(tenantId: string, data: any) {
+    console.log('=== CREATE RECEPTION DEBUG ===');
+    if (!data.depotId) throw new BadRequestException('depotId est requis');
+    if (!data.fournisseurId) throw new BadRequestException('fournisseurId est requis');
+    if (!Array.isArray(data.lignes) || data.lignes.length === 0) {
+      throw new BadRequestException('Le tableau de lignes est requis et ne doit pas être vide');
+    }
+    
+    const depot = await this.prisma.depot.findFirst({
+      where: { id: data.depotId, tenantId },
+    });
+    if (!depot) throw new BadRequestException('Dépôt introuvable ou non autorisé');
+    
+    const fournisseur = await this.prisma.fournisseur.findFirst({
+      where: { id: data.fournisseurId, tenantId },
+    });
+    if (!fournisseur) throw new BadRequestException('Fournisseur introuvable ou non autorisé');
+    
+    // Calcul strict du coût total théorique au niveau du serveur pour figer la valeur financière
+    const coutTotalMarchandise = data.lignes.reduce((sum: number, l: any) => {
+      const qte = Number(l.quantiteLivree) || 0;
+      const prix = Number(l.prixAchatUnitaire) || 0;
+      return sum + (qte * prix);
+    }, 0);
+
+    const paye = data.montantPaye ? Number(data.montantPaye) : 0;
+    // La dette est égale au coût total de la marchandise moins ce qui a été payé
+    const dette = Math.max(0, coutTotalMarchandise - paye);
+
+    // Initialisation préventive des stocks pour éviter tout crash d'intégrité référentielle
+    for (const ligne of data.lignes) {
+      const article = await this.prisma.article.findFirst({
+        where: { id: ligne.articleId, tenantId },
+      });
+      if (!article) throw new BadRequestException(`Article ${ligne.articleId} introuvable`);
+      
+      const stock = await this.prisma.stock.findFirst({
+        where: { articleId: ligne.articleId, depotId: data.depotId },
+      });
+
+      if (!stock) {
+        await this.prisma.stock.create({
+          data: {
+            articleId: ligne.articleId,
+            depotId: data.depotId,
+            quantite: 0,
+          }
+        });
+      }
+    }
+    
+    const reference = `REC-${Date.now()}`;
+
+    try {
+      return await this.prisma.receptionFournisseur.create({
+        data: {
+          reference,
+          modePaiement: (data.modePaiement as any) ?? 'CASH',
+          montantPaye: paye,
+          montantDette: dette, // Stocké durablement en BDD
+          numBordereau: data.numBordereau,
+          fournisseurId: data.fournisseurId,
+          depotId: data.depotId,
+          tenantId,
+          lignes: {
+            create: data.lignes.map((l: any) => ({
+              articleId: l.articleId,
+              quantiteLivree: Number(l.quantiteLivree),
+              quantiteCommandee: Number(l.quantiteLivree),
+              prixAchatUnitaire: Number(l.prixAchatUnitaire),
+            })),
+          },
+        },
+        include: { lignes: true },
+      });
+    } catch (error: any) {
+      console.error('=== RECEPTION TRANSACTION ERROR ===', error);
+      throw error;
+    }
+  }
+
+async updateReception(tenantId: string, id: string, data: any) {
+    const { statut, fournisseurId, numBordereau, motifAnnulation, lignes } = data;
 
     const reception = await this.prisma.receptionFournisseur.findFirst({
       where: { id, tenantId },
@@ -623,37 +787,151 @@ export class SupermarcheService {
 
     if (!reception) throw new NotFoundException('Réception non trouvée');
 
-    if (statut === 'VALIDEE') {
+    if ((reception.statut as string) === 'VALIDEE') {
+      throw new BadRequestException('Impossible de modifier une réception déjà validée');
+    }
+
+    // 1. CAS DE LA VALIDATION EN STOCK
+    if (statut === 'VALIDEE' && (reception.statut as string) !== 'VALIDEE') {
       return this.prisma.$transaction(async (tx) => {
         for (const ligne of reception.lignes) {
-          await tx.stock.updateMany({
-            where: { articleId: ligne.articleId, depotId: reception.depotId },
-            data: { quantite: { increment: ligne.quantiteLivree + ligne.quantiteGratuite } },
+          const qteTotale = ligne.quantiteLivree; 
+          
+          const targetStock = await tx.stock.findFirst({
+            where: { articleId: ligne.articleId, depotId: reception.depotId }
           });
+
+          await tx.stock.upsert({
+            where: { id: targetStock?.id || '' },
+            update: { quantite: { increment: qteTotale } },
+            create: {
+              articleId: ligne.articleId,
+              depotId: reception.depotId,
+              quantite: qteTotale
+            }
+          });
+          
           await tx.mouvementStock.create({
             data: {
               type: 'ENTREE',
-              quantite: ligne.quantiteLivree + ligne.quantiteGratuite,
+              quantite: qteTotale,
               articleId: ligne.articleId,
               depotId: reception.depotId,
               tenantId,
-              motif: `Réception ${reception.reference}`,
+              motif: `Réception validée ${(reception as any).reference || ''}`,
             },
           });
         }
+
         return tx.receptionFournisseur.update({
           where: { id },
-          data: { statut: 'VALIDEE', fournisseurId, numBordereau },
+          data: { statut: 'VALIDEE' as any, fournisseurId, numBordereau },
         });
       });
-    } else {
-      return this.prisma.receptionFournisseur.update({
-        where: { id },
-        data: { fournisseurId, numBordereau, motifAnnulation },
+    } 
+    
+    // 2. CAS DE LA MODIFICATION DU BROUILLON
+   // 2. CAS DE LA MODIFICATION DU BROUILLON
+    else {
+      const montantPaye = (reception as any).montantPaye || 0;
+      let coutTotalMarchandise = 0;
+
+      if (Array.isArray(lignes)) {
+        coutTotalMarchandise = lignes.reduce((sum: number, l: any) => {
+          const qte = Number(l.qte) || Number(l.quantiteLivree) || 0;
+          const prix = Number(l.prixUnitaire) || Number(l.prixAchatUnitaire) || 0;
+          return sum + (qte * prix);
+        }, 0);
+      }
+      const nouvelleDette = Math.max(0, coutTotalMarchandise - montantPaye);
+
+      return this.prisma.$transaction(async (tx) => {
+        // 1. On vide d'abord les anciennes lignes associées à ce brouillon
+        if (lignes && Array.isArray(lignes)) {
+          await tx.ligneReception.deleteMany({
+            where: { receptionId: id },
+          });
+        }
+
+        const updateData: any = {};
+        if (fournisseurId) updateData.fournisseurId = fournisseurId;
+        if (numBordereau) updateData.numBordereau = numBordereau;
+        if (motifAnnulation) updateData.motifAnnulation = motifAnnulation;
+        if ((reception as any).montantDette !== undefined) updateData.montantDette = nouvelleDette;
+
+        // 2. Mapping dynamique intelligent basé sur la première ligne existante ou un fallback standard
+        if (lignes && Array.isArray(lignes)) {
+          // On récupère une ligne type pour inspecter ses propriétés réelles en BDD
+          const uneLigneExistante = reception.lignes[0] || {};
+          
+          updateData.lignes = {
+            create: lignes.map((l: any) => {
+              const nouvelleLigne: any = {
+                articleId: l.articleId,
+              };
+
+              // Détection dynamique du champ de quantité
+              if ('quantiteLivree' in uneLigneExistante) {
+                nouvelleLigne.quantiteLivree = Number(l.qte || l.quantiteLivree || 0);
+              } else if ('quantite' in uneLigneExistante) {
+                nouvelleLigne.quantite = Number(l.qte || l.quantite || 0);
+              } else {
+                // Fallback si la table était vide au départ
+                nouvelleLigne.quantiteLivree = Number(l.qte || 0);
+              }
+
+              // Détection dynamique du champ de prix
+              if ('prixAchatUnitaire' in uneLigneExistante) {
+                nouvelleLigne.prixAchatUnitaire = Number(l.prixUnitaire || l.prixAchatUnitaire || 0);
+              } else if ('prixUnitaire' in uneLigneExistante) {
+                nouvelleLigne.prixUnitaire = Number(l.prixUnitaire || 0);
+              } else {
+                // Fallback si la table était vide au départ
+                nouvelleLigne.prixAchatUnitaire = Number(l.prixUnitaire || 0);
+              }
+
+              // Optionnel : Gestion de la quantité commandée si le champ existe
+              if ('quantiteCommandee' in uneLigneExistante) {
+                nouvelleLigne.quantiteCommandee = Number(l.qte || l.quantiteCommandee || 0);
+              }
+
+              return nouvelleLigne;
+            }),
+          };
+        }
+
+        // 3. Exécution sécurisée
+        return tx.receptionFournisseur.update({
+          where: { id },
+          data: updateData,
+          include: { lignes: true }
+        });
       });
     }
-  }
+  } // <-- L'accolade qui ferme PROPREMENT updateReception
 
+  async deleteReception(tenantId: string, id: string) {
+    const reception = await this.prisma.receptionFournisseur.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!reception) {
+      throw new NotFoundException('Réception introuvable ou non autorisée');
+    }
+
+    if ((reception.statut as string) === 'VALIDEE') {
+      throw new BadRequestException('Impossible de supprimer une réception validée');
+    }
+
+    return this.prisma.$transaction([
+      this.prisma.ligneReception.deleteMany({
+        where: { receptionId: id },
+      }),
+      this.prisma.receptionFournisseur.delete({
+        where: { id },
+      }),
+    ]);
+  } // <-- L'accolade qui ferme PROPREMENT deleteReception
   // ── Paramètres ──────────────────────────────────────────────────────────────
 
   async getParametres(tenantId: string) {

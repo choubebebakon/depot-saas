@@ -38,6 +38,20 @@ export class LigneVenteDto {
   composition?: any; // JSON representation of the mixed crate
 }
 
+export class RetourConsigneDto {
+  @IsString()
+  @IsNotEmpty()
+  typeConsigneId: string;
+
+  @IsNumber()
+  @Min(1)
+  quantite: number;
+
+  @IsOptional()
+  @IsNumber()
+  valeurUnitaire?: number;
+}
+
 export enum ModePaiement {
   CASH = 'CASH',
   ORANGE_MONEY = 'ORANGE_MONEY',
@@ -84,4 +98,10 @@ export class CreateVenteDto {
   @ValidateNested({ each: true })
   @Type(() => LigneVenteDto)
   lignes: LigneVenteDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RetourConsigneDto)
+  retoursConsigne?: RetourConsigneDto[];
 }

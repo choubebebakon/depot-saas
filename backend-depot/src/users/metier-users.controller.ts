@@ -14,22 +14,20 @@ export class MetierUsersController {
     return this.usersService.create({ ...body, tenantId });
   }
 
-  @Get()
-  async findAll(@Query('tenantId') tenantId: string, @Query('depotId') depotId?: string) {
-    return this.usersService.findAll(tenantId, depotId);
+@Get()
+  async findAll(@Req() req: any, @Query('depotId') depotId?: string) {
+    // 🔒 On force l'utilisation du tenantId du patron connecté (via le JWT)
+    return this.usersService.findAll(req.user.tenantId, depotId);
   }
 
   @Get('commerciaux')
-  async findCommerciaux(@Query('tenantId') tenantId: string) {
-    return this.usersService.findCommerciaux(tenantId);
+  async findCommerciaux(@Req() req: any) {
+    return this.usersService.findCommerciaux(req.user.tenantId);
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
-  ) {
-    return this.usersService.findOne(tenantId, id);
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.findOne(req.user.tenantId, id);
   }
 
   @Patch(':id/status')

@@ -30,7 +30,7 @@ export class UsersService {
   async findAll(tenantId: string, depotId?: string) {
     return this.prisma.user.findMany({
       where: {
-        tenantId,
+        tenantId: tenantId,
         ...(depotId ? { depotId } : {}),
       },
       select: {
