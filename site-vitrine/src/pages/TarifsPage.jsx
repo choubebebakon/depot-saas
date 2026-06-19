@@ -31,7 +31,7 @@ const PAYMENT_CHANNELS = [
   { id: 'card', name: 'Carte Visa/Mastercard', icon: '💳' },
 ];
 
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001/api/v1';
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000/api/v1';
 
 export default function TarifsPage() {
   const [searchParams] = useSearchParams();
