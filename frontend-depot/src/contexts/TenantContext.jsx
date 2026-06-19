@@ -1,6 +1,7 @@
-// frontend-depot/src/contexts/TenantContext.js
+// frontend-depot/src/contexts/TenantContext.jsx
 import { createContext, useState, useEffect } from 'react'
-import { fetchTenant } from '../services/tenantService' // votre appel API
+// Vérifie si le fichier est bien dans ../services/tenantService
+import { fetchTenant } from '../services/tenantService' 
 
 export const TenantContext = createContext(null)
 
