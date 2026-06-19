@@ -31,7 +31,8 @@ export class ContextMiddleware implements NestMiddleware {
 
         // 2. Headers Axios frontend (x-tenant-id, x-depot-id)
         const headerTenantId = req.headers['x-tenant-id'] as string | undefined;
-        if (headerTenantId) {
+        // Sécurité : éviter la propagation de "null" ou "undefined" en tant que chaînes
+        if (headerTenantId && headerTenantId !== 'null' && headerTenantId !== 'undefined') {
             tenantId = headerTenantId;
         }
 
@@ -41,8 +42,8 @@ export class ContextMiddleware implements NestMiddleware {
             depotId = req.query.depotId as string;
         }
 
-        // Sécurité : éviter la valeur textuelle 'all' ou vide transmise par le front
-        if (depotId === 'all' || depotId === '') {
+        // Sécurité : éviter les valeurs invalides ("all", "null", "undefined", vide) transmises par le front
+        if (depotId === 'all' || depotId === '' || depotId === 'null' || depotId === 'undefined') {
             depotId = null;
         }
 

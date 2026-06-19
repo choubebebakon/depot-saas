@@ -37,16 +37,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             LigneTransfert: (depotId) => ({ transfert: { OR: [{ sourceDepotId: depotId }, { destDepotId: depotId }] } }),
         };
 
-        // Création de l'extension pour remplacer $use
+        // Création de l'extension
         this._extendedClient = this.$extends({
             query: {
                 $allModels: {
                     async $allOperations({ model, operation, args, query }) {
                         const depotId = depotScope.getDepotId();
-                        // On cast args en any pour éviter les erreurs de type TS sur 'where', 'data', etc.
                         const anyArgs = args as any;
 
-                        // Si pas de depotId, on laisse passer sans filtre (ex: login)
                         if (!depotId) return query(args);
 
                         // 1. GESTION DES LECTURES (Filtrage)
@@ -79,8 +77,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             },
         });
 
-        // On remplace les méthodes de base par celles de l'extension
-        return this._extendedClient;
+        // 🔥 CORRECTION : Un Proxy pour fusionner l'extension ET les hooks NestJS
+        return new Proxy(this, {
+            get(target, prop, receiver) {
+                if (prop === 'onModuleInit' || prop === 'onModuleDestroy') {
+                    return target[prop].bind(target);
+                }
+                return Reflect.get(target._extendedClient, prop, receiver);
+            }
+        }) as any;
     }
 
     async onModuleInit() {

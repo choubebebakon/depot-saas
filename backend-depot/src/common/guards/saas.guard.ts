@@ -2,6 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } 
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma.service';
 import { IS_PUBLIC_KEY } from '../../auth/decorators/public.decorator';
+import { StatutAbonnement } from '@prisma/client'; // 👈 AJOUTÉ : Pour éviter les strings magiques
 
 @Injectable()
 export class SaasGuard implements CanActivate {
@@ -11,6 +12,7 @@ export class SaasGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // 1. Gestion des routes publiques (@Public())
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -21,33 +23,30 @@ export class SaasGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const userTenantId = request.user?.tenantId;
     
-    // Le tenantId peut provenir du body (POST/PUT), de la query (GET) ou des headers
-    const tenantId =
-      request.body?.tenantId ||
-      request.query?.tenantId ||
-      request.headers['x-tenant-id'] ||
-      userTenantId;
+    // 2. SÉCURITÉ ABSOLUE : On impose le tenantId extrait du JWT
+    const tenantId = userTenantId;
 
     if (!tenantId) {
-      // Sécurité stricte : s'il n'y a pas de tenant défini dans la requête, accès refusé
-      throw new HttpException('Tenant ID manquant dans la requête.', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Tenant ID manquant dans le jeton d\'authentification.', HttpStatus.UNAUTHORIZED);
     }
 
+    // 3. On attache le tenantId à la requête pour que les contrôleurs/services puissent y accéder directement
+    request.tenantId = tenantId;
+
+    // 4. Récupération du Tenant en Base de données
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId }
     });
 
     if (!tenant) {
-      throw new HttpException('Tenant introuvable.', HttpStatus.NOT_FOUND);
+      throw new HttpException('Espace de travail (Tenant) introuvable.', HttpStatus.NOT_FOUND);
     }
 
-    if (userTenantId && tenantId !== userTenantId) {
-      throw new HttpException('Accès interdit sur un autre tenant.', HttpStatus.FORBIDDEN);
-    }
-
-    // --- VERIFICATION DU PAYWALL ---
+    // 5. --- VÉRIFICATION DU PAYWALL ET DE L'ABONNEMENT ---
     const now = new Date();
-    const isExpiredByStatus = tenant.statutAbonnement === 'EXPIRED';
+    
+    // CORRECTION : Utilisation de l'Enum typé au lieu de la chaîne 'EXPIRED'
+    const isExpiredByStatus = tenant.statutAbonnement === StatutAbonnement.EXPIRED;
     const isExpiredByDate = tenant.dateExpiration && tenant.dateExpiration < now;
 
     if (isExpiredByStatus || isExpiredByDate) {
@@ -57,6 +56,6 @@ export class SaasGuard implements CanActivate {
         );
     }
 
-    return true; // Accès autorisé, il est en TRIAL valide ou ACTIVE
+    return true; // Accès validé
   }
 }

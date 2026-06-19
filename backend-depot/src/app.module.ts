@@ -1,6 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'; // 👈 MODIFIÉ : Ajout de APP_INTERCEPTOR
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
@@ -9,7 +9,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { DepotScopeService } from './common/depot-scope.service';
-import { ContextMiddleware } from './common/middleware/context.middleware'; // Import du middleware
+import { ContextMiddleware } from './common/middleware/context.middleware';
+import { DepotScopeInterceptor } from './common/interceptors/depot-scope.interceptor'; // 👈 AJOUTÉ : Import de l'interceptor
 
 // Modules de base & Auth
 import { AuthModule } from './auth/auth.module';
@@ -83,7 +84,7 @@ import { InvoicesModule } from './invoices/invoices.module';
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 100, // Augmenté légèrement à 100 pour éviter les faux positifs en développement
+      limit: 100,
     }]),
     AuthModule,
     TenantsModule,
@@ -144,21 +145,26 @@ import { InvoicesModule } from './invoices/invoices.module';
     DepotScopeService,
     // 1. Le Throttler protège en premier lieu l'application entière
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    // 2. Le JwtAuthGuard décode et valide la session
+    // 2. Le JwtAuthGuard décode et valide la session (génère request.user)
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    // 3. Les Guards SaaS s'exécutent maintenant avec un Scope ALS parfaitement initialisé
+    // 3. Les Guards SaaS s'exécutent
     { provide: APP_GUARD, useClass: SaasGuard },
     { provide: APP_GUARD, useClass: AccessStatusGuard },
-    // REMARQUE PHASE 2 : QuotaDepotGuard a été retiré d'ici pour éviter le blocage des POST globaux.
-    // Il est désormais géré de façon chirurgicale.
     { provide: APP_GUARD, useClass: RolesGuard },
+
+    // 🔥 4. ENREGISTREMENT DE L'INTERCEPTOR GLOBAL SCOPE (ALS)
+    // Placé dans les providers pour résoudre automatiquement le DepotScopeService.
+    // NestJS l'exécutera juste après la validation réussie des Guards.
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: DepotScopeInterceptor,
+    },
   ],
 })
 export class AppModule implements NestModule {
-  // Configuration indispensable pour injecter le cycle de vie de l'AsyncLocalStorage
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(ContextMiddleware)
-      .forRoutes('*'); // S'applique sur toutes les routes sans exception
+      .forRoutes('*');
   }
 }

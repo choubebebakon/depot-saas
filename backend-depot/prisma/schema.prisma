@@ -469,20 +469,25 @@ model MouvementConsigne {
   @@index([venteId])
   @@index([depotId])
 }
-
 model Fournisseur {
-  id          String                 @id @default(uuid())
-  nom         String
-  telephone   String?
-  solde       Float                  @default(0)
-  tenantId    String
-  depotId     String?
-  createdAt   DateTime               @default(now())
-  commandes   CommandeFournisseur[]
-  depot       Depot?                 @relation(fields: [depotId], references: [id])
-  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  receptions  ReceptionFournisseur[]
-  medicaments Medicament[]
+  id           String                 @id @default(uuid())
+  nom          String
+  telephone    String?
+  email        String?                // 🛠️ Ajouté pour le formulaire
+  adresse      String?                // 🛠️ Ajouté pour le formulaire
+  soldeInitial Float                  @default(0) // 🛠️ Ajouté pour la reprise de solde au démarrage
+  solde        Float                  @default(0) // Ton solde courant (comptabilité interne)
+  notes        String?                // 🛠️ Ajouté pour le champ "Notes optionnelles..."
+  tenantId     String
+  depotId      String?
+  createdAt    DateTime               @default(now())
+  
+  // Relations existantes conservées intactes
+  commandes    CommandeFournisseur[]
+  depot        Depot?                 @relation(fields: [depotId], references: [id])
+  tenant       Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  receptions   ReceptionFournisseur[]
+  medicaments  Medicament[]
 
   @@index([tenantId])
   @@index([depotId])
