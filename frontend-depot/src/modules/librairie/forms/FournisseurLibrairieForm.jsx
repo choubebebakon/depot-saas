@@ -84,7 +84,7 @@ export default function FournisseurLibrairieForm({ isOpen, onClose, onSuccess, e
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom} placeholder="Nom du fournisseur" />
+      <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom?.message} placeholder="Nom du fournisseur" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Contact" name="contact" value={form.contact} onChange={set('contact')} placeholder="Personne à contacter" />
         <FormField label="Téléphone" name="telephone" value={form.telephone} onChange={set('telephone')} placeholder="+226 XX XX XX XX" />

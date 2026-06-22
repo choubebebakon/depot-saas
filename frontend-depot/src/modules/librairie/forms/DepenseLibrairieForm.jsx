@@ -86,9 +86,9 @@ export default function DepenseLibrairieForm({ isOpen, onClose, onSuccess, edit,
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Libellé *" name="libelle" value={form.libelle} onChange={set('libelle')} required error={errors.libelle} placeholder="Ex: Fournitures bureau" />
+      <FormField label="Libellé *" name="libelle" value={form.libelle} onChange={set('libelle')} required error={errors.libelle?.message} placeholder="Ex: Fournitures bureau" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Montant *" name="montant" type="number" value={form.montant} onChange={set('montant')} required min={0} unit="FCFA" error={errors.montant} />
+        <FormField label="Montant *" name="montant" type="number" value={form.montant} onChange={set('montant')} required min={0} unit="FCFA" error={errors.montant?.message} />
         <FormField label="Catégorie" name="categorie" type="select" value={form.categorie} onChange={set('categorie')} options={CATEGORIES_DEPENSES} />
       </div>
       <FormField label="Date" name="date" type="date" value={form.date} onChange={set('date')} />

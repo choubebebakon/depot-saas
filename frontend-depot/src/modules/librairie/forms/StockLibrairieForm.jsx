@@ -84,7 +84,7 @@ export default function StockLibrairieForm({ isOpen, onClose, onSuccess, edit, m
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Article *" name="article" value={form.article} onChange={set('article')} required error={errors.article} placeholder="Nom de l'article" />
+      <FormField label="Article *" name="article" value={form.article} onChange={set('article')} required error={errors.article?.message} placeholder="Nom de l'article" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Quantité" name="quantite" type="number" value={form.quantite} onChange={set('quantite')} min={0} />
         <FormField label="Prix (F CFA)" name="prix" type="number" value={form.prix} onChange={set('prix')} min={0} unit="FCFA" />
