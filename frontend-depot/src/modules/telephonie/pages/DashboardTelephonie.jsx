@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useData } from '../../../hooks/useData';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../../api/axios';
 import { useAuth } from '../../../contexts/AuthContext';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
@@ -71,16 +72,28 @@ export default function DashboardTelephonie() {
 
   useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
 
-  const { data: stats, loading } = useData(`/${prefix}/stats`, { enabled: true });
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['telephonie-dashboard-stats', prefix],
+    queryFn: async () => {
+      const res = await api.get(`/${prefix}/stats`);
+      return res.data;
+    },
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+  });
 
-  if (loading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
+  if (isLoading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
 ;
 
 return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div><h1 className="text-3xl font-black text-white tracking-tight">📱 Tableau de Bord Téléphonie</h1><p className="text-slate-400 text-sm mt-1">{time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/30">
+            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+            <span className="text-xs font-bold text-emerald-400">En direct</span>
+          </div>
           <button onClick={() => navigate('/telephonie/ventes')} className="bg-purple-500 hover:bg-purple-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20">💰 Ventes</button>
           <button onClick={() => navigate('/telephonie/reparations')} className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">🔧 Réparations</button>
         </div>
