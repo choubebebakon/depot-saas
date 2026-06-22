@@ -109,7 +109,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
         name="designation"
         control={control}
         required
-        error={errors.designation}
+        error={errors.designation?.message}
         placeholder="Nom de l'article"
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -120,7 +120,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
           control={control}
           min="0"
           placeholder="0"
-          error={errors.prixVente}
+          error={errors.prixVente?.message}
         />
         <FormField
           label="Prix achat (F CFA)"
@@ -129,7 +129,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
           control={control}
           min="0"
           placeholder="0"
-          error={errors.prixAchat}
+          error={errors.prixAchat?.message}
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -140,14 +140,14 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
           control={control}
           min="0"
           placeholder="0"
-          error={errors.seuilCritique}
+          error={errors.seuilCritique?.message}
         />
         <FormField
           label="Code-barres"
           name="codeBarres"
           control={control}
           placeholder="Code-barres"
-          error={errors.codeBarres}
+          error={errors.codeBarres?.message}
         />
       </div>
       <Controller
