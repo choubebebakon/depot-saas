@@ -2,6 +2,10 @@ import { useCallback, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { buildUrl } from '../api/axios';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 function flattenParams(p) {
   if (!p) return '';
   try { return JSON.stringify(p); } catch { return ''; }
@@ -23,7 +27,7 @@ export function useData(endpoint, options = {}) {
   const fetchFn = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
-    const res = await api.get(url, { params, signal: abortRef.current.signal });
+    const res = await api.get(url, { params: cleanParams(params), signal: abortRef.current.signal });
     return res.data;
   }, [url, paramKey]);
 
