@@ -80,7 +80,7 @@ export default function PrestationForm({ isOpen, onClose, onSuccess, edit, metie
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier prestation' : '💇 Nouvelle prestation'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Coupe homme, Tresses..." error={errors.nom} />
+      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Coupe homme, Tresses..." error={errors.nom?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Catégorie" name="categorie" type="select" value={form.categorie} onChange={set('categorie')} options={[
           { value: 'COIFFURE', label: '💇 Coiffure' }, { value: 'COULEUR', label: '🎨 Couleur' },
@@ -88,7 +88,7 @@ export default function PrestationForm({ isOpen, onClose, onSuccess, edit, metie
           { value: 'SOIN', label: '🧴 Soin' }, { value: 'BEAUTE', label: '💄 Beauté' },
           { value: 'ONGLERIE', label: '💅 Onglerie' }, { value: 'MAQUILLAGE', label: '💋 Maquillage' },
         ]} />
-        <FormField label="Prix" name="prix" type="number" value={form.prix} onChange={set('prix')} min={0} unit="FCFA" required error={errors.prix} />
+        <FormField label="Prix" name="prix" type="number" value={form.prix} onChange={set('prix')} min={0} unit="FCFA" required error={errors.prix?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Durée estimée" name="dureeMin" value={form.dureeMin} onChange={set('dureeMin')} min={5} unit="min" />

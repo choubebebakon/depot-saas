@@ -109,12 +109,12 @@ export default function RendezVousSalonForm({ isOpen, onClose, onSuccess, edit, 
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Nom du client" name="nomClient" value={form.nomClient} onChange={set('nomClient')} required placeholder="Nom complet" error={errors.nomClient} />
+        <FormField label="Nom du client" name="nomClient" value={form.nomClient} onChange={set('nomClient')} required placeholder="Nom complet" error={errors.nomClient?.message} />
         <FormField label="Téléphone" name="telephone" type="tel" value={form.telephone} onChange={set('telephone')} placeholder="6XXXXXXXX" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Employé" name="employeId" type="select" value={form.employeId} onChange={set('employeId')} options={employes.map(e => ({ value: e.id, label: e.nom }))} />
-        <DateTimePicker label="Date et heure" name="dateHeure" value={form.dateHeure} onChange={set('dateHeure')} showTime required error={errors.dateHeure} />
+        <DateTimePicker label="Date et heure" name="dateHeure" value={form.dateHeure} onChange={set('dateHeure')} showTime required error={errors.dateHeure?.message} />
       </div>
       <div>
         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2 block">Prestations *</label>
