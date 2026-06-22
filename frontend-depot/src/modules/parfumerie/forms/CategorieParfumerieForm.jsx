@@ -74,7 +74,7 @@ export default function CategorieParfumerieForm({ isOpen, onClose, onSuccess, ed
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier la catégorie' : 'Nouvelle catégorie'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom} />
+      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom?.message} />
       <FormField label="Description" name="description" type="textarea" value={form.description} onChange={set('description')} />
     </FormModal>
   );

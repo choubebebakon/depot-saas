@@ -74,7 +74,7 @@ export default function StockParfumerieForm({ isOpen, onClose, onSuccess, edit, 
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier le stock' : 'Nouvel article'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Produit" name="produit" value={form.produit} onChange={set('produit')} required error={errors.produit} />
+      <FormField label="Produit" name="produit" value={form.produit} onChange={set('produit')} required error={errors.produit?.message} />
       <FormField label="Quantité" name="quantite" type="number" value={form.quantite} onChange={set('quantite')} />
       <FormField label="Prix" name="prix" type="number" step="0.01" value={form.prix} onChange={set('prix')} />
       <FormField label="Seuil d'alerte" name="seuilAlerte" type="number" value={form.seuilAlerte} onChange={set('seuilAlerte')} />

@@ -74,8 +74,8 @@ export default function ProduitParfumerieForm({ isOpen, onClose, onSuccess, edit
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier le produit' : 'Nouveau produit'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom} />
-      <FormField label="Prix" name="prix" type="number" step="0.01" value={form.prix} onChange={set('prix')} required error={errors.prix} />
+      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom?.message} />
+      <FormField label="Prix" name="prix" type="number" step="0.01" value={form.prix} onChange={set('prix')} required error={errors.prix?.message} />
       <FormField label="Catégorie" name="categorie" type="select" value={form.categorie} onChange={set('categorie')} options={['PARFUM', 'MAQUILLAGE', 'SOIN', 'CAPILLAIRE', 'HYGIENE', 'AUTRE']} />
       <FormField label="Stock" name="stock" type="number" value={form.stock} onChange={set('stock')} />
     </FormModal>

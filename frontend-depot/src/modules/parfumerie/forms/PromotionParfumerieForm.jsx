@@ -75,7 +75,7 @@ export default function PromotionParfumerieForm({ isOpen, onClose, onSuccess, ed
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier la promotion' : 'Nouvelle promotion'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Libellé" name="libelle" value={form.libelle} onChange={set('libelle')} required error={errors.libelle} />
+      <FormField label="Libellé" name="libelle" value={form.libelle} onChange={set('libelle')} required error={errors.libelle?.message} />
       <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} options={['POURCENTAGE', 'MONTANT_FIXE', 'PRODUIT_OFFERT']} />
       <FormField label="Valeur" name="valeur" type="number" step="0.01" value={form.valeur} onChange={set('valeur')} />
       <FormField label="Date fin" name="dateFin" type="date" value={form.dateFin} onChange={set('dateFin')} />

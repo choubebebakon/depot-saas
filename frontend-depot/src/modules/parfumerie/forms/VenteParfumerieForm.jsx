@@ -77,7 +77,7 @@ export default function VenteParfumerieForm({ isOpen, onClose, onSuccess, edit, 
       <FormField label="Client" name="clientNom" value={form.clientNom} onChange={set('clientNom')} />
       <FormField label="Produit" name="produit" value={form.produit} onChange={set('produit')} />
       <FormField label="Quantité" name="quantite" type="number" min="1" value={form.quantite} onChange={set('quantite')} />
-      <FormField label="Montant" name="montant" type="number" step="0.01" value={form.montant} onChange={set('montant')} required error={errors.montant} />
+      <FormField label="Montant" name="montant" type="number" step="0.01" value={form.montant} onChange={set('montant')} required error={errors.montant?.message} />
       <FormField label="Mode de paiement" name="modePaiement" type="select" value={form.modePaiement} onChange={set('modePaiement')} options={['ESPECES', 'CARTE', 'MOBILE']} />
     </FormModal>
   );

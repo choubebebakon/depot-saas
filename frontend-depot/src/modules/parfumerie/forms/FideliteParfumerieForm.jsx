@@ -75,7 +75,7 @@ export default function FideliteParfumerieForm({ isOpen, onClose, onSuccess, edi
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier les points' : 'Ajouter des points'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Valider'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <FormField label="Opération" name="operation" type="select" value={form.operation} onChange={set('operation')} options={['AJOUT', 'RETRAIT']} />
-      <FormField label="Client" name="clientNom" value={form.clientNom} onChange={set('clientNom')} required error={errors.clientNom} />
+      <FormField label="Client" name="clientNom" value={form.clientNom} onChange={set('clientNom')} required error={errors.clientNom?.message} />
       <FormField label="Points" name="points" type="number" value={form.points} onChange={set('points')} required />
       <FormField label="Motif" name="motif" value={form.motif} onChange={set('motif')} />
     </FormModal>

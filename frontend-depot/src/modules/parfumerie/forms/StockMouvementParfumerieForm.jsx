@@ -75,8 +75,8 @@ export default function StockMouvementParfumerieForm({ isOpen, onClose, onSucces
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier le mouvement' : 'Nouveau mouvement'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Valider'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} options={['ENTREE', 'SORTIE']} />
-      <FormField label="Produit" name="produitNom" value={form.produitNom} onChange={set('produitNom')} required error={errors.produitNom} />
-      <FormField label="Quantité" name="quantite" type="number" min="1" value={form.quantite} onChange={set('quantite')} required error={errors.quantite} />
+      <FormField label="Produit" name="produitNom" value={form.produitNom} onChange={set('produitNom')} required error={errors.produitNom?.message} />
+      <FormField label="Quantité" name="quantite" type="number" min="1" value={form.quantite} onChange={set('quantite')} required error={errors.quantite?.message} />
       <FormField label="Motif" name="motif" value={form.motif} onChange={set('motif')} />
     </FormModal>
   );
