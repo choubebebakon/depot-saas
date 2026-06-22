@@ -1,4 +1,4 @@
-# Rapport d'Audit Systématique - GeStock SaaS
+y# Rapport d'Audit Systématique - GeStock SaaS
 
 **Date**: 22 juin 2026  
 **Objectif**: Audit et correction des erreurs 400/500, crashes formulaires React, et absence de temps réel dans les dashboards  
