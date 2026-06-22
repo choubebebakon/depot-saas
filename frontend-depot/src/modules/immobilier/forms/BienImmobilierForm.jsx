@@ -87,8 +87,8 @@ export default function BienImmobilierForm({ isOpen, onClose, onSuccess, edit, m
         { value: 'TERRAIN', label: '🌳 Terrain' },
       ]} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Adresse" name="adresse" value={form.adresse} onChange={set('adresse')} required placeholder="Adresse complète" error={errors.adresse} />
-        <FormField label="Ville" name="ville" value={form.ville} onChange={set('ville')} required placeholder="Ville" error={errors.ville} />
+        <FormField label="Adresse" name="adresse" value={form.adresse} onChange={set('adresse')} required placeholder="Adresse complète" error={errors.adresse?.message} />
+        <FormField label="Ville" name="ville" value={form.ville} onChange={set('ville')} required placeholder="Ville" error={errors.ville?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <NumberInput label="Surface" name="surface" value={form.surface} onChange={set('surface')} min={0} unit="m²" hint="Optionnel" />
@@ -96,7 +96,7 @@ export default function BienImmobilierForm({ isOpen, onClose, onSuccess, edit, m
         <NumberInput label="Étage" name="etage" value={form.etage} onChange={set('etage')} min={0} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <FormField label="Loyer mensuel" name="loyer" type="number" value={form.loyer} onChange={set('loyer')} min={0} unit="FCFA" required error={errors.loyer} />
+        <FormField label="Loyer mensuel" name="loyer" type="number" value={form.loyer} onChange={set('loyer')} min={0} unit="FCFA" required error={errors.loyer?.message} />
         <FormField label="Charges" name="charges" type="number" value={form.charges} onChange={set('charges')} min={0} unit="FCFA" />
         <FormField label="Dépôt (caution)" name="depot" type="number" value={form.depot} onChange={set('depot')} min={0} unit="FCFA" />
       </div>

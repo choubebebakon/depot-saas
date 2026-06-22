@@ -94,11 +94,11 @@ export default function ContratLocationForm({ isOpen, onClose, onSuccess, edit, 
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier contrat' : '📝 Nouveau contrat de location'} loading={loading} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Bien" name="bienId" type="select" value={form.bienId} onChange={handleBienChange} options={biens.map(b => ({ value: b.id, label: `${b.adresse} — ${b.type}` }))} required error={errors.bienId} />
-        <AutocompleteInput label="Locataire" name="locataireId" value={form.locataireId} onChange={set('locataireId')} fetchSuggestions={fetchLocataires} displayKey="nom" placeholder="Rechercher..." required error={errors.locataireId} />
+        <FormField label="Bien" name="bienId" type="select" value={form.bienId} onChange={handleBienChange} options={biens.map(b => ({ value: b.id, label: `${b.adresse} — ${b.type}` }))} required error={errors.bienId?.message} />
+        <AutocompleteInput label="Locataire" name="locataireId" value={form.locataireId} onChange={set('locataireId')} fetchSuggestions={fetchLocataires} displayKey="nom" placeholder="Rechercher..." required error={errors.locataireId?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <DateTimePicker label="Date de début" name="dateDebut" value={form.dateDebut} onChange={set('dateDebut')} required error={errors.dateDebut} />
+        <DateTimePicker label="Date de début" name="dateDebut" value={form.dateDebut} onChange={set('dateDebut')} required error={errors.dateDebut?.message} />
         <DateTimePicker label="Date de fin" name="dateFin" value={form.dateFin} onChange={set('dateFin')} hint="Laisser vide si CDI" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

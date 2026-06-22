@@ -86,10 +86,10 @@ export default function InterventionBienForm({ isOpen, onClose, onSuccess, edit,
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier intervention' : '🔧 Nouvelle intervention'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Bien" name="bienId" type="select" value={form.bienId} onChange={set('bienId')} options={biens.map(b => ({ value: b.id, label: b.adresse }))} required error={errors.bienId} />
+        <FormField label="Bien" name="bienId" type="select" value={form.bienId} onChange={set('bienId')} options={biens.map(b => ({ value: b.id, label: b.adresse }))} required error={errors.bienId?.message} />
         <FormField label="Type d'intervention" name="type" type="select" value={form.type} onChange={set('type')} options={['PLOMBERIE', 'ELECTRICITE', 'PEINTURE', 'MENUISERIE', 'CLIMATISATION', 'NETTOYAGE', 'AUTRE']} />
       </div>
-      <FormField label="Description" name="description" type="textarea" value={form.description} onChange={set('description')} required rows={2} error={errors.description} />
+      <FormField label="Description" name="description" type="textarea" value={form.description} onChange={set('description')} required rows={2} error={errors.description?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Coût" name="cout" type="number" value={form.cout} onChange={set('cout')} min={0} unit="FCFA" />
         <FormField label="Statut" name="statut" type="select" value={form.statut} onChange={set('statut')} options={[

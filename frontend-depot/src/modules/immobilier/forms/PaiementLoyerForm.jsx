@@ -96,9 +96,9 @@ export default function PaiementLoyerForm({ isOpen, onClose, onSuccess, metier =
         <div className="flex justify-between"><span className="text-slate-400">Loyer attendu</span><span className="text-white">{Number(contrat.loyer).toLocaleString('fr-FR')} FCFA</span></div>
         <div className="flex justify-between"><span className="text-slate-400">Charges</span><span className="text-white">{Number(contrat.charges).toLocaleString('fr-FR')} FCFA</span></div>
       </div>
-      <FormField label="Mois concerné" name="mois" type="select" value={form.mois} onChange={set('mois')} options={moisOptions} required error={errors.mois} />
+      <FormField label="Mois concerné" name="mois" type="select" value={form.mois} onChange={set('mois')} options={moisOptions} required error={errors.mois?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Montant du loyer" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" required error={errors.montant} />
+        <FormField label="Montant du loyer" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" required error={errors.montant?.message} />
         <FormField label="Charges" name="charges" type="number" value={form.charges} onChange={set('charges')} min={0} unit="FCFA" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
