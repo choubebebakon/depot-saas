@@ -5,6 +5,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
+
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
 import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
@@ -77,12 +81,12 @@ export default function OrdonnanceForm({ isOpen, onClose, onSuccess, edit, metie
   const prefix = `/${metier}`;
 
   const fetchClients = async (q) => {
-    const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } });
+    const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) });
     return r.data?.data || r.data || [];
   };
 
   const fetchMedicaments = async (q) => {
-    const r = await api.get(`${prefix}/medicaments`, { params: { search: q, limit: 8 } });
+    const r = await api.get(`${prefix}/medicaments`, { params: cleanParams({ search: q, limit: 8 }) });
     return r.data?.data || r.data || [];
   };
 

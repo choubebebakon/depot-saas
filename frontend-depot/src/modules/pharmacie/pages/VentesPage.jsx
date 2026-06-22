@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../../api';
 import Badge from '../../../shared/components/Badge';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -69,7 +73,7 @@ export default function VentesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/pharmacie/stats/ventes', { params: { periode: period } });
+      const res = await api.get('/pharmacie/stats/ventes', { params: cleanParams({ periode: period }) });
       setStats(res.data);
     } catch (_) {
       setStats({

@@ -4,6 +4,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import BarcodeScanner from '../../../shared/components/forms/BarcodeScanner';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -73,18 +77,18 @@ export default function POSPharmacieForm({ metier = 'pharmacie', onSuccess }) {
   const prefix = `/${metier}`;
 
   const fetchMedicaments = useCallback(async (q) => {
-    const r = await api.get(`${prefix}/medicaments`, { params: { search: q, limit: 8 } });
+    const r = await api.get(`${prefix}/medicaments`, { params: cleanParams({ search: q, limit: 8 }) });
     return r.data?.data || r.data || [];
   }, [prefix]);
 
   const fetchOrdonnances = useCallback(async (q) => {
-    const r = await api.get(`${prefix}/ordonnances`, { params: { search: q, limit: 8 } });
+    const r = await api.get(`${prefix}/ordonnances`, { params: cleanParams({ search: q, limit: 8 }) });
     return r.data?.data || r.data || [];
   }, [prefix]);
 
   const handleScan = useCallback(async (code) => {
     try {
-      const r = await api.get(`${prefix}/medicaments`, { params: { search: code, limit: 5 } });
+      const r = await api.get(`${prefix}/medicaments`, { params: cleanParams({ search: code, limit: 5 }) });
       const meds = r.data?.data || r.data || [];
       if (meds.length > 0) ajouterAuPanier(meds[0]);
     } catch {}
