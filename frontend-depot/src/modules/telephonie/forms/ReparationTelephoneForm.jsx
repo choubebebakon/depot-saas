@@ -117,7 +117,7 @@ export default function ReparationTelephoneForm({ isOpen, onClose, onSuccess, ed
         <FormField label="Modèle" name="modele" value={form.modele} onChange={set('modele')} placeholder="Modèle" />
         <FormField label="Technicien" name="technicienId" type="select" value={form.technicienId} onChange={set('technicienId')} options={techniciens.map(t => ({ value: t.id, label: t.nom }))} />
       </div>
-      <FormField label="Problème" name="probleme" type="textarea" value={form.probleme} onChange={set('probleme')} required rows={2} error={errors.probleme} />
+      <FormField label="Problème" name="probleme" type="textarea" value={form.probleme} onChange={set('probleme')} required rows={2} error={errors.probleme?.message} />
       <div className="border-t border-slate-700/50 pt-4 mt-2">
         <h4 className="text-white font-bold text-sm mb-3">🔩 Pièces</h4>
         {pieces.map((p, idx) => (

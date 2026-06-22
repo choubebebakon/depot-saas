@@ -109,12 +109,12 @@ export default function TelephoneForm({ isOpen, onClose, onSuccess, edit, metier
         <BarcodeScanner onScan={(code) => setForm({ ...form, imei: code })} placeholder="Scanner ou saisir l'IMEI (15 chiffres)" mode="both" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="IMEI" name="imei" value={form.imei} onChange={set('imei')} required placeholder="15 chiffres" error={errors.imei} />
+        <FormField label="IMEI" name="imei" value={form.imei} onChange={set('imei')} required placeholder="15 chiffres" error={errors.imei?.message} />
         <FormField label="IMEI 2 (dual-SIM)" name="imei2" value={form.imei2} onChange={set('imei2')} placeholder="15 chiffres" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Marque" name="marque" type="select" value={form.marque} onChange={set('marque')} options={['SAMSUNG', 'APPLE', 'TECNO', 'ITEL', 'INFINIX', 'HUAWEI', 'XIAOMI', 'OPPO', 'NOKIA', 'AUTRE']} />
-        <FormField label="Modèle" name="modele" value={form.modele} onChange={set('modele')} required placeholder="Ex: Galaxy S24" error={errors.modele} />
+        <FormField label="Modèle" name="modele" value={form.modele} onChange={set('modele')} required placeholder="Ex: Galaxy S24" error={errors.modele?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <FormField label="Couleur" name="couleur" type="select" value={form.couleur} onChange={set('couleur')} options={['NOIR', 'BLANC', 'BLEU', 'ROUGE', 'OR', 'VERT', 'VIOLET', 'GRIS']} />
