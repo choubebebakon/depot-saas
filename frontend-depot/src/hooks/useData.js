@@ -3,33 +3,30 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { buildUrl } from '../api/axios';
 
 const cleanParams = (params) => Object.fromEntries(
-  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+  Object.entries(params || {}).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
 );
-
-function flattenParams(p) {
-  if (!p) return '';
-  try { return JSON.stringify(p); } catch { return ''; }
-}
 
 export function useData(endpoint, options = {}) {
   const { params = {}, enabled = true, staleTime = 1000 * 60 * 5, metier, refetchInterval } = options;
   const queryClient = useQueryClient();
   const abortRef = useRef(null);
 
-  const url = useMemo(
-    () => (metier ? buildUrl(metier, endpoint) : endpoint),
-    [metier, endpoint]
-  );
+  const url = useMemo(() => (metier ? buildUrl(metier, endpoint) : endpoint), [metier, endpoint]);
 
-  const paramKey = useMemo(() => flattenParams(params), [params]);
-  const queryKey = useMemo(() => [endpoint, params, metier], [endpoint, paramKey, metier]);
+  // 1. On nettoie une seule fois ici
+  const sanitizedParams = useMemo(() => cleanParams(params), [JSON.stringify(params)]);
+
+  // 2. On utilise les paramètres nettoyés pour la clé de cache (plus de doublons inutiles)
+  const queryKey = useMemo(() => [endpoint, sanitizedParams, metier], [endpoint, sanitizedParams, metier]);
 
   const fetchFn = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
-    const res = await api.get(url, { params: cleanParams(params), signal: abortRef.current.signal });
+    
+    // 3. On envoie les paramètres déjà nettoyés
+    const res = await api.get(url, { params: sanitizedParams, signal: abortRef.current.signal });
     return res.data;
-  }, [url, paramKey]);
+  }, [url, sanitizedParams]);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey,
@@ -40,6 +37,7 @@ export function useData(endpoint, options = {}) {
     retry: 0,
   });
 
+  // ... (mutationOpts, create, update, remove restent identiques)
   const mutationOpts = {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [endpoint] }),
   };
