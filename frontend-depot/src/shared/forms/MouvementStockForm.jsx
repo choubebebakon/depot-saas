@@ -63,7 +63,7 @@ export default function MouvementStockForm({ isOpen, onClose, onSuccess, edit, m
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier mouvement' : '📦 Mouvement de stock'} loading={loading} size="lg" submitIcon="💾" submitLabel={edit ? 'Modifier' : 'Enregistrer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <AutocompleteInput label="Article" name="articleId" value={form.articleId} onChange={set('articleId')} fetchSuggestions={fetchArticles} displayKey="designation" onSelect={handleArticleSelect} placeholder="Rechercher un article..." required error={errors.articleId} />
+      <AutocompleteInput label="Article" name="articleId" value={form.articleId} onChange={set('articleId')} fetchSuggestions={fetchArticles} displayKey="designation" onSelect={handleArticleSelect} placeholder="Rechercher un article..." required error={errors.articleId?.message} />
       {stockActuel !== null && (
         <div className="p-3 bg-slate-800 rounded-xl text-sm">
           <span className="text-slate-400">Stock actuel : </span>
@@ -71,12 +71,12 @@ export default function MouvementStockForm({ isOpen, onClose, onSuccess, edit, m
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} required error={errors.type}
+        <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} required error={errors.type?.message}
           options={['ENTREE', 'SORTIE', 'AJUSTEMENT', 'TRANSFERT', 'INVENTAIRE'].map(t => ({ value: t, label: t === 'ENTREE' ? '📥 Entrée' : t === 'SORTIE' ? '📤 Sortie' : t === 'AJUSTEMENT' ? '⚖️ Ajustement' : t === 'TRANSFERT' ? '🔄 Transfert' : '📋 Inventaire' }))} />
         <NumberInput label="Quantité" name="quantite" value={form.quantite} onChange={set('quantite')} min={1} required />
       </div>
       {form.type === 'SORTIE' && (
-        <FormField label="Motif de sortie" name="motif" type="textarea" value={form.motif} onChange={set('motif')} required error={errors.motif} placeholder="Raison de la sortie..." rows={2} />
+        <FormField label="Motif de sortie" name="motif" type="textarea" value={form.motif} onChange={set('motif')} required error={errors.motif?.message} placeholder="Raison de la sortie..." rows={2} />
       )}
       <PhotoUpload label="Photo (optionnel)" name="photoUrl" value={form.photoUrl} onChange={(e) => setForm({ ...form, photoUrl: e.target.value })} />
     </FormModal>
