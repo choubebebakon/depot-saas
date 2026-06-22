@@ -87,10 +87,10 @@ export default function ReservationRestaurantForm({ isOpen, onClose, onSuccess, 
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier réservation' : '📅 Nouvelle réservation'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom du client" name="nomClient" value={form.nomClient} onChange={set('nomClient')} required placeholder="Nom complet" error={errors.nomClient} />
+      <FormField label="Nom du client" name="nomClient" value={form.nomClient} onChange={set('nomClient')} required placeholder="Nom complet" error={errors.nomClient?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Téléphone" name="telephone" type="tel" value={form.telephone} onChange={set('telephone')} placeholder="6XXXXXXXX" />
-        <DateTimePicker label="Date d'arrivée" name="dateArrivee" value={form.dateArrivee} onChange={set('dateArrivee')} showTime required error={errors.dateArrivee} />
+        <DateTimePicker label="Date d'arrivée" name="dateArrivee" value={form.dateArrivee} onChange={set('dateArrivee')} showTime required error={errors.dateArrivee?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Nombre de personnes" name="nbPersonnes" value={form.nbPersonnes} onChange={set('nbPersonnes')} min={1} />

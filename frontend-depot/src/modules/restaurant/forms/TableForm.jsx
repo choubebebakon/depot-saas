@@ -83,7 +83,7 @@ export default function TableForm({ isOpen, onClose, onSuccess, edit, metier = '
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier table' : '🪑 Nouvelle table'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Numéro" name="numero" type="number" value={form.numero} onChange={set('numero')} required placeholder="1" error={errors.numero} />
+        <FormField label="Numéro" name="numero" type="number" value={form.numero} onChange={set('numero')} required placeholder="1" error={errors.numero?.message} />
         <NumberInput label="Capacité" name="capacite" value={form.capacite} onChange={set('capacite')} min={1} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
