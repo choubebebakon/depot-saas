@@ -5,6 +5,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -75,7 +79,7 @@ export default function ColisForm({ isOpen, onClose, onSuccess, edit, metier = '
     if (edit) setForm({ expediteurId: edit.expediteurId || '', nomExpediteur: edit.nomExpediteur || '', destinataire: edit.destinataire || '', telephoneDest: edit.telephoneDest || '', adresseDest: edit.adresseDest || '', villeDest: edit.villeDest || '', poids: edit.poids || '', dimensions: edit.dimensions || '', description: edit.description || '', valeurDeclaree: edit.valeurDeclaree || '', montant: edit.montant || '', modePaiement: edit.modePaiement || 'CASH' });
   }, [edit]);
   const prefix = `/${metier}`;
-  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
   const validate = () => { const errs = {}; if (!form.destinataire) errs.destinataire = 'Le nom du destinataire est requis'; if (!form.telephoneDest) errs.telephoneDest = 'Le téléphone du destinataire est requis'; if (!form.adresseDest) errs.adresseDest = 'L\'adresse de destination est requise'; if (!form.montant || Number(form.montant) <= 0) errs.montant = 'Le montant doit être > 0'; return errs; };
   const handleSubmit = async (e) => { e.preventDefault(); const errs = validate(); setErrors(errs); if (Object.keys(errs).length > 0) return; setLoading(true);
     try { if (edit) await api.patch(`${prefix}/colis/${edit.id}`, form); else await api.post(`${prefix}/colis`, form); onSuccess(); onClose(); }

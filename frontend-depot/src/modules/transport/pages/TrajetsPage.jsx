@@ -3,6 +3,10 @@ import TrajetForm from '../forms/TrajetForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePagination } from '../../../hooks/usePagination';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -69,7 +73,7 @@ export default function TrajetsPage() {
 
   const limit = 20;
   const load = useCallback(async () => { setLoading(true);
-    try { const params = { page, limit }; if (search) params.search = search; const r = await api.get('/transport/trajets', { params }); setTrajets(r.data.data); setTotal(r.data.total); }
+    try { const params = { page, limit, search }; const r = await api.get('/transport/trajets', { params: cleanParams(params) }); setTrajets(r.data.data); setTotal(r.data.total); }
     catch { setTrajets([]); } finally { setLoading(false); }
   }, [page, search]);
   useEffect(() => { load(); }, [load]);

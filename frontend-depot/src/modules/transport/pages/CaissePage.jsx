@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'; import api from '../../../api'; import CaisseForm from '../forms/CaisseForm'; import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePagination } from '../../../hooks/usePagination';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -89,8 +93,8 @@ export default function CaissePage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    const params = { page, limit }; if (search) params.search = search;
-    api.get('/transport/caisse', { params }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
+    const params = { page, limit, search };
+    api.get('/transport/caisse', { params: cleanParams(params) }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
   }, [page, search]);
   useEffect(() => { load(); }, [load]);
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
