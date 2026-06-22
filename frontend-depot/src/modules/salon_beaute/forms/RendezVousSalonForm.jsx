@@ -5,6 +5,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -81,7 +85,7 @@ export default function RendezVousSalonForm({ isOpen, onClose, onSuccess, edit, 
   }, [edit]);
 
   const prefix = `/${metier}`;
-  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
 
   const togglePrestation = (id, nom, prix) => {
     setForm(prev => {
