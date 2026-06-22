@@ -17,8 +17,8 @@ export class BoutiqueController {
 
   // --- Promotions (existants) ---
   @Post('promotions')
-  async createPromotion(@Body() data: any) {
-    return this.promotionsService.create(data);
+  async createPromotion(@Body() data: any, @Req() req: any) {
+    return this.promotionsService.create(data, req.user.tenantId);
   }
 
   @Get('promotions')

@@ -7,8 +7,10 @@ import { CATEGORIES_PAR_TYPE } from '../../../prisma/seeds/categoriesBoutique';
 export class PromotionsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: any): Promise<Promotion> {
-    return this.prisma.promotion.create({ data });
+  async create(data: any, tenantId: string): Promise<Promotion> {
+    return this.prisma.promotion.create({
+      data: { ...data, tenantId },
+    });
   }
 
   async findAll(tenantId: string): Promise<Promotion[]> {
