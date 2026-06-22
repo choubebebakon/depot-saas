@@ -5,6 +5,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -72,7 +76,7 @@ export default function VehiculeClientForm({ isOpen, onClose, onSuccess, edit, m
 
   useState(() => { if (edit) setForm({ clientId: edit.clientId || '', immatriculation: edit.immatriculation || '', marque: edit.marque || '', modele: edit.modele || '', annee: edit.annee || '', couleur: edit.couleur || '', kilometrage: edit.kilometrage || '', carburant: edit.carburant || 'ESSENCE', notes: edit.notes || '' }); }, [edit]);
   const prefix = `/${metier}`;
-  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
   const validate = () => { const errs = {}; if (!form.immatriculation) errs.immatriculation = 'L\'immatriculation est requise'; if (!form.marque) errs.marque = 'La marque est requise'; return errs; };
   const handleSubmit = async (e) => { e.preventDefault(); const errs = validate(); setErrors(errs); if (Object.keys(errs).length > 0) return; setLoading(true);
     try { if (edit) await api.patch(`${prefix}/vehicules/${edit.id}`, form); else await api.post(`${prefix}/vehicules`, form); onSuccess(); onClose(); }

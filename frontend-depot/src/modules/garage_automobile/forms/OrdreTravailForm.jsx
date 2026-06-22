@@ -6,6 +6,10 @@ import AutocompleteInput from '../../../shared/components/forms/AutocompleteInpu
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -80,8 +84,8 @@ export default function OrdreTravailForm({ isOpen, onClose, onSuccess, edit, met
   }, [edit]);
 
   const prefix = `/${metier}`;
-  const fetchVehicules = async (q) => { const r = await api.get(`${prefix}/vehicules`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
-  const fetchPieces = async (q) => { const r = await api.get(`${prefix}/pieces-stock`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchVehicules = async (q) => { const r = await api.get(`${prefix}/vehicules`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
+  const fetchPieces = async (q) => { const r = await api.get(`${prefix}/pieces-stock`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
 
   const ajouterPiece = () => setPieces([...pieces, { articleId: '', designation: '', quantite: 1, prixUnit: '' }]);
   const suppriméerPiece = (idx) => setPieces(pieces.filter((_, i) => i !== idx));
