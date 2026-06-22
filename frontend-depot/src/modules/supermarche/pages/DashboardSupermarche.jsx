@@ -4,6 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 const COULEUR = '#f59e0b';
 
 function StatCard({ icon, label, value, sub, color, trend }) {
@@ -57,7 +61,7 @@ export default function DashboardSupermarche() {
   const { data: rapports } = useQuery({
     queryKey: ['supermarche-rapports', tenantId, { periode: 'jour' }],
     queryFn: async () => {
-      const res = await api.get('/supermarche/rapports', { params: { periode: 'jour' } });
+      const res = await api.get('/supermarche/rapports', { params: cleanParams({ periode: 'jour' }) });
       return res.data;
     },
     enabled: !!tenantId,

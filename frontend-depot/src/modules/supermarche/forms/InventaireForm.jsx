@@ -9,6 +9,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import { useNotif } from '../../../context/NotifContext';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 const inventaireLigneSchema = z.object({
   articleId: z.string().min(1, 'Article requis'),
   designation: z.string().optional(),
@@ -74,7 +78,7 @@ export default function InventaireForm({ isOpen, onClose, onSuccess, metier = 's
     try {
       const params = { depotId: watchedDepotId };
       if (watchedRayonId) params.rayonId = watchedRayonId;
-      const r = await api.get(`${prefix}/stock`, { params });
+      const r = await api.get(`${prefix}/stock`, { params: cleanParams(params) });
       const articles = r.data?.data || r.data || [];
       setValue('lignes', articles.map(a => ({
         articleId: a.id,

@@ -4,6 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 function MiniBar({ label, value, max, color }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
@@ -33,7 +37,7 @@ export default function RapportsPage() {
   const { data: stats, isLoading: loading } = useQuery({
     queryKey: ['supermarche-rapports', tenantId, params],
     queryFn: async () => {
-      const res = await api.get(`/${prefix}/rapports`, { params });
+      const res = await api.get(`/${prefix}/rapports`, { params: cleanParams(params) });
       return res.data;
     },
     enabled: !!tenantId,
