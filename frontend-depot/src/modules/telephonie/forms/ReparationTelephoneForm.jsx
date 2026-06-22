@@ -6,6 +6,10 @@ import AutocompleteInput from '../../../shared/components/forms/AutocompleteInpu
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import BarcodeScanner from '../../../shared/components/forms/BarcodeScanner';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -79,8 +83,8 @@ export default function ReparationTelephoneForm({ isOpen, onClose, onSuccess, ed
     if (edit) setForm({ clientId: edit.clientId || '', imei: edit.imei || '', marque: edit.marque || '', modele: edit.modele || '', probleme: edit.probleme || '', avance: edit.avance || 0, technicienId: edit.technicienId || '' });
   }, [edit]);
   const prefix = `/${metier}`;
-  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
-  const fetchPieces = async (q) => { const r = await api.get(`${prefix}/pieces`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
+  const fetchPieces = async (q) => { const r = await api.get(`${prefix}/pieces`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
   const ajouterPiece = () => setPieces([...pieces, { articleId: '', designation: '', quantite: 1, prixUnit: '' }]);
   const suppriméerPiece = (idx) => setPieces(pieces.filter((_, i) => i !== idx));
   const updatePiece = (idx, field) => (e) => { const n = [...pieces]; n[idx] = { ...n[idx], [field]: e.target.value }; setPieces(n); };
@@ -89,7 +93,7 @@ export default function ReparationTelephoneForm({ isOpen, onClose, onSuccess, ed
   const handleImeiScan = async (code) => {
     setForm({ ...form, imei: code });
     try {
-      const r = await api.get(`${prefix}/telephones`, { params: { imei: code } });
+      const r = await api.get(`${prefix}/telephones`, { params: cleanParams({ imei: code }) });
       const tel = r.data?.data?.[0] || r.data?.[0];
       if (tel) setForm(prev => ({ ...prev, imei: code, marque: tel.marque || prev.marque, modele: tel.modele || prev.modele }));
     } catch {}
