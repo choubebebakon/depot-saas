@@ -86,10 +86,10 @@ export default function TypeChambreForm({ isOpen, onClose, onSuccess, edit, meti
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier type' : '🏷️ Nouveau type de chambre'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Standard, Deluxe, Suite..." error={errors.nom} />
+      <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Standard, Deluxe, Suite..." error={errors.nom?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Capacité" name="capacite" value={form.capacite} onChange={set('capacite')} min={1} hint="Nombre max de personnes" />
-        <FormField label="Prix par nuit" name="prixNuit" type="number" value={form.prixNuit} onChange={set('prixNuit')} min={0} unit="FCFA" required error={errors.prixNuit} />
+        <FormField label="Prix par nuit" name="prixNuit" type="number" value={form.prixNuit} onChange={set('prixNuit')} min={0} unit="FCFA" required error={errors.prixNuit?.message} />
       </div>
       <FormField label="Équipements" name="equipements" type="multiselect" value={form.equipements} onChange={set('equipements')} options={['WiFi', 'Clim', 'TV', 'MiniBar', 'Baignoire', 'Jacuzzi', 'Coffre', 'Balcon']} />
       <FormField label="Description" name="description" type="textarea" value={form.description} onChange={set('description')} rows={2} />

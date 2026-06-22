@@ -81,10 +81,10 @@ export default function ConsommationHotelForm({ isOpen, onClose, onSuccess, meti
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title="🍽️ Ajouter consommation" loading={loading} submitLabel="Ajouter" submitIcon="➕">
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Désignation" name="designation" value={form.designation} onChange={set('designation')} required placeholder="Ex: MiniBar, Room service..." error={errors.designation} />
+      <FormField label="Désignation" name="designation" value={form.designation} onChange={set('designation')} required placeholder="Ex: MiniBar, Room service..." error={errors.designation?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Quantité" name="quantite" value={form.quantite} onChange={set('quantite')} min={1} required />
-        <FormField label="Prix unitaire" name="prixUnitaire" type="number" value={form.prixUnitaire} onChange={set('prixUnitaire')} min={0} unit="FCFA" required error={errors.prixUnitaire} />
+        <FormField label="Prix unitaire" name="prixUnitaire" type="number" value={form.prixUnitaire} onChange={set('prixUnitaire')} min={0} unit="FCFA" required error={errors.prixUnitaire?.message} />
       </div>
     </FormModal>
   );

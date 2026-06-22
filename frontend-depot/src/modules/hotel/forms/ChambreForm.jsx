@@ -88,7 +88,7 @@ export default function ChambreForm({ isOpen, onClose, onSuccess, edit, metier =
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier chambre' : '🛏️ Nouvelle chambre'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Numéro" name="numero" value={form.numero} onChange={set('numero')} required placeholder="Ex: 101, Suite A" error={errors.numero} />
+        <FormField label="Numéro" name="numero" value={form.numero} onChange={set('numero')} required placeholder="Ex: 101, Suite A" error={errors.numero?.message} />
         <FormField label="Type" name="typeChambreId" type="select" value={form.typeChambreId} onChange={set('typeChambreId')} options={types.map(t => ({ value: t.id, label: t.nom }))} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

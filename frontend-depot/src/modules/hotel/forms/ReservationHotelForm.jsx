@@ -128,15 +128,15 @@ export default function ReservationHotelForm({ isOpen, onClose, onSuccess, edit,
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier réservation' : '📅 Nouvelle réservation'} loading={loading} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." />
-      <FormField label="Nom du client" name="nomClient" value={form.nomClient} onChange={set('nomClient')} required placeholder="Nom complet" error={errors.nomClient} />
+      <FormField label="Nom du client" name="nomClient" value={form.nomClient} onChange={set('nomClient')} required placeholder="Nom complet" error={errors.nomClient?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Téléphone" name="telephone" type="tel" value={form.telephone} onChange={set('telephone')} placeholder="6XXXXXXXX" />
         <FormField label="Email" name="email" type="email" value={form.email} onChange={set('email')} placeholder="client@exemple.com" />
       </div>
-      <FormField label="Chambre" name="chambreId" type="select" value={form.chambreId} onChange={handleChambreChange} options={chambres.map(c => ({ value: c.id, label: `${c.numero} — ${c.typeChambre?.nom || ''} (${c.typeChambre?.prixNuit?.toLocaleString('fr-FR')} FCFA/nuit)` }))} required error={errors.chambreId} />
+      <FormField label="Chambre" name="chambreId" type="select" value={form.chambreId} onChange={handleChambreChange} options={chambres.map(c => ({ value: c.id, label: `${c.numero} — ${c.typeChambre?.nom || ''} (${c.typeChambre?.prixNuit?.toLocaleString('fr-FR')} FCFA/nuit)` }))} required error={errors.chambreId?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <DateTimePicker label="Arrivée" name="dateArrivee" value={form.dateArrivee} onChange={set('dateArrivee')} showTime required error={errors.dateArrivee} />
-        <DateTimePicker label="Départ" name="dateDepart" value={form.dateDepart} onChange={set('dateDepart')} showTime required error={errors.dateDepart} />
+        <DateTimePicker label="Arrivée" name="dateArrivee" value={form.dateArrivee} onChange={set('dateArrivee')} showTime required error={errors.dateArrivee?.message} />
+        <DateTimePicker label="Départ" name="dateDepart" value={form.dateDepart} onChange={set('dateDepart')} showTime required error={errors.dateDepart?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Nombre de personnes" name="nbPersonnes" value={form.nbPersonnes} onChange={set('nbPersonnes')} min={1} />
