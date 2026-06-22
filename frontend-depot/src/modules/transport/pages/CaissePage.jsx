@@ -89,7 +89,8 @@ export default function CaissePage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    api.get('/transport/caisse', { params: { page, limit, search } }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
+    const params = { page, limit }; if (search) params.search = search;
+    api.get('/transport/caisse', { params }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
   }, [page, search]);
   useEffect(() => { load(); }, [load]);
   const openCreate = () => { setEditItem(null); setFormOpen(true); };

@@ -86,11 +86,11 @@ export default function DepenseForm({ isOpen, onClose, onSuccess, edit, metier =
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Libellé *" name="libelle" value={form.libelle} onChange={set('libelle')} required placeholder="Ex: Vidange moteur" error={errors.libelle} />
+        <FormField label="Libellé *" name="libelle" value={form.libelle} onChange={set('libelle')} required placeholder="Ex: Vidange moteur" error={errors.libelle?.message} />
         <FormField label="Catégorie" name="categorie" type="select" value={form.categorie} onChange={set('categorie')} options={['CARBURANT', 'MAINTENANCE', 'ASSURANCE', 'PEAGE', 'STATIONNEMENT', 'AUTRE']} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Montant *" name="montant" type="number" value={form.montant} onChange={set('montant')} required min={0} unit="FCFA" error={errors.montant} />
+        <FormField label="Montant *" name="montant" type="number" value={form.montant} onChange={set('montant')} required min={0} unit="FCFA" error={errors.montant?.message} />
         <FormField label="Date" name="date" type="date" value={form.date} onChange={set('date')} />
       </div>
     </FormModal>

@@ -88,11 +88,11 @@ export default function ColisForm({ isOpen, onClose, onSuccess, edit, metier = '
       <AutocompleteInput label="Expéditeur" name="expediteurId" value={form.expediteurId} onChange={set('expediteurId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." />
       <FormField label="Nom expéditeur" name="nomExpediteur" value={form.nomExpediteur} onChange={set('nomExpediteur')} placeholder="Si non enregistré" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Destinataire *" name="destinataire" value={form.destinataire} onChange={set('destinataire')} required placeholder="Nom complet" error={errors.destinataire} />
-        <FormField label="Téléphone destinataire *" name="telephoneDest" type="tel" value={form.telephoneDest} onChange={set('telephoneDest')} required placeholder="6XXXXXXXX" error={errors.telephoneDest} />
+        <FormField label="Destinataire *" name="destinataire" value={form.destinataire} onChange={set('destinataire')} required placeholder="Nom complet" error={errors.destinataire?.message} />
+        <FormField label="Téléphone destinataire *" name="telephoneDest" type="tel" value={form.telephoneDest} onChange={set('telephoneDest')} required placeholder="6XXXXXXXX" error={errors.telephoneDest?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Adresse de destination *" name="adresseDest" value={form.adresseDest} onChange={set('adresseDest')} required placeholder="Adresse complète" error={errors.adresseDest} />
+        <FormField label="Adresse de destination *" name="adresseDest" value={form.adresseDest} onChange={set('adresseDest')} required placeholder="Adresse complète" error={errors.adresseDest?.message} />
         <FormField label="Ville de destination" name="villeDest" value={form.villeDest} onChange={set('villeDest')} placeholder="Ville" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -102,7 +102,7 @@ export default function ColisForm({ isOpen, onClose, onSuccess, edit, metier = '
       </div>
       <FormField label="Description" name="description" type="textarea" value={form.description} onChange={set('description')} rows={2} placeholder="Contenu du colis..." />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Montant transport" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" required error={errors.montant} />
+        <FormField label="Montant transport" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" required error={errors.montant?.message} />
         <FormField label="Mode de paiement" name="modePaiement" type="select" value={form.modePaiement} onChange={set('modePaiement')} options={['CASH', 'ORANGE_MONEY', 'MTN_MOMO']} />
       </div>
       <p className="text-xs text-slate-500">Référence auto-générée : COL-{new Date().getFullYear()}-XXX</p>

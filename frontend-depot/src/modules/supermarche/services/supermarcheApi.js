@@ -11,6 +11,17 @@ function getTenantHeaders() {
   };
 }
 
+/**
+ * Supprime les clés vides (""), null ou undefined avant envoi HTTP
+ * pour éviter des filtres invalides côté Prisma (ex: search="", rayonId="")
+ */
+function cleanParams(params) {
+  if (!params || typeof params !== 'object') return params;
+  return Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+  );
+}
+
 export const supermarcheApi = {
   // Stats / Dashboard
   getStats: () =>
@@ -18,9 +29,9 @@ export const supermarcheApi = {
 
   // Articles / Produits
   getArticles: (params) =>
-    api.get('/supermarche/articles', { ...getTenantHeaders(), params }),
+    api.get('/supermarche/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
   getProduits: (params) =>
-    api.get('/supermarche/produits', { ...getTenantHeaders(), params }),
+    api.get('/supermarche/produits', { ...getTenantHeaders(), params: cleanParams(params) }),
   getArticle: (id) =>
     api.get(`/supermarche/articles/${id}`, getTenantHeaders()),
   createArticle: (data) =>
@@ -32,7 +43,7 @@ export const supermarcheApi = {
 
   // Rayons
   getRayons: (params) =>
-    api.get('/supermarche/rayons', { ...getTenantHeaders(), params }),
+    api.get('/supermarche/rayons', { ...getTenantHeaders(), params: cleanParams(params) }),
   createRayon: (data) =>
     api.post('/supermarche/rayons', data, getTenantHeaders()),
   updateRayon: (id, data) =>
@@ -44,7 +55,7 @@ export const supermarcheApi = {
 
   // Stock
   getStock: (params) =>
-    api.get('/supermarche/stock', { ...getTenantHeaders(), params }),
+    api.get('/supermarche/stock', { ...getTenantHeaders(), params: cleanParams(params) }),
 
   // Ventes
   createVente: (data) =>

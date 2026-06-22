@@ -100,7 +100,7 @@ export default function PersonnelBoutiqueForm({ isOpen, onClose, onSuccess, edit
         name="nom"
         control={control}
         required
-        error={errors.nom}
+        error={errors.nom?.message}
         placeholder="Nom de l'employé"
       />
       <FormField
@@ -114,7 +114,7 @@ export default function PersonnelBoutiqueForm({ isOpen, onClose, onSuccess, edit
         name="email"
         type="email"
         control={control}
-        error={errors.email}
+        error={errors.email?.message}
         placeholder="email@exemple.com"
       />
       <FormField

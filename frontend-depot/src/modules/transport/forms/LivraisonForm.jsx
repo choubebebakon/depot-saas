@@ -83,8 +83,8 @@ export default function LivraisonForm({ isOpen, onClose, onSuccess, edit, metier
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier livraison' : '➕ Nouvelle livraison'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Colis *" name="colis" value={form.colis} onChange={set('colis')} required placeholder="Référence ou description du colis" error={errors.colis} />
-        <FormField label="Destinataire *" name="destinataire" value={form.destinataire} onChange={set('destinataire')} required placeholder="Nom du destinataire" error={errors.destinataire} />
+        <FormField label="Colis *" name="colis" value={form.colis} onChange={set('colis')} required placeholder="Référence ou description du colis" error={errors.colis?.message} />
+        <FormField label="Destinataire *" name="destinataire" value={form.destinataire} onChange={set('destinataire')} required placeholder="Nom du destinataire" error={errors.destinataire?.message} />
       </div>
       <FormField label="Adresse" name="adresse" value={form.adresse} onChange={set('adresse')} placeholder="Adresse de livraison" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -71,15 +71,24 @@ export default function DashboardTransport() {
 
   useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
 
-  const { data: stats, loading } = useData(`/${prefix}/stats`, { enabled: true });
+  const { data: stats, loading } = useData(`/${prefix}/stats`, { enabled: true, refetchInterval: 15_000 });
 
-  if (loading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
+  if (loading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" /></div>
 ;
 
 return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div><h1 className="text-3xl font-black text-white tracking-tight">🚛 Tableau de Bord Transport</h1><p className="text-slate-400 text-sm mt-1">{time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black text-white tracking-tight">🚛 Tableau de Bord Transport</h1>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 text-xs font-bold">En direct</span>
+            </div>
+          </div>
+          <p className="text-slate-400 text-sm mt-1">{time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        </div>
         <div className="flex gap-3">
           <button onClick={() => navigate('/transport/colis')} className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-orange-600/20">📦 Colis</button>
           <button onClick={() => navigate('/transport/trajets')} className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">🚛 Trajets</button>

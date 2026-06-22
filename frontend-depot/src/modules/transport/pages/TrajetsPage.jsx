@@ -69,7 +69,7 @@ export default function TrajetsPage() {
 
   const limit = 20;
   const load = useCallback(async () => { setLoading(true);
-    try { const r = await api.get('/transport/trajets', { params: { page, limit, search } }); setTrajets(r.data.data); setTotal(r.data.total); }
+    try { const params = { page, limit }; if (search) params.search = search; const r = await api.get('/transport/trajets', { params }); setTrajets(r.data.data); setTotal(r.data.total); }
     catch { setTrajets([]); } finally { setLoading(false); }
   }, [page, search]);
   useEffect(() => { load(); }, [load]);

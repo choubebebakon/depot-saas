@@ -83,7 +83,7 @@ export default function ChauffeurForm({ isOpen, onClose, onSuccess, edit, metier
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier chauffeur' : '➕ Nouveau chauffeur'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Nom du chauffeur" error={errors.nom} />
+        <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Nom du chauffeur" error={errors.nom?.message} />
         <FormField label="Téléphone" name="telephone" type="tel" value={form.telephone} onChange={set('telephone')} placeholder="6XXXXXXXX" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

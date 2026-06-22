@@ -83,7 +83,7 @@ export default function FlotteForm({ isOpen, onClose, onSuccess, edit, metier = 
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier véhicule' : '➕ Nouveau véhicule'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Immatriculation *" name="immatriculation" value={form.immatriculation} onChange={set('immatriculation')} required placeholder="LT 123 AB" error={errors.immatriculation} />
+        <FormField label="Immatriculation *" name="immatriculation" value={form.immatriculation} onChange={set('immatriculation')} required placeholder="LT 123 AB" error={errors.immatriculation?.message} />
         <FormField label="Marque" name="marque" value={form.marque} onChange={set('marque')} placeholder="Toyota, Mercedes..." />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

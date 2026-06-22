@@ -95,7 +95,7 @@ export default function DepenseBoutiqueForm({ isOpen, onClose, onSuccess, edit }
         name="libelle"
         control={control}
         required
-        error={errors.libelle}
+        error={errors.libelle?.message}
         placeholder="Libellé de la dépense"
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -105,7 +105,7 @@ export default function DepenseBoutiqueForm({ isOpen, onClose, onSuccess, edit }
           type="number"
           control={control}
           required
-          error={errors.montant}
+          error={errors.montant?.message}
           min="0"
           placeholder="0"
         />

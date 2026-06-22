@@ -92,11 +92,11 @@ export default function TrajetForm({ isOpen, onClose, onSuccess, edit, metier = 
         <FormField label="Chauffeur" name="chauffeurId" type="select" value={form.chauffeurId} onChange={set('chauffeurId')} options={chauffeurs.map(c => ({ value: c.id, label: c.nom }))} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Ville de départ *" name="villeDepart" value={form.villeDepart} onChange={set('villeDepart')} required placeholder="Douala" error={errors.villeDepart} />
-        <FormField label="Ville d'arrivée *" name="villeArrivee" value={form.villeArrivee} onChange={set('villeArrivee')} required placeholder="Yaoundé" error={errors.villeArrivee} />
+        <FormField label="Ville de départ *" name="villeDepart" value={form.villeDepart} onChange={set('villeDepart')} required placeholder="Douala" error={errors.villeDepart?.message} />
+        <FormField label="Ville d'arrivée *" name="villeArrivee" value={form.villeArrivee} onChange={set('villeArrivee')} required placeholder="Yaoundé" error={errors.villeArrivee?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <DateTimePicker label="Date de départ" name="dateDepart" value={form.dateDepart} onChange={set('dateDepart')} showTime required error={errors.dateDepart} />
+        <DateTimePicker label="Date de départ" name="dateDepart" value={form.dateDepart} onChange={set('dateDepart')} showTime required error={errors.dateDepart?.message} />
         <NumberInput label="Distance" name="distance" value={form.distance} onChange={set('distance')} min={0} unit="km" />
         <FormField label="Montant" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" />
       </div>

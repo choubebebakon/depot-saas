@@ -11,6 +11,17 @@ function getTenantHeaders() {
   };
 }
 
+/**
+ * Supprime les clés vides (""), null ou undefined avant envoi HTTP
+ * pour éviter des filtres invalides côté Prisma (ex: search="", depotId="")
+ */
+function cleanParams(params) {
+  if (!params || typeof params !== 'object') return params;
+  return Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+  );
+}
+
 export const depotApi = {
   // Dashboard
   getDashboardStats: () => {
@@ -21,7 +32,7 @@ export const depotApi = {
 
   // Articles / Stock
   getArticles: (params) =>
-    api.get('/depot-boissons/articles', { ...getTenantHeaders(), params }),
+    api.get('/depot-boissons/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
   getArticle: (id) =>
     api.get(`/depot-boissons/articles/${id}`, getTenantHeaders()),
   createArticle: (data) =>
@@ -65,7 +76,7 @@ export const depotApi = {
 
   // Livraisons
   getLivraisons: (params) =>
-    api.get('/depot-boissons/livraisons', { ...getTenantHeaders(), params }),
+    api.get('/depot-boissons/livraisons', { ...getTenantHeaders(), params: cleanParams(params) }),
   getLivraison: (id) =>
     api.get(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
   createLivraison: (data) =>
@@ -81,7 +92,7 @@ export const depotApi = {
 
   // Tournées
   getTournees: (params) =>
-    api.get('/depot-boissons/tournees', { ...getTenantHeaders(), params }),
+    api.get('/depot-boissons/tournees', { ...getTenantHeaders(), params: cleanParams(params) }),
   getTournee: (id) =>
     api.get(`/depot-boissons/tournees/${id}`, getTenantHeaders()),
   createTournee: (data) =>
@@ -97,7 +108,7 @@ export const depotApi = {
 
   // Clients
   getClients: (params) =>
-    api.get('/depot-boissons/clients', { ...getTenantHeaders(), params }),
+    api.get('/depot-boissons/clients', { ...getTenantHeaders(), params: cleanParams(params) }),
   getClient: (id) =>
     api.get(`/depot-boissons/clients/${id}`, getTenantHeaders()),
   createClient: (data) =>
@@ -107,11 +118,11 @@ export const depotApi = {
   payerDette: (id, data) =>
     api.post(`/depot-boissons/clients/${id}/payer-dette`, data, getTenantHeaders()),
   historiqueAchats: (id, params) =>
-    api.get(`/depot-boissons/clients/${id}/historique-achats`, { ...getTenantHeaders(), params }),
+    api.get(`/depot-boissons/clients/${id}/historique-achats`, { ...getTenantHeaders(), params: cleanParams(params) }),
 
   // Fournisseurs
   getFournisseurs: (params) =>
-    api.get('/depot-boissons/fournisseurs', { ...getTenantHeaders(), params }),
+    api.get('/depot-boissons/fournisseurs', { ...getTenantHeaders(), params: cleanParams(params) }),
   getFournisseur: (id) =>
     api.get(`/depot-boissons/fournisseurs/${id}`, getTenantHeaders()),
   createFournisseur: (data) =>
@@ -129,7 +140,7 @@ export const depotApi = {
 
   // Ventes
   getVentes: (params) =>
-    api.get('/depot-boissons/ventes', { ...getTenantHeaders(), params }),
+    api.get('/depot-boissons/ventes', { ...getTenantHeaders(), params: cleanParams(params) }),
   getVente: (id) =>
     api.get(`/depot-boissons/ventes/${id}`, getTenantHeaders()),
   createVente: (data) =>
@@ -153,7 +164,7 @@ export const depotApi = {
 
   // Dépenses
   getDepenses: (params) =>
-    api.get('/depot-boissons/depenses', { ...getTenantHeaders(), params }),
+    api.get('/depot-boissons/depenses', { ...getTenantHeaders(), params: cleanParams(params) }),
   createDepense: (data) =>
     api.post('/depot-boissons/depenses', data, getTenantHeaders()),
   deleteDepense: (id) =>
@@ -161,11 +172,11 @@ export const depotApi = {
 
   // Rapports
   getRapport: (type, params) =>
-    api.get(`/depot-boissons/rapports/${type}`, { ...getTenantHeaders(), params }),
+    api.get(`/depot-boissons/rapports/${type}`, { ...getTenantHeaders(), params: cleanParams(params) }),
   exporterRapport: (type, format, params) =>
     api.get(`/depot-boissons/rapports/${type}/export.${format}`, {
       ...getTenantHeaders(),
-      params,
+      params: cleanParams(params),
       responseType: 'blob',
     }),
 };

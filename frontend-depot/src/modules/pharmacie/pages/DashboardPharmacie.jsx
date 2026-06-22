@@ -70,7 +70,7 @@ export default function DashboardPharmacie() {
 
   const [month, setMonth] = useState(new Date().getMonth());
 
-  const { data: stats, loading } = useData(`/${prefix}/stats`, { enabled: true });
+  const { data: stats, loading } = useData(`/${prefix}/stats`, { enabled: true, refetchInterval: 15_000 });
 
   const expirees = (stats?.expirees || []).filter(i => i.datePeremption && new Date(i.datePeremption) < new Date());
 
@@ -83,7 +83,13 @@ return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">💊 Tableau de Bord Pharmacie</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black text-white tracking-tight">💊 Tableau de Bord Pharmacie</h1>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 text-xs font-bold">En direct</span>
+            </div>
+          </div>
           <p className="text-slate-400 text-sm mt-1">
             {time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>

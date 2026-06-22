@@ -86,7 +86,7 @@ export default function PersonnelForm({ isOpen, onClose, onSuccess, edit, metier
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Nom complet" error={errors.nom} />
+        <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Nom complet" error={errors.nom?.message} />
         <FormField label="Poste" name="poste" type="select" value={form.poste} onChange={set('poste')} options={['CHAUFFEUR', 'GERANT', 'LOGISTICIEN', 'MECANICIEN']} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

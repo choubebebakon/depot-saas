@@ -83,8 +83,8 @@ export default function TransportClientForm({ isOpen, onClose, onSuccess, edit, 
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier client' : '➕ Nouveau client'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Nom du client" error={errors.nom} />
-        <FormField label="Téléphone *" name="telephone" type="tel" value={form.telephone} onChange={set('telephone')} required placeholder="6XXXXXXXX" error={errors.telephone} />
+        <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Nom du client" error={errors.nom?.message} />
+        <FormField label="Téléphone *" name="telephone" type="tel" value={form.telephone} onChange={set('telephone')} required placeholder="6XXXXXXXX" error={errors.telephone?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Email" name="email" type="email" value={form.email} onChange={set('email')} placeholder="client@exemple.com" />

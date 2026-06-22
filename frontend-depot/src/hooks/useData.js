@@ -8,7 +8,7 @@ function flattenParams(p) {
 }
 
 export function useData(endpoint, options = {}) {
-  const { params = {}, enabled = true, staleTime = 1000 * 60 * 5, metier } = options;
+  const { params = {}, enabled = true, staleTime = 1000 * 60 * 5, metier, refetchInterval } = options;
   const queryClient = useQueryClient();
   const abortRef = useRef(null);
 
@@ -32,6 +32,7 @@ export function useData(endpoint, options = {}) {
     queryFn: fetchFn,
     enabled: enabled && !!url,
     staleTime,
+    refetchInterval,
     retry: 0,
   });
 
