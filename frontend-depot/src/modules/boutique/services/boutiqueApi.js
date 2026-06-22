@@ -11,6 +11,19 @@ function getTenantHeaders() {
   };
 }
 
+/**
+ * Supprime les clés dont la valeur est vide (""), null ou undefined
+ * pour éviter d'envoyer des params invalides à l'API (ex: search="", categorieId="")
+ */
+function cleanParams(params) {
+  if (!params || typeof params !== 'object') return params;
+  return Object.fromEntries(
+    Object.entries(params).filter(
+      ([, v]) => v !== '' && v !== null && v !== undefined
+    )
+  );
+}
+
 export const boutiqueApi = {
   // Stats / Dashboard
   getStats: () =>
@@ -18,7 +31,7 @@ export const boutiqueApi = {
 
   // Articles / Produits
   getArticles: (params) =>
-    api.get('/boutique/articles', { ...getTenantHeaders(), params }),
+    api.get('/boutique/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
   getArticle: (id) =>
     api.get(`/boutique/articles/${id}`, getTenantHeaders()),
   createArticle: (data) =>
@@ -30,11 +43,11 @@ export const boutiqueApi = {
 
   // Stock
   getStock: (params) =>
-    api.get('/boutique/stock', { ...getTenantHeaders(), params }),
+    api.get('/boutique/stock', { ...getTenantHeaders(), params: cleanParams(params) }),
 
   // Clients
   getClients: (params) =>
-    api.get('/boutique/clients', { ...getTenantHeaders(), params }),
+    api.get('/boutique/clients', { ...getTenantHeaders(), params: cleanParams(params) }),
   getClient: (id) =>
     api.get(`/boutique/clients/${id}`, getTenantHeaders()),
   createClient: (data) =>
@@ -46,7 +59,7 @@ export const boutiqueApi = {
 
   // Fournisseurs
   getFournisseurs: (params) =>
-    api.get('/boutique/fournisseurs', { ...getTenantHeaders(), params }),
+    api.get('/boutique/fournisseurs', { ...getTenantHeaders(), params: cleanParams(params) }),
   getFournisseur: (id) =>
     api.get(`/boutique/fournisseurs/${id}`, getTenantHeaders()),
   createFournisseur: (data) =>
@@ -58,7 +71,7 @@ export const boutiqueApi = {
 
   // Dépenses
   getDepenses: (params) =>
-    api.get('/boutique/depenses', { ...getTenantHeaders(), params }),
+    api.get('/boutique/depenses', { ...getTenantHeaders(), params: cleanParams(params) }),
   getDepense: (id) =>
     api.get(`/boutique/depenses/${id}`, getTenantHeaders()),
   createDepense: (data) =>
@@ -70,7 +83,7 @@ export const boutiqueApi = {
 
   // Factures
   getFactures: (params) =>
-    api.get('/boutique/factures', { ...getTenantHeaders(), params }),
+    api.get('/boutique/factures', { ...getTenantHeaders(), params: cleanParams(params) }),
   getFacture: (id) =>
     api.get(`/boutique/factures/${id}`, getTenantHeaders()),
   createFacture: (data) =>
@@ -82,7 +95,7 @@ export const boutiqueApi = {
 
   // Personnel
   getPersonnel: (params) =>
-    api.get('/boutique/personnel', { ...getTenantHeaders(), params }),
+    api.get('/boutique/personnel', { ...getTenantHeaders(), params: cleanParams(params) }),
   getPersonnelMember: (id) =>
     api.get(`/boutique/personnel/${id}`, getTenantHeaders()),
   createPersonnelMember: (data) =>
@@ -94,7 +107,7 @@ export const boutiqueApi = {
 
   // Promotions
   getPromotions: (params) =>
-    api.get('/boutique/promotions', { ...getTenantHeaders(), params }),
+    api.get('/boutique/promotions', { ...getTenantHeaders(), params: cleanParams(params) }),
   createPromotion: (data) =>
     api.post('/boutique/promotions', data, getTenantHeaders()),
   updatePromotion: (id, data) =>
@@ -104,7 +117,7 @@ export const boutiqueApi = {
 
   // Rapports
   getRapports: (params) =>
-    api.get('/boutique/rapports', { ...getTenantHeaders(), params }),
+    api.get('/boutique/rapports', { ...getTenantHeaders(), params: cleanParams(params) }),
 
   // Paramètres
   getParametres: () =>

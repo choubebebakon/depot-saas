@@ -63,19 +63,19 @@ export default function DepenseForm({ isOpen, onClose, onSuccess, edit, metier =
 
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier la dépense' : '💰 Nouvelle dépense'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Enregistrer'} submitIcon="💰">
-      <FormField label="Libellé" name="libelle" type="text" control={control} error={errors.libelle} />
+      <FormField label="Libellé" name="libelle" type="text" control={control} error={errors.libelle?.message} />
       <div className="grid grid-cols-2 gap-4">
-        <FormField label="Montant (F)" name="montant" type="number" control={control} error={errors.montant} />
-        <FormField label="Date" name="date" type="date" control={control} error={errors.date} />
-        <FormField label="Catégorie" name="categorie" type="select" control={control} error={errors.categorie} options={CATEGORIES.map(c => ({ value: c, label: c }))} />
-        <FormField label="Mode de paiement" name="modePaiement" type="select" control={control} error={errors.modePaiement} options={[
+        <FormField label="Montant (F)" name="montant" type="number" control={control} error={errors.montant?.message} />
+        <FormField label="Date" name="date" type="date" control={control} error={errors.date?.message} />
+        <FormField label="Catégorie" name="categorie" type="select" control={control} error={errors.categorie?.message} options={CATEGORIES.map(c => ({ value: c, label: c }))} />
+        <FormField label="Mode de paiement" name="modePaiement" type="select" control={control} error={errors.modePaiement?.message} options={[
           { value: 'cash', label: 'Cash' },
           { value: 'mobile_money', label: 'Mobile Money' },
           { value: 'cheque', label: 'Chèque' },
           { value: 'virement', label: 'Virement' },
         ]} />
       </div>
-      <FormField label="Notes" name="notes" type="textarea" control={control} error={errors.notes} rows={2} />
+      <FormField label="Notes" name="notes" type="textarea" control={control} error={errors.notes?.message} rows={2} />
     </FormModal>
   );
 }
