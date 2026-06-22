@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { getMetierConfig, getMetierWidgets } from '../config/metier-dashboard.config';
@@ -8,19 +9,19 @@ export default function GenericMetierDashboard() {
   const metierKey = metier || localStorage.getItem('gestock_metier') || 'DEPOT_BOISSONS';
   const config = getMetierConfig(metierKey);
   const widgets = getMetierWidgets(metierKey);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
-    const slug = metierKey.toLowerCase();
-    api.get('/' + slug + '/stats')
-      .then(r => setStats(r.data))
-      .catch(() => setStats(null))
-      .finally(() => setLoading(false));
-  }, [metierKey]);
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['generic-dashboard-stats', metierKey],
+    queryFn: async () => {
+      const slug = metierKey.toLowerCase();
+      const res = await api.get('/' + slug + '/stats');
+      return res.data;
+    },
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="w-10 h-10 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
@@ -30,18 +31,24 @@ export default function GenericMetierDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4 mb-2">
-        <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg"
-          style={{ backgroundColor: config?.couleur ? config.couleur + '20' : '#1e293b' }}
-        >
-          <span>{config?.icon || '📋'}</span>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg"
+            style={{ backgroundColor: config?.couleur ? config.couleur + '20' : '#1e293b' }}
+          >
+            <span>{config?.icon || '📋'}</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              {config?.label || 'Dashboard'}
+            </h1>
+            <p className="text-slate-400 text-sm">{config?.description || ''}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            {config?.label || 'Dashboard'}
-          </h1>
-          <p className="text-slate-400 text-sm">{config?.description || ''}</p>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/30">
+          <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+          <span className="text-xs font-bold text-emerald-400">En direct</span>
         </div>
       </div>
 
