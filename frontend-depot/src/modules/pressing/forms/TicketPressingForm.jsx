@@ -92,7 +92,7 @@ export default function TicketPressingForm({ isOpen, onClose, onSuccess, edit, m
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier ticket' : '🎫 Nouveau ticket pressing'} loading={loading} size="xl" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." />
-      <DateTimePicker label="Date de retrait prévue" name="dateRetrait" value={form.dateRetrait} onChange={set('dateRetrait')} showTime required error={errors.dateRetrait} />
+      <DateTimePicker label="Date de retrait prévue" name="dateRetrait" value={form.dateRetrait} onChange={set('dateRetrait')} showTime required error={errors.dateRetrait?.message} />
       <div className="border-t border-slate-700/50 pt-4 mt-2">
         <h4 className="text-white font-bold text-sm mb-3">👕 Vêtements</h4>
         {vetements.map((v, idx) => (
