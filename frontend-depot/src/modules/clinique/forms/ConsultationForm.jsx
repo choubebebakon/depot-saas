@@ -97,7 +97,7 @@ export default function ConsultationForm({ isOpen, onClose, onSuccess, metier = 
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title="🩺 Consultation" loading={loading} size="xl" submitLabel="Enregistrer la consultation" submitIcon="💾">
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       {rendezVous && <div className="p-3 bg-slate-800 rounded-xl text-sm text-slate-400 mb-4">Patient: <span className="text-white font-bold">{rendezVous.client?.nom}</span> — Médecin: <span className="text-white font-bold">{rendezVous.medecin?.nom}</span></div>}
-      <FormField label="Motif" name="motif" type="textarea" value={form.motif} onChange={set('motif')} required rows={2} error={errors.motif} />
+      <FormField label="Motif" name="motif" type="textarea" value={form.motif} onChange={set('motif')} required rows={2} error={errors.motif?.message} />
       <FormField label="Examen clinique" name="examenClinique" type="textarea" value={form.examenClinique} onChange={set('examenClinique')} rows={3} placeholder="Résultats de l'examen clinique..." />
       <FormField label="Diagnostic" name="diagnostic" type="textarea" value={form.diagnostic} onChange={set('diagnostic')} rows={3} placeholder="Diagnostic établi..." />
       <FormField label="Traitement prescrit" name="traitement" type="textarea" value={form.traitement} onChange={set('traitement')} rows={2} placeholder="Traitement recommandé..." />
@@ -123,7 +123,7 @@ export default function ConsultationForm({ isOpen, onClose, onSuccess, metier = 
       <FormField label="Examens demandés" name="examensDemandes" type="multiselect" value={form.examensDemandes} onChange={set('examensDemandes')} options={['Prise de sang', 'Radio', 'Échographie', 'IRM', 'Scanner', 'ECG', 'Analyse d\'urine']} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <DateTimePicker label="Prochain RDV" name="prochainRdv" value={form.prochainRdv} onChange={set('prochainRdv')} showTime hint="Optionnel" />
-        <FormField label="Montant" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" required error={errors.montant} />
+        <FormField label="Montant" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" required error={errors.montant?.message} />
       </div>
     </FormModal>
   );

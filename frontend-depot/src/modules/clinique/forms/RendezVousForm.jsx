@@ -89,10 +89,10 @@ export default function RendezVousForm({ isOpen, onClose, onSuccess, edit, metie
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier RDV' : '📅 Nouveau rendez-vous'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <AutocompleteInput label="Patient" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un patient..." required error={errors.clientId} />
+      <AutocompleteInput label="Patient" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un patient..." required error={errors.clientId?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Médecin" name="medecinId" type="select" value={form.medecinId} onChange={set('medecinId')} options={medecins.map(m => ({ value: m.id, label: m.nom }))} required error={errors.medecinId} />
-        <DateTimePicker label="Date et heure" name="dateHeure" value={form.dateHeure} onChange={set('dateHeure')} showTime required minDate={new Date()} error={errors.dateHeure} />
+        <FormField label="Médecin" name="medecinId" type="select" value={form.medecinId} onChange={set('medecinId')} options={medecins.map(m => ({ value: m.id, label: m.nom }))} required error={errors.medecinId?.message} />
+        <DateTimePicker label="Date et heure" name="dateHeure" value={form.dateHeure} onChange={set('dateHeure')} showTime required minDate={new Date()} error={errors.dateHeure?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Durée" name="dureeMin" value={form.dureeMin} onChange={set('dureeMin')} min={5} unit="min" />
