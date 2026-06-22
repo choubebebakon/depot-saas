@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'; import api from '../../../api'; import DepenseGlacierForm from '../forms/DepenseGlacierForm'; import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePagination } from '../../../hooks/usePagination';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -66,7 +70,7 @@ export default function CaissePage() {
   const limit = 20;
   const load = useCallback(() => {
     setLoading(true);
-    api.get('/glacier/caisse', { params: { page: 1, limit, search } }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
+    api.get('/glacier/caisse', { params: cleanParams({ page: 1, limit, search }) }).then(r => { setData(r.data.data); setTotal(r.data.total); }).catch(() => { setData([]); }).finally(() => setLoading(false));
   }, [search]);
   useEffect(() => { load(); }, [load]);
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
