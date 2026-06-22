@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { PromotionsService, ArticlesService, StockService, ClientsService, FournisseursService, DepensesService, PersonnelService, VentesService } from './boutique.service';
+import { StockQueryDto } from './dto/stock-query.dto';
 
 @Controller('boutique')
 export class BoutiqueController {
@@ -68,9 +69,9 @@ export class BoutiqueController {
 
   // --- Stock ---
   @Get('stock')
-  async findAllStock(@Req() req: any, @Query() params: any) {
+  async findAllStock(@Req() req: any, @Query() query: StockQueryDto) {
     const depotId = req.headers['x-depot-id'];
-    return this.stockService.findAll(req.user.tenantId, depotId, params);
+    return this.stockService.findAll(req.user.tenantId, depotId, query);
   }
 
   // --- Clients ---
