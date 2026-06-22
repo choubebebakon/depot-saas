@@ -103,8 +103,8 @@ export default function OrdreTravailForm({ isOpen, onClose, onSuccess, edit, met
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier OT' : '🔧 Nouvel ordre de travail'} loading={loading} size="xl" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <AutocompleteInput label="Véhicule" name="vehiculeId" value={form.vehiculeId} onChange={set('vehiculeId')} fetchSuggestions={fetchVehicules} displayKey="immatriculation" placeholder="Rechercher par immatriculation..." required error={errors.vehiculeId} />
-      <FormField label="Problème client" name="problemeClient" type="textarea" value={form.problemeClient} onChange={set('problemeClient')} required rows={2} error={errors.problemeClient} />
+      <AutocompleteInput label="Véhicule" name="vehiculeId" value={form.vehiculeId} onChange={set('vehiculeId')} fetchSuggestions={fetchVehicules} displayKey="immatriculation" placeholder="Rechercher par immatriculation..." required error={errors.vehiculeId?.message} />
+      <FormField label="Problème client" name="problemeClient" type="textarea" value={form.problemeClient} onChange={set('problemeClient')} required rows={2} error={errors.problemeClient?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <NumberInput label="Kilométrage" name="kilometrageActuel" value={form.kilometrageActuel} onChange={set('kilometrageActuel')} min={0} unit="km" />
         <FormField label="Technicien" name="technicienId" type="select" value={form.technicienId} onChange={set('technicienId')} options={techniciens.map(t => ({ value: t.id, label: t.nom }))} />

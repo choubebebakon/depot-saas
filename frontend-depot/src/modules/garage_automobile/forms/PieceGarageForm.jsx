@@ -78,9 +78,9 @@ export default function PieceGarageForm({ isOpen, onClose, onSuccess, edit, meti
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier pièce' : '🔩 Nouvelle pièce'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Désignation" name="designation" value={form.designation} onChange={set('designation')} required placeholder="Nom de la pièce" error={errors.designation} />
+      <FormField label="Désignation" name="designation" value={form.designation} onChange={set('designation')} required placeholder="Nom de la pièce" error={errors.designation?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Prix vente" name="prixVente" type="number" value={form.prixVente} onChange={set('prixVente')} min={0} unit="FCFA" required error={errors.prixVente} />
+        <FormField label="Prix vente" name="prixVente" type="number" value={form.prixVente} onChange={set('prixVente')} min={0} unit="FCFA" required error={errors.prixVente?.message} />
         <FormField label="Prix achat" name="prixAchat" type="number" value={form.prixAchat} onChange={set('prixAchat')} min={0} unit="FCFA" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
