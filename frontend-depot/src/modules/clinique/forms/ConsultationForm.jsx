@@ -6,6 +6,10 @@ import AutocompleteInput from '../../../shared/components/forms/AutocompleteInpu
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -77,7 +81,7 @@ export default function ConsultationForm({ isOpen, onClose, onSuccess, metier = 
 
   const prefix = `/${metier}`;
 
-  const fetchMedicaments = async (q) => { const r = await api.get(`${prefix}/medicaments`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchMedicaments = async (q) => { const r = await api.get(`${prefix}/medicaments`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
 
   const ajouterPrescription = () => setForm(prev => ({ ...prev, prescriptions: [...prev.prescriptions, { medicament: '', dosage: '', posologie: '', duree: '' }] }));
   const suppriméerPrescription = (idx) => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.filter((_, i) => i !== idx) }));
