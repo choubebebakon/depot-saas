@@ -6,6 +6,10 @@ import AutocompleteInput from '../../../shared/components/forms/AutocompleteInpu
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -77,7 +81,7 @@ export default function TicketPressingForm({ isOpen, onClose, onSuccess, edit, m
     if (edit?.vetements) setVetements(edit.vetements);
   }, [edit]);
   const prefix = `/${metier}`;
-  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
   const ajouterVetement = () => setVetements([...vetements, { designation: 'CHEMISE', couleur: '', marque: '', typeService: 'PRESSING_COMPLET', prixUnitaire: '', observations: '' }]);
   const suppriméerVetement = (idx) => setVetements(vetements.filter((_, i) => i !== idx));
   const updateVetement = (idx, field) => (e) => { const n = [...vetements]; n[idx] = { ...n[idx], [field]: e.target.value }; setVetements(n); };

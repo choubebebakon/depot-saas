@@ -3,6 +3,10 @@ import { useParams } from 'react-router-dom';
 import { useData } from '../../../hooks/useData';
 import { useAuth } from '../../../contexts/AuthContext';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -67,7 +71,7 @@ export default function RapportsPage() {
   const [periode, setPeriode] = useState('MOIS');
   const [time, setTime] = useState(new Date());
 
-  const { data: rapport, loading, refetch  } = useData(`/${prefix}/rapports`, { enabled: true, params: { periode } });
+  const { data: rapport, loading, refetch  } = useData(`/${prefix}/rapports`, { enabled: true, params: cleanParams({ periode }) });
 
   const totalDepenses = (rapport?.depenses || []).reduce((acc, i) => acc + (i.montant || 0), 0);
 
