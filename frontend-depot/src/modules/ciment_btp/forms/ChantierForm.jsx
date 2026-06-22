@@ -87,12 +87,12 @@ export default function ChantierForm({ isOpen, onClose, onSuccess, edit, metier 
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier chantier' : '🏗️ Nouveau chantier'} loading={loading} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." required error={errors.clientId} />
-      <FormField label="Nom du chantier" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Construction Villa Douala" error={errors.nom} />
+      <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." required error={errors.clientId?.message} />
+      <FormField label="Nom du chantier" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Construction Villa Douala" error={errors.nom?.message} />
       <FormField label="Adresse" name="adresse" value={form.adresse} onChange={set('adresse')} placeholder="Adresse du chantier" />
       <FormField label="Description" name="description" type="textarea" value={form.description} onChange={set('description')} rows={2} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <DateTimePicker label="Date de début" name="dateDebut" value={form.dateDebut} onChange={set('dateDebut')} required error={errors.dateDebut} />
+        <DateTimePicker label="Date de début" name="dateDebut" value={form.dateDebut} onChange={set('dateDebut')} required error={errors.dateDebut?.message} />
         <DateTimePicker label="Date de fin (prévue)" name="dateFin" value={form.dateFin} onChange={set('dateFin')} />
       </div>
       <FormField label="Budget estimé" name="budgetEstime" type="number" value={form.budgetEstime} onChange={set('budgetEstime')} min={0} unit="FCFA" />

@@ -104,7 +104,7 @@ export default function DevisForm({ isOpen, onClose, onSuccess, edit, metier = '
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier devis' : '📋 Nouveau devis'} loading={loading} size="xl" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." required error={errors.clientId} />
+      <AutocompleteInput label="Client" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un client..." required error={errors.clientId?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Chantier associé" name="chantierId" type="select" value={form.chantierId} onChange={set('chantierId')} options={chantiers.map(c => ({ value: c.id, label: c.nom }))} />
         <DateTimePicker label="Date d'expiration" name="dateExpiry" value={form.dateExpiry} onChange={set('dateExpiry')} />
