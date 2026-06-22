@@ -5,6 +5,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -77,7 +81,7 @@ export default function RecetteForm({ isOpen, onClose, onSuccess, edit, metier =
     if (edit?.ingredients) setIngredients(edit.ingredients);
   }, [edit]);
   const prefix = `/${metier}`;
-  const fetchArticles = async (q) => { const r = await api.get(`${prefix}/articles`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchArticles = async (q) => { const r = await api.get(`${prefix}/articles`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
   const ajouterIngredient = () => setIngredients([...ingredients, { articleId: '', quantite: 1, unite: 'kg' }]);
   const suppriméerIngredient = (idx) => setIngredients(ingredients.filter((_, i) => i !== idx));
   const updateIngredient = (idx, field) => (e) => { const n = [...ingredients]; n[idx] = { ...n[idx], [field]: e.target.value }; setIngredients(n); };
