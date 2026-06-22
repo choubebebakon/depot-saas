@@ -6,6 +6,10 @@ import AutocompleteInput from '../../../shared/components/forms/AutocompleteInpu
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -78,8 +82,8 @@ export default function DevisForm({ isOpen, onClose, onSuccess, edit, metier = '
     if (edit) { setForm({ clientId: edit.clientId || '', chantierId: edit.chantierId || '', dateExpiry: edit.dateExpiry?.slice(0, 10) || '', notes: edit.notes || '', remiseGlobale: edit.remiseGlobale || 0 }); if (edit.lignes) setLignes(edit.lignes); }
   }, [edit]);
   const prefix = `/${metier}`;
-  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
-  const fetchArticles = async (q) => { const r = await api.get(`${prefix}/articles`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchClients = async (q) => { const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
+  const fetchArticles = async (q) => { const r = await api.get(`${prefix}/articles`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
 
   const ajouterLigne = () => setLignes([...lignes, { articleId: '', designation: '', quantite: 1, unite: 'PIECE', prixUnitaire: '', remise: 0 }]);
   const suppriméerLigne = (idx) => setLignes(lignes.filter((_, i) => i !== idx));
