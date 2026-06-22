@@ -18,7 +18,10 @@ export class CimentBtpService {
     const page = Number(pagination.page) || 1;
     const limit = Number(pagination.limit) || 20;
     const skip = (page - 1) * limit;
-    const where = { tenantId, immatriculation: { contains: pagination.search, mode: 'insensitive' } as any };
+    const where: any = { tenantId };
+    if (pagination.search && typeof pagination.search === 'string' && pagination.search.trim() !== '') {
+      where.immatriculation = { contains: pagination.search, mode: 'insensitive' };
+    }
     const [data, total] = await Promise.all([
       this.prisma.vehiculeBTP.findMany({ where, skip, take: limit }),
       this.prisma.vehiculeBTP.count({ where }),
