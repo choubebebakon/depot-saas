@@ -121,12 +121,12 @@ export default function OrdonnanceForm({ isOpen, onClose, onSuccess, edit, metie
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier ordonnance' : '📋 Nouvelle ordonnance'} loading={loading} size="xl" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <AutocompleteInput label="Patient" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un patient..." required error={errors.clientId} />
+      <AutocompleteInput label="Patient" name="clientId" value={form.clientId} onChange={set('clientId')} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Rechercher un patient..." required error={errors.clientId?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Médecin" name="medecin" value={form.medecin} onChange={set('medecin')} placeholder="Nom du médecin prescripteur" />
         <FormField label="Établissement" name="etablissement" value={form.etablissement} onChange={set('etablissement')} placeholder="Hôpital, cabinet..." />
       </div>
-      <DateTimePicker label="Date d'émission" name="dateEmise" value={form.dateEmise} onChange={set('dateEmise')} showTime required error={errors.dateEmise} />
+      <DateTimePicker label="Date d'émission" name="dateEmise" value={form.dateEmise} onChange={set('dateEmise')} showTime required error={errors.dateEmise?.message} />
       <PhotoUpload label="Scan de l'ordonnance" name="photoUrl" value={form.photoUrl} onChange={(e) => setForm({ ...form, photoUrl: e.target.value })} />
       <div className="border-t border-slate-700/50 pt-4 mt-2">
         <h4 className="text-white font-bold text-sm mb-3">💊 Médicaments prescrits</h4>

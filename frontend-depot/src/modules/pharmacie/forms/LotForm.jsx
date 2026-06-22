@@ -119,10 +119,10 @@ export default function LotForm({ isOpen, onClose, onSuccess, edit, metier = 'ph
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier lot' : '🏷️ Nouveau lot'} loading={loading} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <AutocompleteInput label="Article" name="articleId" value={form.articleId} onChange={set('articleId')} fetchSuggestions={fetchArticles} displayKey="designation" placeholder="Rechercher un article..." required error={errors.articleId} />
+      <AutocompleteInput label="Article" name="articleId" value={form.articleId} onChange={set('articleId')} fetchSuggestions={fetchArticles} displayKey="designation" placeholder="Rechercher un article..." required error={errors.articleId?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Numéro de lot" name="numeroLot" value={form.numeroLot} onChange={set('numeroLot')} required placeholder="Ex: LOT-001" error={errors.numeroLot} />
-        <DateTimePicker label="Date d'expiration" name="dateExpiration" value={form.dateExpiration} onChange={set('dateExpiration')} required error={errors.dateExpiration} />
+        <FormField label="Numéro de lot" name="numeroLot" value={form.numeroLot} onChange={set('numeroLot')} required placeholder="Ex: LOT-001" error={errors.numeroLot?.message} />
+        <DateTimePicker label="Date d'expiration" name="dateExpiration" value={form.dateExpiration} onChange={set('dateExpiration')} required error={errors.dateExpiration?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <NumberInput label="Quantité" name="quantite" value={form.quantite} onChange={set('quantite')} min={1} required />

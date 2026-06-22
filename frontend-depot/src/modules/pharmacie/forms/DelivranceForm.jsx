@@ -108,7 +108,7 @@ export default function DelivranceForm({ isOpen, onClose, onSuccess, metier = 'p
         <div className="flex justify-between"><span className="text-slate-400">Déjà délivré</span><span className="text-blue-400 font-bold">{ordonnanceLigne.quantiteDelivree || 0}</span></div>
         <div className="flex justify-between"><span className="text-slate-400">Reste à délivrer</span><span className="text-emerald-400 font-bold">{reste}</span></div>
       </div>
-      <NumberInput label="Quantité à délivrer" name="quantiteDelivree" value={form.quantiteDelivree} onChange={set('quantiteDelivree')} min={1} max={reste} error={errors.quantiteDelivree} />
+      <NumberInput label="Quantité à délivrer" name="quantiteDelivree" value={form.quantiteDelivree} onChange={set('quantiteDelivree')} min={1} max={reste} error={errors.quantiteDelivree?.message} />
     </FormModal>
   );
 }
