@@ -6,6 +6,10 @@ import AutocompleteInput from '../../../shared/components/forms/AutocompleteInpu
 import NumberInput from '../../../shared/components/forms/NumberInput';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -79,7 +83,7 @@ export default function ContratLocationForm({ isOpen, onClose, onSuccess, edit, 
     if (edit) setForm({ bienId: edit.bienId || '', locataireId: edit.locataireId || '', dateDebut: edit.dateDebut?.slice(0, 10) || '', dateFin: edit.dateFin?.slice(0, 10) || '', loyer: edit.loyer || '', charges: edit.charges || '', depot: edit.depot || '', notes: edit.notes || '' });
   }, [edit]);
   const prefix = `/${metier}`;
-  const fetchLocataires = async (q) => { const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8 } }); return r.data?.data || r.data || []; };
+  const fetchLocataires = async (q) => { const r = await api.get(`${prefix}/clients`, { params: cleanParams({ search: q, limit: 8 }) }); return r.data?.data || r.data || []; };
   const handleBienChange = (e) => {
     const id = e.target.value; const bien = biens.find(b => b.id === id);
     setForm({ ...form, bienId: id, loyer: bien?.loyer || form.loyer, charges: bien?.charges || form.charges, depot: bien?.depot || form.depot });
