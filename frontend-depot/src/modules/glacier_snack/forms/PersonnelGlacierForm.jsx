@@ -84,7 +84,7 @@ export default function PersonnelGlacierForm({ isOpen, onClose, onSuccess, edit,
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Amadou Diallo" error={errors.nom} />
+      <FormField label="Nom *" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Amadou Diallo" error={errors.nom?.message} />
       <FormField label="Poste" name="poste" type="select" value={form.poste} onChange={set('poste')} options={[{ value: 'GLACIER', label: 'Glacier' }, { value: 'GERANT', label: 'Gérant' }, { value: 'CAISSIER', label: 'Caissier' }, { value: 'SERVEUR', label: 'Serveur' }]} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Téléphone" name="telephone" value={form.telephone} onChange={set('telephone')} placeholder="Ex: 77 123 45 67" />

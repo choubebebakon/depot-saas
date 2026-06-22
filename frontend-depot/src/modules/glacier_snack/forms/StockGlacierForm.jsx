@@ -84,9 +84,9 @@ export default function StockGlacierForm({ isOpen, onClose, onSuccess, edit, met
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Article *" name="article" value={form.article} onChange={set('article')} required placeholder="Ex: Lait concentré" error={errors.article} />
+      <FormField label="Article *" name="article" value={form.article} onChange={set('article')} required placeholder="Ex: Lait concentré" error={errors.article?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Quantité *" name="quantite" type="number" value={form.quantite} onChange={set('quantite')} required min={0} error={errors.quantite} />
+        <FormField label="Quantité *" name="quantite" type="number" value={form.quantite} onChange={set('quantite')} required min={0} error={errors.quantite?.message} />
         <FormField label="Seuil d'alerte" name="seuilAlerte" type="number" value={form.seuilAlerte} onChange={set('seuilAlerte')} min={0} />
       </div>
     </FormModal>
