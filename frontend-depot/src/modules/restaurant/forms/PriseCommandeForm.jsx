@@ -4,6 +4,10 @@ import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
 import NumberInput from '../../../shared/components/forms/NumberInput';
 
+const cleanParams = (params) => Object.fromEntries(
+  Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+);
+
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
   ['openModal', 'setOpenModal', 'modalOpen', 'setModalOpen', 'formOpen', 'setFormOpen', 'isModalOpen', 'setIsModalOpen', 'isOpen', 'setIsOpen', 'toast', 'showToast', 'evenementElevageOpen', 'setEvenementElevageOpen', 'vaccinationOpen', 'setVaccinationOpen', 'animalOpen', 'setAnimalOpen', 'alimOpen', 'setAlimOpen', 'reproOpen', 'setReproOpen', 'handleOpen', 'handleClose', 'handleSubmit', 'loading', 'setLoading'].forEach(p => {
@@ -77,7 +81,7 @@ export default function PriseCommandeForm({ metier = 'restaurant', onSuccess }) 
   const prefix = `/${metier}`;
 
   const fetchPlats = useCallback(async (q) => {
-    const r = await api.get(`${prefix}/plats`, { params: { search: q, limit: 20 } });
+    const r = await api.get(`${prefix}/plats`, { params: cleanParams({ search: q, limit: 20 }) });
     return r.data?.data || r.data || [];
   }, [prefix]);
 
