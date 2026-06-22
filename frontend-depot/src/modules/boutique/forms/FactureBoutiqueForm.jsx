@@ -48,7 +48,7 @@ export default function FactureBoutiqueForm({ isOpen, onClose, onSuccess, edit, 
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <FormField label="Client" name="client" value={form.client} onChange={set('client')} placeholder="Nom du client" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Montant (F CFA)" name="montant" type="number" value={form.montant} onChange={set('montant')} required error={errors.montant} min="0" placeholder="0" />
+        <FormField label="Montant (F CFA)" name="montant" type="number" value={form.montant} onChange={set('montant')} required error={errors.montant?.message} min="0" placeholder="0" />
         <FormField label="Date" name="date" type="date" value={form.date} onChange={set('date')} />
       </div>
     </FormModal>
