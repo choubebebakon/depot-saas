@@ -85,7 +85,7 @@ export default function EvenementElevageForm({ isOpen, onClose, onSuccess, edit,
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier événement' : '📅 Nouvel événement'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Lot" name="lotId" type="select" value={form.lotId} onChange={set('lotId')} options={lots?.map(l => ({ value: l.id, label: `${l.nom} (${l.nombreActuel || l.nombreInitial} têtes)` })) || []} required error={errors.lotId} />
+        <FormField label="Lot" name="lotId" type="select" value={form.lotId} onChange={set('lotId')} options={lots?.map(l => ({ value: l.id, label: `${l.nom} (${l.nombreActuel || l.nombreInitial} têtes)` })) || []} required error={errors.lotId?.message} />
         <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} options={[
           { value: 'NAISSANCE', label: '🐣 Naissance' }, { value: 'ACHAT', label: '💰 Achat' },
           { value: 'VENTE', label: '💵 Vente' }, { value: 'MORTALITE', label: '💀 Mortalité' },
@@ -94,8 +94,8 @@ export default function EvenementElevageForm({ isOpen, onClose, onSuccess, edit,
         ]} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <DateTimePicker label="Date" name="date" value={form.date} onChange={set('date')} showTime required error={errors.date} />
-        <NumberInput label="Quantité" name="quantite" value={form.quantite} onChange={set('quantite')} min={1} required error={errors.quantite} />
+        <DateTimePicker label="Date" name="date" value={form.date} onChange={set('date')} showTime required error={errors.date?.message} />
+        <NumberInput label="Quantité" name="quantite" value={form.quantite} onChange={set('quantite')} min={1} required error={errors.quantite?.message} />
       </div>
       {showPoids && <FormField label="Poids" name="poids" type="number" value={form.poids} onChange={set('poids')} hint="kg" />}
       {showMontant && <FormField label="Montant" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" />}

@@ -80,7 +80,7 @@ export default function LotElevageForm({ isOpen, onClose, onSuccess, edit, metie
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier lot' : '🐔 Nouveau lot'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Nom du lot" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Poulets Lot 01" error={errors.nom} />
+      <FormField label="Nom du lot" name="nom" value={form.nom} onChange={set('nom')} required placeholder="Ex: Poulets Lot 01" error={errors.nom?.message} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Espèce" name="espece" type="select" value={form.espece} onChange={set('espece')} options={['POULET', 'PORC', 'BOVIN', 'OVIN', 'CAPRIN', 'LAPIN', 'DINDON', 'CANARD']} />
         <FormField label="Race" name="race" value={form.race} onChange={set('race')} placeholder="Race..." />

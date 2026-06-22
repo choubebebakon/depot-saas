@@ -84,8 +84,8 @@ export default function AlimentationForm({ isOpen, onClose, onSuccess, metier = 
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title="🍽️ Alimentation" loading={loading} submitLabel="Enregistrer" submitIcon="💾">
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Lot" name="lotId" type="select" value={form.lotId} onChange={set('lotId')} options={lots?.map(l => ({ value: l.id, label: l.nom })) || []} required error={errors.lotId} />
-        <AutocompleteInput label="Aliment" name="articleId" value={form.articleId} onChange={set('articleId')} fetchSuggestions={fetchAliments} displayKey="designation" placeholder="Rechercher..." required error={errors.articleId} />
+        <FormField label="Lot" name="lotId" type="select" value={form.lotId} onChange={set('lotId')} options={lots?.map(l => ({ value: l.id, label: l.nom })) || []} required error={errors.lotId?.message} />
+        <AutocompleteInput label="Aliment" name="articleId" value={form.articleId} onChange={set('articleId')} fetchSuggestions={fetchAliments} displayKey="designation" placeholder="Rechercher..." required error={errors.articleId?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Quantité" name="quantiteKg" value={form.quantiteKg} onChange={set('quantiteKg')} min={0.1} step={0.1} unit="kg" required />

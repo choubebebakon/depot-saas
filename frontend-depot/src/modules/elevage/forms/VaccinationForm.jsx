@@ -80,11 +80,11 @@ export default function VaccinationForm({ isOpen, onClose, onSuccess, metier = '
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title="💉 Vaccination" loading={loading} submitLabel="Enregistrer" submitIcon="💾">
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Lot" name="lotId" type="select" value={form.lotId} onChange={set('lotId')} options={lots?.map(l => ({ value: l.id, label: l.nom })) || []} required error={errors.lotId} />
-        <FormField label="Vaccin" name="vaccin" value={form.vaccin} onChange={set('vaccin')} required placeholder="Nom du vaccin" error={errors.vaccin} />
+        <FormField label="Lot" name="lotId" type="select" value={form.lotId} onChange={set('lotId')} options={lots?.map(l => ({ value: l.id, label: l.nom })) || []} required error={errors.lotId?.message} />
+        <FormField label="Vaccin" name="vaccin" value={form.vaccin} onChange={set('vaccin')} required placeholder="Nom du vaccin" error={errors.vaccin?.message} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <DateTimePicker label="Date de vaccination" name="dateVaccin" value={form.dateVaccin} onChange={set('dateVaccin')} showTime required error={errors.dateVaccin} />
+        <DateTimePicker label="Date de vaccination" name="dateVaccin" value={form.dateVaccin} onChange={set('dateVaccin')} showTime required error={errors.dateVaccin?.message} />
         <NumberInput label="Animaux vaccinés" name="quantite" value={form.quantite} onChange={set('quantite')} min={1} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
