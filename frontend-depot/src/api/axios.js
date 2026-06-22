@@ -71,7 +71,9 @@ api.interceptors.request.use((config) => {
   config.headers['X-Depot-Id'] = depotId;
 
   if (['get', 'delete'].includes((config.method || 'get').toLowerCase())) {
-    config.params = { ...(config.params || {}), depotId: config.params?.depotId ?? depotId };
+    const existingDepotId = config.params?.depotId;
+    const finalDepotId = (typeof existingDepotId === 'string' && existingDepotId.trim()) ? existingDepotId : depotId;
+    config.params = { ...(config.params || {}), depotId: finalDepotId };
     return config;
   }
 
