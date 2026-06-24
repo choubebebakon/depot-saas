@@ -1,8 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards, BadRequestException } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { Metier } from '../../auth/decorators/metier.decorator';
+import { MetierGuard } from '../../common/guards/metier.guard';
+import { MetierType } from '../../common/config/metier-roles.config';
 import { PromotionsService, ArticlesService, StockService, ClientsService, FournisseursService, DepensesService, PersonnelService, VentesService } from './boutique.service';
 import { StockQueryDto } from './dto/stock-query.dto';
 
 @Controller('boutique')
+@Metier(MetierType.BOUTIQUE)
+@UseGuards(JwtAuthGuard, MetierGuard)
 export class BoutiqueController {
   constructor(
     private promotionsService: PromotionsService,
@@ -126,7 +132,7 @@ export class BoutiqueController {
     return this.fournisseursService.delete(id, req.user.tenantId);
   }
 
-  // --- Dépenses ---
+  // --- DÃ©penses ---
   @Get('depenses')
   async findAllDepenses(@Req() req: any, @Query() params: any) {
     return this.depensesService.findAll(req.user.tenantId, params);
@@ -206,7 +212,7 @@ export class BoutiqueController {
     return this.ventesService.getStats(req.user.tenantId);
   }
 
-  // --- Catégories ---
+  // --- CatÃ©gories ---
   @Get('categories')
   getCategories(@Req() req: any, @Query() query: any) {
     return this.ventesService.findAllCategories(req.user.tenantId, query);
@@ -247,9 +253,17 @@ export class BoutiqueController {
   async updateParametres(@Body() body: any) {
     return body;
   }
-
   @Get('caisse')
   async getCaisse() {
     return { data: [], total: 0 };
   }
+
+  private checkTenantId(req: any) {
+    if (!req.user?.tenantId) {
+      throw new BadRequestException("Accès refusé : tenantId manquant dans le token.");
+    }
+  }
 }
+
+
+
