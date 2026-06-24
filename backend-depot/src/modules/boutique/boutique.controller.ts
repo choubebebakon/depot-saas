@@ -76,7 +76,7 @@ export class BoutiqueController {
   // --- Stock ---
   @Get('stock')
   async findAllStock(@Req() req: any, @Query() query: StockQueryDto) {
-    const depotId = req.headers['x-depot-id'];
+    const depotId = req.headers['x-depot-id'] || null;
     return this.stockService.findAll(req.user.tenantId, depotId, query);
   }
 
@@ -264,6 +264,7 @@ export class BoutiqueController {
     }
   }
 }
+
 
 
 
