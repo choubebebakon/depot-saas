@@ -132,7 +132,7 @@ export class BoutiqueController {
     return this.fournisseursService.delete(id, req.user.tenantId);
   }
 
-  // --- DÃ©penses ---
+  // --- Dépenses ---
   @Get('depenses')
   async findAllDepenses(@Req() req: any, @Query() params: any) {
     return this.depensesService.findAll(req.user.tenantId, params);
@@ -212,7 +212,7 @@ export class BoutiqueController {
     return this.ventesService.getStats(req.user.tenantId);
   }
 
-  // --- CatÃ©gories ---
+  // --- Catégories ---
   @Get('categories')
   getCategories(@Req() req: any, @Query() query: any) {
     return this.ventesService.findAllCategories(req.user.tenantId, query);
@@ -264,6 +264,7 @@ export class BoutiqueController {
     }
   }
 }
+
 
 
 
