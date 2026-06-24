@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { Promotion, Article, Stock, Client, Fournisseur, Depense, User } from '@prisma/client';
 import { CATEGORIES_PAR_TYPE } from '../../../prisma/seeds/categoriesBoutique';
@@ -22,7 +22,7 @@ export class PromotionsService {
       where: { id, tenantId },
       include: { article: true },
     });
-    if (!promotion) throw new NotFoundException('Promotion non trouvée');
+    if (!promotion) throw new NotFoundException('Promotion non trouvÃ©e');
     return promotion;
   }
 
@@ -85,7 +85,7 @@ export class ArticlesService {
       where: { id, tenantId },
       include: { famille: true, marque: true },
     });
-    if (!article) throw new NotFoundException('Article non trouvé');
+    if (!article) throw new NotFoundException('Article non trouvÃ©');
     return article;
   }
 
@@ -116,14 +116,15 @@ export class StockService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string, depotId?: string, params?: any) {
-    const { page = 1, limit = 50, search } = params || {};
+    const { page = 1, limit = 50, search, categorieId } = params || {};
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
     if (depotId) where.depotId = depotId;
-    if (search) {
+    if (search || categorieId) {
       where.article = {
-        designation: { contains: search, mode: 'insensitive' },
+        ...(search ? { designation: { contains: search, mode: 'insensitive' } } : {}),
+        ...(categorieId ? { categorieId } : {}),
       };
     }
 
@@ -147,7 +148,7 @@ export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string, params?: any) {
-    const { page = 1, limit = 50, search } = params || {};
+    const { page = 1, limit = 50, search, categorieId } = params || {};
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
@@ -177,7 +178,7 @@ export class ClientsService {
       where: { id, tenantId },
       include: { depot: true },
     });
-    if (!client) throw new NotFoundException('Client non trouvé');
+    if (!client) throw new NotFoundException('Client non trouvÃ©');
     return client;
   }
 
@@ -208,7 +209,7 @@ export class FournisseursService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string, params?: any) {
-    const { page = 1, limit = 50, search } = params || {};
+    const { page = 1, limit = 50, search, categorieId } = params || {};
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
@@ -238,7 +239,7 @@ export class FournisseursService {
       where: { id, tenantId },
       include: { depot: true },
     });
-    if (!fournisseur) throw new NotFoundException('Fournisseur non trouvé');
+    if (!fournisseur) throw new NotFoundException('Fournisseur non trouvÃ©');
     return fournisseur;
   }
 
@@ -294,7 +295,7 @@ export class DepensesService {
       where: { id, tenantId },
       include: { depot: true },
     });
-    if (!depense) throw new NotFoundException('Dépense non trouvée');
+    if (!depense) throw new NotFoundException('DÃ©pense non trouvÃ©e');
     return depense;
   }
 
@@ -356,7 +357,7 @@ export class PersonnelService {
       where: { id, tenantId },
       include: { depot: true },
     });
-    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+    if (!user) throw new NotFoundException('Utilisateur non trouvÃ©');
     return user;
   }
 
@@ -472,11 +473,11 @@ export class VentesService {
       where: { id, tenantId },
       include: { lignes: { include: { article: true } }, client: true, depot: true },
     });
-    if (!vente) throw new NotFoundException('Vente non trouvée');
+    if (!vente) throw new NotFoundException('Vente non trouvÃ©e');
     return vente;
   }
 
-  // ── Rapports ────────────────────────────────────────────────────────────────
+  // â”€â”€ Rapports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async getRapports(tenantId: string, periode?: string, dateDebut?: string, dateFin?: string) {
     const end = dateFin ? new Date(dateFin) : new Date();
@@ -529,7 +530,7 @@ export class VentesService {
     };
   }
 
-  // ── Stats / Dashboard ────────────────────────────────────────────────────────
+  // â”€â”€ Stats / Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async getStats(tenantId: string) {
     const today = new Date();
@@ -574,11 +575,11 @@ export class VentesService {
       clientsActifs,
       stockCritique,
       totalProduits,
-      caisseJour: caJour._sum.total ?? 0, // Alias pour compatibilité frontend
+      caisseJour: caJour._sum.total ?? 0, // Alias pour compatibilitÃ© frontend
     };
   }
 
-  // ── Catégories ───────────────────────────────────────────────────────────────
+  // â”€â”€ CatÃ©gories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async findAllCategories(tenantId: string, query?: any) {
     return this.prisma.categorie.findMany({
@@ -593,7 +594,7 @@ export class VentesService {
       where: { id, tenantId },
       include: { articles: true },
     });
-    if (!cat) throw new NotFoundException(`Catégorie ${id} introuvable`);
+    if (!cat) throw new NotFoundException(`CatÃ©gorie ${id} introuvable`);
     return cat;
   }
 
@@ -610,13 +611,13 @@ export class VentesService {
 
   async deleteCategorie(tenantId: string, id: string) {
     await this.findOneCategorie(tenantId, id);
-    // Vérifier qu'aucun article n'utilise cette catégorie
+    // VÃ©rifier qu'aucun article n'utilise cette catÃ©gorie
     const count = await this.prisma.article.count({
       where: { categorieId: id, tenantId },
     });
     if (count > 0) {
       throw new BadRequestException(
-        `Impossible de supprimer : ${count} article(s) utilisent cette catégorie`
+        `Impossible de supprimer : ${count} article(s) utilisent cette catÃ©gorie`
       );
     }
     return this.prisma.categorie.delete({ where: { id } });
@@ -634,3 +635,5 @@ export class VentesService {
     return { created: created.length, type: typeBoutique };
   }
 }
+
+
