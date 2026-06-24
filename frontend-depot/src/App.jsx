@@ -24,6 +24,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const CguPage = lazy(() => import('./pages/CguPage'));
+const BientotDisponible = lazy(() => import('./pages/BientotDisponible'));
 const MainLayout = lazy(() => import('./layouts/MainLayout'));
 
 // Importation des routes par métier
@@ -101,6 +102,7 @@ function AppRoutes() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/onboarding/metier" element={<OnboardingMetierPage />} />
+          <Route path="/bientot-disponible" element={<BientotDisponible />} />
           
           {/* Gestion des redirections initiales */}
           <Route path="/dashboard" element={<SectorHomeRedirect />} />

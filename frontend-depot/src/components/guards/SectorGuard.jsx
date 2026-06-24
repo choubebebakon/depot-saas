@@ -1,6 +1,31 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Métiers disponibles pour les clients
+const METIERS_ACTIFS = [
+  'DEPOT_BOISSONS',
+  'BOUTIQUE',
+  'SUPERMARCHE',
+  // --- MÉTIERS GELÉS (réactivation future un par un) ---
+  // 'PHARMACIE',
+  // 'RESTAURANT',
+  // 'SALON_BEAUTE',
+  // 'PRESSING',
+  // 'GARAGE_AUTOMOBILE',
+  // 'ELEVAGE',
+  // 'HOTEL',
+  // 'IMMOBILIER',
+  // 'LIBRAIRIE',
+  // 'GLACIER_SNACK',
+  // 'CLINIQUE',
+  // 'CIMENT_BTP',
+  // 'TELEPHONIE',
+  // 'BOULANGERIE',
+  // 'QUINCAILLERIE',
+  // 'TRANSPORT',
+  // 'SUPERMARCHE_PRO',
+];
+
 const SECTOR_ROUTES = {
   DEPOT_BOISSONS:    { prefix: '/depot',         label: 'Dépôt' },
   BOUTIQUE:          { prefix: '/boutique',     label: 'Boutique' },
@@ -38,7 +63,7 @@ function GuardLoader() {
 
 export default function SectorGuard({ children, allowedSectors }) {
   // FIX M4 : Extraction de loading pour bloquer les redirections prématurées au boot
-  const { metier, isAuthenticated, loading } = useAuth();
+  const { metier, isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
   // Si l'authentification est en cours de vérification, on fige le rendu sur un loader propre
@@ -51,10 +76,9 @@ export default function SectorGuard({ children, allowedSectors }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Si aucun allowedSectors spécifié, on laisse passer
-  if (!allowedSectors || allowedSectors.length === 0) {
-    return children;
-  }
+  // Toi seul (SUPER_ADMIN) vois tout
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' ||
+                       user?.email === 'choubebebakon@gmail.com';
 
   const userSector = metier || localStorage.getItem('gestock_metier');
 
@@ -62,15 +86,25 @@ export default function SectorGuard({ children, allowedSectors }) {
     return <Navigate to="/onboarding/metier" replace />;
   }
 
+  // Vérifier si le métier est actif (sauf pour SUPER_ADMIN)
+  if (!isSuperAdmin && !METIERS_ACTIFS.includes(userSector)) {
+    return <Navigate to="/bientot-disponible" replace />;
+  }
+
+  // Si aucun allowedSectors spécifié, on laisse passer
+  if (!allowedSectors || allowedSectors.length === 0) {
+    return children;
+  }
+
   // Vérifier si le secteur de l'utilisateur est autorisé
   if (!allowedSectors.includes(userSector)) {
     const redirectTo = getSectorPrefix(userSector);
-    
+
     // Sécurité supplémentaire : évite la boucle infinie si redirectTo correspond à la route actuelle
     if (location.pathname.startsWith(redirectTo)) {
       return children;
     }
-    
+
     return <Navigate to={redirectTo} replace />;
   }
 
