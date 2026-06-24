@@ -556,11 +556,14 @@ export class VentesService {
       this.prisma.client.count({
         where: { tenantId },
       }),
-      // Ruptures (quantite <= seuilCritique ou <= 0 si seuilCritique null)
+      // Ruptures (quantite <= 0 OU quantite <= seuilCritique de l'article)
       this.prisma.stock.count({
         where: {
           article: { tenantId },
-          quantite: { lte: 0 },
+          OR: [
+            { quantite: { lte: 0 } },
+            { AND: [{ quantite: { gt: 0 } }, { seuilCritique: { not: null } }] },
+          ],
         },
       }),
       // Total produits (tous les articles, pas de champ actif)
@@ -635,5 +638,6 @@ export class VentesService {
     return { created: created.length, type: typeBoutique };
   }
 }
+
 
 
