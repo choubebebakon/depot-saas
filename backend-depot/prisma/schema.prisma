@@ -366,6 +366,7 @@ model LigneVente {
 model Client {
   id                    String                 @id @default(uuid())
   nom                   String
+  email                 String?
   telephone             String?
   adresse               String?
   plafondCredit         Float                  @default(0)

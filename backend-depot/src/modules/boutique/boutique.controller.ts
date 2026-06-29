@@ -15,6 +15,9 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+// DTOs Articles (dans module Boutique)
+import { CreateArticleDto } from './dto/create-article.dto';
+import { UpdateArticleDto } from './dto/update-article.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -104,7 +107,7 @@ export class BoutiqueController {
 
   // ── Articles ──────────────────────────────────────────────────────────────
 
-  @Get('articles')
+ @Get('articles')
   async findAllArticles(@Req() req: any, @Query() params: any) {
     return this.articlesService.findAll(this.getTenantId(req), params);
   }
@@ -115,14 +118,15 @@ export class BoutiqueController {
   }
 
   @Post('articles')
-  async createArticle(@Body() data: any, @Req() req: any) {
+  async createArticle(@Body() data: CreateArticleDto, @Req() req: any) {
+    // Le ValidationPipe va transformer et valider 'data' automatiquement ici
     return this.articlesService.create(data, this.getTenantId(req));
   }
 
   @Patch('articles/:id')
   async updateArticle(
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateArticleDto, // Utilise UpdateArticleDto ici
     @Req() req: any,
   ) {
     return this.articlesService.update(id, data, this.getTenantId(req));
@@ -131,7 +135,7 @@ export class BoutiqueController {
   @Put('articles/:id')
   async updateArticlePut(
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateArticleDto, // Et ici
     @Req() req: any,
   ) {
     return this.articlesService.update(id, data, this.getTenantId(req));
@@ -142,7 +146,6 @@ export class BoutiqueController {
   async deleteArticle(@Param('id') id: string, @Req() req: any) {
     return this.articlesService.delete(id, this.getTenantId(req));
   }
-
   // ── Stock ─────────────────────────────────────────────────────────────────
 
   @Get('stock')

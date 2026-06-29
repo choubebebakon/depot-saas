@@ -903,7 +903,7 @@ export class VentesService {
         couleur: dto.couleur || '#6366f1',
         icone: dto.icone || '🏷️',
         actif: dto.actif !== undefined ? Boolean(dto.actif) : true,
-        ordre: parseInt(dto.ordre) || 0,
+        ordre: Number.isFinite(Number(dto.ordre)) ? Number(dto.ordre) : 0,
       },
     });
   }
@@ -916,7 +916,10 @@ export class VentesService {
     if (dto.couleur !== undefined) updateData.couleur = dto.couleur;
     if (dto.icone !== undefined) updateData.icone = dto.icone;
     if (dto.actif !== undefined) updateData.actif = Boolean(dto.actif);
-    if (dto.ordre !== undefined) updateData.ordre = parseInt(dto.ordre) || 0;
+    if (dto.ordre !== undefined) {
+      const n = Number(dto.ordre);
+      updateData.ordre = Number.isFinite(n) ? n : 0;
+    }
     return this.prisma.categorie.update({ where: { id }, data: updateData });
   }
 

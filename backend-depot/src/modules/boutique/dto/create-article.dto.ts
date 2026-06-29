@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, IsInt } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString, IsNotEmpty, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateArticleDto {
@@ -8,7 +8,7 @@ export class CreateArticleDto {
 
   @Type(() => Number)
   @IsNumber()
-  @Min(0.01) // Le prix doit être > 0
+  @Min(0.01)
   prixVente: number;
 
   @IsOptional()
@@ -30,4 +30,22 @@ export class CreateArticleDto {
   @IsOptional()
   @IsString()
   marqueId?: string;
+
+  @IsOptional()
+  @IsString()
+  format?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  prixBouteille?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  margeBouteille?: number;
+
+  @IsOptional()
+  estConsigne?: boolean;
 }
+

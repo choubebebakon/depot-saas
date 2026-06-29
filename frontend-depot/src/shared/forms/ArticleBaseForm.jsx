@@ -11,7 +11,14 @@ export default function ArticleBaseForm({ isOpen, onClose, onSuccess, edit, meti
   const [marques, setMarques] = useState([]);
 
   useEffect(() => {
-    if (edit) setForm({ designation: edit.designation || edit.nom || '', prixVente: edit.prixVente || '', prixAchat: edit.prixAchat || '', seuilCritique: edit.seuilCritique || 0, familleId: edit.familleId || '', marqueId: edit.marqueId || '' });
+    if (edit) setForm({ 
+      designation: edit.designation || edit.nom || '', 
+      prixVente: edit.prixVente || '', 
+      prixAchat: edit.prixAchat || '', 
+      seuilCritique: edit.seuilCritique || 0, 
+      familleId: edit.familleId || '', 
+      marqueId: edit.marqueId || '' 
+    });
     else setForm({ designation: '', prixVente: '', prixAchat: '', seuilCritique: 0, familleId: '', marqueId: '' });
   }, [edit, isOpen]);
 
@@ -24,27 +31,41 @@ export default function ArticleBaseForm({ isOpen, onClose, onSuccess, edit, meti
 
   const validate = () => {
     const errs = {};
-    if (!form.designation || form.designation.length < 2) errs.designation = 'La désignation est obligatoire (min 2 caractères)';
-    if (!form.prixVente || Number(form.prixVente) <= 0) errs.prixVente = 'Le prix de vente doit être supérieur à 0';
-    if (form.prixAchat && Number(form.prixAchat) < 0) errs.prixAchat = 'Le prix d\'achat doit être positif';
-    if (form.seuilCritique < 0) errs.seuilCritique = 'Le seuil doit être positif ou nul';
+    const designation = String(form.designation ?? '').trim();
+    const prixVenteNum = Number.parseFloat(form.prixVente);
+    const prixAchatNum = (form.prixAchat === '' || form.prixAchat === null) ? undefined : Number.parseFloat(form.prixAchat);
+    const seuilCritiqueNum = Number.parseFloat(form.seuilCritique);
+
+    if (!designation || designation.length < 2) errs.designation = 'La désignation est obligatoire (min 2 caractères)';
+    if (!Number.isFinite(prixVenteNum) || prixVenteNum <= 0) errs.prixVente = 'Le prix de vente doit être supérieur à 0';
+    if (prixAchatNum !== undefined && (Number.isNaN(prixAchatNum) || prixAchatNum < 0)) errs.prixAchat = 'Le prix d\'achat est invalide';
+    if (!Number.isFinite(seuilCritiqueNum) || seuilCritiqueNum < 0) errs.seuilCritique = 'Le seuil doit être positif ou nul';
+
     return errs;
   };
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
-
-  const defaultEndpoint = prefix + '/articles';
-  const endpoint = edit ? `${defaultEndpoint}/${edit.id}` : defaultEndpoint;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+
     setLoading(true);
     try {
-      if (edit) await api.patch(endpoint, form);
-      else await api.post(endpoint, form);
+      // Nettoyage et conversion des types avant envoi
+      const payload = {
+        ...form,
+        prixVente: parseFloat(form.prixVente),
+        prixAchat: form.prixAchat ? parseFloat(form.prixAchat) : null,
+        seuilCritique: parseInt(form.seuilCritique, 10),
+      };
+
+      const endpoint = edit ? `${prefix}/articles/${edit.id}` : `${prefix}/articles`;
+      if (edit) await api.patch(endpoint, payload);
+      else await api.post(endpoint, payload);
+      
       onSuccess();
       onClose();
     } catch (err) {
@@ -57,18 +78,23 @@ export default function ArticleBaseForm({ isOpen, onClose, onSuccess, edit, meti
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={title || (edit ? '✏️ Modifier l\'article' : '📦 Nouvel article')} loading={loading} submitIcon={edit ? '💾' : '➕'} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
-      <FormField label="Désignation" name="designation" value={form.designation} onChange={set('designation')} required error={errors.designation?.message} placeholder="Nom de l'article" />
+      
+      <FormField label="Désignation" name="designation" value={form.designation} onChange={set('designation')} required error={errors.designation} placeholder="Nom de l'article" />
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Prix de vente" name="prixVente" type="number" value={form.prixVente} onChange={set('prixVente')} required min={0} unit="FCFA" error={errors.prixVente?.message} />
-        <FormField label="Prix d'achat" name="prixAchat" type="number" value={form.prixAchat} onChange={set('prixAchat')} min={0} unit="FCFA" error={errors.prixAchat?.message} hint="Optionnel, pour calcul des marges" />
+        <FormField label="Prix de vente" name="prixVente" type="number" value={form.prixVente} onChange={set('prixVente')} required min={0} unit="FCFA" error={errors.prixVente} />
+        <FormField label="Prix d'achat" name="prixAchat" type="number" value={form.prixAchat} onChange={set('prixAchat')} min={0} unit="FCFA" error={errors.prixAchat} hint="Optionnel, pour calcul des marges" />
       </div>
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Seuil critique" name="seuilCritique" type="number" value={form.seuilCritique} onChange={set('seuilCritique')} min={0} error={errors.seuilCritique?.message} hint="Alerte stock minimum" />
+        <FormField label="Seuil critique" name="seuilCritique" type="number" value={form.seuilCritique} onChange={set('seuilCritique')} min={0} error={errors.seuilCritique} hint="Alerte stock minimum" />
         <FormField label="Famille" name="familleId" type="select" value={form.familleId} onChange={set('familleId')} options={familles.map(f => ({ value: f.id, label: f.nom }))} />
       </div>
+      
       {familles.length > 0 && (
         <FormField label="Marque" name="marqueId" type="select" value={form.marqueId} onChange={set('marqueId')} options={marques.map(m => ({ value: m.id, label: m.nom }))} />
       )}
+      
       {extraFields && (
         <div className="space-y-4 pt-2 border-t border-slate-700/50">
           {extraFields({ form, set, errors })}
