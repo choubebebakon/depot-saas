@@ -699,13 +699,19 @@ export class VentesService {
   async findAll(tenantId: string, params?: any) {
     const page = toPositiveInt(params?.page, 1);
     const limit = toPositiveInt(params?.limit, 50);
+
+    // Statut peut être filtré depuis les alias (ex: factures = PAYE)
     const statut = params?.statut;
     const clientId = params?.clientId;
     const depotId = params?.depotId;
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
+
+    // Par défaut : si une couche supérieure impose un statut, on l'applique.
+    // (Pour factures, le controller force statut='PAYE')
     if (statut) where.statut = statut;
+
     if (clientId) where.clientId = clientId;
     if (depotId) where.depotId = depotId;
 
@@ -725,6 +731,7 @@ export class VentesService {
 
     return { data, total, page, limit };
   }
+
 
   async findOne(id: string, tenantId: string) {
     const vente = await this.prisma.vente.findFirst({

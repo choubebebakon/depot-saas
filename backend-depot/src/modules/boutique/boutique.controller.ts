@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+
   Put,
   Patch,
   Delete,
@@ -394,12 +395,37 @@ export class BoutiqueController {
     return this.ventesService.getStats(this.getTenantId(req));
   }
 
+  // ── Factures (alias Vente PAYE) ─────────────────────────────────────────
+
+  @Get('factures')
+  async findAllFactures(
+    @Req() req: any,
+    @Query() params: any,
+  ) {
+    // Force statut PAYE côté backend
+    return this.ventesService.findAll(this.getTenantId(req), {
+      ...params,
+      statut: 'PAYE',
+      depotId: params?.depotId || this.getDepotId(req),
+    });
+  }
+
+  @Get('factures/:id')
+  async findOneFacture(@Param('id') id: string, @Req() req: any) {
+    const vente = await this.ventesService.findOne(id, this.getTenantId(req));
+    if (vente.statut !== 'PAYE') {
+      throw new BadRequestException('Facture introuvable : vente non payée');
+    }
+    return vente;
+  }
+
   // ── Catégories ────────────────────────────────────────────────────────────
 
   @Get('categories')
   getCategories(@Req() req: any, @Query() query: any) {
     return this.ventesService.findAllCategories(this.getTenantId(req), query);
   }
+
 
   @Get('categories/:id')
   getCategorie(@Req() req: any, @Param('id') id: string) {
