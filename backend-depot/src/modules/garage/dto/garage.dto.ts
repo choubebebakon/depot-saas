@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateVehiculeClientDto {
@@ -19,7 +25,11 @@ export class CreateFicheTravailDto {
   @IsString() vehiculeId: string;
   @IsString() problemeClient: string;
   @IsOptional() @IsString() travaux?: string;
-  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => PieceGarageDto) pieces?: PieceGarageDto[];
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PieceGarageDto)
+  pieces?: PieceGarageDto[];
 }
 
 export class UpdateFicheStatutDto {

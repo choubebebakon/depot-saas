@@ -1,4 +1,12 @@
-import { Controller, Headers, HttpCode, HttpStatus, Post, Req, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Request } from 'express';
@@ -13,7 +21,9 @@ interface RequestWithRawBody extends Request {
 interface NotchPayWebhookPayload {
   type?: string;
   event?: string;
-  data?: NotchPayWebhookTransaction | { transaction?: NotchPayWebhookTransaction };
+  data?:
+    | NotchPayWebhookTransaction
+    | { transaction?: NotchPayWebhookTransaction };
   transaction?: NotchPayWebhookTransaction;
 }
 
@@ -51,7 +61,12 @@ export class PaymentWebhookController {
 
     const payload = request.body as NotchPayWebhookPayload;
     const transaction = this.extractTransaction(payload);
-    const status = (transaction?.status ?? payload.type ?? payload.event ?? '').toLowerCase();
+    const status = (
+      transaction?.status ??
+      payload.type ??
+      payload.event ??
+      ''
+    ).toLowerCase();
     const reference = transaction?.trxref ?? transaction?.reference;
     const paymentId = transaction?.metadata?.paymentId;
 
@@ -86,9 +101,13 @@ export class PaymentWebhookController {
     return { received: true, status: 'PROCESSED' };
   }
 
-  private assertValidSignature(request: RequestWithRawBody, signature: string | undefined): void {
+  private assertValidSignature(
+    request: RequestWithRawBody,
+    signature: string | undefined,
+  ): void {
     const hashKey = this.notchPayService.getWebhookSecret();
-    const payload = request.rawBody?.toString('utf8') ?? JSON.stringify(request.body);
+    const payload =
+      request.rawBody?.toString('utf8') ?? JSON.stringify(request.body);
 
     if (!payload || !signature) {
       throw new UnauthorizedException({
@@ -97,11 +116,16 @@ export class PaymentWebhookController {
       });
     }
 
-    const expected = createHmac('sha256', hashKey).update(payload).digest('hex');
+    const expected = createHmac('sha256', hashKey)
+      .update(payload)
+      .digest('hex');
     const expectedBuffer = Buffer.from(expected, 'utf8');
     const receivedBuffer = Buffer.from(signature, 'utf8');
 
-    if (expectedBuffer.length !== receivedBuffer.length || !timingSafeEqual(expectedBuffer, receivedBuffer)) {
+    if (
+      expectedBuffer.length !== receivedBuffer.length ||
+      !timingSafeEqual(expectedBuffer, receivedBuffer)
+    ) {
       throw new UnauthorizedException({
         error: 'WEBHOOK_INVALID',
         message: 'Signature NotchPay invalide.',
@@ -109,7 +133,9 @@ export class PaymentWebhookController {
     }
   }
 
-  private extractTransaction(payload: NotchPayWebhookPayload): NotchPayWebhookTransaction | undefined {
+  private extractTransaction(
+    payload: NotchPayWebhookPayload,
+  ): NotchPayWebhookTransaction | undefined {
     if (payload.transaction) return payload.transaction;
 
     if (payload.data && 'transaction' in payload.data) {

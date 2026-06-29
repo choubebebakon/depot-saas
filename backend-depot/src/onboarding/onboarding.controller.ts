@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UseGuards, Req, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  BadRequestException,
+} from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
 import { MetierType } from '../common/config/metier-roles.config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -13,6 +20,10 @@ export class OnboardingController {
     if (metier === MetierType.DEPOT_BOISSONS) {
       throw new BadRequestException('Métier non autorisé ici');
     }
-    return this.onboardingService.setupMetier(req.user.tenantId, metier, req.user.userId);
+    return this.onboardingService.setupMetier(
+      req.user.tenantId,
+      metier,
+      req.user.userId,
+    );
   }
 }

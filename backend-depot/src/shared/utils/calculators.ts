@@ -11,5 +11,5 @@ export const calculateTTC = (ht: number, tvaRate: number = 0.1925): number => {
  * Calcule une réduction
  */
 export const calculateDiscount = (price: number, percent: number): number => {
-  return Number((price - (price * (percent / 100))).toFixed(2));
+  return Number((price - price * (percent / 100)).toFixed(2));
 };

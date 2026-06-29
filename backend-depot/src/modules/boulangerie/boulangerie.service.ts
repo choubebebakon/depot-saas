@@ -48,8 +48,14 @@ export class BoulangerieService {
     }
     const [data, total] = await Promise.all([
       this.prisma.recette.findMany({
-        where, skip, take: limit,
-        include: { article: true, ingredients: { include: { article: true } }, productions: { take: 5, orderBy: { date: 'desc' } } },
+        where,
+        skip,
+        take: limit,
+        include: {
+          article: true,
+          ingredients: { include: { article: true } },
+          productions: { take: 5, orderBy: { date: 'desc' } },
+        },
         orderBy: { nom: 'asc' },
       }),
       this.prisma.recette.count({ where }),
@@ -58,7 +64,9 @@ export class BoulangerieService {
   }
 
   async createRecette(tenantId: string, dto: CreateRecetteDto) {
-    const article = await this.prisma.article.findUnique({ where: { id: dto.articleId } });
+    const article = await this.prisma.article.findUnique({
+      where: { id: dto.articleId },
+    });
     if (!article || article.tenantId !== tenantId) {
       throw new NotFoundException('Article introuvable');
     }
@@ -71,14 +79,20 @@ export class BoulangerieService {
   async getRecette(id: string) {
     const recette = await this.prisma.recette.findUnique({
       where: { id },
-      include: { article: true, ingredients: { include: { article: true } }, productions: { orderBy: { date: 'desc' }, take: 20 } },
+      include: {
+        article: true,
+        ingredients: { include: { article: true } },
+        productions: { orderBy: { date: 'desc' }, take: 20 },
+      },
     });
     if (!recette) throw new NotFoundException('Recette introuvable');
     return recette;
   }
 
   async addIngredient(recetteId: string, dto: AddIngredientDto) {
-    const recette = await this.prisma.recette.findUnique({ where: { id: recetteId } });
+    const recette = await this.prisma.recette.findUnique({
+      where: { id: recetteId },
+    });
     if (!recette) throw new NotFoundException('Recette introuvable');
     return this.prisma.ingredientRecette.create({
       data: { recetteId, ...dto },
@@ -92,11 +106,15 @@ export class BoulangerieService {
     const skip = (page - 1) * limit;
     const where: any = { tenantId };
     if (pagination.search) {
-      where.recette = { nom: { contains: pagination.search, mode: 'insensitive' } };
+      where.recette = {
+        nom: { contains: pagination.search, mode: 'insensitive' },
+      };
     }
     const [data, total] = await Promise.all([
       this.prisma.productionJour.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         include: { recette: { include: { article: true } } },
         orderBy: { date: 'desc' },
       }),
@@ -106,13 +124,21 @@ export class BoulangerieService {
   }
 
   async createProduction(tenantId: string, dto: CreateProductionDto) {
-    const recette = await this.prisma.recette.findUnique({ where: { id: dto.recetteId } });
+    const recette = await this.prisma.recette.findUnique({
+      where: { id: dto.recetteId },
+    });
     if (!recette || recette.tenantId !== tenantId) {
       throw new NotFoundException('Recette introuvable');
     }
-    const invendue = dto.quantiteInvendue ?? (dto.quantiteProduite - (dto.quantiteVendue || 0));
+    const invendue =
+      dto.quantiteInvendue ?? dto.quantiteProduite - (dto.quantiteVendue || 0);
     return this.prisma.productionJour.create({
-      data: { ...dto, tenantId, quantiteInvendue: invendue, date: dto.date ? new Date(dto.date) : new Date() },
+      data: {
+        ...dto,
+        tenantId,
+        quantiteInvendue: invendue,
+        date: dto.date ? new Date(dto.date) : new Date(),
+      },
       include: { recette: { include: { article: true } } },
     });
   }
@@ -128,13 +154,34 @@ export class BoulangerieService {
       include: { recette: true },
     });
 
-    const totalProduit = productionAujourdhui.reduce((s, p) => s + p.quantiteProduite, 0);
-    const totalVendu = productionAujourdhui.reduce((s, p) => s + p.quantiteVendue, 0);
-    const totalInvendu = productionAujourdhui.reduce((s, p) => s + p.quantiteInvendue, 0);
-    const coutTotal = productionAujourdhui.reduce((s, p) => s + (p.coutProduction || 0), 0);
+    const totalProduit = productionAujourdhui.reduce(
+      (s, p) => s + p.quantiteProduite,
+      0,
+    );
+    const totalVendu = productionAujourdhui.reduce(
+      (s, p) => s + p.quantiteVendue,
+      0,
+    );
+    const totalInvendu = productionAujourdhui.reduce(
+      (s, p) => s + p.quantiteInvendue,
+      0,
+    );
+    const coutTotal = productionAujourdhui.reduce(
+      (s, p) => s + (p.coutProduction || 0),
+      0,
+    );
 
-    const totalRecettes = await this.prisma.recette.count({ where: { tenantId } });
+    const totalRecettes = await this.prisma.recette.count({
+      where: { tenantId },
+    });
 
-    return { totalProduit, totalVendu, totalInvendu, coutTotal, productionsJour: productionAujourdhui.length, totalRecettes };
+    return {
+      totalProduit,
+      totalVendu,
+      totalInvendu,
+      coutTotal,
+      productionsJour: productionAujourdhui.length,
+      totalRecettes,
+    };
   }
 }

@@ -43,7 +43,8 @@ export class QuotaDepotGuard implements CanActivate {
 
     // EXTRA SÉCURITÉ : S'assurer qu'on cible bien l'endpoint de création de dépôts
     // Évite les effets de bord si le guard est déclaré globalement (APP_GUARD)
-    const isDepotRoute = request.path.endsWith('/depots') || request.path.includes('/depots/');
+    const isDepotRoute =
+      request.path.endsWith('/depots') || request.path.includes('/depots/');
     if (!isDepotRoute) {
       return true;
     }

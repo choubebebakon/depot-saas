@@ -120,7 +120,11 @@ export class LoggerService {
   /**
    * Log: Webhook reçu et validé.
    */
-  logWebhookReceived(provider: string, transactionId?: string, status?: string): void {
+  logWebhookReceived(
+    provider: string,
+    transactionId?: string,
+    status?: string,
+  ): void {
     this.info('Webhook received', {
       provider,
       transactionId,
@@ -154,7 +158,11 @@ export class LoggerService {
   /**
    * Log: CRON de reconciliation exécuté.
    */
-  logReconciliationCron(pendingCount: number, processedCount: number, failedCount: number): void {
+  logReconciliationCron(
+    pendingCount: number,
+    processedCount: number,
+    failedCount: number,
+  ): void {
     this.info('Reconciliation CRON executed', {
       pendingCount,
       processedCount,
@@ -178,7 +186,11 @@ export class LoggerService {
   /**
    * Log: Changement de statut tenant.
    */
-  logTenantStatusChange(tenantId: string, oldStatus: string, newStatus: string): void {
+  logTenantStatusChange(
+    tenantId: string,
+    oldStatus: string,
+    newStatus: string,
+  ): void {
     this.info('Tenant status changed', {
       tenantId,
       oldStatus,
@@ -190,7 +202,11 @@ export class LoggerService {
   /**
    * Log: Relance envoyée (J-7, J-3, J-1).
    */
-  logReminderSent(tenantId: string, type: 'EXPIRY_J7' | 'EXPIRY_J3' | 'EXPIRY_J1', daysUntilExpiry: number): void {
+  logReminderSent(
+    tenantId: string,
+    type: 'EXPIRY_J7' | 'EXPIRY_J3' | 'EXPIRY_J1',
+    daysUntilExpiry: number,
+  ): void {
     this.info('Reminder notification sent', {
       tenantId,
       type,
@@ -202,7 +218,11 @@ export class LoggerService {
   /**
    * Log: Facture générée.
    */
-  logInvoiceGenerated(tenantId: string, paymentId: string, amount: number): void {
+  logInvoiceGenerated(
+    tenantId: string,
+    paymentId: string,
+    amount: number,
+  ): void {
     this.info('Invoice generated', {
       tenantId,
       paymentId,

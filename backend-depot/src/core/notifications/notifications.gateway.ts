@@ -22,7 +22,9 @@ interface JwtPayload {
     credentials: true,
   },
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -32,7 +34,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   handleConnection(client: Socket): void {
     try {
-      const token = client.handshake.auth?.token || client.handshake.query?.token;
+      const token =
+        client.handshake.auth?.token || client.handshake.query?.token;
       if (!token) {
         this.logger.warn(`Connexion refusée : pas de token (${client.id})`);
         client.emit('error', { message: 'Authentification requise' });
@@ -76,7 +79,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       client.join(`tenant:${tenantId}`);
       client.join(`user:${userId}`);
 
-      this.logger.log(`Client connecté: ${client.id} | tenant: ${tenantId} | user: ${userId}`);
+      this.logger.log(
+        `Client connecté: ${client.id} | tenant: ${tenantId} | user: ${userId}`,
+      );
     } catch (err) {
       this.logger.warn(`Connexion rejetée (token invalide): ${client.id}`);
       client.emit('error', { message: 'Token invalide' });

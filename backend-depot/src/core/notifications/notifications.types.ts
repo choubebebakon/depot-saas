@@ -1,6 +1,22 @@
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsBoolean, IsEnum, IsUUID, IsObject, IsArray, IsInt, Min, Max } from 'class-validator';
-import { NotifType, NotifCategory, NotifPriority, NotifChannel } from '@prisma/client';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsEnum,
+  IsUUID,
+  IsObject,
+  IsArray,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
+import {
+  NotifType,
+  NotifCategory,
+  NotifPriority,
+  NotifChannel,
+} from '@prisma/client';
 
 export class CreateNotificationDto {
   @IsEnum(NotifType)
@@ -114,10 +130,27 @@ export interface NotificationPayload {
 }
 
 export type MetierNotificationData =
-  | { type: 'STOCK_CRITIQUE'; articleNom: string; quantite: number; seuil: number; articleId: string }
+  | {
+      type: 'STOCK_CRITIQUE';
+      articleNom: string;
+      quantite: number;
+      seuil: number;
+      articleId: string;
+    }
   | { type: 'STOCK_RUPTURE'; articleNom: string; articleId: string }
-  | { type: 'STOCK_EXPIRATION'; articleNom: string; dateExpiration: string; lotId: string; joursRestants: number }
-  | { type: 'RESERVATION_NOUVELLE'; numeroChambre: string; nomClient: string; dateArrivee: string }
+  | {
+      type: 'STOCK_EXPIRATION';
+      articleNom: string;
+      dateExpiration: string;
+      lotId: string;
+      joursRestants: number;
+    }
+  | {
+      type: 'RESERVATION_NOUVELLE';
+      numeroChambre: string;
+      nomClient: string;
+      dateArrivee: string;
+    }
   | { type: 'RESERVATION_ANNULEE'; numeroChambre: string; nomClient: string }
   | { type: 'COMMANDE_NOUVELLE'; numeroCommande: string; montant: number }
   | { type: 'COMMANDE_PRETE'; numeroCommande: string }
@@ -127,7 +160,12 @@ export type MetierNotificationData =
   | { type: 'CHECKOUT_HOTEL'; chambre: string; client: string }
   | { type: 'CHAMBRE_MENAGE'; chambre: string }
   | { type: 'RDV_RAPPEL'; patient: string; heure: string }
-  | { type: 'VACCINATION_PREVUE'; lotId: string; vaccinationType: string; datePrevue: string }
+  | {
+      type: 'VACCINATION_PREVUE';
+      lotId: string;
+      vaccinationType: string;
+      datePrevue: string;
+    }
   | { type: 'LIVRAISON_TERMINEE'; client: string; montant: number }
   | { type: 'PAYMENT_SUCCESS'; montant: number; methode: string }
   | { type: 'PAYMENT_FAILED'; montant: number; raison?: string }
@@ -135,7 +173,12 @@ export type MetierNotificationData =
   | { type: 'EXPIRY_J3'; plan: string; dateExpiration: string }
   | { type: 'EXPIRY_J1'; plan: string; dateExpiration: string }
   | { type: 'ALERTE_PREDICTIVE'; message: string; score: number }
-  | { type: 'RAPPORT_JOURNALIER'; ventesJour: number; nouveauClients: number; alertes: number };
+  | {
+      type: 'RAPPORT_JOURNALIER';
+      ventesJour: number;
+      nouveauClients: number;
+      alertes: number;
+    };
 
 export class UpdatePreferencesDto {
   @IsOptional()

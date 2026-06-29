@@ -8,7 +8,7 @@ import { StatutAbonnement } from '@prisma/client';
 @Injectable()
 export class TenantsService {
   // On connecte Prisma au service
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createTenantDto: CreateTenantDto) {
     // LOGIQUE V1.3 & V1.4 : Calcul de la fin de l'essai gratuit (J+30)

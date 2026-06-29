@@ -36,10 +36,7 @@ async function bootstrap() {
       'X-Requested-With',
       'Cache-Control',
     ],
-    exposedHeaders: [
-      'x-tenant-id',
-      'x-new-access-token',
-    ],
+    exposedHeaders: ['x-tenant-id', 'x-new-access-token'],
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204,
@@ -54,25 +51,31 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('GeStock SaaS API')
-    .setDescription('Documentation de l\'API GeStock pour la gestion de stocks multi-tenant')
+    .setDescription(
+      "Documentation de l'API GeStock pour la gestion de stocks multi-tenant",
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  app.use(json({
-    limit: '50mb',
-    verify: (req: any, _res, buf) => {
-      req.rawBody = Buffer.from(buf);
-    },
-  }));
+  app.use(
+    json({
+      limit: '50mb',
+      verify: (req: any, _res, buf) => {
+        req.rawBody = Buffer.from(buf);
+      },
+    }),
+  );
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   await app.listen(3000);
   console.log(`🚀 Backend GeStock SaaS stabilisé sur http://localhost:3000`);

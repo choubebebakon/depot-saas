@@ -4,8 +4,8 @@ import { CommissionsController } from './commissions.controller';
 import { PrismaService } from '../prisma.service';
 
 @Module({
-    controllers: [CommissionsController],
-    providers: [CommissionsService, PrismaService],
-    exports: [CommissionsService],
+  controllers: [CommissionsController],
+  providers: [CommissionsService, PrismaService],
+  exports: [CommissionsService],
 })
-export class CommissionsModule { }
+export class CommissionsModule {}

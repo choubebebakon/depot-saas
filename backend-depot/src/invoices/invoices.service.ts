@@ -42,7 +42,7 @@ export class InvoicesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
-  ) { }
+  ) {}
 
   /**
    * Genere une facture PDF apres paiement reussi.
@@ -70,8 +70,8 @@ export class InvoicesService {
       invoiceNumber: this.generateInvoiceNumber(payment),
       tenantName: (payment.tenant?.name as string) || 'Client',
       tenantAddress: undefined, // TODO: Ajouter adresse au modele Tenant
-      tenantPhone: undefined,   // TODO: Ajouter telephone au modele Tenant
-      tenantEmail: undefined,   // TODO: Recuperer email admin
+      tenantPhone: undefined, // TODO: Ajouter telephone au modele Tenant
+      tenantEmail: undefined, // TODO: Recuperer email admin
       planName: (payment.planPurchased as string) || 'Standard',
       billingCycle: payment.billingCycle as BillingCycle,
       amountHT: payment.amount,
@@ -80,7 +80,7 @@ export class InvoicesService {
       amountTTC: payment.totalAmount,
       currency: payment.currency || 'XAF',
       paymentMethod: payment.method,
-      transactionId: (payment.operatorTxId || payment.stripePaymentIntentId) as string | null,
+      transactionId: payment.operatorTxId || payment.stripePaymentIntentId,
       paymentDate: payment.updatedAt,
       periodStart: payment.periodStart as Date,
       periodEnd: payment.periodEnd as Date,
@@ -89,15 +89,20 @@ export class InvoicesService {
 
     const pdfBuffer = await this.createPDF(invoiceData);
 
-    const tenantEmail = payment.tenant?.emailPatron || (payment.tenant as any)?.emailPatron;
+    const tenantEmail =
+      payment.tenant?.emailPatron || (payment.tenant as any)?.emailPatron;
     if (tenantEmail) {
-      this.emailService.sendInvoiceEmail(
-        tenantEmail,
-        invoiceData.tenantName,
-        invoiceData.invoiceNumber,
-        invoiceData.amountTTC,
-        pdfBuffer,
-      ).catch((err) => this.logger.error(`Erreur envoi facture par email: ${err.message}`));
+      this.emailService
+        .sendInvoiceEmail(
+          tenantEmail,
+          invoiceData.tenantName,
+          invoiceData.invoiceNumber,
+          invoiceData.amountTTC,
+          pdfBuffer,
+        )
+        .catch((err) =>
+          this.logger.error(`Erreur envoi facture par email: ${err.message}`),
+        );
     }
 
     this.logger.log(
@@ -215,14 +220,22 @@ export class InvoicesService {
     if (data.tenantAddress) {
       y -= 18;
       page.drawText(data.tenantAddress, {
-        x: 50, y, size: 10, font, color: rgb(0.3, 0.3, 0.3),
+        x: 50,
+        y,
+        size: 10,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
       });
     }
 
     if (data.tenantEmail) {
       y -= 15;
       page.drawText(data.tenantEmail, {
-        x: 50, y, size: 10, font, color: rgb(0.3, 0.3, 0.3),
+        x: 50,
+        y,
+        size: 10,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
       });
     }
 
@@ -238,29 +251,53 @@ export class InvoicesService {
     });
 
     page.drawText('Description', {
-      x: 60, y: y - 17, size: 10, font: fontBold, color: rgb(0.2, 0.2, 0.2),
+      x: 60,
+      y: y - 17,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.2, 0.2, 0.2),
     });
     page.drawText('Periode', {
-      x: 250, y: y - 17, size: 10, font: fontBold, color: rgb(0.2, 0.2, 0.2),
+      x: 250,
+      y: y - 17,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.2, 0.2, 0.2),
     });
     page.drawText('Montant HT', {
-      x: 400, y: y - 17, size: 10, font: fontBold, color: rgb(0.2, 0.2, 0.2),
+      x: 400,
+      y: y - 17,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.2, 0.2, 0.2),
     });
 
     y -= 40;
 
     const planLabel = `${data.planName} - Abonnement ${data.billingCycle === 'MONTHLY' ? 'Mensuel' : 'Annuel'}`;
     page.drawText(planLabel, {
-      x: 60, y, size: 10, font, color: rgb(0, 0, 0),
+      x: 60,
+      y,
+      size: 10,
+      font,
+      color: rgb(0, 0, 0),
     });
 
     const periodLabel = `${format(data.periodStart, 'dd/MM/yy')} - ${format(data.periodEnd, 'dd/MM/yy')}`;
     page.drawText(periodLabel, {
-      x: 250, y, size: 9, font, color: rgb(0.4, 0.4, 0.4),
+      x: 250,
+      y,
+      size: 9,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
     });
 
     page.drawText(`${this.formatPrice(data.amountHT)} ${data.currency}`, {
-      x: 400, y, size: 10, font, color: rgb(0, 0, 0),
+      x: 400,
+      y,
+      size: 10,
+      font,
+      color: rgb(0, 0, 0),
     });
 
     // === TOTAUX ===
@@ -276,19 +313,35 @@ export class InvoicesService {
     y -= 25;
 
     page.drawText('Montant HT:', {
-      x: 320, y, size: 10, font, color: rgb(0.4, 0.4, 0.4),
+      x: 320,
+      y,
+      size: 10,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
     });
     page.drawText(`${this.formatPrice(data.amountHT)} ${data.currency}`, {
-      x: 450, y, size: 10, font, color: rgb(0, 0, 0),
+      x: 450,
+      y,
+      size: 10,
+      font,
+      color: rgb(0, 0, 0),
     });
 
     y -= 20;
 
     page.drawText(`TVA (${(data.tvaRate * 100).toFixed(2)}%):`, {
-      x: 320, y, size: 10, font, color: rgb(0.4, 0.4, 0.4),
+      x: 320,
+      y,
+      size: 10,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
     });
     page.drawText(`${this.formatPrice(data.tvaAmount)} ${data.currency}`, {
-      x: 450, y, size: 10, font, color: rgb(0, 0, 0),
+      x: 450,
+      y,
+      size: 10,
+      font,
+      color: rgb(0, 0, 0),
     });
 
     y -= 25;
@@ -303,24 +356,43 @@ export class InvoicesService {
     y -= 25;
 
     page.drawText('TOTAL TTC:', {
-      x: 320, y, size: 12, font: fontBold, color: rgb(0.37, 0.4, 0.94),
+      x: 320,
+      y,
+      size: 12,
+      font: fontBold,
+      color: rgb(0.37, 0.4, 0.94),
     });
     page.drawText(`${this.formatPrice(data.amountTTC)} ${data.currency}`, {
-      x: 450, y, size: 12, font: fontBold, color: rgb(0.37, 0.4, 0.94),
+      x: 450,
+      y,
+      size: 12,
+      font: fontBold,
+      color: rgb(0.37, 0.4, 0.94),
     });
 
     // === INFORMATIONS DE PAIEMENT ===
     y -= 60;
 
     page.drawText('PAIEMENT', {
-      x: 50, y, size: 12, font: fontBold, color: rgb(0.2, 0.2, 0.2),
+      x: 50,
+      y,
+      size: 12,
+      font: fontBold,
+      color: rgb(0.2, 0.2, 0.2),
     });
 
     y -= 25;
 
-    page.drawText(`Methode: ${this.getPaymentMethodLabel(data.paymentMethod)}`, {
-      x: 50, y, size: 10, font, color: rgb(0.3, 0.3, 0.3),
-    });
+    page.drawText(
+      `Methode: ${this.getPaymentMethodLabel(data.paymentMethod)}`,
+      {
+        x: 50,
+        y,
+        size: 10,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
+      },
+    );
 
     y -= 18;
 
@@ -332,7 +404,11 @@ export class InvoicesService {
     if (data.transactionId) {
       y -= 18;
       page.drawText(`Transaction ID: ${data.transactionId}`, {
-        x: 50, y, size: 9, font, color: rgb(0.5, 0.5, 0.5),
+        x: 50,
+        y,
+        size: 9,
+        font,
+        color: rgb(0.5, 0.5, 0.5),
       });
     }
 

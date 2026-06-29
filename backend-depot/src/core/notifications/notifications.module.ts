@@ -12,9 +12,7 @@ import { NotificationsAiService } from './ai/notifications-ai.service';
 
 @Global()
 @Module({
-  imports: [
-    PrismaModule,
-  ],
+  imports: [PrismaModule],
   controllers: [NotificationsController],
   providers: [
     NotificationsService,
@@ -26,6 +24,11 @@ import { NotificationsAiService } from './ai/notifications-ai.service';
     ChannelDispatcher,
     NotificationsAiService,
   ],
-  exports: [NotificationsService, NotificationsGateway, ChannelDispatcher, NotificationsAiService],
+  exports: [
+    NotificationsService,
+    NotificationsGateway,
+    ChannelDispatcher,
+    NotificationsAiService,
+  ],
 })
 export class NotificationsModule {}

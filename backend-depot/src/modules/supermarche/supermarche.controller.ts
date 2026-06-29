@@ -1,5 +1,40 @@
-import { Controller, Post, Get, Body, Query, UseGuards, Req, Patch, Delete, Param, Put, BadRequestException } from '@nestjs/common';
-import { SupermarcheService, PaginationDto, CreateRayonDto, UpdateRayonDto, AssignArticleDto, CreateCodeBarresDto, CreateArticleDto, UpdateArticleDto, UpdateStockDto, CreateClientDto, UpdateClientDto, CreateFournisseurDto, UpdateFournisseurDto, CreateDepenseDto, UpdateDepenseDto, CreatePromotionDto, UpdatePromotionDto, CreateReceptionDto, UpdateReceptionDto, CreateVenteDto, InventaireDto } from './supermarche.service';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  Patch,
+  Delete,
+  Param,
+  Put,
+  BadRequestException,
+} from '@nestjs/common';
+import {
+  SupermarcheService,
+  PaginationDto,
+  CreateRayonDto,
+  UpdateRayonDto,
+  AssignArticleDto,
+  CreateCodeBarresDto,
+  CreateArticleDto,
+  UpdateArticleDto,
+  UpdateStockDto,
+  CreateClientDto,
+  UpdateClientDto,
+  CreateFournisseurDto,
+  UpdateFournisseurDto,
+  CreateDepenseDto,
+  UpdateDepenseDto,
+  CreatePromotionDto,
+  UpdatePromotionDto,
+  CreateReceptionDto,
+  UpdateReceptionDto,
+  CreateVenteDto,
+  InventaireDto,
+} from './supermarche.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -26,7 +61,11 @@ export class SupermarcheController {
   }
 
   @Patch('rayons/:id')
-  async updateRayon(@Req() req: any, @Param('id') id: string, @Body() data: UpdateRayonDto) {
+  async updateRayon(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateRayonDto,
+  ) {
     this.checkTenantId(req);
     return this.service.updateRayon(id, req.user.tenantId, data);
   }
@@ -38,9 +77,17 @@ export class SupermarcheController {
   }
 
   @Post('rayons/:id/articles')
-  async assignArticle(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async assignArticle(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     this.checkTenantId(req);
-    return this.service.assignArticleToRayon(id, data.articleId, req.user.tenantId);
+    return this.service.assignArticleToRayon(
+      id,
+      data.articleId,
+      req.user.tenantId,
+    );
   }
 
   // ── Codes-Barres ──────────────────────────────────────────────────────────
@@ -70,13 +117,21 @@ export class SupermarcheController {
   @Get('articles')
   async findAllArticles(@Req() req: any, @Query() query: PaginationDto) {
     this.checkTenantId(req);
-    return this.service.findAllArticles(req.user.tenantId, query.search, query.limit);
+    return this.service.findAllArticles(
+      req.user.tenantId,
+      query.search,
+      query.limit,
+    );
   }
 
   @Get('produits') // Alias conservé pour rétrocompatibilité front-end
   async findAllProduits(@Req() req: any, @Query() query: PaginationDto) {
     this.checkTenantId(req);
-    return this.service.findAllArticles(req.user.tenantId, query.search, query.limit);
+    return this.service.findAllArticles(
+      req.user.tenantId,
+      query.search,
+      query.limit,
+    );
   }
 
   @Get('articles/:id')
@@ -92,13 +147,21 @@ export class SupermarcheController {
   }
 
   @Patch('articles/:id')
-  async updateArticle(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateArticle(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     this.checkTenantId(req);
     return this.service.updateArticle(id, req.user.tenantId, data);
   }
 
   @Patch('produits/:id')
-  async partialUpdateProduit(@Req() req: any, @Param('id') id: string, @Body() data: UpdateStockDto) {
+  async partialUpdateProduit(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateStockDto,
+  ) {
     this.checkTenantId(req);
     return this.service.partialUpdateArticleStock(id, req.user.tenantId, data);
   }
@@ -114,7 +177,11 @@ export class SupermarcheController {
   @Get('clients')
   async findAllClients(@Req() req: any, @Query() query: PaginationDto) {
     this.checkTenantId(req);
-    return this.service.findAllClients(req.user.tenantId, query.search, query.limit);
+    return this.service.findAllClients(
+      req.user.tenantId,
+      query.search,
+      query.limit,
+    );
   }
 
   @Post('clients')
@@ -124,7 +191,11 @@ export class SupermarcheController {
   }
 
   @Patch('clients/:id')
-  async updateClient(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateClient(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     this.checkTenantId(req);
     return this.service.updateClient(id, req.user.tenantId, data);
   }
@@ -150,7 +221,11 @@ export class SupermarcheController {
   }
 
   @Patch('fournisseurs/:id')
-  async updateFournisseur(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateFournisseur(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     this.checkTenantId(req);
     return this.service.updateFournisseur(id, req.user.tenantId, data);
   }
@@ -176,7 +251,11 @@ export class SupermarcheController {
   }
 
   @Patch('depenses/:id')
-  async updateDepense(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateDepense(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     this.checkTenantId(req);
     return this.service.updateDepense(id, req.user.tenantId, data);
   }
@@ -202,7 +281,11 @@ export class SupermarcheController {
   }
 
   @Patch('promotions/:id')
-  async updatePromotion(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updatePromotion(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     this.checkTenantId(req);
     return this.service.updatePromotion(id, req.user.tenantId, data);
   }
@@ -216,7 +299,11 @@ export class SupermarcheController {
   // ── Stock / Inventaire ────────────────────────────────────────────────────
 
   @Get('stock')
-  async findAllStock(@Req() req: any, @Query('depotId') depotId?: string, @Query('rayonId') rayonId?: string) {
+  async findAllStock(
+    @Req() req: any,
+    @Query('depotId') depotId?: string,
+    @Query('rayonId') rayonId?: string,
+  ) {
     this.checkTenantId(req);
     return this.service.findAllStock(req.user.tenantId, depotId, rayonId);
   }
@@ -250,7 +337,11 @@ export class SupermarcheController {
   }
 
   @Patch('receptions/:id')
-  async updateReception(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateReception(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     this.checkTenantId(req);
     return this.service.updateReception(req.user.tenantId, id, data);
   }
@@ -273,9 +364,15 @@ export class SupermarcheController {
   async updateParametres(@Req() req: any, @Body() body: any) {
     this.checkTenantId(req);
     if (!body.section || !body.data) {
-      throw new BadRequestException("Les champs 'section' et 'data' sont requis.");
+      throw new BadRequestException(
+        "Les champs 'section' et 'data' sont requis.",
+      );
     }
-    return this.service.updateParametres(req.user.tenantId, body.section, body.data);
+    return this.service.updateParametres(
+      req.user.tenantId,
+      body.section,
+      body.data,
+    );
   }
 
   // ── Rapports ──────────────────────────────────────────────────────────────
@@ -288,7 +385,12 @@ export class SupermarcheController {
     @Query('dateFin') dateFin?: string,
   ) {
     this.checkTenantId(req);
-    return this.service.getRapports(req.user.tenantId, periode, dateDebut, dateFin);
+    return this.service.getRapports(
+      req.user.tenantId,
+      periode,
+      dateDebut,
+      dateFin,
+    );
   }
 
   // ── Dépôts ────────────────────────────────────────────────────────────────
@@ -325,10 +427,12 @@ export class SupermarcheController {
   }
 
   // ── Helper Sécurité Multi-Tenant ──────────────────────────────────────────
-  
+
   private checkTenantId(req: any) {
     if (!req.user?.tenantId) {
-      throw new BadRequestException("Accès refusé : Identifiant d'organisation (tenantId) manquant dans le token.");
+      throw new BadRequestException(
+        "Accès refusé : Identifiant d'organisation (tenantId) manquant dans le token.",
+      );
     }
   }
 }

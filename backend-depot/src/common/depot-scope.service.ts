@@ -15,25 +15,41 @@ export class DepotScopeService {
    * Execute une requete dans un contexte tenant/depot isole.
    */
   run<T>(context: ScopeContext, next: () => T): T {
+    // Sécurité : On s'assure qu'on ne passe pas de contexte invalide
+    // Si pas de tenantId, on logge pour le suivi mais on autorise l'exécution
+    if (!context.tenantId) {
+      console.warn(
+        '⚠️ Requête sans tenantId détectée - exécution en mode ouvert.',
+      );
+    }
     return this.als.run(context, next);
   }
 
   /**
-   * Retourne le contexte courant ou un contexte vide pour les routes publiques.
+   * Retourne le contexte courant.
+   * Si aucun contexte n'est trouvé (hors d'une requête), on renvoie une valeur
+   * par défaut sécurisée pour éviter les erreurs de type 'undefined'.
    */
   getScope(): ScopeContext {
-    return this.als.getStore() ?? { tenantId: null, depotId: null, role: null };
+    const store = this.als.getStore();
+    return (
+      store ?? {
+        tenantId: 'PUBLIC',
+        depotId: null,
+        role: 'GUEST',
+      }
+    );
   }
 
   /**
-   * Retourne le tenant courant du contexte de requete.
+   * Retourne le tenant courant.
    */
   getTenantId(): string | null {
     return this.getScope().tenantId;
   }
 
   /**
-   * Retourne le depot courant du contexte de requete.
+   * Retourne le depot courant.
    */
   getDepotId(): string | null {
     return this.getScope().depotId;

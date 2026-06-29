@@ -19,8 +19,8 @@ export class ChatbotController {
     });
 
     const ctx = {
-      tenantId:  req.user.tenantId,
-      metier:    tenant?.metier ?? 'DEPOT_BOISSONS',
+      tenantId: req.user.tenantId,
+      metier: tenant?.metier ?? 'DEPOT_BOISSONS',
       nomTenant: tenant?.nomEntreprise ?? tenant?.name ?? 'Mon entreprise',
     };
     return this.chatbotService.chat(ctx, dto);
@@ -35,26 +35,94 @@ export class ChatbotController {
     const metier = tenant?.metier ?? 'DEPOT_BOISSONS';
 
     const suggestionsParMetier: Record<string, string[]> = {
-      DEPOT_BOISSONS:   ['Ventes du jour ?', 'Stock en rupture ?', 'Meilleurs clients ?'],
-      BOUTIQUE:         ['Ventes du jour ?', 'Ruptures de stock ?', 'Promotions actives ?'],
-      QUINCAILLERIE:    ['Devis en attente ?', 'Chantiers actifs ?', 'Stock critique ?'],
-      PHARMACIE:        ['Médicaments expirant bientôt ?', 'Stock critique ?', 'Ventes du jour ?'],
-      RESTAURANT:       ['Tables occupées ?', 'Commandes en cuisine ?', 'Recettes du jour ?'],
-      TELEPHONIE:       ['Stocks téléphones ?', 'Réparations en cours ?', 'Ventes du jour ?'],
-      SUPERMARCHE:      ['Ventes du jour ?', 'Produits en rupture ?', 'Caisse du jour ?'],
-      CIMENT_BTP:       ['Livraisons du jour ?', 'Chantiers en cours ?', 'Véhicules disponibles ?'],
-      PRESSING:         ['Tickets en attente ?', 'Vêtements prêts ?', 'Recettes du jour ?'],
-      GARAGE_AUTOMOBILE:['Véhicules en atelier ?', 'Réparations prêtes ?', 'Recettes du jour ?'],
-      ELEVAGE:          ['État des lots ?', 'Événements récents ?', 'Stock aliment ?'],
-      SALON_BEAUTE:     ['RDV du jour ?', 'Prestations populaires ?', 'Chiffre d\'affaires ?'],
-      PARFUMERIE:       ['Ventes du jour ?', 'Produits en rupture ?', 'Fidélité clients ?'],
-      BOULANGERIE:      ['Production du jour ?', 'Ventes du jour ?', 'Recettes ?'],
-      GLACIER_SNACK:    ['Tables occupées ?', 'Commandes en cours ?', 'Menu du jour ?'],
-      LIBRAIRIE:        ['Ventes du jour ?', 'Nouveautés ?', 'Commandes ?'],
-      CLINIQUE:         ['RDV du jour ?', 'Patients en attente ?', 'Consultations du mois ?'],
-      TRANSPORT:        ['Colis en transit ?', 'Trajets du jour ?', 'Recettes du jour ?'],
-      IMMOBILIER:       ['Biens disponibles ?', 'Loyers en retard ?', 'Revenus du mois ?'],
-      HOTEL:            ['Chambres disponibles ?', 'Réservations du jour ?', 'Taux occupation ?'],
+      DEPOT_BOISSONS: [
+        'Ventes du jour ?',
+        'Stock en rupture ?',
+        'Meilleurs clients ?',
+      ],
+      BOUTIQUE: [
+        'Ventes du jour ?',
+        'Ruptures de stock ?',
+        'Promotions actives ?',
+      ],
+      QUINCAILLERIE: [
+        'Devis en attente ?',
+        'Chantiers actifs ?',
+        'Stock critique ?',
+      ],
+      PHARMACIE: [
+        'Médicaments expirant bientôt ?',
+        'Stock critique ?',
+        'Ventes du jour ?',
+      ],
+      RESTAURANT: [
+        'Tables occupées ?',
+        'Commandes en cuisine ?',
+        'Recettes du jour ?',
+      ],
+      TELEPHONIE: [
+        'Stocks téléphones ?',
+        'Réparations en cours ?',
+        'Ventes du jour ?',
+      ],
+      SUPERMARCHE: [
+        'Ventes du jour ?',
+        'Produits en rupture ?',
+        'Caisse du jour ?',
+      ],
+      CIMENT_BTP: [
+        'Livraisons du jour ?',
+        'Chantiers en cours ?',
+        'Véhicules disponibles ?',
+      ],
+      PRESSING: [
+        'Tickets en attente ?',
+        'Vêtements prêts ?',
+        'Recettes du jour ?',
+      ],
+      GARAGE_AUTOMOBILE: [
+        'Véhicules en atelier ?',
+        'Réparations prêtes ?',
+        'Recettes du jour ?',
+      ],
+      ELEVAGE: ['État des lots ?', 'Événements récents ?', 'Stock aliment ?'],
+      SALON_BEAUTE: [
+        'RDV du jour ?',
+        'Prestations populaires ?',
+        "Chiffre d'affaires ?",
+      ],
+      PARFUMERIE: [
+        'Ventes du jour ?',
+        'Produits en rupture ?',
+        'Fidélité clients ?',
+      ],
+      BOULANGERIE: ['Production du jour ?', 'Ventes du jour ?', 'Recettes ?'],
+      GLACIER_SNACK: [
+        'Tables occupées ?',
+        'Commandes en cours ?',
+        'Menu du jour ?',
+      ],
+      LIBRAIRIE: ['Ventes du jour ?', 'Nouveautés ?', 'Commandes ?'],
+      CLINIQUE: [
+        'RDV du jour ?',
+        'Patients en attente ?',
+        'Consultations du mois ?',
+      ],
+      TRANSPORT: [
+        'Colis en transit ?',
+        'Trajets du jour ?',
+        'Recettes du jour ?',
+      ],
+      IMMOBILIER: [
+        'Biens disponibles ?',
+        'Loyers en retard ?',
+        'Revenus du mois ?',
+      ],
+      HOTEL: [
+        'Chambres disponibles ?',
+        'Réservations du jour ?',
+        'Taux occupation ?',
+      ],
     };
 
     return {

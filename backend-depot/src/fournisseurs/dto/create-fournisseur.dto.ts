@@ -1,13 +1,13 @@
 import { IsString, IsOptional } from 'class-validator';
 
 export class CreateFournisseurDto {
-    @IsString()
-    nom: string;
+  @IsString()
+  nom: string;
 
-    @IsOptional()
-    @IsString()
-    telephone?: string;
+  @IsOptional()
+  @IsString()
+  telephone?: string;
 
-    @IsString()
-    tenantId: string;
+  @IsString()
+  tenantId: string;
 }

@@ -5,10 +5,17 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   // Création d'un user avec mot de passe hashé automatiquement
-  async create(data: { email: string; password: string; role: RoleUser; tenantId: string; nom?: string; depotId?: string }) {
+  async create(data: {
+    email: string;
+    password: string;
+    role: RoleUser;
+    tenantId: string;
+    nom?: string;
+    depotId?: string;
+  }) {
     const hashedPassword = await bcrypt.hash(data.password, 12);
     return this.prisma.user.create({
       data: {
@@ -23,7 +30,14 @@ export class UsersService {
   }
 
   // Alias pour la création d'employés depuis la page Équipe
-  async createEmployee(data: { email: string; password: string; role: RoleUser; tenantId: string; nom?: string; depotId?: string }) {
+  async createEmployee(data: {
+    email: string;
+    password: string;
+    role: RoleUser;
+    tenantId: string;
+    nom?: string;
+    depotId?: string;
+  }) {
     return this.create(data);
   }
 
@@ -107,7 +121,10 @@ export class UsersService {
   }
 
   // Mise à jour partielle (rôle, nom, dépôt)
-  async update(id: string, data: { nom?: string; role?: any; depotId?: string }) {
+  async update(
+    id: string,
+    data: { nom?: string; role?: any; depotId?: string },
+  ) {
     return this.prisma.user.update({
       where: { id },
       data,

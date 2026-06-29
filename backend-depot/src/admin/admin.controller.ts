@@ -1,5 +1,11 @@
 import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PaymentStatus, PaymentMethod, TenantStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -39,7 +45,9 @@ export class AdminController {
   @ApiOperation({ summary: 'Statistiques admin globales' })
   @ApiResponse({ status: 200, description: 'Statistiques retournees' })
   @ApiResponse({ status: 403, description: 'Acces refuse' })
-  async getStats(@CurrentUser() user: AuthenticatedUser): Promise<ReturnType<AdminService['getStats']>> {
+  async getStats(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ReturnType<AdminService['getStats']>> {
     return this.adminService.getStats(user.userId, user.tenantId);
   }
 
@@ -55,10 +63,30 @@ export class AdminController {
    */
   @Get('transactions')
   @ApiOperation({ summary: 'Liste des transactions avec filtres' })
-  @ApiQuery({ name: 'status', required: false, enum: PaymentStatus, description: 'Filtrer par statut' })
-  @ApiQuery({ name: 'method', required: false, enum: PaymentMethod, description: 'Filtrer par methode' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Nombre max de resultats' })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset pour pagination' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: PaymentStatus,
+    description: 'Filtrer par statut',
+  })
+  @ApiQuery({
+    name: 'method',
+    required: false,
+    enum: PaymentMethod,
+    description: 'Filtrer par methode',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Nombre max de resultats',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Offset pour pagination',
+  })
   @ApiResponse({ status: 200, description: 'Liste des transactions' })
   @ApiResponse({ status: 403, description: 'Acces refuse' })
   async getTransactions(
@@ -87,9 +115,24 @@ export class AdminController {
    */
   @Get('tenants')
   @ApiOperation({ summary: 'Liste des tenants avec statuts' })
-  @ApiQuery({ name: 'status', required: false, enum: TenantStatus, description: 'Filtrer par statut' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Nombre max de resultats' })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset pour pagination' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: TenantStatus,
+    description: 'Filtrer par statut',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Nombre max de resultats',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Offset pour pagination',
+  })
   @ApiResponse({ status: 200, description: 'Liste des tenants' })
   @ApiResponse({ status: 403, description: 'Acces refuse' })
   async getTenants(
@@ -115,7 +158,7 @@ export class AdminController {
    * - newStatus: nouveau statut si modifie
    */
   @Post('transactions/:id/reconcile')
-  @ApiOperation({ summary: 'Reconciliation manuelle d\'une transaction' })
+  @ApiOperation({ summary: "Reconciliation manuelle d'une transaction" })
   @ApiResponse({ status: 200, description: 'Reconciliation effectuee' })
   @ApiResponse({ status: 403, description: 'Acces refuse' })
   @ApiResponse({ status: 404, description: 'Transaction introuvable' })
@@ -123,6 +166,10 @@ export class AdminController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') paymentId: string,
   ): Promise<ReturnType<AdminService['reconcileTransaction']>> {
-    return this.adminService.reconcileTransaction(user.userId, user.tenantId, paymentId);
+    return this.adminService.reconcileTransaction(
+      user.userId,
+      user.tenantId,
+      paymentId,
+    );
   }
 }

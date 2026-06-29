@@ -8,7 +8,12 @@ import {
   StreamableFile,
   Header,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ExportsService } from './exports.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -92,7 +97,10 @@ export class ExportsController {
   @ApiOperation({ summary: 'Telecharger rapport PDF de downgrade' })
   @ApiResponse({ status: 200, description: 'Fichier PDF telechargeable' })
   @Header('Content-Type', 'application/pdf')
-  @Header('Content-Disposition', 'attachment; filename="confirmation-downgrade.pdf"')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="confirmation-downgrade.pdf"',
+  )
   async downloadDowngradePDF(
     @CurrentUser() user: AuthenticatedUser,
     @Param('newPlan') newPlan: string,

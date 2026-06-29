@@ -11,8 +11,23 @@ import { InvoicesModule } from '../invoices/invoices.module';
 
 @Module({
   imports: [InvoicesModule],
-  controllers: [CampayWebhookController, PaymentsController, PaymentWebhookController, StripeWebhookController],
-  providers: [CampayService, NotchPayService, PaymentsService, StripePaymentsService],
-  exports: [CampayService, NotchPayService, PaymentsService, StripePaymentsService],
+  controllers: [
+    CampayWebhookController,
+    PaymentsController,
+    PaymentWebhookController,
+    StripeWebhookController,
+  ],
+  providers: [
+    CampayService,
+    NotchPayService,
+    PaymentsService,
+    StripePaymentsService,
+  ],
+  exports: [
+    CampayService,
+    NotchPayService,
+    PaymentsService,
+    StripePaymentsService,
+  ],
 })
-export class PaymentsModule { }
+export class PaymentsModule {}

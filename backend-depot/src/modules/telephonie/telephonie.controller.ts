@@ -8,7 +8,6 @@ import { MetierType } from '../../common/config/metier-roles.config';
 @Metier(MetierType.TELEPHONIE)
 @UseGuards(JwtAuthGuard, MetierGuard)
 export class TelephonieController {
-  
   // --- Stubs Phase 2 ---
   @Get('config')
   async getConfig() {

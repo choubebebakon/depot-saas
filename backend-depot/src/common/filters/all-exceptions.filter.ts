@@ -41,7 +41,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const statusCode = this.getStatusCode(exception);
     const response = context.getResponse();
 
-    if (statusCode === HttpStatus.NOT_FOUND && tryMetierStubResponse(request, response)) {
+    if (
+      statusCode === HttpStatus.NOT_FOUND &&
+      tryMetierStubResponse(request, response)
+    ) {
       return;
     }
 
@@ -108,7 +111,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       if (typeof response === 'object' && response !== null) {
         const objectResponse = response as HttpExceptionObjectResponse;
-        return objectResponse.errorCode ?? objectResponse.error ?? 'HTTP_EXCEPTION';
+        return (
+          objectResponse.errorCode ?? objectResponse.error ?? 'HTTP_EXCEPTION'
+        );
       }
 
       return 'HTTP_EXCEPTION';

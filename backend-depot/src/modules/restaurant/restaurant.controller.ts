@@ -8,7 +8,6 @@ import { MetierType } from '../../common/config/metier-roles.config';
 @Metier(MetierType.RESTAURANT)
 @UseGuards(JwtAuthGuard, MetierGuard)
 export class RestaurantController {
-  
   // --- Stubs Phase 2 ---
   @Get('commandes')
   async getCommandes() {

@@ -4,7 +4,7 @@ import { StatutVente } from '@prisma/client';
 
 @Injectable()
 export class AnalysesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   private buildDepotFilter(depotId?: string) {
     return depotId ? { depotId } : {};
@@ -13,11 +13,18 @@ export class AnalysesService {
   /**
    * Analyse de profitabilite par article
    */
-  async getProfitabilite(tenantId: string, depotId?: string, periode: 'JOUR' | 'MOIS' | 'ANNEE' = 'MOIS') {
+  async getProfitabilite(
+    tenantId: string,
+    depotId?: string,
+    periode: 'JOUR' | 'MOIS' | 'ANNEE' = 'MOIS',
+  ) {
     const start = new Date();
     if (periode === 'JOUR') start.setHours(0, 0, 0, 0);
     if (periode === 'MOIS') start.setDate(1);
-    if (periode === 'ANNEE') { start.setMonth(0); start.setDate(1); }
+    if (periode === 'ANNEE') {
+      start.setMonth(0);
+      start.setDate(1);
+    }
 
     const ventes = await this.prisma.ligneVente.findMany({
       where: {
@@ -33,13 +40,13 @@ export class AnalysesService {
 
     const stats = new Map();
 
-    ventes.forEach(l => {
+    ventes.forEach((l) => {
       const artId = l.articleId;
       const current = stats.get(artId) || {
         designation: l.article.designation,
         quantite: 0,
         ca: 0,
-        marge: 0
+        marge: 0,
       };
 
       const margeUnitaire = l.prix - (l.article.prixAchat || 0);
@@ -48,7 +55,7 @@ export class AnalysesService {
         ...current,
         quantite: current.quantite + l.quantite,
         ca: current.ca + l.total,
-        marge: current.marge + (margeUnitaire * l.quantite),
+        marge: current.marge + margeUnitaire * l.quantite,
       });
     });
 
@@ -63,7 +70,7 @@ export class AnalysesService {
   async getRotationStocks(tenantId: string, depotId?: string) {
     const stocks = await this.prisma.stock.findMany({
       where: { ...this.buildDepotFilter(depotId), depot: { tenantId } },
-      include: { article: true }
+      include: { article: true },
     });
 
     const last30Days = new Date();
@@ -76,23 +83,27 @@ export class AnalysesService {
           tenantId,
           ...this.buildDepotFilter(depotId),
           statut: StatutVente.PAYE,
-          date: { gte: last30Days }
+          date: { gte: last30Days },
         },
       },
       _sum: { quantite: true },
     });
 
-    const mapVentes = new Map(ventes.map(v => [v.articleId, v._sum.quantite || 0]));
+    const mapVentes = new Map(
+      ventes.map((v) => [v.articleId, v._sum.quantite || 0]),
+    );
 
-    return stocks.map(s => {
-      const qteVendue = mapVentes.get(s.articleId) || 0;
-      const stockMoyen = s.quantite > 0 ? s.quantite : 1;
-      return {
-        article: s.article.designation,
-        rotation: parseFloat((qteVendue / stockMoyen).toFixed(2)),
-        stockActuel: s.quantite,
-      };
-    }).sort((a, b) => b.rotation - a.rotation);
+    return stocks
+      .map((s) => {
+        const qteVendue = mapVentes.get(s.articleId) || 0;
+        const stockMoyen = s.quantite > 0 ? s.quantite : 1;
+        return {
+          article: s.article.designation,
+          rotation: parseFloat((qteVendue / stockMoyen).toFixed(2)),
+          stockActuel: s.quantite,
+        };
+      })
+      .sort((a, b) => b.rotation - a.rotation);
   }
 
   /**

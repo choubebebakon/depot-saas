@@ -1,7 +1,23 @@
-import { Controller, Post, Get, Put, Body, Query, UseGuards, Req, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { GarageService } from './garage.service';
 import { PaginationDto } from '../supermarche/supermarche.service';
-import { CreateVehiculeClientDto, CreateFicheTravailDto, UpdateFicheStatutDto } from './dto/garage.dto';
+import {
+  CreateVehiculeClientDto,
+  CreateFicheTravailDto,
+  UpdateFicheStatutDto,
+} from './dto/garage.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -34,7 +50,11 @@ export class GarageController {
   }
 
   @Patch('fiches-travaux/:id/statut')
-  async updateStatut(@Req() req: any, @Param('id') id: string, @Body() data: UpdateFicheStatutDto) {
+  async updateStatut(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateFicheStatutDto,
+  ) {
     return this.service.updateFicheStatut(id, req.user.tenantId, data);
   }
 

@@ -1,28 +1,34 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class SignalerAvarieDto {
-    @IsNotEmpty()
-    @IsString()
-    articleId: string;
+  @IsNotEmpty()
+  @IsString()
+  articleId: string;
 
-    @IsNotEmpty()
-    @IsString()
-    depotId: string;
+  @IsNotEmpty()
+  @IsString()
+  depotId: string;
 
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(1)
-    quantite: number;
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(1)
+  quantite: number;
 
-    @IsNotEmpty()
-    @IsString()
-    motif: string; // Ex: Cassé, Percé, Périmé
+  @IsNotEmpty()
+  @IsString()
+  motif: string; // Ex: Cassé, Percé, Périmé
 
-    @IsOptional()
-    @IsString()
-    photoUrl?: string;
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
 
-    @IsNotEmpty()
-    @IsString()
-    tenantId: string;
+  @IsNotEmpty()
+  @IsString()
+  tenantId: string;
 }

@@ -9,4 +9,4 @@ import { AuditModule } from '../audit/audit.module';
   controllers: [StocksController],
   providers: [StocksService, PrismaService],
 })
-export class StocksModule { }
+export class StocksModule {}

@@ -1,9 +1,25 @@
-import { Controller, Post, Get, Put, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { BoulangerieService, CreateRecetteDto, AddIngredientDto, CreateProductionDto, PaginationDto } from './boulangerie.service';
+import {
+  BoulangerieService,
+  CreateRecetteDto,
+  AddIngredientDto,
+  CreateProductionDto,
+  PaginationDto,
+} from './boulangerie.service';
 
 @Controller('boulangerie')
 @Metier(MetierType.BOULANGERIE)

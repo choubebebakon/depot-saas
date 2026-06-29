@@ -14,7 +14,11 @@ import { Throttle } from '@nestjs/throttler';
 import { NotificationsService } from './notifications.service';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsAiService } from './ai/notifications-ai.service';
-import { CreateNotificationDto, NotificationFilter, UpdatePreferencesDto } from './notifications.types';
+import {
+  CreateNotificationDto,
+  NotificationFilter,
+  UpdatePreferencesDto,
+} from './notifications.types';
 
 @Controller('notifications')
 @Throttle({ default: { limit: 30, ttl: 60000 } })

@@ -1,4 +1,9 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+﻿import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { Observable, Subscription } from 'rxjs';
 import { AuthenticatedUser } from '../../auth/strategies/jwt.strategy';
@@ -12,20 +17,28 @@ interface AuthenticatedRequest extends Request {
 export class DepotScopeInterceptor implements NestInterceptor {
   constructor(private readonly depotScope: DepotScopeService) {}
 
-  /**
-   * Injecte le tenant authentifié dans le contexte AsyncLocalStorage de la requête.
-   */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
+    // 👈 SÉCURITÉ : On ignore les routes d'authentification pour éviter les blocages
+    // lors de la création d'un utilisateur ou de la connexion.
+    const publicRoutes = [
+      '/api/v1/auth/register',
+      '/api/v1/auth/login',
+      '/api/v1/auth/refresh',
+    ];
+    if (publicRoutes.includes(request.url)) {
+      return next.handle();
+    }
+
     const user = request.user;
 
-    // Si pas d'utilisateur (ex: route publique), on passe directement sans scoping
+    // Si pas d'utilisateur (ex: route protégée mais sans user), on passe sans scoping
     if (!user) {
       return next.handle();
     }
 
     return new Observable<unknown>((observer) => {
-      // On capture la souscription retournée à l'intérieur du callback de l'ALS
       const subscription = this.depotScope.run(
         {
           tenantId: user.tenantId,
@@ -41,8 +54,6 @@ export class DepotScopeInterceptor implements NestInterceptor {
         },
       );
 
-      // 🔥 Sécurité RxJS : Si la requête est annulée par le client, on se désabonne 
-      // pour libérer instantanément les ressources et connexions de la base de données.
       return () => {
         if (subscription instanceof Subscription) {
           subscription.unsubscribe();
@@ -51,13 +62,14 @@ export class DepotScopeInterceptor implements NestInterceptor {
     });
   }
 
-  /**
-   * Extrait le dépôt demandé sans faire confiance à ce champ pour l'isolation tenant.
-   */
   private getRequestedDepotId(request: Request): string | null {
     const rawDepotId = request.headers['x-depot-id'] ?? request.query.depotId;
 
-    if (typeof rawDepotId !== 'string' || rawDepotId.trim() === '' || rawDepotId === 'all') {
+    if (
+      typeof rawDepotId !== 'string' ||
+      rawDepotId.trim() === '' ||
+      rawDepotId === 'all'
+    ) {
       return null;
     }
 

@@ -4,8 +4,8 @@ import { TourneesController } from './tournees.controller';
 import { PrismaService } from '../prisma.service';
 
 @Module({
-    controllers: [TourneesController],
-    providers: [TourneesService, PrismaService],
-    exports: [TourneesService],
+  controllers: [TourneesController],
+  providers: [TourneesService, PrismaService],
+  exports: [TourneesService],
 })
-export class TourneesModule { }
+export class TourneesModule {}

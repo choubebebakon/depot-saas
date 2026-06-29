@@ -11,4 +11,4 @@ import { PrismaService } from '../prisma.service';
   providers: [DepotsService, TransfertsService, PrismaService],
   exports: [DepotsService],
 })
-export class DepotsModule { }
+export class DepotsModule {}

@@ -41,12 +41,18 @@ export class LibrairieService {
       where.OR = [
         { auteur: { contains: pagination.search, mode: 'insensitive' } },
         { genre: { contains: pagination.search, mode: 'insensitive' } },
-        { article: { nom: { contains: pagination.search, mode: 'insensitive' } } },
+        {
+          article: {
+            nom: { contains: pagination.search, mode: 'insensitive' },
+          },
+        },
       ];
     }
     const [data, total] = await Promise.all([
       this.prisma.livreDetail.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         include: { article: { include: { stocks: true } } },
         orderBy: { genre: 'asc' },
       }),
@@ -56,7 +62,9 @@ export class LibrairieService {
   }
 
   async createLivre(tenantId: string, dto: CreateLivreDto) {
-    const article = await this.prisma.article.findUnique({ where: { id: dto.articleId } });
+    const article = await this.prisma.article.findUnique({
+      where: { id: dto.articleId },
+    });
     if (!article || article.tenantId !== tenantId) {
       throw new NotFoundException('Article introuvable');
     }
@@ -73,7 +81,9 @@ export class LibrairieService {
     const where: any = { tenantId };
     const [data, total] = await Promise.all([
       this.prisma.commandeSpeciale.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         include: { client: true },
         orderBy: { dateCommande: 'desc' },
       }),
@@ -83,25 +93,54 @@ export class LibrairieService {
   }
 
   async createCommande(tenantId: string, dto: CreateCommandeSpecialeDto) {
-    const client = await this.prisma.client.findUnique({ where: { id: dto.clientId } });
+    const client = await this.prisma.client.findUnique({
+      where: { id: dto.clientId },
+    });
     if (!client || client.tenantId !== tenantId) {
       throw new NotFoundException('Client introuvable');
     }
     return this.prisma.commandeSpeciale.create({
-      data: { ...dto, quantite: dto.quantite || 1, dateArrivee: dto.dateArrivee ? new Date(dto.dateArrivee) : null, tenantId },
+      data: {
+        ...dto,
+        quantite: dto.quantite || 1,
+        dateArrivee: dto.dateArrivee ? new Date(dto.dateArrivee) : null,
+        tenantId,
+      },
       include: { client: true },
     });
   }
 
   async updateCommandeStatut(id: string, statut: string) {
-    return this.prisma.commandeSpeciale.update({ where: { id }, data: { statut: statut as any }, include: { client: true } });
+    return this.prisma.commandeSpeciale.update({
+      where: { id },
+      data: { statut: statut as any },
+      include: { client: true },
+    });
   }
 
   async getStats(tenantId: string) {
-    const totalLivres = await this.prisma.livreDetail.count({ where: { tenantId } });
-    const totalEnAttente = await this.prisma.commandeSpeciale.count({ where: { tenantId, statut: 'EN_ATTENTE' } });
-    const totalArrivees = await this.prisma.commandeSpeciale.count({ where: { tenantId, statut: 'ARRIVE' } });
-    const commandesRecent = await this.prisma.commandeSpeciale.count({ where: { tenantId, dateCommande: { gte: new Date(new Date().setDate(new Date().getDate() - 30)) } } });
-    return { totalLivres, totalEnAttente, totalArrivees, commandes30j: commandesRecent };
+    const totalLivres = await this.prisma.livreDetail.count({
+      where: { tenantId },
+    });
+    const totalEnAttente = await this.prisma.commandeSpeciale.count({
+      where: { tenantId, statut: 'EN_ATTENTE' },
+    });
+    const totalArrivees = await this.prisma.commandeSpeciale.count({
+      where: { tenantId, statut: 'ARRIVE' },
+    });
+    const commandesRecent = await this.prisma.commandeSpeciale.count({
+      where: {
+        tenantId,
+        dateCommande: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 30)),
+        },
+      },
+    });
+    return {
+      totalLivres,
+      totalEnAttente,
+      totalArrivees,
+      commandes30j: commandesRecent,
+    };
   }
 }

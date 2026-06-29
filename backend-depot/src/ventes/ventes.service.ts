@@ -1,5 +1,15 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { StatutVente, TypeMouvement, NotifType, ModePaiement } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  StatutVente,
+  TypeMouvement,
+  NotifType,
+  ModePaiement,
+} from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma.service';
 import { DlcService } from '../dlc/dlc.service';
@@ -14,29 +24,34 @@ export class VentesService {
     private readonly auditService: AuditService,
     private readonly dlcService: DlcService,
     private readonly notifService: NotificationsService,
-  ) { }
+  ) {}
 
   private requireDepotId(depotId?: string) {
     if (!depotId) {
-      throw new BadRequestException('depotId est obligatoire pour isoler les ventes du depot actif.');
+      throw new BadRequestException(
+        'depotId est obligatoire pour isoler les ventes du depot actif.',
+      );
     }
 
     return depotId;
   }
 
   // 1. CRÉATION DE VENTE
-  async createVente(dto: any, actor: { userId: string; email: string; role: string }) {
-    const { 
-      id, 
-      reference: clientRef, 
-      createdAt, 
-      depotId, 
-      tenantId, 
-      lignes, 
-      clientId, 
-      modePaiement, 
+  async createVente(
+    dto: any,
+    actor: { userId: string; email: string; role: string },
+  ) {
+    const {
+      id,
+      reference: clientRef,
+      createdAt,
+      depotId,
+      tenantId,
+      lignes,
+      clientId,
+      modePaiement,
       tourneeId,
-      retoursConsigne 
+      retoursConsigne,
     } = dto;
 
     return await this.prisma.$transaction(async (tx) => {
@@ -44,11 +59,16 @@ export class VentesService {
       const lignesData: any[] = [];
 
       for (const ligne of lignes) {
-        const article = await tx.article.findUnique({ where: { id: ligne.articleId } });
+        const article = await tx.article.findUnique({
+          where: { id: ligne.articleId },
+        });
         if (!article) throw new BadRequestException(`Article introuvable.`);
 
-        const prixBase = ligne.casierMixte || ligne.conditionnementId ? (ligne.prix || article.prixVente) : article.prixVente;
-        const totalLigne = (prixBase * ligne.quantite) - (ligne.remise || 0);
+        const prixBase =
+          ligne.casierMixte || ligne.conditionnementId
+            ? ligne.prix || article.prixVente
+            : article.prixVente;
+        const totalLigne = prixBase * ligne.quantite - (ligne.remise || 0);
         totalVente += totalLigne;
 
         lignesData.push({
@@ -60,7 +80,7 @@ export class VentesService {
           total: totalLigne,
           casierMixte: ligne.casierMixte || false,
           composition: ligne.composition || null,
-          conditionnementId: ligne.conditionnementId || null
+          conditionnementId: ligne.conditionnementId || null,
         });
       }
 
@@ -68,7 +88,11 @@ export class VentesService {
       if (!reference) {
         const annee = new Date().getFullYear();
         const count = await tx.vente.count({
-          where: { tenantId, depotId, date: { gte: new Date(`${annee}-01-01`) } }
+          where: {
+            tenantId,
+            depotId,
+            date: { gte: new Date(`${annee}-01-01`) },
+          },
         });
         reference = `FAC-${annee}-${String(count + 1).padStart(6, '0')}`;
       }
@@ -89,7 +113,7 @@ export class VentesService {
           date: createdAt ? new Date(createdAt) : undefined,
           lignes: { create: lignesData },
         },
-        include: { lignes: { include: { article: true } }, client: true }
+        include: { lignes: { include: { article: true } }, client: true },
       });
 
       // --- LOGIQUE ATOMIQUE : STOCKS ET MOUVEMENTS ---
@@ -98,7 +122,11 @@ export class VentesService {
         await tx.stock.upsert({
           where: { articleId_depotId: { articleId: ligne.articleId, depotId } },
           update: { quantite: { decrement: ligne.quantite } },
-          create: { articleId: ligne.articleId, depotId, quantite: -ligne.quantite }
+          create: {
+            articleId: ligne.articleId,
+            depotId,
+            quantite: -ligne.quantite,
+          },
         });
 
         // 2. Création du Mouvement de Stock (Pour le Dashboard)
@@ -110,7 +138,7 @@ export class VentesService {
             depotId,
             tenantId,
             motif: `Vente POS ${reference}`,
-          }
+          },
         });
       }
 
@@ -123,21 +151,33 @@ export class VentesService {
               motif: `Retour vide sur vente ${reference}`,
               estSortie: false, // C'est un retour, donc ce n'est pas une sortie
               tenantId: tenantId,
-              typeConsigne: { connect: { id: retour.typeConsigneId } }
-            }
+              typeConsigne: { connect: { id: retour.typeConsigneId } },
+            },
           });
 
           // Mise à jour du portefeuille consigne du client
           await tx.portefeuilleConsigne.upsert({
-            where: { clientId_typeConsigneId: { clientId, typeConsigneId: retour.typeConsigneId } },
+            where: {
+              clientId_typeConsigneId: {
+                clientId,
+                typeConsigneId: retour.typeConsigneId,
+              },
+            },
             update: { quantite: { decrement: retour.quantite } },
-            create: { clientId, typeConsigneId: retour.typeConsigneId, quantite: -retour.quantite }
+            create: {
+              clientId,
+              typeConsigneId: retour.typeConsigneId,
+              quantite: -retour.quantite,
+            },
           });
         }
       }
 
       // Audit remise
-      const remiseTotale = lignes.reduce((acc: number, l: any) => acc + (l.remise || 0), 0);
+      const remiseTotale = lignes.reduce(
+        (acc: number, l: any) => acc + (l.remise || 0),
+        0,
+      );
       if (remiseTotale > 0) {
         await this.auditService.logEvent({
           tenantId,
@@ -149,7 +189,7 @@ export class VentesService {
           targetId: vente.id,
           reference: vente.reference,
           description: `Vente avec remise totale de ${remiseTotale.toLocaleString('fr-FR')} FCFA`,
-          metadata: { remiseTotale, venteId: vente.id }
+          metadata: { remiseTotale, venteId: vente.id },
         });
       }
 
@@ -158,59 +198,91 @@ export class VentesService {
   }
 
   // 2. VALIDATION (SORTIE STOCK) + FIFO
-  async validerSortieVente(id: string, tenantId: string, depotId: string, actor: any) {
+  async validerSortieVente(
+    id: string,
+    tenantId: string,
+    depotId: string,
+    actor: any,
+  ) {
     const selectedDepotId = this.requireDepotId(depotId);
 
     return await this.prisma.$transaction(async (tx) => {
       const vente = await tx.vente.findFirst({
         where: { id, tenantId, depotId: selectedDepotId },
-        include: { lignes: true }
+        include: { lignes: true },
       });
 
       if (!vente || vente.statut !== StatutVente.ATTENTE) {
-        throw new BadRequestException("Vente introuvable ou déjà validée.");
+        throw new BadRequestException('Vente introuvable ou déjà validée.');
       }
 
       for (const ligne of vente.lignes) {
         let stockDecs: { articleId: string; quantite: number }[] = [];
-        let composition = ligne.composition ? (typeof ligne.composition === 'string' ? JSON.parse(ligne.composition as string) : ligne.composition) : null;
+        const composition = ligne.composition
+          ? typeof ligne.composition === 'string'
+            ? JSON.parse(ligne.composition)
+            : ligne.composition
+          : null;
 
         if (ligne.casierMixte && composition && Array.isArray(composition)) {
           stockDecs = composition.map((item: any) => ({
             articleId: item.articleId,
-            quantite: item.quantite * ligne.quantite
+            quantite: item.quantite * ligne.quantite,
           }));
         } else if (ligne.conditionnementId) {
-          const cond = await tx.conditionnement.findUnique({ where: { id: ligne.conditionnementId } });
+          const cond = await tx.conditionnement.findUnique({
+            where: { id: ligne.conditionnementId },
+          });
           const factor = cond ? cond.quantiteUnitaire : 1;
-          stockDecs = [{ articleId: ligne.articleId, quantite: ligne.quantite * factor }];
+          stockDecs = [
+            { articleId: ligne.articleId, quantite: ligne.quantite * factor },
+          ];
         } else {
-          stockDecs = [{ articleId: ligne.articleId, quantite: ligne.quantite }];
+          stockDecs = [
+            { articleId: ligne.articleId, quantite: ligne.quantite },
+          ];
         }
 
         for (const dec of stockDecs) {
           if (vente.tourneeId) {
             // Vente en tournée : Tricycle stock
             const ligneCh = await tx.ligneChargement.findFirst({
-              where: { tourneeId: vente.tourneeId, articleId: dec.articleId }
+              where: { tourneeId: vente.tourneeId, articleId: dec.articleId },
             });
 
-            if (!ligneCh) throw new BadRequestException(`Article ${dec.articleId} non chargé.`);
+            if (!ligneCh)
+              throw new BadRequestException(
+                `Article ${dec.articleId} non chargé.`,
+              );
 
             await tx.ligneChargement.update({
               where: { id: ligneCh.id },
-              data: { quantiteVendue: { increment: dec.quantite } }
+              data: { quantiteVendue: { increment: dec.quantite } },
             });
           } else {
             // Vente au dépôt : FIFO automatique
             await tx.stock.upsert({
-              where: { articleId_depotId: { articleId: dec.articleId, depotId: vente.depotId } },
+              where: {
+                articleId_depotId: {
+                  articleId: dec.articleId,
+                  depotId: vente.depotId,
+                },
+              },
               update: { quantite: { decrement: dec.quantite } },
-              create: { articleId: dec.articleId, depotId: vente.depotId, quantite: -dec.quantite }
+              create: {
+                articleId: dec.articleId,
+                depotId: vente.depotId,
+                quantite: -dec.quantite,
+              },
             });
 
             // FIFO des lots
-            await this.dlcService.deduireLotFIFO(dec.articleId, vente.depotId, tenantId, dec.quantite);
+            await this.dlcService.deduireLotFIFO(
+              dec.articleId,
+              vente.depotId,
+              tenantId,
+              dec.quantite,
+            );
           }
 
           await tx.mouvementStock.create({
@@ -221,15 +293,15 @@ export class VentesService {
               depotId: vente.depotId,
               tenantId,
               motif: `Vente ${vente.reference}`,
-              tourneeId: vente.tourneeId || null
-            }
+              tourneeId: vente.tourneeId || null,
+            },
           });
         }
       }
 
       const venteUpdated = await tx.vente.update({
         where: { id },
-        data: { statut: StatutVente.PAYE }
+        data: { statut: StatutVente.PAYE },
       });
 
       await this.auditService.logEvent({
@@ -242,26 +314,32 @@ export class VentesService {
         targetId: id,
         reference: vente.reference,
         description: `Validation sortie de stock ${vente.reference}`,
-        metadata: { venteId: id }
+        metadata: { venteId: id },
       });
 
-      this.notifService.createFromTemplate(
-        tenantId,
-        NotifType.LIVRAISON_TERMINEE,
-        { client: vente.clientId || 'Client', montant: vente.total },
-      ).catch((e) => this.logger.error(`Erreur notif vente: ${e.message}`));
+      this.notifService
+        .createFromTemplate(tenantId, NotifType.LIVRAISON_TERMINEE, {
+          client: vente.clientId || 'Client',
+          montant: vente.total,
+        })
+        .catch((e) => this.logger.error(`Erreur notif vente: ${e.message}`));
 
       return venteUpdated;
     });
   }
 
-  // 3. STATISTIQUES 
+  // 3. STATISTIQUES
   async getStats(tenantId: string, depotId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const infosJour = await this.prisma.vente.aggregate({
-      where: { tenantId, depotId, date: { gte: today }, statut: StatutVente.PAYE },
+      where: {
+        tenantId,
+        depotId,
+        date: { gte: today },
+        statut: StatutVente.PAYE,
+      },
       _sum: { total: true },
       _count: { _all: true },
     });
@@ -273,7 +351,13 @@ export class VentesService {
   }
 
   // 4. LISTER VENTES
-  async findAll(tenantId: string, startDate?: string, endDate?: string, depotId?: string, statut?: any) {
+  async findAll(
+    tenantId: string,
+    startDate?: string,
+    endDate?: string,
+    depotId?: string,
+    statut?: any,
+  ) {
     const selectedDepotId = this.requireDepotId(depotId);
     const where: any = { tenantId, depotId: selectedDepotId };
     if (statut) where.statut = statut;
@@ -285,8 +369,12 @@ export class VentesService {
 
     return this.prisma.vente.findMany({
       where,
-      include: { lignes: { include: { article: true } }, client: true, depot: true },
-      orderBy: { date: 'desc' }
+      include: {
+        lignes: { include: { article: true } },
+        client: true,
+        depot: true,
+      },
+      orderBy: { date: 'desc' },
     });
   }
 
@@ -294,7 +382,7 @@ export class VentesService {
   async findOne(id: string, tenantId: string, depotId: string) {
     return this.prisma.vente.findFirst({
       where: { id, tenantId, depotId },
-      include: { lignes: { include: { article: true } }, client: true }
+      include: { lignes: { include: { article: true } }, client: true },
     });
   }
 
@@ -303,43 +391,76 @@ export class VentesService {
     const selectedDepotId = this.requireDepotId(depotId);
 
     return this.prisma.vente.findMany({
-      where: { tenantId, depotId: selectedDepotId, statut: StatutVente.ATTENTE },
+      where: {
+        tenantId,
+        depotId: selectedDepotId,
+        statut: StatutVente.ATTENTE,
+      },
       include: { lignes: { include: { article: true } }, depot: true },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
     });
   }
 
   // 7. ANNULER VENTE
-  async annulerVente(id: string, motif: string, tenantId: string, depotId: string, actor: any) {
+  async annulerVente(
+    id: string,
+    motif: string,
+    tenantId: string,
+    depotId: string,
+    actor: any,
+  ) {
     const selectedDepotId = this.requireDepotId(depotId);
 
     return await this.prisma.$transaction(async (tx) => {
       const vente = await tx.vente.findFirst({
         where: { id, tenantId, depotId: selectedDepotId },
-        include: { lignes: true }
+        include: { lignes: true },
       });
-      if (!vente || vente.statut === StatutVente.ANNULE) throw new BadRequestException("Action impossible");
+      if (!vente || vente.statut === StatutVente.ANNULE)
+        throw new BadRequestException('Action impossible');
 
       if (vente.statut === StatutVente.PAYE) {
         for (const ligne of vente.lignes) {
           let stockIncs: { articleId: string; quantite: number }[] = [];
-          let composition = ligne.composition ? (typeof ligne.composition === 'string' ? JSON.parse(ligne.composition as string) : ligne.composition) : null;
+          const composition = ligne.composition
+            ? typeof ligne.composition === 'string'
+              ? JSON.parse(ligne.composition)
+              : ligne.composition
+            : null;
 
           if (ligne.casierMixte && composition && Array.isArray(composition)) {
-            stockIncs = composition.map((item: any) => ({ articleId: item.articleId, quantite: item.quantite * ligne.quantite }));
+            stockIncs = composition.map((item: any) => ({
+              articleId: item.articleId,
+              quantite: item.quantite * ligne.quantite,
+            }));
           } else if (ligne.conditionnementId) {
-            const cond = await tx.conditionnement.findUnique({ where: { id: ligne.conditionnementId } });
+            const cond = await tx.conditionnement.findUnique({
+              where: { id: ligne.conditionnementId },
+            });
             const factor = cond ? cond.quantiteUnitaire : 1;
-            stockIncs = [{ articleId: ligne.articleId, quantite: ligne.quantite * factor }];
+            stockIncs = [
+              { articleId: ligne.articleId, quantite: ligne.quantite * factor },
+            ];
           } else {
-            stockIncs = [{ articleId: ligne.articleId, quantite: ligne.quantite }];
+            stockIncs = [
+              { articleId: ligne.articleId, quantite: ligne.quantite },
+            ];
           }
 
           for (const inc of stockIncs) {
             await tx.stock.upsert({
-              where: { articleId_depotId: { articleId: inc.articleId, depotId: vente.depotId } },
+              where: {
+                articleId_depotId: {
+                  articleId: inc.articleId,
+                  depotId: vente.depotId,
+                },
+              },
               update: { quantite: { increment: inc.quantite } },
-              create: { articleId: inc.articleId, depotId: vente.depotId, quantite: inc.quantite }
+              create: {
+                articleId: inc.articleId,
+                depotId: vente.depotId,
+                quantite: inc.quantite,
+              },
             });
           }
         }
@@ -347,7 +468,7 @@ export class VentesService {
 
       const venteUpdated = await tx.vente.update({
         where: { id },
-        data: { statut: StatutVente.ANNULE, motifAnnulation: motif }
+        data: { statut: StatutVente.ANNULE, motifAnnulation: motif },
       });
 
       await this.auditService.logEvent({
@@ -360,7 +481,7 @@ export class VentesService {
         targetId: id,
         reference: vente.reference,
         description: `Annulation vente ${vente.reference}`,
-        metadata: { motif, venteId: id }
+        metadata: { motif, venteId: id },
       });
 
       return venteUpdated;
@@ -390,11 +511,11 @@ export class VentesService {
     today.setHours(0, 0, 0, 0);
 
     const ventes = await this.prisma.vente.aggregate({
-      where: { 
-        tenantId, 
-        depotId: selectedDepotId, 
-        date: { gte: today }, 
-        statut: StatutVente.PAYE 
+      where: {
+        tenantId,
+        depotId: selectedDepotId,
+        date: { gte: today },
+        statut: StatutVente.PAYE,
       },
       _sum: { total: true },
       _count: true,

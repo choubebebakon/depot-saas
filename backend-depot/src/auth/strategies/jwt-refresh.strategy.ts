@@ -9,7 +9,10 @@ import { Role } from '@prisma/client';
  * Utilisee par le guard JwtRefreshGuard pour proteger les routes de renouvellement de token.
  */
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor(private readonly authService: AuthService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -19,12 +22,17 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       ]),
       ignoreExpiration: false,
       passReqToCallback: true,
-      secretOrKeyProvider: async (request: any, rawJwtToken: any, done: any) => {
+      secretOrKeyProvider: async (
+        request: any,
+        rawJwtToken: any,
+        done: any,
+      ) => {
         try {
-          const secret = process.env.JWT_REFRESH_SECRET || 'refresh_secret_secure_2026';
+          const secret =
+            process.env.JWT_REFRESH_SECRET || 'refresh_secret_secure_2026';
           return done(undefined, secret);
         } catch (error) {
-          return done(error as Error, undefined);
+          return done(error, undefined);
         }
       },
     });
@@ -33,10 +41,13 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
   /**
    * Valide le refresh token et retourne le payload utilisateur.
    */
-  async validate(req: any, payload: any): Promise<{ userId: string; tenantId: string; role: Role }> {
+  async validate(
+    req: any,
+    payload: any,
+  ): Promise<{ userId: string; tenantId: string; role: Role }> {
     try {
       const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
-      
+
       if (!refreshToken) {
         throw new UnauthorizedException({
           error: 'REFRESH_TOKEN_MISSING',
@@ -44,7 +55,8 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
         });
       }
 
-      const user = await this.authService.validateRefreshTokenFromCookie(refreshToken);
+      const user =
+        await this.authService.validateRefreshTokenFromCookie(refreshToken);
       if (!user) {
         throw new UnauthorizedException('Token invalide ou expiré');
       }

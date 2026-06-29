@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { StatutAbonnement, PlanAbonnement } from '@prisma/client';
 
@@ -8,7 +13,12 @@ export class PaiementService {
 
   constructor(private prisma: PrismaService) {}
 
-  async traiterPaiement(data: { tenantId: string, montant: number, operateur: string, transactionId: string }) {
+  async traiterPaiement(data: {
+    tenantId: string;
+    montant: number;
+    operateur: string;
+    transactionId: string;
+  }) {
     const { tenantId, montant, operateur, transactionId } = data;
 
     // 1. Détermination du plan et des mois en fonction du montant strict de 20 000 ou 150 000 FCFA
@@ -22,10 +32,14 @@ export class PaiementService {
       moisAmount = 12;
       planAttribue = PlanAbonnement.ANNUEL;
     } else {
-      throw new BadRequestException(`Montant invalide: ${montant} FCFA. Seuls les montants de 20000 (Mensuel) et 150000 (Annuel) sont acceptés.`);
+      throw new BadRequestException(
+        `Montant invalide: ${montant} FCFA. Seuls les montants de 20000 (Mensuel) et 150000 (Annuel) sont acceptés.`,
+      );
     }
 
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
 
     if (!tenant) {
       throw new NotFoundException('Tenant introuvable pour ce paiement.');
@@ -38,17 +52,18 @@ export class PaiementService {
         data: {
           tenantId: tenantId,
           montant: montant,
-          reference: transactionId, 
+          reference: transactionId,
           statut: 'SUCCESS',
-        }
+        },
       });
 
       // 3. Calculer la nouvelle date d'expiration
       const now = new Date();
-      const currentDateExp = (tenant.dateExpiration && tenant.dateExpiration > now) 
-                             ? tenant.dateExpiration 
-                             : now;
-                             
+      const currentDateExp =
+        tenant.dateExpiration && tenant.dateExpiration > now
+          ? tenant.dateExpiration
+          : now;
+
       const nouvelleExpiration = new Date(currentDateExp);
       nouvelleExpiration.setMonth(nouvelleExpiration.getMonth() + moisAmount);
 
@@ -59,11 +74,13 @@ export class PaiementService {
           statutAbonnement: StatutAbonnement.ACTIVE,
           dateExpiration: nouvelleExpiration,
           plan: planAttribue,
-        }
+        },
       });
 
       // 5. Journalisation Console du succès
-      this.logger.log(`[PAIEMENT REÇU] - Opérateur: ${operateur} - Montant: ${montant} - Tenant: ${tenantId} - Réf: ${transactionId}`);
+      this.logger.log(
+        `[PAIEMENT REÇU] - Opérateur: ${operateur} - Montant: ${montant} - Tenant: ${tenantId} - Réf: ${transactionId}`,
+      );
 
       return {
         message: 'Abonnement prolongé avec succès',

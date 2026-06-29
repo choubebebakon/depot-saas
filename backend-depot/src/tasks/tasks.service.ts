@@ -3,7 +3,12 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../prisma.service';
 import { EmailService } from '../common/email/email.service';
-import { NotifType, TenantStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
+import {
+  NotifType,
+  TenantStatus,
+  PaymentStatus,
+  PaymentMethod,
+} from '@prisma/client';
 import { CampayService } from '../payments/campay.service';
 import { PaymentsService } from '../payments/payments.service';
 
@@ -24,7 +29,7 @@ export class TasksService {
     private readonly campay: CampayService,
     private readonly payments: PaymentsService,
     private readonly emailService: EmailService,
-  ) { }
+  ) {}
 
   /**
    * CRON: Relances automatiques pour les abonnements proches de l'expiration.
@@ -123,20 +128,22 @@ export class TasksService {
 
       for (const user of tenant.users) {
         if (user.email) {
-          this.emailService.sendExpiryReminder(
-            user.email,
-            tenant.name || 'Votre entreprise',
-            daysUntilExpiry,
-            targetDate,
-            tenant.planType || 'Standard',
-          ).catch((err) => this.logger.error(`Erreur envoi email relance: ${err.message}`));
+          this.emailService
+            .sendExpiryReminder(
+              user.email,
+              tenant.name || 'Votre entreprise',
+              daysUntilExpiry,
+              targetDate,
+              tenant.planType || 'Standard',
+            )
+            .catch((err) =>
+              this.logger.error(`Erreur envoi email relance: ${err.message}`),
+            );
         }
       }
     }
 
-    this.logger.log(
-      `Processed ${tenants.length} reminders for ${notifType}`,
-    );
+    this.logger.log(`Processed ${tenants.length} reminders for ${notifType}`);
   }
 
   /**
@@ -177,11 +184,19 @@ export class TasksService {
 
       for (const payment of pendingPayments) {
         try {
-          if (payment.method === PaymentMethod.MTN_MOMO && payment.operatorTxId) {
-            const status = await this.campay.getTransactionStatus(payment.operatorTxId);
-            
+          if (
+            payment.method === PaymentMethod.MTN_MOMO &&
+            payment.operatorTxId
+          ) {
+            const status = await this.campay.getTransactionStatus(
+              payment.operatorTxId,
+            );
+
             if (status.status === 'SUCCESSFUL') {
-              await this.payments.markPaymentSuccess(payment.id, payment.operatorTxId);
+              await this.payments.markPaymentSuccess(
+                payment.id,
+                payment.operatorTxId,
+              );
               this.logger.log(`Payment ${payment.id} reconciled as SUCCESS`);
             } else if (status.status === 'FAILED') {
               await this.prisma.payment.update({

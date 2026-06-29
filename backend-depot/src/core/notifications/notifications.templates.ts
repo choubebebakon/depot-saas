@@ -10,13 +10,15 @@ interface TemplateDef {
 export const TEMPLATES: Record<NotifType, TemplateDef> = {
   EXPIRY_WARNING: {
     title: 'Abonnement expire bientôt',
-    message: 'Votre abonnement expire dans {{jours}} jours ({{dateExpiration}}).',
+    message:
+      'Votre abonnement expire dans {{jours}} jours ({{dateExpiration}}).',
     category: 'SUBSCRIPTION',
     priority: 'HIGH',
   },
   EXPIRY_J7: {
     title: 'Abonnement J-7',
-    message: 'Votre abonnement {{plan}} expire dans 7 jours, le {{dateExpiration}}.',
+    message:
+      'Votre abonnement {{plan}} expire dans 7 jours, le {{dateExpiration}}.',
     category: 'SUBSCRIPTION',
     priority: 'HIGH',
   },
@@ -52,7 +54,8 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
   },
   STOCK_CRITIQUE: {
     title: 'Stock critique',
-    message: '{{articleNom}} : {{quantite}} unités restantes (seuil : {{seuil}}).',
+    message:
+      '{{articleNom}} : {{quantite}} unités restantes (seuil : {{seuil}}).',
     category: 'STOCK',
     priority: 'HIGH',
   },
@@ -64,13 +67,15 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
   },
   STOCK_EXPIRATION: {
     title: 'Produit proche expiration',
-    message: '{{articleNom}} expire le {{dateExpiration}} (J-{{joursRestants}}).',
+    message:
+      '{{articleNom}} expire le {{dateExpiration}} (J-{{joursRestants}}).',
     category: 'STOCK',
     priority: 'HIGH',
   },
   RESERVATION_NOUVELLE: {
     title: 'Nouvelle réservation',
-    message: 'Chambre {{numeroChambre}} réservée par {{nomClient}} du {{dateArrivee}}.',
+    message:
+      'Chambre {{numeroChambre}} réservée par {{nomClient}} du {{dateArrivee}}.',
     category: 'RESERVATION',
     priority: 'MEDIUM',
   },
@@ -94,7 +99,8 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
   },
   COMMANDE_RETARD: {
     title: 'Commande en retard',
-    message: 'Commande #{{numeroCommande}} a dépassé le délai de {{retardMinutes}} min.',
+    message:
+      'Commande #{{numeroCommande}} a dépassé le délai de {{retardMinutes}} min.',
     category: 'ORDER',
     priority: 'CRITICAL',
   },
@@ -136,7 +142,8 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
   },
   VACCINATION_PREVUE: {
     title: 'Vaccination prévue',
-    message: 'Vaccination {{type}} prévue pour le lot {{lotId}} le {{datePrevue}}.',
+    message:
+      'Vaccination {{type}} prévue pour le lot {{lotId}} le {{datePrevue}}.',
     category: 'APPOINTMENT',
     priority: 'MEDIUM',
   },
@@ -166,13 +173,17 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
   },
   RAPPORT_JOURNALIER: {
     title: 'Rapport journalier',
-    message: 'Ventes : {{ventesJour}} | Nouveaux clients : {{nouveauClients}} | Alertes : {{alertes}}.',
+    message:
+      'Ventes : {{ventesJour}} | Nouveaux clients : {{nouveauClients}} | Alertes : {{alertes}}.',
     category: 'IA',
     priority: 'LOW',
   },
 };
 
-export function interpolate(template: string, data: Record<string, unknown>): string {
+export function interpolate(
+  template: string,
+  data: Record<string, unknown>,
+): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     const value = data[key];
     if (value === null || value === undefined) return `{{${key}}}`;
@@ -180,7 +191,10 @@ export function interpolate(template: string, data: Record<string, unknown>): st
   });
 }
 
-export function getTemplate(type: NotifType, data: Record<string, unknown>): { title: string; message: string } {
+export function getTemplate(
+  type: NotifType,
+  data: Record<string, unknown>,
+): { title: string; message: string } {
   const tpl = TEMPLATES[type] || TEMPLATES.SYSTEM;
   return {
     title: interpolate(tpl.title, data),

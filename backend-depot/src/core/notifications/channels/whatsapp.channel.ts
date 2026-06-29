@@ -10,7 +10,10 @@ export class WhatsAppChannel {
   private phoneId: string;
 
   constructor(private configService: ConfigService) {
-    this.apiUrl = this.configService.get<string>('WHATSAPP_API_URL', 'https://graph.facebook.com/v18.0');
+    this.apiUrl = this.configService.get<string>(
+      'WHATSAPP_API_URL',
+      'https://graph.facebook.com/v18.0',
+    );
     this.token = this.configService.get<string>('WHATSAPP_TOKEN', '');
     this.phoneId = this.configService.get<string>('WHATSAPP_PHONE_ID', '');
 
@@ -18,7 +21,9 @@ export class WhatsAppChannel {
       this.initialized = true;
       this.logger.log('WhatsAppChannel initialisé');
     } else {
-      this.logger.warn('WHATSAPP_TOKEN ou WHATSAPP_PHONE_ID manquant — WhatsApp désactivé (mode dégradé)');
+      this.logger.warn(
+        'WHATSAPP_TOKEN ou WHATSAPP_PHONE_ID manquant — WhatsApp désactivé (mode dégradé)',
+      );
     }
   }
 
@@ -31,7 +36,9 @@ export class WhatsAppChannel {
 
   async send(to: string, message: string): Promise<boolean> {
     if (!this.initialized) {
-      this.logger.log(`[WHATSAPP LOG] To: ${to} | Message: ${message.substring(0, 80)}...`);
+      this.logger.log(
+        `[WHATSAPP LOG] To: ${to} | Message: ${message.substring(0, 80)}...`,
+      );
       return true;
     }
 

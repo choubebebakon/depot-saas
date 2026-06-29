@@ -1,9 +1,25 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Req, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Put,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { TransportService, CreateVehiculeDto, CreateColisDto, CreateTrajetDto, PaginationDto } from './transport.service';
+import {
+  TransportService,
+  CreateVehiculeDto,
+  CreateColisDto,
+  CreateTrajetDto,
+  PaginationDto,
+} from './transport.service';
 
 @Controller('transport')
 @Metier(MetierType.TRANSPORT)
@@ -32,7 +48,10 @@ export class TransportController {
   }
 
   @Post('colis/:id/statut')
-  async updateColisStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateColisStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateColisStatut(id, statut);
   }
 
@@ -47,7 +66,10 @@ export class TransportController {
   }
 
   @Post('trajets/:id/statut')
-  async updateTrajetStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateTrajetStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateTrajetStatut(id, statut);
   }
 
@@ -60,7 +82,12 @@ export class TransportController {
 
   @Get('chauffeurs')
   async findAllChauffeurs(@Req() req: any, @Query() query: PaginationDto) {
-    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+    return {
+      data: [],
+      total: 0,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+    };
   }
 
   @Post('chauffeurs')
@@ -70,7 +97,12 @@ export class TransportController {
 
   @Get('personnel')
   async findAllPersonnel(@Req() req: any, @Query() query: PaginationDto) {
-    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+    return {
+      data: [],
+      total: 0,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+    };
   }
 
   @Post('personnel')
@@ -80,7 +112,12 @@ export class TransportController {
 
   @Get('livraisons')
   async findAllLivraisons(@Req() req: any, @Query() query: PaginationDto) {
-    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+    return {
+      data: [],
+      total: 0,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+    };
   }
 
   @Post('livraisons')
@@ -100,7 +137,12 @@ export class TransportController {
 
   @Get('clients')
   async findAllClients(@Req() req: any, @Query() query: PaginationDto) {
-    return { data: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+    return {
+      data: [],
+      total: 0,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+    };
   }
 
   @Post('clients')

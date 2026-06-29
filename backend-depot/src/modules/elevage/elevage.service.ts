@@ -1,8 +1,23 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { LotElevage, EvenementElevage, AlimentationElevage, Prisma, NotifType } from '@prisma/client';
+import {
+  LotElevage,
+  EvenementElevage,
+  AlimentationElevage,
+  Prisma,
+  NotifType,
+} from '@prisma/client';
 import { NotificationsService } from '../../core/notifications/notifications.service';
-import { IsString, IsInt, IsDateString, IsOptional, IsEnum, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 // DTOs
@@ -177,13 +192,24 @@ export class ElevageService {
   ) {}
 
   // Lots d'élevage
-  async createLot(tenantId: string, data: CreateLotElevageDto): Promise<LotElevage> {
+  async createLot(
+    tenantId: string,
+    data: CreateLotElevageDto,
+  ): Promise<LotElevage> {
     return this.prisma.lotElevage.create({
       data: { ...data, tenantId, nombreActuel: data.nombreInitial },
     });
   }
 
-  async findAllLots(tenantId: string, pagination: PaginationDto): Promise<{ data: LotElevage[], total: number, page: number, limit: number }> {
+  async findAllLots(
+    tenantId: string,
+    pagination: PaginationDto,
+  ): Promise<{
+    data: LotElevage[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const { page, limit, search } = pagination;
     const where: Prisma.LotElevageWhereInput = {
       tenantId,
@@ -209,14 +235,28 @@ export class ElevageService {
   async findOneLot(tenantId: string, id: string): Promise<LotElevage | null> {
     return this.prisma.lotElevage.findUnique({
       where: { id, tenantId },
-      include: { evenements: { orderBy: { date: 'desc' } }, alimentations: { orderBy: { date: 'desc' }, include: { article: true } } },
+      include: {
+        evenements: { orderBy: { date: 'desc' } },
+        alimentations: {
+          orderBy: { date: 'desc' },
+          include: { article: true },
+        },
+      },
     });
   }
 
-  async updateLot(tenantId: string, id: string, data: UpdateLotElevageDto): Promise<LotElevage> {
-    const existingLot = await this.prisma.lotElevage.findUnique({ where: { id, tenantId } });
+  async updateLot(
+    tenantId: string,
+    id: string,
+    data: UpdateLotElevageDto,
+  ): Promise<LotElevage> {
+    const existingLot = await this.prisma.lotElevage.findUnique({
+      where: { id, tenantId },
+    });
     if (!existingLot) {
-      throw new NotFoundException(`LotElevage with ID ${id} not found for tenant ${tenantId}`);
+      throw new NotFoundException(
+        `LotElevage with ID ${id} not found for tenant ${tenantId}`,
+      );
     }
     return this.prisma.lotElevage.update({
       where: { id, tenantId },
@@ -225,18 +265,30 @@ export class ElevageService {
   }
 
   async deleteLot(tenantId: string, id: string): Promise<LotElevage> {
-    const existingLot = await this.prisma.lotElevage.findUnique({ where: { id, tenantId } });
+    const existingLot = await this.prisma.lotElevage.findUnique({
+      where: { id, tenantId },
+    });
     if (!existingLot) {
-      throw new NotFoundException(`LotElevage with ID ${id} not found for tenant ${tenantId}`);
+      throw new NotFoundException(
+        `LotElevage with ID ${id} not found for tenant ${tenantId}`,
+      );
     }
     return this.prisma.lotElevage.delete({ where: { id, tenantId } });
   }
 
   // Événements d'élevage
-  async addEvenement(tenantId: string, lotId: string, data: CreateEvenementElevageDto): Promise<EvenementElevage> {
-    const lot = await this.prisma.lotElevage.findUnique({ where: { id: lotId, tenantId } });
+  async addEvenement(
+    tenantId: string,
+    lotId: string,
+    data: CreateEvenementElevageDto,
+  ): Promise<EvenementElevage> {
+    const lot = await this.prisma.lotElevage.findUnique({
+      where: { id: lotId, tenantId },
+    });
     if (!lot) {
-      throw new NotFoundException(`LotElevage with ID ${lotId} not found for tenant ${tenantId}`);
+      throw new NotFoundException(
+        `LotElevage with ID ${lotId} not found for tenant ${tenantId}`,
+      );
     }
 
     const evenement = await this.prisma.evenementElevage.create({
@@ -244,12 +296,18 @@ export class ElevageService {
     });
 
     // Mettre à jour le nombre actuel d'animaux dans le lot
-    if (data.type === EvenementElevageType.NAISSANCE || data.type === EvenementElevageType.ACHAT) {
+    if (
+      data.type === EvenementElevageType.NAISSANCE ||
+      data.type === EvenementElevageType.ACHAT
+    ) {
       await this.prisma.lotElevage.update({
         where: { id: lotId },
         data: { nombreActuel: { increment: data.quantite } },
       });
-    } else if (data.type === EvenementElevageType.MORTALITE || data.type === EvenementElevageType.VENTE) {
+    } else if (
+      data.type === EvenementElevageType.MORTALITE ||
+      data.type === EvenementElevageType.VENTE
+    ) {
       await this.prisma.lotElevage.update({
         where: { id: lotId },
         data: { nombreActuel: { decrement: data.quantite } },
@@ -257,17 +315,30 @@ export class ElevageService {
     }
 
     if (data.type === 'VACCINATION') {
-      this.notifService.createFromTemplate(
-        tenantId,
-        NotifType.VACCINATION_PREVUE,
-        { lotId, vaccinationType: data.type, datePrevue: data.date || new Date().toISOString() },
-      ).catch((e) => this.logger.error(`Erreur notif vaccination: ${e.message}`));
+      this.notifService
+        .createFromTemplate(tenantId, NotifType.VACCINATION_PREVUE, {
+          lotId,
+          vaccinationType: data.type,
+          datePrevue: data.date || new Date().toISOString(),
+        })
+        .catch((e) =>
+          this.logger.error(`Erreur notif vaccination: ${e.message}`),
+        );
     }
 
     return evenement;
   }
 
-  async getEvenementsHistorique(tenantId: string, lotId: string, pagination: PaginationDto): Promise<{ data: EvenementElevage[], total: number, page: number, limit: number }> {
+  async getEvenementsHistorique(
+    tenantId: string,
+    lotId: string,
+    pagination: PaginationDto,
+  ): Promise<{
+    data: EvenementElevage[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const { page, limit, search } = pagination;
     const where: Prisma.EvenementElevageWhereInput = {
       tenantId,
@@ -292,14 +363,26 @@ export class ElevageService {
   }
 
   // Alimentation
-  async recordAlimentation(tenantId: string, lotId: string, data: CreateAlimentationElevageDto): Promise<AlimentationElevage> {
-    const lot = await this.prisma.lotElevage.findUnique({ where: { id: lotId, tenantId } });
+  async recordAlimentation(
+    tenantId: string,
+    lotId: string,
+    data: CreateAlimentationElevageDto,
+  ): Promise<AlimentationElevage> {
+    const lot = await this.prisma.lotElevage.findUnique({
+      where: { id: lotId, tenantId },
+    });
     if (!lot) {
-      throw new NotFoundException(`LotElevage with ID ${lotId} not found for tenant ${tenantId}`);
+      throw new NotFoundException(
+        `LotElevage with ID ${lotId} not found for tenant ${tenantId}`,
+      );
     }
-    const article = await this.prisma.article.findUnique({ where: { id: data.articleId, tenantId } });
+    const article = await this.prisma.article.findUnique({
+      where: { id: data.articleId, tenantId },
+    });
     if (!article) {
-      throw new NotFoundException(`Article with ID ${data.articleId} not found for tenant ${tenantId}`);
+      throw new NotFoundException(
+        `Article with ID ${data.articleId} not found for tenant ${tenantId}`,
+      );
     }
     // Diminuer le stock de l'aliment
     await this.prisma.stock.updateMany({
@@ -322,7 +405,9 @@ export class ElevageService {
       where: {
         tenantId,
         type: EvenementElevageType.MORTALITE,
-        date: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+        date: {
+          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        },
       },
     });
 

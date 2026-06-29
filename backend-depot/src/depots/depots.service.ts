@@ -1,10 +1,13 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { getDepotLimitForPlan, getSuggestedPlanForPlan } from '../common/plan-limits';
+import {
+  getDepotLimitForPlan,
+  getSuggestedPlanForPlan,
+} from '../common/plan-limits';
 
 @Injectable()
 export class DepotsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string) {
     if (!tenantId) {
@@ -128,5 +131,4 @@ export class DepotsService {
       where: { id, tenantId },
     });
   }
-
 }

@@ -25,13 +25,19 @@ export class NotificationsAiService {
           _count: true,
         }),
         this.prisma.vente.aggregate({
-          where: { tenantId, date: { gte: period14j, lt: period7j }, statut: 'PAYE' as any },
+          where: {
+            tenantId,
+            date: { gte: period14j, lt: period7j },
+            statut: 'PAYE' as any,
+          },
           _sum: { total: true },
           _count: true,
         }),
         this.prisma.ligneVente.groupBy({
           by: ['articleId'],
-          where: { vente: { tenantId, date: { gte: period7j }, statut: 'PAYE' as any } },
+          where: {
+            vente: { tenantId, date: { gte: period7j }, statut: 'PAYE' as any },
+          },
           _sum: { quantite: true },
           orderBy: { _sum: { quantite: 'desc' } },
           take: 5,
@@ -72,7 +78,9 @@ export class NotificationsAiService {
         }
       }
     } catch (e) {
-      this.logger.error(`Erreur analyse ventes tenant ${tenantId}: ${(e as Error).message}`);
+      this.logger.error(
+        `Erreur analyse ventes tenant ${tenantId}: ${(e as Error).message}`,
+      );
     }
   }
 
@@ -88,7 +96,11 @@ export class NotificationsAiService {
         const ventes = await this.prisma.ligneVente.aggregate({
           where: {
             articleId: stock.articleId,
-            vente: { tenantId, date: { gte: period30j }, statut: 'PAYE' as any },
+            vente: {
+              tenantId,
+              date: { gte: period30j },
+              statut: 'PAYE' as any,
+            },
           },
           _sum: { quantite: true },
         });
@@ -111,7 +123,9 @@ export class NotificationsAiService {
         }
       }
     } catch (e) {
-      this.logger.error(`Erreur prédiction ruptures tenant ${tenantId}: ${(e as Error).message}`);
+      this.logger.error(
+        `Erreur prédiction ruptures tenant ${tenantId}: ${(e as Error).message}`,
+      );
     }
   }
 
@@ -119,7 +133,13 @@ export class NotificationsAiService {
     try {
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      const [ventesJour, nouveauClients, nouvellesNotifications, totalVentes, nouveauxArticles] = await Promise.all([
+      const [
+        ventesJour,
+        nouveauClients,
+        nouvellesNotifications,
+        totalVentes,
+        nouveauxArticles,
+      ] = await Promise.all([
         this.prisma.vente.aggregate({
           where: { tenantId, date: { gte: yesterday }, statut: 'PAYE' as any },
           _sum: { total: true },
@@ -129,7 +149,11 @@ export class NotificationsAiService {
           where: { tenantId, createdAt: { gte: yesterday } },
         }),
         this.prisma.notification.count({
-          where: { tenantId, createdAt: { gte: yesterday }, priority: { in: ['HIGH', 'CRITICAL'] as any } },
+          where: {
+            tenantId,
+            createdAt: { gte: yesterday },
+            priority: { in: ['HIGH', 'CRITICAL'] as any },
+          },
         }),
         this.prisma.vente.aggregate({
           where: { tenantId, statut: 'PAYE' as any },
@@ -158,9 +182,13 @@ export class NotificationsAiService {
         },
       );
 
-      this.logger.log(`Digest généré pour tenant ${tenantId}: ${nbVentes} ventes, ${ca}F CFA`);
+      this.logger.log(
+        `Digest généré pour tenant ${tenantId}: ${nbVentes} ventes, ${ca}F CFA`,
+      );
     } catch (e) {
-      this.logger.error(`Erreur digest tenant ${tenantId}: ${(e as Error).message}`);
+      this.logger.error(
+        `Erreur digest tenant ${tenantId}: ${(e as Error).message}`,
+      );
     }
   }
 }

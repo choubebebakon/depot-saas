@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsEnum, IsEmail, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsEmail,
+  IsNotEmpty,
+} from 'class-validator';
 
 export enum PaymentChannel {
   ORANGE = 'cm.orange',

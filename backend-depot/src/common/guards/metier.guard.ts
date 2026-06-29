@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { MetierType } from '../config/metier-roles.config';
 import { METIER_KEY } from '../../auth/decorators/metier.decorator';
@@ -12,10 +17,10 @@ export class MetierGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredMetier = this.reflector.getAllAndOverride<MetierType>(METIER_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredMetier = this.reflector.getAllAndOverride<MetierType>(
+      METIER_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     if (!requiredMetier) return true;
 

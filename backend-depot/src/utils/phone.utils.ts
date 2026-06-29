@@ -1,8 +1,8 @@
 export const normalizePhone = (phone: string): string => {
   if (!phone) return '';
   // On ne garde que les chiffres
-  let cleaned = phone.replace(/\D/g, '');
-  
+  const cleaned = phone.replace(/\D/g, '');
+
   // Logique de conversion vers +237
   if (cleaned.startsWith('237')) {
     return '+' + cleaned;

@@ -5,7 +5,11 @@ interface EmailOptions {
   to: string;
   subject: string;
   html: string;
-  attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>;
 }
 
 @Injectable()
@@ -16,7 +20,11 @@ export class EmailService {
   private provider: 'sendgrid' | 'nodemailer' | 'log';
 
   constructor(private configService: ConfigService) {
-    this.provider = (this.configService.get<string>('EMAIL_PROVIDER') as 'sendgrid' | 'nodemailer' | 'log') || 'log';
+    this.provider =
+      (this.configService.get<string>('EMAIL_PROVIDER') as
+        | 'sendgrid'
+        | 'nodemailer'
+        | 'log') || 'log';
   }
 
   async onModuleInit() {
@@ -29,14 +37,15 @@ export class EmailService {
         this.logger.log('SendGrid initialisé');
       } else {
         this.logger.warn('SENDGRID_API_KEY non définie, fallback sur log');
-        this.provider = 'log' as any;
+        this.provider = 'log';
       }
     } else if (this.provider === 'nodemailer') {
       const nodemailer = require('nodemailer');
       this.nodemailerTransporter = nodemailer.createTransport({
         host: this.configService.get<string>('SMTP_HOST', 'smtp.gmail.com'),
         port: this.configService.get<number>('SMTP_PORT', 587),
-        secure: this.configService.get<string>('SMTP_SECURE', 'false') === 'true',
+        secure:
+          this.configService.get<string>('SMTP_SECURE', 'false') === 'true',
         auth: {
           user: this.configService.get<string>('SMTP_USER'),
           pass: this.configService.get<string>('SMTP_PASS'),
@@ -57,7 +66,10 @@ export class EmailService {
   }
 
   private getFrontendUrl(): string {
-    return this.configService.get<string>('FRONTEND_URL', 'http://localhost:5174');
+    return this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:5174',
+    );
   }
 
   async sendEmail(options: EmailOptions): Promise<void> {
@@ -70,14 +82,21 @@ export class EmailService {
           html: options.html,
           attachments: options.attachments?.map((a) => ({
             filename: a.filename,
-            content: Buffer.isBuffer(a.content) ? a.content.toString('base64') : Buffer.from(a.content).toString('base64'),
+            content: Buffer.isBuffer(a.content)
+              ? a.content.toString('base64')
+              : Buffer.from(a.content).toString('base64'),
             type: a.contentType || 'application/octet-stream',
             disposition: 'attachment',
           })),
         });
-        this.logger.log(`Email envoyé à ${options.to} via SendGrid: ${options.subject}`);
+        this.logger.log(
+          `Email envoyé à ${options.to} via SendGrid: ${options.subject}`,
+        );
       } catch (err: any) {
-        this.logger.error(`Échec SendGrid pour ${options.to}: ${err.message}`, err.stack);
+        this.logger.error(
+          `Échec SendGrid pour ${options.to}: ${err.message}`,
+          err.stack,
+        );
         throw err;
       }
     } else if (this.provider === 'nodemailer' && this.nodemailerTransporter) {
@@ -89,18 +108,31 @@ export class EmailService {
           html: options.html,
           attachments: options.attachments,
         });
-        this.logger.log(`Email envoyé à ${options.to} via SMTP: ${options.subject}`);
+        this.logger.log(
+          `Email envoyé à ${options.to} via SMTP: ${options.subject}`,
+        );
       } catch (err: any) {
-        this.logger.error(`Échec SMTP pour ${options.to}: ${err.message}`, err.stack);
+        this.logger.error(
+          `Échec SMTP pour ${options.to}: ${err.message}`,
+          err.stack,
+        );
         throw err;
       }
     } else {
-      this.logger.log(`[EMAIL LOG] To: ${options.to} | Subject: ${options.subject}`);
-      this.logger.debug(`[EMAIL LOG] Body: ${options.html.substring(0, 200)}...`);
+      this.logger.log(
+        `[EMAIL LOG] To: ${options.to} | Subject: ${options.subject}`,
+      );
+      this.logger.debug(
+        `[EMAIL LOG] Body: ${options.html.substring(0, 200)}...`,
+      );
     }
   }
 
-  async sendWelcomeEmail(to: string, companyName: string, loginUrl?: string): Promise<void> {
+  async sendWelcomeEmail(
+    to: string,
+    companyName: string,
+    loginUrl?: string,
+  ): Promise<void> {
     const appName = this.getAppName();
     const url = loginUrl || `${this.getFrontendUrl()}/login`;
     const html = this.buildTemplate({
@@ -124,11 +156,25 @@ export class EmailService {
     await this.sendEmail({ to, subject: `Bienvenue sur ${appName} !`, html });
   }
 
-  async sendPaymentConfirmation(to: string, companyName: string, amount: number, planType: string, paymentDate: Date, nextBillingDate?: Date): Promise<void> {
+  async sendPaymentConfirmation(
+    to: string,
+    companyName: string,
+    amount: number,
+    planType: string,
+    paymentDate: Date,
+    nextBillingDate?: Date,
+  ): Promise<void> {
     const appName = this.getAppName();
-    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
+    const formattedAmount = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+    }).format(amount);
     const nextBill = nextBillingDate
-      ? nextBillingDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+      ? nextBillingDate.toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
       : 'Non spécifié';
     const html = this.buildTemplate({
       title: `Paiement confirmé - ${planType}`,
@@ -146,12 +192,25 @@ export class EmailService {
         <p style="color:#64748b;font-size:14px;line-height:1.6">Merci de votre confiance ! L'équipe ${appName} reste à votre disposition.</p>
       `,
     });
-    await this.sendEmail({ to, subject: `✅ Paiement confirmé - ${planType} - ${formattedAmount}`, html });
+    await this.sendEmail({
+      to,
+      subject: `✅ Paiement confirmé - ${planType} - ${formattedAmount}`,
+      html,
+    });
   }
 
-  async sendPaymentFailed(to: string, companyName: string, amount: number, planType: string, reason?: string): Promise<void> {
+  async sendPaymentFailed(
+    to: string,
+    companyName: string,
+    amount: number,
+    planType: string,
+    reason?: string,
+  ): Promise<void> {
     const appName = this.getAppName();
-    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
+    const formattedAmount = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+    }).format(amount);
     const html = this.buildTemplate({
       title: `Échec du paiement - ${planType}`,
       preheader: `Votre paiement de ${formattedAmount} a échoué.`,
@@ -164,16 +223,34 @@ export class EmailService {
         <a href="${this.getFrontendUrl()}/settings/billing" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600">Réessayer le paiement</a>
       `,
     });
-    await this.sendEmail({ to, subject: `❌ Échec du paiement - ${planType}`, html });
+    await this.sendEmail({
+      to,
+      subject: `❌ Échec du paiement - ${planType}`,
+      html,
+    });
   }
 
-  async sendExpiryReminder(to: string, companyName: string, daysLeft: number, subscriptionEnd: Date, planType: string): Promise<void> {
+  async sendExpiryReminder(
+    to: string,
+    companyName: string,
+    daysLeft: number,
+    subscriptionEnd: Date,
+    planType: string,
+  ): Promise<void> {
     const appName = this.getAppName();
-    const formattedDate = subscriptionEnd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    const urgency = daysLeft <= 1 ? 'urgente' : daysLeft <= 3 ? 'importante' : '';
-    const bgColor = daysLeft <= 1 ? '#fef2f2' : daysLeft <= 3 ? '#fff7ed' : '#f0f9ff';
-    const borderColor = daysLeft <= 1 ? '#fecaca' : daysLeft <= 3 ? '#fed7aa' : '#bae6fd';
-    const textColor = daysLeft <= 1 ? '#dc2626' : daysLeft <= 3 ? '#c2410c' : '#0369a1';
+    const formattedDate = subscriptionEnd.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const urgency =
+      daysLeft <= 1 ? 'urgente' : daysLeft <= 3 ? 'importante' : '';
+    const bgColor =
+      daysLeft <= 1 ? '#fef2f2' : daysLeft <= 3 ? '#fff7ed' : '#f0f9ff';
+    const borderColor =
+      daysLeft <= 1 ? '#fecaca' : daysLeft <= 3 ? '#fed7aa' : '#bae6fd';
+    const textColor =
+      daysLeft <= 1 ? '#dc2626' : daysLeft <= 3 ? '#c2410c' : '#0369a1';
     const html = this.buildTemplate({
       title: `Votre abonnement expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`,
       preheader: `Plus que ${daysLeft} jour${daysLeft > 1 ? 's' : ''} avant l'expiration de votre abonnement ${planType}.`,
@@ -189,13 +266,27 @@ export class EmailService {
         <a href="${this.getFrontendUrl()}/settings/billing" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600">Renouveler mon abonnement</a>
       `,
     });
-    const urgencyPrefix = daysLeft <= 1 ? 'URGENT - ' : daysLeft <= 3 ? 'IMPORTANT - ' : '';
-    await this.sendEmail({ to, subject: `${urgencyPrefix}Votre abonnement expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`, html });
+    const urgencyPrefix =
+      daysLeft <= 1 ? 'URGENT - ' : daysLeft <= 3 ? 'IMPORTANT - ' : '';
+    await this.sendEmail({
+      to,
+      subject: `${urgencyPrefix}Votre abonnement expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`,
+      html,
+    });
   }
 
-  async sendInvoiceEmail(to: string, companyName: string, invoiceNumber: string, amount: number, pdfBuffer: Buffer): Promise<void> {
+  async sendInvoiceEmail(
+    to: string,
+    companyName: string,
+    invoiceNumber: string,
+    amount: number,
+    pdfBuffer: Buffer,
+  ): Promise<void> {
     const appName = this.getAppName();
-    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
+    const formattedAmount = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+    }).format(amount);
     const html = this.buildTemplate({
       title: `Votre facture ${invoiceNumber}`,
       preheader: `Facture ${invoiceNumber} - ${formattedAmount}`,
@@ -224,9 +315,17 @@ export class EmailService {
     });
   }
 
-  async sendCommissionPaid(to: string, commercialName: string, amount: number, period: string): Promise<void> {
+  async sendCommissionPaid(
+    to: string,
+    commercialName: string,
+    amount: number,
+    period: string,
+  ): Promise<void> {
     const appName = this.getAppName();
-    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
+    const formattedAmount = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+    }).format(amount);
     const html = this.buildTemplate({
       title: `Commission payée - ${period}`,
       preheader: `Votre commission de ${formattedAmount} a été versée.`,
@@ -241,10 +340,18 @@ export class EmailService {
         <p style="color:#64748b;font-size:14px;line-height:1.6">Continuez vos efforts pour augmenter vos ventes !</p>
       `,
     });
-    await this.sendEmail({ to, subject: `💰 Commission versée - ${formattedAmount}`, html });
+    await this.sendEmail({
+      to,
+      subject: `💰 Commission versée - ${formattedAmount}`,
+      html,
+    });
   }
 
-  async sendOnboardingComplete(to: string, companyName: string, metier: string): Promise<void> {
+  async sendOnboardingComplete(
+    to: string,
+    companyName: string,
+    metier: string,
+  ): Promise<void> {
     const appName = this.getAppName();
     const metierLabels: Record<string, string> = {
       DEPOT_BOISSONS: 'Dépôt de Boissons',
@@ -288,10 +395,18 @@ export class EmailService {
         <a href="${this.getFrontendUrl()}/tableau-de-bord" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600">Accéder à mon tableau de bord</a>
       `,
     });
-    await this.sendEmail({ to, subject: `🎉 Configuration ${label} terminée !`, html });
+    await this.sendEmail({
+      to,
+      subject: `🎉 Configuration ${label} terminée !`,
+      html,
+    });
   }
 
-  private buildTemplate(data: { title: string; preheader: string; content: string }): string {
+  private buildTemplate(data: {
+    title: string;
+    preheader: string;
+    content: string;
+  }): string {
     const appName = this.getAppName();
     const frontendUrl = this.getFrontendUrl();
     return `

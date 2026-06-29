@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import Stripe from 'stripe';
 
 /**
@@ -107,7 +111,9 @@ export class StripePaymentsService {
    * @returns PaymentIntent avec son statut actuel
    * @throws InternalServerErrorException si la recuperation echoue
    */
-  async retrievePaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+  async retrievePaymentIntent(
+    paymentIntentId: string,
+  ): Promise<Stripe.PaymentIntent> {
     try {
       return await this.stripe.paymentIntents.retrieve(paymentIntentId);
     } catch (error) {
@@ -133,7 +139,9 @@ export class StripePaymentsService {
    * @returns Valeur de la variable
    * @throws InternalServerErrorException si la variable est manquante
    */
-  private getRequiredEnv(name: 'STRIPE_SECRET_KEY' | 'STRIPE_WEBHOOK_SECRET'): string {
+  private getRequiredEnv(
+    name: 'STRIPE_SECRET_KEY' | 'STRIPE_WEBHOOK_SECRET',
+  ): string {
     const value = process.env[name];
 
     if (!value) {

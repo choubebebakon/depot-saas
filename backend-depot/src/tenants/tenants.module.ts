@@ -10,11 +10,11 @@ import { DepotScopeService } from '../common/depot-scope.service'; // Vérifie b
   providers: [
     TenantsService,
     PrismaService,
-    DepotScopeService // On l'ajoute ici
+    DepotScopeService, // On l'ajoute ici
   ],
   exports: [
     PrismaService,
-    DepotScopeService // INDISPENSABLE pour que Prisma puisse l'utiliser
+    DepotScopeService, // INDISPENSABLE pour que Prisma puisse l'utiliser
   ],
 })
-export class TenantsModule { }
+export class TenantsModule {}

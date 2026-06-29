@@ -1,4 +1,15 @@
-import { Controller, Post, Get, Patch, Delete, Body, Query, UseGuards, Req, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  Param,
+} from '@nestjs/common';
 import { DepotBoissonsService } from './depot-boissons.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
@@ -20,7 +31,10 @@ export class DepotBoissonsController {
   // ── Articles ─────────────────────────────────────────────
   @Get('articles')
   async getArticles(@Req() req: any, @Query() query: any) {
-    return this.service.getArticles(req.user.tenantId, { ...query, depotId: req.headers['x-depot-id'] });
+    return this.service.getArticles(req.user.tenantId, {
+      ...query,
+      depotId: req.headers['x-depot-id'],
+    });
   }
 
   @Get('articles/:id')
@@ -34,7 +48,11 @@ export class DepotBoissonsController {
   }
 
   @Patch('articles/:id')
-  async updateArticle(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateArticle(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.updateArticle(req.user.tenantId, id, data);
   }
 
@@ -50,17 +68,26 @@ export class DepotBoissonsController {
 
   @Post('stock/entree')
   async entreStock(@Req() req: any, @Body() data: any) {
-    return this.service.entreStock(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.entreStock(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('stock/sortie')
   async sortieStock(@Req() req: any, @Body() data: any) {
-    return this.service.sortieStock(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.sortieStock(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('stock/transfert')
   async transfertStock(@Req() req: any, @Body() data: any) {
-    return this.service.transfertStock(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.transfertStock(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   // ── Conditionnements ─────────────────────────────────────
@@ -75,7 +102,11 @@ export class DepotBoissonsController {
   }
 
   @Patch('conditionnements/:id')
-  async updateConditionnement(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateConditionnement(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.updateConditionnement(req.user.tenantId, id, data);
   }
 
@@ -86,39 +117,60 @@ export class DepotBoissonsController {
 
   // ── Consignes ────────────────────────────────────────────
   @Get('consignes/client/:clientId')
-  async getConsignesClient(@Req() req: any, @Param('clientId') clientId: string) {
+  async getConsignesClient(
+    @Req() req: any,
+    @Param('clientId') clientId: string,
+  ) {
     return this.service.getConsignesClient(req.user.tenantId, clientId);
   }
 
   @Post('consignes/sortie')
   async sortirConsigne(@Req() req: any, @Body() data: any) {
-    return this.service.sortirConsigne(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.sortirConsigne(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('consignes/retour')
   async retourConsigne(@Req() req: any, @Body() data: any) {
-    return this.service.retourConsigne(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.retourConsigne(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('consignes/remboursement')
   async rembourserConsigne(@Req() req: any, @Body() data: any) {
-    return this.service.rembourserConsigne(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.rembourserConsigne(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Get('consignes/historique/:clientId')
-  async historiqueConsignes(@Req() req: any, @Param('clientId') clientId: string) {
+  async historiqueConsignes(
+    @Req() req: any,
+    @Param('clientId') clientId: string,
+  ) {
     return this.service.historiqueConsignes(req.user.tenantId, clientId);
   }
 
   // ── Livraisons ───────────────────────────────────────────
   @Get('livraisons')
   async getLivraisons(@Req() req: any, @Query() query: any) {
-    return this.service.getLivraisons(req.user.tenantId, { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+    return this.service.getLivraisons(req.user.tenantId, {
+      ...query,
+      depotId: query.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('livraisons')
   async createLivraison(@Req() req: any, @Body() data: any) {
-    return this.service.createLivraison(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.createLivraison(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Delete('livraisons/:id')
@@ -129,12 +181,18 @@ export class DepotBoissonsController {
   // ── Tournées ─────────────────────────────────────────────
   @Get('tournees')
   async getTournees(@Req() req: any, @Query() query: any) {
-    return this.service.getTournees(req.user.tenantId, { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+    return this.service.getTournees(req.user.tenantId, {
+      ...query,
+      depotId: query.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('tournees')
   async createTournee(@Req() req: any, @Body() data: any) {
-    return this.service.createTournee(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.createTournee(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('tournees/:id/demarrer')
@@ -143,12 +201,20 @@ export class DepotBoissonsController {
   }
 
   @Post('tournees/:id/cloturer')
-  async cloturerTournee(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async cloturerTournee(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.cloturerTournee(req.user.tenantId, id, data);
   }
 
   @Post('tournees/:id/charger')
-  async chargerArticlesTournee(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async chargerArticlesTournee(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.chargerArticlesTournee(req.user.tenantId, id, data);
   }
 
@@ -160,7 +226,10 @@ export class DepotBoissonsController {
   // ── Clients ──────────────────────────────────────────────
   @Get('clients')
   async getClients(@Req() req: any, @Query() query: any) {
-    return this.service.getClients(req.user.tenantId, { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+    return this.service.getClients(req.user.tenantId, {
+      ...query,
+      depotId: query.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Get('clients/:id')
@@ -170,28 +239,49 @@ export class DepotBoissonsController {
 
   @Post('clients')
   async createClient(@Req() req: any, @Body() data: any) {
-    return this.service.createClient(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.createClient(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Patch('clients/:id')
-  async updateClient(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateClient(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.updateClient(req.user.tenantId, id, data);
   }
 
   @Post('clients/:id/payer-dette')
-  async payerDette(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    return this.service.payerDette(req.user.tenantId, id, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+  async payerDette(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.service.payerDette(req.user.tenantId, id, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Get('clients/:id/historique-achats')
-  async historiqueAchats(@Req() req: any, @Param('id') id: string, @Query() query: any) {
+  async historiqueAchats(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query() query: any,
+  ) {
     return this.service.historiqueAchats(req.user.tenantId, id, query);
   }
 
   // ── Fournisseurs ─────────────────────────────────────────
   @Get('fournisseurs')
   async getFournisseurs(@Req() req: any, @Query() query: any) {
-    return this.service.getFournisseurs(req.user.tenantId, { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+    return this.service.getFournisseurs(req.user.tenantId, {
+      ...query,
+      depotId: query.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Get('fournisseurs/:id')
@@ -201,26 +291,48 @@ export class DepotBoissonsController {
 
   @Post('fournisseurs')
   async createFournisseur(@Req() req: any, @Body() data: any) {
-    return this.service.createFournisseur(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.createFournisseur(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Patch('fournisseurs/:id')
-  async updateFournisseur(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateFournisseur(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.updateFournisseur(req.user.tenantId, id, data);
   }
 
   @Post('fournisseurs/commande')
   async passerCommandeFournisseur(@Req() req: any, @Body() data: any) {
-    return this.service.passerCommandeFournisseur(req.user.tenantId, { ...data, userId: req.user.userId, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.passerCommandeFournisseur(req.user.tenantId, {
+      ...data,
+      userId: req.user.userId,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('fournisseurs/:id/receptionner')
-  async receptionnerLivraison(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    return this.service.receptionnerLivraison(req.user.tenantId, id, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+  async receptionnerLivraison(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.service.receptionnerLivraison(req.user.tenantId, id, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('fournisseurs/:id/regler-dette')
-  async reglerDetteFournisseur(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+  async reglerDetteFournisseur(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.reglerDetteFournisseur(req.user.tenantId, id, data);
   }
 
@@ -232,7 +344,10 @@ export class DepotBoissonsController {
   // ── Ventes ───────────────────────────────────────────────
   @Get('ventes')
   async getVentes(@Req() req: any, @Query() query: any) {
-    return this.service.getVentes(req.user.tenantId, { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+    return this.service.getVentes(req.user.tenantId, {
+      ...query,
+      depotId: query.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Get('ventes/:id')
@@ -242,11 +357,19 @@ export class DepotBoissonsController {
 
   @Post('ventes')
   async createVente(@Req() req: any, @Body() data: any) {
-    return this.service.createVente(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] }, req.user.userId);
+    return this.service.createVente(
+      req.user.tenantId,
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      req.user.userId,
+    );
   }
 
   @Post('ventes/:id/annuler')
-  async annulerVente(@Req() req: any, @Param('id') id: string, @Body('motif') motif?: string) {
+  async annulerVente(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body('motif') motif?: string,
+  ) {
     return this.service.annulerVente(req.user.tenantId, id, motif);
   }
 
@@ -258,38 +381,60 @@ export class DepotBoissonsController {
   // ── Caisse ───────────────────────────────────────────────
   @Get('caisse/statut')
   async getCaisseStatut(@Req() req: any, @Query('depotId') depotId?: string) {
-    return this.service.getCaisseStatut(req.user.tenantId, depotId || req.headers['x-depot-id']);
+    return this.service.getCaisseStatut(
+      req.user.tenantId,
+      depotId || req.headers['x-depot-id'],
+    );
   }
 
   @Post('caisse/ouvrir')
   async ouvrirCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.ouvrirCaisse(req.user.tenantId, { ...data, userId: req.user.userId, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.ouvrirCaisse(req.user.tenantId, {
+      ...data,
+      userId: req.user.userId,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('caisse/fermer')
   async fermerCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.fermerCaisse(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.fermerCaisse(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('caisse/mouvement')
   async mouvementCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.mouvementCaisse(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.mouvementCaisse(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Get('caisse/rapport-journalier')
   async rapportJournalier(@Req() req: any, @Query('depotId') depotId?: string) {
-    return this.service.rapportJournalier(req.user.tenantId, depotId || req.headers['x-depot-id']);
+    return this.service.rapportJournalier(
+      req.user.tenantId,
+      depotId || req.headers['x-depot-id'],
+    );
   }
 
   // ── Dépenses ─────────────────────────────────────────────
   @Get('depenses')
   async getDepenses(@Req() req: any, @Query() query: any) {
-    return this.service.getDepenses(req.user.tenantId, { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+    return this.service.getDepenses(req.user.tenantId, {
+      ...query,
+      depotId: query.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Post('depenses')
   async createDepense(@Req() req: any, @Body() data: any) {
-    return this.service.createDepense(req.user.tenantId, { ...data, depotId: data.depotId || req.headers['x-depot-id'] });
+    return this.service.createDepense(req.user.tenantId, {
+      ...data,
+      depotId: data.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Delete('depenses/:id')
@@ -299,12 +444,28 @@ export class DepotBoissonsController {
 
   // ── Rapports ─────────────────────────────────────────────
   @Get('rapports/:type')
-  async getRapport(@Req() req: any, @Param('type') type: string, @Query() query: any) {
-    return this.service.getRapport(req.user.tenantId, type, { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+  async getRapport(
+    @Req() req: any,
+    @Param('type') type: string,
+    @Query() query: any,
+  ) {
+    return this.service.getRapport(req.user.tenantId, type, {
+      ...query,
+      depotId: query.depotId || req.headers['x-depot-id'],
+    });
   }
 
   @Get('rapports/:type/export')
-  async exporterRapport(@Req() req: any, @Param('type') type: string, @Query() query: any) {
-    return this.service.exporterRapport(req.user.tenantId, type, query.format || 'json', { ...query, depotId: query.depotId || req.headers['x-depot-id'] });
+  async exporterRapport(
+    @Req() req: any,
+    @Param('type') type: string,
+    @Query() query: any,
+  ) {
+    return this.service.exporterRapport(
+      req.user.tenantId,
+      type,
+      query.format || 'json',
+      { ...query, depotId: query.depotId || req.headers['x-depot-id'] },
+    );
   }
 }

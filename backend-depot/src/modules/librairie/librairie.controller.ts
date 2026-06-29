@@ -1,9 +1,24 @@
-import { Controller, Post, Get, Put, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { LibrairieService, CreateLivreDto, CreateCommandeSpecialeDto, PaginationDto } from './librairie.service';
+import {
+  LibrairieService,
+  CreateLivreDto,
+  CreateCommandeSpecialeDto,
+  PaginationDto,
+} from './librairie.service';
 
 @Controller('librairie')
 @Metier(MetierType.LIBRAIRIE)
@@ -27,12 +42,18 @@ export class LibrairieController {
   }
 
   @Post('commandes')
-  async createCommande(@Req() req: any, @Body() dto: CreateCommandeSpecialeDto) {
+  async createCommande(
+    @Req() req: any,
+    @Body() dto: CreateCommandeSpecialeDto,
+  ) {
     return this.service.createCommande(req.user.tenantId, dto);
   }
 
   @Post('commandes/:id/statut')
-  async updateCommandeStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateCommandeStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateCommandeStatut(id, statut);
   }
 

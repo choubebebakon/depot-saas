@@ -10,7 +10,19 @@ import { RestaurantController } from './restaurant.controller';
 @Module({
   imports: [PrismaModule],
   controllers: [RestaurantController],
-  providers: [TablesService, CommandesService, PlatsService, CuisineService, ReservationsService],
-  exports: [TablesService, CommandesService, PlatsService, CuisineService, ReservationsService],
+  providers: [
+    TablesService,
+    CommandesService,
+    PlatsService,
+    CuisineService,
+    ReservationsService,
+  ],
+  exports: [
+    TablesService,
+    CommandesService,
+    PlatsService,
+    CuisineService,
+    ReservationsService,
+  ],
 })
 export class RestaurantModule {}

@@ -1,51 +1,51 @@
 import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class OuvrirCaisseDto {
-    @IsNumber()
-    @Min(0)
-    fondInitial: number;
+  @IsNumber()
+  @Min(0)
+  fondInitial: number;
 
-    @IsString()
-    depotId: string;
+  @IsString()
+  depotId: string;
 
-    @IsString()
-    userId: string;
+  @IsString()
+  userId: string;
 
-    @IsString()
-    tenantId: string;
+  @IsString()
+  tenantId: string;
 }
 
 export class FermerCaisseDto {
-    @IsString()
-    sessionId: string;
+  @IsString()
+  sessionId: string;
 
-    @IsNumber()
-    @Min(0)
-    fondFinal: number;
+  @IsNumber()
+  @Min(0)
+  fondFinal: number;
 
-    @IsOptional()
-    @IsString()
-    motifEcart?: string;
+  @IsOptional()
+  @IsString()
+  motifEcart?: string;
 }
 
 export class CreateDepenseDto {
-    @IsString()
-    categorie: string;
+  @IsString()
+  categorie: string;
 
-    @IsNumber()
-    @Min(0)
-    montant: number;
+  @IsNumber()
+  @Min(0)
+  montant: number;
 
-    @IsString()
-    motif: string;
+  @IsString()
+  motif: string;
 
-    @IsString()
-    depotId: string;
+  @IsString()
+  depotId: string;
 
-    @IsString()
-    tenantId: string;
+  @IsString()
+  tenantId: string;
 
-    @IsOptional()
-    @IsString()
-    photoUrl?: string;
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
 }

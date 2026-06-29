@@ -1,9 +1,26 @@
-import { Controller, Post, Get, Put, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { HotellerieService, CreateTypeChambreDto, CreateChambreDto, CreateReservationDto, CreateConsommationDto, PaginationDto } from './hotellerie.service';
+import {
+  HotellerieService,
+  CreateTypeChambreDto,
+  CreateChambreDto,
+  CreateReservationDto,
+  CreateConsommationDto,
+  PaginationDto,
+} from './hotellerie.service';
 
 @Controller('hotellerie')
 @Metier(MetierType.HOTEL)
@@ -32,7 +49,10 @@ export class HotellerieController {
   }
 
   @Post('chambres/:id/statut')
-  async updateChambreStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateChambreStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateChambreStatut(id, statut);
   }
 
@@ -47,12 +67,18 @@ export class HotellerieController {
   }
 
   @Post('reservations/:id/statut')
-  async updateReservationStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateReservationStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateReservationStatut(id, statut);
   }
 
   @Post('reservations/:id/consommations')
-  async addConsommation(@Param('id') id: string, @Body() dto: CreateConsommationDto) {
+  async addConsommation(
+    @Param('id') id: string,
+    @Body() dto: CreateConsommationDto,
+  ) {
     return this.service.addConsommation(id, dto);
   }
 

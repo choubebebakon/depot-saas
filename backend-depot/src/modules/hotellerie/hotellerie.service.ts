@@ -2,7 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { NotificationsService } from '../../core/notifications/notifications.service';
 import { NotifType } from '@prisma/client';
-import { IsString, IsInt, IsOptional, IsNumber, IsBoolean, Min } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  Min,
+} from 'class-validator';
 
 export class PaginationDto {
   @IsOptional() page?: number;
@@ -56,7 +63,10 @@ export class HotellerieService {
   ) {}
 
   async findAllTypes(tenantId: string) {
-    return this.prisma.typeChambre.findMany({ where: { tenantId }, orderBy: { prixNuit: 'asc' } });
+    return this.prisma.typeChambre.findMany({
+      where: { tenantId },
+      orderBy: { prixNuit: 'asc' },
+    });
   }
 
   async createType(tenantId: string, dto: CreateTypeChambreDto) {
@@ -72,18 +82,37 @@ export class HotellerieService {
       where.numero = { contains: pagination.search, mode: 'insensitive' };
     }
     const [data, total] = await Promise.all([
-      this.prisma.chambre.findMany({ where, skip, take: limit, include: { typeChambre: true, reservations: { where: { statut: { in: ['CONFIRMEE', 'CHECKIN'] } }, take: 1 } }, orderBy: { numero: 'asc' } }),
+      this.prisma.chambre.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          typeChambre: true,
+          reservations: {
+            where: { statut: { in: ['CONFIRMEE', 'CHECKIN'] } },
+            take: 1,
+          },
+        },
+        orderBy: { numero: 'asc' },
+      }),
       this.prisma.chambre.count({ where }),
     ]);
     return { data, total, page, limit };
   }
 
   async createChambre(tenantId: string, dto: CreateChambreDto) {
-    return this.prisma.chambre.create({ data: { ...dto, tenantId }, include: { typeChambre: true } });
+    return this.prisma.chambre.create({
+      data: { ...dto, tenantId },
+      include: { typeChambre: true },
+    });
   }
 
   async updateChambreStatut(id: string, statut: string) {
-    return this.prisma.chambre.update({ where: { id }, data: { statut: statut as any }, include: { typeChambre: true } });
+    return this.prisma.chambre.update({
+      where: { id },
+      data: { statut: statut as any },
+      include: { typeChambre: true },
+    });
   }
 
   async findAllReservations(tenantId: string, pagination: PaginationDto) {
@@ -92,34 +121,65 @@ export class HotellerieService {
     const skip = (page - 1) * limit;
     const where: any = { tenantId };
     if (pagination.search) {
-      where.OR = [{ nomClient: { contains: pagination.search, mode: 'insensitive' } }, { reference: { contains: pagination.search, mode: 'insensitive' } }];
+      where.OR = [
+        { nomClient: { contains: pagination.search, mode: 'insensitive' } },
+        { reference: { contains: pagination.search, mode: 'insensitive' } },
+      ];
     }
     const [data, total] = await Promise.all([
-      this.prisma.reservationHotel.findMany({ where, skip, take: limit, include: { chambre: { include: { typeChambre: true } }, client: true, consommations: true }, orderBy: { dateArrivee: 'desc' } }),
+      this.prisma.reservationHotel.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          chambre: { include: { typeChambre: true } },
+          client: true,
+          consommations: true,
+        },
+        orderBy: { dateArrivee: 'desc' },
+      }),
       this.prisma.reservationHotel.count({ where }),
     ]);
     return { data, total, page, limit };
   }
 
   async createReservation(tenantId: string, dto: CreateReservationDto) {
-    const chambre = await this.prisma.chambre.findUnique({ where: { id: dto.chambreId } });
-    if (!chambre || chambre.tenantId !== tenantId) throw new NotFoundException('Chambre introuvable');
+    const chambre = await this.prisma.chambre.findUnique({
+      where: { id: dto.chambreId },
+    });
+    if (!chambre || chambre.tenantId !== tenantId)
+      throw new NotFoundException('Chambre introuvable');
 
     const arrivee = new Date(dto.dateArrivee);
     const depart = new Date(dto.dateDepart);
-    const nbNuits = Math.max(1, Math.round((depart.getTime() - arrivee.getTime()) / (1000 * 60 * 60 * 24)));
+    const nbNuits = Math.max(
+      1,
+      Math.round(
+        (depart.getTime() - arrivee.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
     const ref = `HOTEL-${Date.now().toString(36).toUpperCase()}`;
 
     const reservation = await this.prisma.reservationHotel.create({
-      data: { ...dto, tenantId, reference: ref, dateArrivee: arrivee, dateDepart: depart, nbNuits, modePaiement: (dto.modePaiement as any) || 'CASH' },
+      data: {
+        ...dto,
+        tenantId,
+        reference: ref,
+        dateArrivee: arrivee,
+        dateDepart: depart,
+        nbNuits,
+        modePaiement: (dto.modePaiement as any) || 'CASH',
+      },
       include: { chambre: { include: { typeChambre: true } }, client: true },
     });
 
-    this.notifService.createFromTemplate(
-      tenantId,
-      NotifType.RESERVATION_NOUVELLE,
-      { numeroChambre: reservation.chambre?.numero || 'N/A', nomClient: dto.nomClient, dateArrivee: dto.dateArrivee },
-    ).catch(() => {});
+    this.notifService
+      .createFromTemplate(tenantId, NotifType.RESERVATION_NOUVELLE, {
+        numeroChambre: reservation.chambre?.numero || 'N/A',
+        nomClient: dto.nomClient,
+        dateArrivee: dto.dateArrivee,
+      })
+      .catch(() => {});
 
     return reservation;
   }
@@ -149,16 +209,24 @@ export class HotellerieService {
       const clientNom = updated.client?.nom || updated.nomClient || 'Client';
 
       if (mapping.type === NotifType.CHECKOUT_HOTEL) {
-        this.notifService.createFromTemplate(reservation.tenantId, mapping.type,
-          { chambre: chambreNum, client: clientNom },
-        ).catch(() => {});
-        this.notifService.createFromTemplate(reservation.tenantId, NotifType.CHAMBRE_MENAGE,
-          { chambre: chambreNum },
-        ).catch(() => {});
+        this.notifService
+          .createFromTemplate(reservation.tenantId, mapping.type, {
+            chambre: chambreNum,
+            client: clientNom,
+          })
+          .catch(() => {});
+        this.notifService
+          .createFromTemplate(reservation.tenantId, NotifType.CHAMBRE_MENAGE, {
+            chambre: chambreNum,
+          })
+          .catch(() => {});
       } else {
-        this.notifService.createFromTemplate(reservation.tenantId, mapping.type,
-          { chambre: chambreNum, client: clientNom },
-        ).catch(() => {});
+        this.notifService
+          .createFromTemplate(reservation.tenantId, mapping.type, {
+            chambre: chambreNum,
+            client: clientNom,
+          })
+          .catch(() => {});
       }
     }
 
@@ -167,20 +235,46 @@ export class HotellerieService {
 
   async addConsommation(reservationId: string, dto: CreateConsommationDto) {
     const total = dto.quantite * dto.prix;
-    return this.prisma.consommationHotel.create({ data: { ...dto, reservationId, total }, include: { article: true } });
+    return this.prisma.consommationHotel.create({
+      data: { ...dto, reservationId, total },
+      include: { article: true },
+    });
   }
 
   async getStats(tenantId: string) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const totalChambres = await this.prisma.chambre.count({ where: { tenantId } });
-    const occupees = await this.prisma.chambre.count({ where: { tenantId, statut: 'OCCUPEE' } });
-    const libres = await this.prisma.chambre.count({ where: { tenantId, statut: 'LIBRE' } });
-    const arriveesAujourdhui = await this.prisma.reservationHotel.count({ where: { tenantId, dateArrivee: { gte: today, lt: tomorrow } } });
-    const departsAujourdhui = await this.prisma.reservationHotel.count({ where: { tenantId, dateDepart: { gte: today, lt: tomorrow } } });
-    const actives = await this.prisma.reservationHotel.count({ where: { tenantId, statut: { in: ['CONFIRMEE', 'CHECKIN'] } } });
+    const totalChambres = await this.prisma.chambre.count({
+      where: { tenantId },
+    });
+    const occupees = await this.prisma.chambre.count({
+      where: { tenantId, statut: 'OCCUPEE' },
+    });
+    const libres = await this.prisma.chambre.count({
+      where: { tenantId, statut: 'LIBRE' },
+    });
+    const arriveesAujourdhui = await this.prisma.reservationHotel.count({
+      where: { tenantId, dateArrivee: { gte: today, lt: tomorrow } },
+    });
+    const departsAujourdhui = await this.prisma.reservationHotel.count({
+      where: { tenantId, dateDepart: { gte: today, lt: tomorrow } },
+    });
+    const actives = await this.prisma.reservationHotel.count({
+      where: { tenantId, statut: { in: ['CONFIRMEE', 'CHECKIN'] } },
+    });
 
-    return { totalChambres, occupees, libres, tauxOccupation: totalChambres > 0 ? Math.round((occupees / totalChambres) * 100) : 0, arriveesAujourdhui, departsAujourdhui, actives };
+    return {
+      totalChambres,
+      occupees,
+      libres,
+      tauxOccupation:
+        totalChambres > 0 ? Math.round((occupees / totalChambres) * 100) : 0,
+      arriveesAujourdhui,
+      departsAujourdhui,
+      actives,
+    };
   }
 }

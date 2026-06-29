@@ -145,7 +145,9 @@ export class ExportsService {
     const data = report.depotsToArchive.map((depot) => ({
       'ID Depot': depot.id,
       Nom: depot.name,
-      'Date Creation': format(depot.createdAt, 'dd/MM/yyyy HH:mm', { locale: fr }),
+      'Date Creation': format(depot.createdAt, 'dd/MM/yyyy HH:mm', {
+        locale: fr,
+      }),
       'Date MAJ': format(depot.updatedAt, 'dd/MM/yyyy HH:mm', { locale: fr }),
       'Nombre Articles': depot.articleCount,
       'Valeur Stock': depot.stockTotalValue,
@@ -198,13 +200,16 @@ export class ExportsService {
 
     y -= 20;
 
-    page.drawText(`Date d'export: ${format(report.exportDate, 'dd/MM/yyyy HH:mm', { locale: fr })}`, {
-      x: 50,
-      y,
-      size: 10,
-      font,
-      color: rgb(0.3, 0.3, 0.3),
-    });
+    page.drawText(
+      `Date d'export: ${format(report.exportDate, 'dd/MM/yyyy HH:mm', { locale: fr })}`,
+      {
+        x: 50,
+        y,
+        size: 10,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
+      },
+    );
 
     y -= 40;
 
@@ -219,13 +224,16 @@ export class ExportsService {
 
     y -= 20;
 
-    page.drawText(`${report.currentPlan} (${report.currentMaxDepots} depots) -> ${report.newPlan} (${report.newMaxDepots} depots)`, {
-      x: 50,
-      y,
-      size: 11,
-      font,
-      color: rgb(0.2, 0.2, 0.2),
-    });
+    page.drawText(
+      `${report.currentPlan} (${report.currentMaxDepots} depots) -> ${report.newPlan} (${report.newMaxDepots} depots)`,
+      {
+        x: 50,
+        y,
+        size: 11,
+        font,
+        color: rgb(0.2, 0.2, 0.2),
+      },
+    );
 
     y -= 40;
 
@@ -279,23 +287,29 @@ export class ExportsService {
       y -= 30;
 
       // Note d'archivage
-      page.drawText('Note: Les depots archives restent accessibles en lecture seule.', {
-        x: 50,
-        y,
-        size: 9,
-        font,
-        color: rgb(0.5, 0.5, 0.5),
-      });
+      page.drawText(
+        'Note: Les depots archives restent accessibles en lecture seule.',
+        {
+          x: 50,
+          y,
+          size: 9,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        },
+      );
 
       y -= 15;
 
-      page.drawText('Ils peuvent etre restaures si vous repassez a un plan superieur.', {
-        x: 50,
-        y,
-        size: 9,
-        font,
-        color: rgb(0.5, 0.5, 0.5),
-      });
+      page.drawText(
+        'Ils peuvent etre restaures si vous repassez a un plan superieur.',
+        {
+          x: 50,
+          y,
+          size: 9,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        },
+      );
     }
 
     // Footer
@@ -356,17 +370,21 @@ export class ExportsService {
     
     <h3>Depots conserves (${report.depotsToKeep.length}) :</h3>
     <div class="depot-list">
-      ${report.depotsToKeep.map(d => `- ${d.name} (${d.articleCount} articles)`).join('<br>')}
+      ${report.depotsToKeep.map((d) => `- ${d.name} (${d.articleCount} articles)`).join('<br>')}
     </div>
     
-    ${report.depotsToArchive.length > 0 ? `
+    ${
+      report.depotsToArchive.length > 0
+        ? `
     <h3>Depots archives (${report.depotsToArchive.length}) :</h3>
     <div class="depot-list">
-      ${report.depotsToArchive.map(d => `- ${d.name} (${d.articleCount} articles)`).join('<br>')}
+      ${report.depotsToArchive.map((d) => `- ${d.name} (${d.articleCount} articles)`).join('<br>')}
     </div>
     
     <p><em>Ces depots restent accessibles en lecture seule et peuvent etre restaures si vous repassez a un plan superieur.</em></p>
-    ` : ''}
+    `
+        : ''
+    }
     
     <h3>Telechargements :</h3>
     <p>

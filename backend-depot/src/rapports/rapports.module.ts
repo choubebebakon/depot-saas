@@ -6,8 +6,8 @@ import { AnalysesService } from './analyses.service';
 import { AnalysesController } from './analyses.controller';
 
 @Module({
-    controllers: [RapportsController, AnalysesController],
-    providers: [RapportsService, AnalysesService, PrismaService],
-    exports: [RapportsService, AnalysesService],
+  controllers: [RapportsController, AnalysesController],
+  providers: [RapportsService, AnalysesService, PrismaService],
+  exports: [RapportsService, AnalysesService],
 })
-export class RapportsModule { }
+export class RapportsModule {}

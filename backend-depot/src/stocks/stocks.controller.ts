@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, Request, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Request,
+  Param,
+  Put,
+} from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { StocksService } from './stocks.service';
 import { SignalerAvarieDto } from './dto/signaler-avarie.dto';
@@ -7,13 +16,13 @@ import { ACCESS_LEVELS } from '../common/utils/rbac';
 
 @Controller('stocks')
 export class StocksController {
-  constructor(private readonly stocksService: StocksService) { }
+  constructor(private readonly stocksService: StocksService) {}
 
   @Get()
   @Roles(...ACCESS_LEVELS.GERANT)
   async getStocks(
     @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string
+    @Query('depotId') depotId: string,
   ) {
     return this.stocksService.obtenirTousLesStocks(tenantId, depotId);
   }
@@ -22,7 +31,7 @@ export class StocksController {
   @Roles(...ACCESS_LEVELS.GERANT)
   async getStats(
     @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string
+    @Query('depotId') depotId: string,
   ) {
     return this.stocksService.obtenirStats(tenantId, depotId);
   }
@@ -31,7 +40,7 @@ export class StocksController {
   @Roles(...ACCESS_LEVELS.GERANT)
   async getAlertes(
     @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string
+    @Query('depotId') depotId: string,
   ) {
     return this.stocksService.obtenirAlertes(tenantId, depotId);
   }
@@ -46,13 +55,14 @@ export class StocksController {
   @Roles(...ACCESS_LEVELS.GERANT)
   async ajuster(
     @Request() req: any,
-    @Body() data: {
+    @Body()
+    data: {
       articleId: string;
       depotId: string;
       nouvelleQuantite: number;
       tenantId: string;
       motif?: string;
-    }
+    },
   ) {
     return this.stocksService.ajusterStock({ ...data, actor: req.user });
   }
@@ -60,14 +70,15 @@ export class StocksController {
   @Post('transferer')
   @Roles(...ACCESS_LEVELS.GERANT)
   async transferer(
-    @Body() data: {
+    @Body()
+    data: {
       articleId: string;
       sourceDepotId: string;
       destDepotId: string;
       quantite: number;
       tenantId: string;
       motif?: string;
-    }
+    },
   ) {
     return this.stocksService.transfererStock(data);
   }
@@ -88,17 +99,14 @@ export class StocksController {
   @Roles(...ACCESS_LEVELS.GERANT)
   async getCaisse(
     @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string
+    @Query('depotId') depotId: string,
   ) {
     return this.stocksService.getCaisse(tenantId, depotId);
   }
 
   @Get(':id')
   @Roles(...ACCESS_LEVELS.GERANT)
-  async findOne(
-    @Param('id') id: string,
-    @Query('tenantId') tenantId: string
-  ) {
+  async findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
     return this.stocksService.findOne(tenantId, id);
   }
 
@@ -107,7 +115,7 @@ export class StocksController {
   async update(
     @Param('id') id: string,
     @Query('tenantId') tenantId: string,
-    @Body() dto: UpdateStockDto
+    @Body() dto: UpdateStockDto,
   ) {
     return this.stocksService.update(tenantId, id, dto);
   }

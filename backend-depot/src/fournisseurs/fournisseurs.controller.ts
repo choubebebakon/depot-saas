@@ -6,35 +6,40 @@ import { CreateReceptionDto } from './dto/create-reception.dto';
 import { FournisseursService } from './fournisseurs.service';
 
 @Controller('fournisseurs')
-@Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER, RoleUser.COMPTABLE)
+@Roles(
+  RoleUser.PATRON,
+  RoleUser.GERANT,
+  RoleUser.MAGASINIER,
+  RoleUser.COMPTABLE,
+)
 export class FournisseursController {
-    constructor(private readonly service: FournisseursService) { }
+  constructor(private readonly service: FournisseursService) {}
 
-    @Post()
-    createFournisseur(@Body() dto: CreateFournisseurDto) {
-        return this.service.createFournisseur(dto);
-    }
+  @Post()
+  createFournisseur(@Body() dto: CreateFournisseurDto) {
+    return this.service.createFournisseur(dto);
+  }
 
-    @Get()
-    findAll(@Query('tenantId') tenantId: string) {
-        return this.service.findAllFournisseurs(tenantId);
-    }
+  @Get()
+  findAll(@Query('tenantId') tenantId: string) {
+    return this.service.findAllFournisseurs(tenantId);
+  }
 
-    @Get('stats')
-    stats(@Query('tenantId') tenantId: string) {
-        return this.service.statsFournisseurs(tenantId);
-    }
+  @Get('stats')
+  stats(@Query('tenantId') tenantId: string) {
+    return this.service.statsFournisseurs(tenantId);
+  }
 
-    @Post('receptions')
-    createReception(@Body() dto: CreateReceptionDto) {
-        return this.service.createReception(dto);
-    }
+  @Post('receptions')
+  createReception(@Body() dto: CreateReceptionDto) {
+    return this.service.createReception(dto);
+  }
 
-    @Get('receptions')
-    findReceptions(
-        @Query('tenantId') tenantId: string,
-        @Query('depotId') depotId: string,
-    ) {
-        return this.service.findAllReceptions(tenantId, depotId);
-    }
+  @Get('receptions')
+  findReceptions(
+    @Query('tenantId') tenantId: string,
+    @Query('depotId') depotId: string,
+  ) {
+    return this.service.findAllReceptions(tenantId, depotId);
+  }
 }

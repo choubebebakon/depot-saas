@@ -30,11 +30,14 @@ export class NotificationsScheduler {
       try {
         const stockRows: any[] = await this.prisma.stock.findMany({
           where: { depot: { tenantId: tenant.id } },
-          include: { article: { select: { designation: true, seuilCritique: true } } },
+          include: {
+            article: { select: { designation: true, seuilCritique: true } },
+          },
         });
 
         for (const stock of stockRows) {
-          const seuil = (stock.seuilCritique ?? stock.article?.seuilCritique) || 5;
+          const seuil =
+            (stock.seuilCritique ?? stock.article?.seuilCritique) || 5;
 
           if (stock.quantite > 0 && stock.quantite <= seuil) {
             await this.notifs.createFromTemplate(
@@ -65,7 +68,9 @@ export class NotificationsScheduler {
           await this.checkMedicamentExpirations(tenant.id);
         }
       } catch (e) {
-        this.logger.error(`Erreur stock critique tenant ${tenant.id}: ${(e as Error).message}`);
+        this.logger.error(
+          `Erreur stock critique tenant ${tenant.id}: ${(e as Error).message}`,
+        );
       }
     }
   }
@@ -153,7 +158,11 @@ export class NotificationsScheduler {
             where: { tenantId: pref.tenantId, createdAt: { gte: yesterday } },
           }),
           this.prisma.notification.count({
-            where: { tenantId: pref.tenantId, createdAt: { gte: yesterday }, priority: NotifPriority.HIGH },
+            where: {
+              tenantId: pref.tenantId,
+              createdAt: { gte: yesterday },
+              priority: NotifPriority.HIGH,
+            },
           }),
         ]);
 
@@ -164,7 +173,9 @@ export class NotificationsScheduler {
           pref.userId,
         );
       } catch (e) {
-        this.logger.error(`Erreur digest tenant ${pref.tenantId}: ${(e as Error).message}`);
+        this.logger.error(
+          `Erreur digest tenant ${pref.tenantId}: ${(e as Error).message}`,
+        );
       }
     }
   }
@@ -175,18 +186,26 @@ export class NotificationsScheduler {
   })
   async checkAbonnementsExpirants(): Promise<void> {
     const now = new Date();
-    const j7 = new Date(now); j7.setDate(j7.getDate() + 7);
-    const j3 = new Date(now); j3.setDate(j3.getDate() + 3);
-    const j1 = new Date(now); j1.setDate(j1.getDate() + 1);
+    const j7 = new Date(now);
+    j7.setDate(j7.getDate() + 7);
+    const j3 = new Date(now);
+    j3.setDate(j3.getDate() + 3);
+    const j1 = new Date(now);
+    j1.setDate(j1.getDate() + 1);
 
     await this.sendExpiryForDate(j7, NotifType.EXPIRY_J7);
     await this.sendExpiryForDate(j3, NotifType.EXPIRY_J3);
     await this.sendExpiryForDate(j1, NotifType.EXPIRY_J1);
   }
 
-  private async sendExpiryForDate(targetDate: Date, notifType: NotifType): Promise<void> {
-    const start = new Date(targetDate); start.setHours(0, 0, 0, 0);
-    const end = new Date(targetDate); end.setHours(23, 59, 59, 999);
+  private async sendExpiryForDate(
+    targetDate: Date,
+    notifType: NotifType,
+  ): Promise<void> {
+    const start = new Date(targetDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(targetDate);
+    end.setHours(23, 59, 59, 999);
 
     const tenants = await this.prisma.tenant.findMany({
       where: {
@@ -236,7 +255,9 @@ export class NotificationsScheduler {
           },
         });
       } catch (e) {
-        this.logger.error(`Retry échoué pour notif ${notif.id}: ${(e as Error).message}`);
+        this.logger.error(
+          `Retry échoué pour notif ${notif.id}: ${(e as Error).message}`,
+        );
       }
     }
   }

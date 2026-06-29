@@ -11,10 +11,10 @@ export const ACCESS_LEVELS = {
 
   // Gérant : Gestion des stocks, transferts, inventaires
   GERANT: [
-    RoleUser.PATRON, 
-    RoleUser.GERANT, 
-    RoleUser.MAGASINIER, 
-    RoleUser.COMPTABLE
+    RoleUser.PATRON,
+    RoleUser.GERANT,
+    RoleUser.MAGASINIER,
+    RoleUser.COMPTABLE,
   ],
 
   // Vendeur : Uniquement la caisse, le mixage et l'impression
@@ -24,7 +24,7 @@ export const ACCESS_LEVELS = {
     RoleUser.GERANT,
     RoleUser.CAISSIER,
     RoleUser.COMMERCIAL,
-    RoleUser.MAGASINIER
+    RoleUser.MAGASINIER,
   ],
 
   // Public (Utilisateurs connectés uniquement)

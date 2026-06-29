@@ -1,9 +1,26 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Req, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Put,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { GlacierService, CreatePlatDto, CreateTableDto, CreateCommandeDto, CreateCompositionDto, PaginationDto } from './glacier.service';
+import {
+  GlacierService,
+  CreatePlatDto,
+  CreateTableDto,
+  CreateCommandeDto,
+  CreateCompositionDto,
+  PaginationDto,
+} from './glacier.service';
 
 @Controller('glacier')
 @Metier(MetierType.GLACIER_SNACK)
@@ -32,7 +49,10 @@ export class GlacierController {
   }
 
   @Post('tables/:id/statut')
-  async updateTableStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateTableStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateTableStatut(id, statut);
   }
 

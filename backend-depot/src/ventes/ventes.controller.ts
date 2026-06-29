@@ -1,20 +1,46 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Put,
+} from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateVenteDto } from './dto/create-vente.dto';
-import { AnnulerVenteDto, ValiderSortieVenteDto } from './dto/validation-vente.dto';
+import {
+  AnnulerVenteDto,
+  ValiderSortieVenteDto,
+} from './dto/validation-vente.dto';
 import { UpdateVenteDto } from './dto/update-vente.dto';
 import { VentesService } from './ventes.service';
 
 @Controller('ventes')
-@Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.CAISSIER, RoleUser.COMMERCIAL, RoleUser.MAGASINIER)
+@Roles(
+  RoleUser.PATRON,
+  RoleUser.GERANT,
+  RoleUser.CAISSIER,
+  RoleUser.COMMERCIAL,
+  RoleUser.MAGASINIER,
+)
 export class VentesController {
-  constructor(private readonly ventesService: VentesService) { }
+  constructor(private readonly ventesService: VentesService) {}
 
   @Post()
-  @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.CAISSIER, RoleUser.COMMERCIAL)
-  async create(@Body() createVenteDto: CreateVenteDto, @CurrentUser() user: any) {
+  @Roles(
+    RoleUser.PATRON,
+    RoleUser.GERANT,
+    RoleUser.CAISSIER,
+    RoleUser.COMMERCIAL,
+  )
+  async create(
+    @Body() createVenteDto: CreateVenteDto,
+    @CurrentUser() user: any,
+  ) {
     try {
       return await this.ventesService.createVente(createVenteDto, user);
     } catch (error) {
@@ -48,7 +74,13 @@ export class VentesController {
     @Query('endDate') endDate?: string,
     @Query('statut') statut?: string,
   ) {
-    return this.ventesService.findAll(tenantId, startDate, endDate, depotId, statut);
+    return this.ventesService.findAll(
+      tenantId,
+      startDate,
+      endDate,
+      depotId,
+      statut,
+    );
   }
 
   @Get(':id')
@@ -68,9 +100,17 @@ export class VentesController {
     @CurrentUser() user: any,
   ) {
     try {
-      return await this.ventesService.validerSortieVente(id, body.tenantId, body.depotId, user);
+      return await this.ventesService.validerSortieVente(
+        id,
+        body.tenantId,
+        body.depotId,
+        user,
+      );
     } catch (error) {
-      console.error(`Erreur lors de la validation sortie (Vente ID: ${id}):`, error);
+      console.error(
+        `Erreur lors de la validation sortie (Vente ID: ${id}):`,
+        error,
+      );
       throw error;
     }
   }
@@ -82,7 +122,13 @@ export class VentesController {
     @Body() body: AnnulerVenteDto,
     @CurrentUser() user: any,
   ) {
-    return this.ventesService.annulerVente(id, body.motif, body.tenantId, body.depotId, user);
+    return this.ventesService.annulerVente(
+      id,
+      body.motif,
+      body.tenantId,
+      body.depotId,
+      user,
+    );
   }
 
   @Get('caisse')

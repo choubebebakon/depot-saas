@@ -7,4 +7,4 @@ import { PrismaService } from '../prisma.service'; // Assure-toi que le chemin e
   controllers: [ArticlesController],
   providers: [ArticlesService, PrismaService], // On ajoute PrismaService ici !
 })
-export class ArticlesModule { }
+export class ArticlesModule {}

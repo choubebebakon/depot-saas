@@ -11,7 +11,15 @@ export class PharmacieController {
     const [medicaments, ordonnancesActives, alertesDLC] = await Promise.all([
       this.prisma.medicament.count({ where: { tenantId } }),
       this.prisma.ordonnance.count({ where: { tenantId, statut: 'ACTIVE' } }),
-      this.prisma.medicament.count({ where: { tenantId, dateExpiration: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), gte: new Date() } } }),
+      this.prisma.medicament.count({
+        where: {
+          tenantId,
+          dateExpiration: {
+            lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            gte: new Date(),
+          },
+        },
+      }),
     ]);
     return { medicaments, ordonnancesActives, alertesDLC };
   }
@@ -32,7 +40,7 @@ export class PharmacieController {
     return {
       chiffreAffaires: 0,
       ventes: [],
-      croissance: 0
+      croissance: 0,
     };
   }
 

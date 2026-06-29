@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 
 /**
  * URL de base de l'API Campay pour les paiements MTN MoMo au Cameroun.
@@ -104,7 +108,8 @@ export class CampayService {
     } catch {
       throw new InternalServerErrorException({
         error: 'CAMPAY_COLLECT_FAILED',
-        message: 'Impossible de declencher le paiement MTN MoMo pour le moment.',
+        message:
+          'Impossible de declencher le paiement MTN MoMo pour le moment.',
       });
     }
   }
@@ -117,15 +122,20 @@ export class CampayService {
    * @returns Statut complet de la transaction
    * @throws InternalServerErrorException si l'appel API echoue
    */
-  async getTransactionStatus(reference: string): Promise<CampayTransactionStatusResponse> {
+  async getTransactionStatus(
+    reference: string,
+  ): Promise<CampayTransactionStatusResponse> {
     try {
       const token = await this.getAccessToken();
-      const response = await fetch(`${CAMPAY_API_BASE_URL}/transaction/${reference}/`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Token ${token}`,
+      const response = await fetch(
+        `${CAMPAY_API_BASE_URL}/transaction/${reference}/`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Token ${token}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         this.logger.error(
@@ -185,7 +195,9 @@ export class CampayService {
    * @returns Valeur de la variable
    * @throws InternalServerErrorException si la variable est manquante
    */
-  private getRequiredEnv(name: 'CAMPAY_APP_USERNAME' | 'CAMPAY_APP_PASSWORD'): string {
+  private getRequiredEnv(
+    name: 'CAMPAY_APP_USERNAME' | 'CAMPAY_APP_PASSWORD',
+  ): string {
     const value = process.env[name];
 
     if (!value) {

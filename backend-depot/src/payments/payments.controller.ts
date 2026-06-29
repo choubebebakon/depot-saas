@@ -1,6 +1,19 @@
-import { Body, Controller, Post, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -21,7 +34,9 @@ export class PaymentsController {
   @Public()
   @Post('initialize')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Initialiser un paiement NotchPay pour Site Vitrine' })
+  @ApiOperation({
+    summary: 'Initialiser un paiement NotchPay pour Site Vitrine',
+  })
   @ApiResponse({ status: 201, description: 'Paiement initié avec succès.' })
   @ApiResponse({ status: 400, description: 'Données de paiement invalides.' })
   async initializeSiteVitrinePayment(@Body() dto: InitializePaymentDto) {
@@ -73,9 +88,12 @@ export class PaymentsController {
   @Public()
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Capture le webhook de confirmation de paiement standard' })
+  @ApiOperation({
+    summary: 'Capture le webhook de confirmation de paiement standard',
+  })
   async handleWebhook(@Body() payload: any, @Req() req: any) {
-    const signature = req.headers['x-notchpay-signature'] || req.headers['signature'];
+    const signature =
+      req.headers['x-notchpay-signature'] || req.headers['signature'];
     return this.paymentsService.handleWebhookNotification(payload, signature);
   }
 

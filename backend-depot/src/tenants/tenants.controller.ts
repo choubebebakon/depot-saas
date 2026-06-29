@@ -8,7 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('tenants')
 export class TenantsController {
-  constructor(private readonly tenantsService: TenantsService) { }
+  constructor(private readonly tenantsService: TenantsService) {}
 
   @Public()
   @Post()
@@ -36,4 +36,3 @@ export class TenantsController {
 
   // On a supprimé update et remove pour l'instant pour nettoyer les erreurs
 }
-

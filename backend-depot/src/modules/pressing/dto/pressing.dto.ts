@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class VetementPressingDto {
@@ -14,7 +20,10 @@ export class CreateTicketPressingDto {
   @IsString() reference: string;
   @IsNumber() montantTotal: number;
   @IsNumber() avance: number;
-  @IsArray() @ValidateNested({ each: true }) @Type(() => VetementPressingDto) vetements: VetementPressingDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VetementPressingDto)
+  vetements: VetementPressingDto[];
 }
 
 export class UpdateTicketStatutDto {

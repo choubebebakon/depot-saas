@@ -5,7 +5,7 @@ import { CreateTransfertDto } from './dto/create-transfert.dto';
 
 @Injectable()
 export class TransfertsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Crée un brouillon de transfert.
@@ -20,7 +20,7 @@ export class TransfertsService {
         destDepotId: dto.destDepotId,
         tenantId: tenantId,
         lignes: {
-          create: dto.lignes.map(l => ({
+          create: dto.lignes.map((l) => ({
             articleId: l.articleId,
             quantite: l.quantite,
           })),
@@ -45,15 +45,24 @@ export class TransfertsService {
       });
 
       if (!transfert || transfert.statut !== StatutTransfert.BROUILLON) {
-        throw new BadRequestException("Transfert introuvable ou déjà validé.");
+        throw new BadRequestException('Transfert introuvable ou déjà validé.');
       }
 
       for (const ligne of transfert.lignes) {
         // 1. Sortie du dépôt source
         await tx.stock.upsert({
-          where: { articleId_depotId: { articleId: ligne.articleId, depotId: transfert.sourceDepotId } },
+          where: {
+            articleId_depotId: {
+              articleId: ligne.articleId,
+              depotId: transfert.sourceDepotId,
+            },
+          },
           update: { quantite: { decrement: ligne.quantite } },
-          create: { articleId: ligne.articleId, depotId: transfert.sourceDepotId, quantite: -ligne.quantite },
+          create: {
+            articleId: ligne.articleId,
+            depotId: transfert.sourceDepotId,
+            quantite: -ligne.quantite,
+          },
         });
 
         await tx.mouvementStock.create({
@@ -69,9 +78,18 @@ export class TransfertsService {
 
         // 2. Entrée dans le dépôt destination
         await tx.stock.upsert({
-          where: { articleId_depotId: { articleId: ligne.articleId, depotId: transfert.destDepotId } },
+          where: {
+            articleId_depotId: {
+              articleId: ligne.articleId,
+              depotId: transfert.destDepotId,
+            },
+          },
           update: { quantite: { increment: ligne.quantite } },
-          create: { articleId: ligne.articleId, depotId: transfert.destDepotId, quantite: ligne.quantite },
+          create: {
+            articleId: ligne.articleId,
+            depotId: transfert.destDepotId,
+            quantite: ligne.quantite,
+          },
         });
 
         await tx.mouvementStock.create({
@@ -104,10 +122,10 @@ export class TransfertsService {
   async findOne(id: string, tenantId: string) {
     return this.prisma.transfertStock.findFirst({
       where: { id, tenantId },
-      include: { 
-        lignes: { include: { article: true } }, 
-        sourceDepot: true, 
-        destDepot: true 
+      include: {
+        lignes: { include: { article: true } },
+        sourceDepot: true,
+        destDepot: true,
       },
     });
   }

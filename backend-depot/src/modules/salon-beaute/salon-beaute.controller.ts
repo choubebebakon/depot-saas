@@ -1,9 +1,27 @@
-import { Controller, Post, Get, Put, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { SalonBeauteService, CreatePrestationDto, CreateRendezVousSalonDto, UpdateRdvStatutDto, PaginationDto } from './salon-beaute.service';
+import {
+  SalonBeauteService,
+  CreatePrestationDto,
+  CreateRendezVousSalonDto,
+  UpdateRdvStatutDto,
+  PaginationDto,
+} from './salon-beaute.service';
 
 @Controller('salon')
 @Metier(MetierType.SALON_BEAUTE)
@@ -46,7 +64,11 @@ export class SalonBeauteController {
   }
 
   @Patch('rdv/:id/statut')
-  async updateRdvStatut(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateRdvStatutDto) {
+  async updateRdvStatut(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateRdvStatutDto,
+  ) {
     return this.salonService.updateRdvStatut(id, req.user.tenantId, dto);
   }
 

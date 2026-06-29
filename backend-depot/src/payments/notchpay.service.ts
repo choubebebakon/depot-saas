@@ -19,11 +19,11 @@ export class NotchPayService {
       .createHmac('sha256', secret)
       .update(payload)
       .digest('hex');
-    
+
     // Use timing-safe comparison to prevent timing attacks
     return crypto.timingSafeEqual(
       Buffer.from(signature),
-      Buffer.from(expectedSignature)
+      Buffer.from(expectedSignature),
     );
   }
 
@@ -32,7 +32,7 @@ export class NotchPayService {
       this.logger.log(`Body envoye a NotchPay: ${JSON.stringify(data)}`);
       const notchPayUrl = `${process.env.NOTCHPAY_ENDPOINT || 'https://api.notchpay.co'}/payments/initialize`;
       this.logger.log(`URL NotchPay: ${notchPayUrl}`);
-      
+
       // Include metadata with tenantId and plan for webhook processing
       const payload = {
         ...data,
@@ -44,14 +44,16 @@ export class NotchPayService {
       };
 
       const response = await axios.post(notchPayUrl, payload, {
-        headers: { 
-            'Authorization': process.env.NOTCHPAY_PRIVATE_KEY,
-            'Content-Type': 'application/json' 
-        }
+        headers: {
+          Authorization: process.env.NOTCHPAY_PRIVATE_KEY,
+          'Content-Type': 'application/json',
+        },
       });
       return response.data;
     } catch (error: any) {
-      this.logger.error(`Erreur NotchPay detaillee: ${JSON.stringify(error.response?.data || error.response?.body || error.message)}`);
+      this.logger.error(
+        `Erreur NotchPay detaillee: ${JSON.stringify(error.response?.data || error.response?.body || error.message)}`,
+      );
       throw new Error('Erreur API NotchPay');
     }
   }

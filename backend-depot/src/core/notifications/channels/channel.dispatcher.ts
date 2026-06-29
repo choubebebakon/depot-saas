@@ -18,7 +18,14 @@ export class ChannelDispatcher {
     private readonly prisma: PrismaService,
   ) {}
 
-  async dispatch(notif: Notification, prefs: { emailEnabled?: boolean; whatsappEnabled?: boolean; pushEnabled?: boolean; }): Promise<void> {
+  async dispatch(
+    notif: Notification,
+    prefs: {
+      emailEnabled?: boolean;
+      whatsappEnabled?: boolean;
+      pushEnabled?: boolean;
+    },
+  ): Promise<void> {
     const promises: Promise<unknown>[] = [];
 
     if (notif.userId) {
@@ -29,7 +36,11 @@ export class ChannelDispatcher {
 
     if (prefs.emailEnabled && notif.channel === 'EMAIL') {
       promises.push(
-        this.email.sendTemplate('', notif.type as any, { title: notif.title, message: notif.message })
+        this.email
+          .sendTemplate('', notif.type as any, {
+            title: notif.title,
+            message: notif.message,
+          })
           .catch((e) => this.handleFailure(notif, 'EMAIL', e)),
       );
     }
@@ -37,14 +48,16 @@ export class ChannelDispatcher {
     if (prefs.whatsappEnabled) {
       const message = `${notif.title}\n\n${notif.message}`;
       promises.push(
-        this.whatsapp.send('', message)
+        this.whatsapp
+          .send('', message)
           .catch((e) => this.handleFailure(notif, 'WHATSAPP', e)),
       );
     }
 
     if (prefs.pushEnabled && notif.title) {
       promises.push(
-        this.push.sendToDevice('', notif.title, notif.message || '')
+        this.push
+          .sendToDevice('', notif.title, notif.message || '')
           .catch((e) => this.handleFailure(notif, 'PUSH', e)),
       );
     }
@@ -55,13 +68,23 @@ export class ChannelDispatcher {
     if (allSuccess) {
       await this.prisma.notification.update({
         where: { id: notif.id },
-        data: { deliveryStatus: 'DELIVERED' as any, isSent: true, sentAt: new Date() },
+        data: {
+          deliveryStatus: 'DELIVERED' as any,
+          isSent: true,
+          sentAt: new Date(),
+        },
       });
     }
   }
 
-  private async handleFailure(notif: Notification, channel: string, error: Error): Promise<void> {
-    this.logger.error(`Échec canal ${channel} pour notif ${notif.id}: ${error.message}`);
+  private async handleFailure(
+    notif: Notification,
+    channel: string,
+    error: Error,
+  ): Promise<void> {
+    this.logger.error(
+      `Échec canal ${channel} pour notif ${notif.id}: ${error.message}`,
+    );
     await this.prisma.notification.update({
       where: { id: notif.id },
       data: {

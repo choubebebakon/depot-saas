@@ -21,7 +21,10 @@ import * as Sentry from '@sentry/nestjs';
       provide: 'SENTRY_INIT',
       useFactory: (configService: ConfigService) => {
         const dsn = configService.get<string>('SENTRY_DSN');
-        const environment = configService.get<string>('NODE_ENV', 'development');
+        const environment = configService.get<string>(
+          'NODE_ENV',
+          'development',
+        );
 
         if (dsn) {
           Sentry.init({

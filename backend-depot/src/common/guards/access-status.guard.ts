@@ -45,7 +45,10 @@ export class AccessStatusGuard implements CanActivate {
     }
 
     const tenant = await this.getTenantAccess(user.tenantId);
-    const effectiveStatus = this.resolveEffectiveStatus(tenant.status, tenant.subscriptionEnd);
+    const effectiveStatus = this.resolveEffectiveStatus(
+      tenant.status,
+      tenant.subscriptionEnd,
+    );
 
     response.setHeader('X-Tenant-Status', effectiveStatus);
 
@@ -76,7 +79,9 @@ export class AccessStatusGuard implements CanActivate {
    * Récupère le statut et la date de fin d'abonnement du tenant.
    * Ajustement du type de retour : subscriptionEnd peut être Date ou null
    */
-  private async getTenantAccess(tenantId: string): Promise<{ status: TenantStatus; subscriptionEnd: Date | null }> {
+  private async getTenantAccess(
+    tenantId: string,
+  ): Promise<{ status: TenantStatus; subscriptionEnd: Date | null }> {
     try {
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: tenantId },
@@ -110,10 +115,15 @@ export class AccessStatusGuard implements CanActivate {
    * Calcule le statut effectif avec 3 jours de grâce après subscriptionEnd.
    * Sécurisé contre les valeurs nulles.
    */
-  private resolveEffectiveStatus(status: TenantStatus, subscriptionEnd: Date | null): TenantStatus {
+  private resolveEffectiveStatus(
+    status: TenantStatus,
+    subscriptionEnd: Date | null,
+  ): TenantStatus {
     // Sécurité : Si aucune date de fin n'est définie, on se base uniquement sur le statut en BDD
     if (!subscriptionEnd) {
-      return status === TenantStatus.EXPIRED ? TenantStatus.EXPIRED : TenantStatus.ACTIVE;
+      return status === TenantStatus.EXPIRED
+        ? TenantStatus.EXPIRED
+        : TenantStatus.ACTIVE;
     }
 
     const now = Date.now();

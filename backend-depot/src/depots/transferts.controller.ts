@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Patch, Query, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Query,
+  Request,
+} from '@nestjs/common';
 import { TransfertsService } from './transferts.service';
 import { CreateTransfertDto } from './dto/create-transfert.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -16,7 +25,11 @@ export class TransfertsController {
 
   @Patch(':id/valider')
   @Roles(...ACCESS_LEVELS.GERANT)
-  valider(@Param('id') id: string, @Query('tenantId') tenantId: string, @Request() req: any) {
+  valider(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+    @Request() req: any,
+  ) {
     return this.transfertsService.validerTransfert(id, tenantId, req.user);
   }
 

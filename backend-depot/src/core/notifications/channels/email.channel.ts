@@ -34,7 +34,7 @@ export class EmailChannel {
       this.initialized = true;
       this.logger.log('EmailChannel initialisé (SMTP)');
     } catch (e) {
-      this.logger.error('Impossible d\'initialiser Nodemailer');
+      this.logger.error("Impossible d'initialiser Nodemailer");
     }
   }
 
@@ -67,7 +67,11 @@ export class EmailChannel {
     }
   }
 
-  async sendTemplate(to: string, type: NotifType, data: Record<string, unknown>): Promise<boolean> {
+  async sendTemplate(
+    to: string,
+    type: NotifType,
+    data: Record<string, unknown>,
+  ): Promise<boolean> {
     const subject = this.buildSubject(type, data);
     const html = this.buildHtml(type, data);
     return this.send(to, subject, html);
@@ -77,7 +81,7 @@ export class EmailChannel {
     const subjects: Partial<Record<NotifType, string>> = {
       STOCK_CRITIQUE: '⚠️ Stock critique — Action requise',
       STOCK_RUPTURE: '🚫 Rupture de stock détectée',
-      STOCK_EXPIRATION: '📅 Produits proches de l\'expiration',
+      STOCK_EXPIRATION: "📅 Produits proches de l'expiration",
       PAYMENT_SUCCESS: '✅ Paiement confirmé',
       PAYMENT_FAILED: '❌ Paiement échoué',
       EXPIRY_J7: `⏰ Votre abonnement expire dans 7 jours`,
@@ -91,7 +95,8 @@ export class EmailChannel {
 
   private buildHtml(type: NotifType, data: Record<string, unknown>): string {
     const appName = this.getAppName();
-    const message = data.message || 'Vous avez une nouvelle notification GeStock.';
+    const message =
+      data.message || 'Vous avez une nouvelle notification GeStock.';
 
     return `
 <!DOCTYPE html>

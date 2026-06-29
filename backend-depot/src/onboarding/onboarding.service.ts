@@ -19,16 +19,24 @@ export class OnboardingService {
     const roles = METIER_ROLES[metier];
     if (!roles) throw new BadRequestException('Métier invalide');
 
-    const adminRole = roles.find(r => r.isAdmin) || roles[0];
+    const adminRole = roles.find((r) => r.isAdmin) || roles[0];
     await this.prisma.user.update({
       where: { id: userId },
       data: { role: adminRole.nom as any },
     });
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    });
     if (user?.email && tenant?.name) {
-      this.emailService.sendOnboardingComplete(user.email, tenant.name, metier).catch(() => {});
+      this.emailService
+        .sendOnboardingComplete(user.email, tenant.name, metier)
+        .catch(() => {});
     }
   }
 }

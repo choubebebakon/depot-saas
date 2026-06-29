@@ -3,15 +3,15 @@ import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class ImpressionService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async genererTicketVente(venteId: string, tenantId: string) {
     // 1. Récupération de la vente avec les relations complètes incluses
     const vente = await this.prisma.vente.findUnique({
       where: { id: venteId },
       include: {
-        tenant: true,  // Pour l'en-tête (Nom, tel)
-        depot: true,    // Pour l'adresse du Depot
+        tenant: true, // Pour l'en-tête (Nom, tel)
+        depot: true, // Pour l'adresse du Depot
         lignes: {
           include: {
             article: true, // Pour la désignation de chaque article
@@ -22,7 +22,9 @@ export class ImpressionService {
 
     // Filtre Multi-Tenant de sécurité
     if (!vente || vente.tenantId !== tenantId) {
-      throw new NotFoundException('Vente introuvable ou vous n\'y avez pas accès.');
+      throw new NotFoundException(
+        "Vente introuvable ou vous n'y avez pas accès.",
+      );
     }
 
     // 2. Fonctions utilitaires de formatage pour l'imprimante thermique (Largeur 32 caractères typique 58mm)
@@ -47,7 +49,9 @@ export class ImpressionService {
     const ticketLines: string[] = [];
 
     // --- EN-TÊTE ---
-    ticketLines.push(centerText((vente.tenant.nomEntreprise || 'GeStock').toUpperCase()));
+    ticketLines.push(
+      centerText((vente.tenant.nomEntreprise || 'GeStock').toUpperCase()),
+    );
     if (vente.depot.adresse) {
       ticketLines.push(centerText(vente.depot.adresse));
     }
@@ -67,7 +71,9 @@ export class ImpressionService {
     for (const ligne of vente.lignes) {
       // Formatage des colonnes : on s'assure de respecter les largeurs
       const qte = String(ligne.quantite).padEnd(3, ' ');
-      const designation = (ligne.article.designation || '').substring(0, 11).padEnd(11, ' ');
+      const designation = (ligne.article.designation || '')
+        .substring(0, 11)
+        .padEnd(11, ' ');
       const pu = String(ligne.prix).padStart(5, ' ') + ' ';
       const total = String(ligne.total).padStart(6, ' ');
 
@@ -82,7 +88,10 @@ export class ImpressionService {
 
     // Date
     const dateAchat = vente.date.toLocaleDateString('fr-FR');
-    const heureAchat = vente.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const heureAchat = vente.date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
     ticketLines.push(`Date: ${dateAchat} a ${heureAchat}`);
     ticketLines.push('');
 
@@ -99,8 +108,8 @@ export class ImpressionService {
       success: true,
       venteId: vente.id,
       reference: vente.reference,
-      rawText: rawText,       // Le texte prêt à être poussé sur le port Bluetooth / Printer
-      lines: ticketLines      // Les lignes sous forme de tableau JSON, si utile pour le Front
+      rawText: rawText, // Le texte prêt à être poussé sur le port Bluetooth / Printer
+      lines: ticketLines, // Les lignes sous forme de tableau JSON, si utile pour le Front
     };
   }
 }

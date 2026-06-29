@@ -39,12 +39,18 @@ export class ParfumerieService {
       where.OR = [
         { marque: { contains: pagination.search, mode: 'insensitive' } },
         { categorie: { contains: pagination.search, mode: 'insensitive' } },
-        { article: { nom: { contains: pagination.search, mode: 'insensitive' } } },
+        {
+          article: {
+            nom: { contains: pagination.search, mode: 'insensitive' },
+          },
+        },
       ];
     }
     const [data, total] = await Promise.all([
       this.prisma.produitCosmetique.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         include: { article: { include: { stocks: true } } },
         orderBy: { categorie: 'asc' },
       }),
@@ -54,7 +60,9 @@ export class ParfumerieService {
   }
 
   async createProduit(tenantId: string, dto: CreateProduitCosmetiqueDto) {
-    const article = await this.prisma.article.findUnique({ where: { id: dto.articleId } });
+    const article = await this.prisma.article.findUnique({
+      where: { id: dto.articleId },
+    });
     if (!article || article.tenantId !== tenantId) {
       throw new NotFoundException('Article introuvable');
     }
@@ -69,7 +77,10 @@ export class ParfumerieService {
   async getFideliteClient(tenantId: string, clientId: string) {
     const programme = await this.prisma.programmeFidelite.findUnique({
       where: { clientId },
-      include: { client: true, historique: { orderBy: { createdAt: 'desc' }, take: 20 } },
+      include: {
+        client: true,
+        historique: { orderBy: { createdAt: 'desc' }, take: 20 },
+      },
     });
     if (!programme || programme.tenantId !== tenantId) {
       return null;
@@ -78,7 +89,9 @@ export class ParfumerieService {
   }
 
   async ajouterPoints(tenantId: string, dto: AjouterPointsDto) {
-    let programme = await this.prisma.programmeFidelite.findUnique({ where: { clientId: dto.clientId } });
+    let programme = await this.prisma.programmeFidelite.findUnique({
+      where: { clientId: dto.clientId },
+    });
 
     if (!programme) {
       programme = await this.prisma.programmeFidelite.create({
@@ -107,15 +120,19 @@ export class ParfumerieService {
     });
 
     const totalPoints = programmes.reduce((s, p) => s + p.points, 0);
-    const repartitionNiveaux = programmes.reduce((acc, p) => {
-      acc[p.niveau] = (acc[p.niveau] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const repartitionNiveaux = programmes.reduce(
+      (acc, p) => {
+        acc[p.niveau] = (acc[p.niveau] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       totalClientsFideles: programmes.length,
       totalPointsDistribues: totalPoints,
-      pointsMoyen: programmes.length > 0 ? Math.round(totalPoints / programmes.length) : 0,
+      pointsMoyen:
+        programmes.length > 0 ? Math.round(totalPoints / programmes.length) : 0,
       repartitionNiveaux,
     };
   }

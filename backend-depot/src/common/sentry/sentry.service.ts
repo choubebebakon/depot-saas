@@ -106,9 +106,16 @@ export class SentryService {
    * Alerte : Signature webhook invalide (MoMo ou Stripe).
    * Niveau : error
    */
-  alertInvalidWebhookSignature(provider: 'campay' | 'stripe', context?: SentryContext): void {
+  alertInvalidWebhookSignature(
+    provider: 'campay' | 'stripe',
+    context?: SentryContext,
+  ): void {
     const error = new Error(`Invalid webhook signature from ${provider}`);
-    this.captureException(error, { ...context, provider, alertType: 'INVALID_WEBHOOK_SIGNATURE' }, 'error');
+    this.captureException(
+      error,
+      { ...context, provider, alertType: 'INVALID_WEBHOOK_SIGNATURE' },
+      'error',
+    );
   }
 
   /**
@@ -119,7 +126,11 @@ export class SentryService {
     const level: Sentry.SeverityLevel = count > 5 ? 'fatal' : 'warning';
     this.captureMessage(
       `${count} transactions PENDING depuis plus de 24h`,
-      { ...context, staleTransactionCount: count.toString(), alertType: 'STALE_PENDING_TRANSACTIONS' },
+      {
+        ...context,
+        staleTransactionCount: count.toString(),
+        alertType: 'STALE_PENDING_TRANSACTIONS',
+      },
       level,
     );
   }
@@ -128,10 +139,19 @@ export class SentryService {
    * Alerte : Quota de dépôts atteint.
    * Niveau : warning
    */
-  alertQuotaReached(tenantId: string, maxDepots: number, currentCount: number): void {
+  alertQuotaReached(
+    tenantId: string,
+    maxDepots: number,
+    currentCount: number,
+  ): void {
     this.captureMessage(
       `Quota de dépôts atteint: ${currentCount}/${maxDepots}`,
-      { tenantId, maxDepots: maxDepots.toString(), currentCount: currentCount.toString(), alertType: 'QUOTA_REACHED' },
+      {
+        tenantId,
+        maxDepots: maxDepots.toString(),
+        currentCount: currentCount.toString(),
+        alertType: 'QUOTA_REACHED',
+      },
       'warning',
     );
   }
@@ -141,6 +161,10 @@ export class SentryService {
    * Niveau : fatal
    */
   alertUnhandledException(error: Error, context?: SentryContext): void {
-    this.captureException(error, { ...context, alertType: 'UNHANDLED_EXCEPTION' }, 'fatal');
+    this.captureException(
+      error,
+      { ...context, alertType: 'UNHANDLED_EXCEPTION' },
+      'fatal',
+    );
   }
 }

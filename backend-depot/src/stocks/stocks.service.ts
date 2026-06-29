@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { TypeMouvement } from '@prisma/client';
 import { SignalerAvarieDto } from './dto/signaler-avarie.dto';
@@ -9,12 +13,14 @@ import { AuditService } from '../audit/audit.service';
 export class StocksService {
   constructor(
     private prisma: PrismaService,
-    private auditService: AuditService
-  ) { }
+    private auditService: AuditService,
+  ) {}
 
   private requireDepotId(depotId?: string) {
     if (!depotId) {
-      throw new BadRequestException('depotId est obligatoire pour isoler les donnees par depot.');
+      throw new BadRequestException(
+        'depotId est obligatoire pour isoler les donnees par depot.',
+      );
     }
 
     return depotId;
@@ -27,13 +33,13 @@ export class StocksService {
     return this.prisma.stock.findMany({
       where: {
         depotId: selectedDepotId,
-        depot: { tenantId }
+        depot: { tenantId },
       },
       include: {
         article: true,
-        depot: true
+        depot: true,
       },
-      orderBy: { article: { designation: 'asc' } }
+      orderBy: { article: { designation: 'asc' } },
     });
   }
 
@@ -43,19 +49,19 @@ export class StocksService {
 
     const stocks = await this.prisma.stock.findMany({
       where: { depotId: selectedDepotId, depot: { tenantId } },
-      include: { article: true }
+      include: { article: true },
     });
 
     const totalArticles = stocks.length;
-    const enRupture = stocks.filter(s => s.quantite <= 0).length;
+    const enRupture = stocks.filter((s) => s.quantite <= 0).length;
 
-    const critiques = stocks.filter(s => {
+    const critiques = stocks.filter((s) => {
       const seuil = s.seuilCritique ?? s.article.seuilCritique ?? 0;
       return s.quantite > 0 && s.quantite <= seuil;
     }).length;
 
     const valeurStock = stocks.reduce((acc, s) => {
-      return acc + (s.quantite * (s.article.prixAchat || 0));
+      return acc + s.quantite * (s.article.prixAchat || 0);
     }, 0);
 
     return { totalArticles, enRupture, critiques, valeurStock };
@@ -67,10 +73,10 @@ export class StocksService {
 
     const stocks = await this.prisma.stock.findMany({
       where: { depotId: selectedDepotId, depot: { tenantId } },
-      include: { article: true }
+      include: { article: true },
     });
 
-    return stocks.filter(s => {
+    return stocks.filter((s) => {
       const seuil = s.seuilCritique ?? s.article.seuilCritique ?? 0;
       return s.quantite <= seuil;
     });
@@ -88,18 +94,30 @@ export class StocksService {
   }) {
     return this.prisma.$transaction(async (tx) => {
       const stockActuel = await tx.stock.findUnique({
-        where: { articleId_depotId: { articleId: data.articleId, depotId: data.depotId } },
-        include: { article: true }
+        where: {
+          articleId_depotId: {
+            articleId: data.articleId,
+            depotId: data.depotId,
+          },
+        },
+        include: { article: true },
       });
 
       const ancienneQt = stockActuel?.quantite || 0;
       const difference = data.nouvelleQuantite - ancienneQt;
 
       const stockMisAJour = await tx.stock.upsert({
-        where: { articleId_depotId: { articleId: data.articleId, depotId: data.depotId } },
-        update: { 
+        where: {
+          articleId_depotId: {
+            articleId: data.articleId,
+            depotId: data.depotId,
+          },
+        },
+        update: {
           quantite: data.nouvelleQuantite,
-          ...(data.seuilCritique !== undefined ? { seuilCritique: data.seuilCritique } : {})
+          ...(data.seuilCritique !== undefined
+            ? { seuilCritique: data.seuilCritique }
+            : {}),
         },
         create: {
           articleId: data.articleId,
@@ -114,7 +132,7 @@ export class StocksService {
           data: {
             type: TypeMouvement.AJUSTEMENT_INVENTAIRE,
             quantite: Math.abs(difference),
-            motif: data.motif || "Ajustement manuel",
+            motif: data.motif || 'Ajustement manuel',
             articleId: data.articleId,
             depotId: data.depotId,
             tenantId: data.tenantId,
@@ -132,7 +150,7 @@ export class StocksService {
           targetId: stockMisAJour.id,
           reference: stockActuel?.article?.designation || data.articleId,
           description: `Ajustement stock de ${ancienneQt} vers ${data.nouvelleQuantite} (Diff: ${difference})`,
-          metadata: { ...data, ancienneQt, difference }
+          metadata: { ...data, ancienneQt, difference },
         });
       }
 
@@ -151,14 +169,28 @@ export class StocksService {
   }) {
     return this.prisma.$transaction(async (tx) => {
       await tx.stock.update({
-        where: { articleId_depotId: { articleId: data.articleId, depotId: data.sourceDepotId } },
+        where: {
+          articleId_depotId: {
+            articleId: data.articleId,
+            depotId: data.sourceDepotId,
+          },
+        },
         data: { quantite: { decrement: data.quantite } },
       });
 
       await tx.stock.upsert({
-        where: { articleId_depotId: { articleId: data.articleId, depotId: data.destDepotId } },
+        where: {
+          articleId_depotId: {
+            articleId: data.articleId,
+            depotId: data.destDepotId,
+          },
+        },
         update: { quantite: { increment: data.quantite } },
-        create: { articleId: data.articleId, depotId: data.destDepotId, quantite: data.quantite },
+        create: {
+          articleId: data.articleId,
+          depotId: data.destDepotId,
+          quantite: data.quantite,
+        },
       });
 
       await tx.mouvementStock.createMany({
@@ -199,7 +231,7 @@ export class StocksService {
       },
       include: { article: true, depot: true, tournee: true },
       orderBy: { createdAt: 'desc' },
-      take: 200
+      take: 200,
     });
   }
 
@@ -207,9 +239,14 @@ export class StocksService {
   async signalerAvarie(data: SignalerAvarieDto, actor: any) {
     return this.prisma.$transaction(async (tx) => {
       const stock = await tx.stock.update({
-        where: { articleId_depotId: { articleId: data.articleId, depotId: data.depotId } },
+        where: {
+          articleId_depotId: {
+            articleId: data.articleId,
+            depotId: data.depotId,
+          },
+        },
         data: { quantite: { decrement: data.quantite } },
-        include: { article: true }
+        include: { article: true },
       });
 
       await tx.mouvementStock.create({
@@ -221,7 +258,7 @@ export class StocksService {
           articleId: data.articleId,
           depotId: data.depotId,
           tenantId: data.tenantId,
-        }
+        },
       });
 
       // Audit Avancé
@@ -235,7 +272,7 @@ export class StocksService {
         targetId: stock.id,
         reference: stock.article.designation,
         description: `Signalement d'avarie : ${data.quantite} unités perdues. Motif: ${data.motif}`,
-        metadata: { ...data }
+        metadata: { ...data },
       });
 
       return stock;
@@ -292,11 +329,11 @@ export class StocksService {
     today.setHours(0, 0, 0, 0);
 
     const ventes = await this.prisma.vente.aggregate({
-      where: { 
-        tenantId, 
-        depotId: selectedDepotId, 
-        date: { gte: today }, 
-        statut: 'PAYE' 
+      where: {
+        tenantId,
+        depotId: selectedDepotId,
+        date: { gte: today },
+        statut: 'PAYE',
       },
       _sum: { total: true },
       _count: true,

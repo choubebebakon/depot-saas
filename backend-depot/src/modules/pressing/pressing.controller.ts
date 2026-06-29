@@ -1,10 +1,24 @@
-import { Controller, Post, Get, Put, Body, Query, UseGuards, Req, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  Patch,
+  Param,
+} from '@nestjs/common';
 import { PressingService, PaginationDto } from './pressing.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { CreateTicketPressingDto, UpdateTicketStatutDto } from './dto/pressing.dto';
+import {
+  CreateTicketPressingDto,
+  UpdateTicketStatutDto,
+} from './dto/pressing.dto';
 
 @Controller('pressing')
 @Metier(MetierType.PRESSING)
@@ -28,7 +42,11 @@ export class PressingController {
   }
 
   @Patch('tickets/:id/statut')
-  async updateStatut(@Req() req: any, @Param('id') id: string, @Body() data: UpdateTicketStatutDto) {
+  async updateStatut(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateTicketStatutDto,
+  ) {
     return this.service.updateTicketStatut(id, req.user.tenantId, data);
   }
 

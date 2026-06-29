@@ -8,7 +8,6 @@ import { MetierType } from '../../common/config/metier-roles.config';
 @Metier(MetierType.QUINCAILLERIE)
 @UseGuards(JwtAuthGuard, MetierGuard)
 export class QuincaillerieController {
-  
   // --- Stubs Phase 2 ---
   @Get('config')
   async getConfig() {

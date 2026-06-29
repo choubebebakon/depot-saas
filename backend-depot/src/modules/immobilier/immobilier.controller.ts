@@ -1,9 +1,26 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Req, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Put,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { ImmobilierService, CreateBienDto, CreateContratDto, CreatePaiementDto, CreateInterventionDto, PaginationDto } from './immobilier.service';
+import {
+  ImmobilierService,
+  CreateBienDto,
+  CreateContratDto,
+  CreatePaiementDto,
+  CreateInterventionDto,
+  PaginationDto,
+} from './immobilier.service';
 
 @Controller('immobilier')
 @Metier(MetierType.IMMOBILIER)
@@ -32,7 +49,10 @@ export class ImmobilierController {
   }
 
   @Post('contrats/:id/statut')
-  async updateContratStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateContratStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateContratStatut(id, statut);
   }
 
@@ -52,7 +72,10 @@ export class ImmobilierController {
   }
 
   @Post('interventions')
-  async createIntervention(@Req() req: any, @Body() dto: CreateInterventionDto) {
+  async createIntervention(
+    @Req() req: any,
+    @Body() dto: CreateInterventionDto,
+  ) {
     return this.service.createIntervention(req.user.tenantId, dto);
   }
 

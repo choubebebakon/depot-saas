@@ -1,5 +1,5 @@
 export class CreateTenantDto {
-    nomEntreprise: string;
-    emailPatron: string;
-    telephone: string;
+  nomEntreprise: string;
+  emailPatron: string;
+  telephone: string;
 }

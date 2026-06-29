@@ -8,7 +8,12 @@ import {
   Header,
   NotFoundException,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { InvoicesService } from './invoices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -42,10 +47,13 @@ export class InvoicesController {
    * @returns Fichier PDF telechargeable
    */
   @Get(':paymentId')
-  @ApiOperation({ summary: 'Telecharger la facture PDF d\'un paiement' })
+  @ApiOperation({ summary: "Telecharger la facture PDF d'un paiement" })
   @ApiResponse({ status: 200, description: 'Facture PDF telechargeable' })
   @ApiResponse({ status: 404, description: 'Paiement ou facture introuvable' })
-  @ApiResponse({ status: 403, description: 'Acces interdit - paiement d\'un autre tenant' })
+  @ApiResponse({
+    status: 403,
+    description: "Acces interdit - paiement d'un autre tenant",
+  })
   @Header('Content-Type', 'application/pdf')
   async downloadInvoice(
     @CurrentUser() user: AuthenticatedUser,

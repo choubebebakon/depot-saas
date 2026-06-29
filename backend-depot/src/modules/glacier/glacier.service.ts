@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { IsString, IsInt, IsOptional, IsNumber, IsBoolean, Min } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  Min,
+} from 'class-validator';
 
 export class PaginationDto {
   @IsOptional() page?: number;
@@ -52,7 +59,12 @@ export class GlacierService {
       where.nom = { contains: pagination.search, mode: 'insensitive' };
     }
     const [data, total] = await Promise.all([
-      this.prisma.plat.findMany({ where, skip, take: limit, orderBy: { categorie: 'asc' } }),
+      this.prisma.plat.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { categorie: 'asc' },
+      }),
       this.prisma.plat.count({ where }),
     ]);
     return { data, total, page, limit };
@@ -63,15 +75,24 @@ export class GlacierService {
   }
 
   async findAllTables(tenantId: string) {
-    return this.prisma.table.findMany({ where: { tenantId }, orderBy: { numero: 'asc' }, include: { commandes: { where: { statut: { not: 'PAYE' } } } } });
+    return this.prisma.table.findMany({
+      where: { tenantId },
+      orderBy: { numero: 'asc' },
+      include: { commandes: { where: { statut: { not: 'PAYE' } } } },
+    });
   }
 
   async createTable(tenantId: string, dto: CreateTableDto) {
-    return this.prisma.table.create({ data: { ...dto, tenantId, numero: dto.numero.toString() } });
+    return this.prisma.table.create({
+      data: { ...dto, tenantId, numero: dto.numero.toString() },
+    });
   }
 
   async updateTableStatut(id: string, statut: string) {
-    return this.prisma.table.update({ where: { id }, data: { statut: statut as any } });
+    return this.prisma.table.update({
+      where: { id },
+      data: { statut: statut as any },
+    });
   }
 
   async findAllCommandes(tenantId: string, pagination: PaginationDto) {
@@ -81,8 +102,14 @@ export class GlacierService {
     const where: any = { tenantId };
     const [data, total] = await Promise.all([
       this.prisma.commande.findMany({
-        where, skip, take: limit,
-        include: { lignes: { include: { plat: true } }, table: true, compositionGlace: true },
+        where,
+        skip,
+        take: limit,
+        include: {
+          lignes: { include: { plat: true } },
+          table: true,
+          compositionGlace: true,
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.commande.count({ where }),
@@ -102,7 +129,7 @@ export class GlacierService {
         notes: dto.notes,
         total,
         lignes: {
-          create: dto.lignes.map(l => ({
+          create: dto.lignes.map((l) => ({
             platId: l.platId,
             quantite: l.quantite,
             note: l.note,
@@ -112,8 +139,19 @@ export class GlacierService {
       include: { lignes: { include: { plat: true } }, table: true },
     });
 
-    const coutTotal = commande.lignes.reduce((s, l) => s + (l.plat?.prix || 0) * l.quantite, 0);
-    return this.prisma.commande.update({ where: { id: commande.id }, data: { total: coutTotal }, include: { lignes: { include: { plat: true } }, table: true, compositionGlace: true } });
+    const coutTotal = commande.lignes.reduce(
+      (s, l) => s + (l.plat?.prix || 0) * l.quantite,
+      0,
+    );
+    return this.prisma.commande.update({
+      where: { id: commande.id },
+      data: { total: coutTotal },
+      include: {
+        lignes: { include: { plat: true } },
+        table: true,
+        compositionGlace: true,
+      },
+    });
   }
 
   async findAllCompositions(tenantId: string, pagination: PaginationDto) {
@@ -122,18 +160,31 @@ export class GlacierService {
     const skip = (page - 1) * limit;
     const where: any = { tenantId };
     const [data, total] = await Promise.all([
-      this.prisma.compositionGlace.findMany({ where, skip, take: limit, include: { commande: { include: { lignes: { include: { plat: true } } } } }, orderBy: { id: 'desc' } }),
+      this.prisma.compositionGlace.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          commande: { include: { lignes: { include: { plat: true } } } },
+        },
+        orderBy: { id: 'desc' },
+      }),
       this.prisma.compositionGlace.count({ where }),
     ]);
     return { data, total, page, limit };
   }
 
   async createComposition(tenantId: string, dto: CreateCompositionDto) {
-    const commande = await this.prisma.commande.findUnique({ where: { id: dto.commandeId } });
+    const commande = await this.prisma.commande.findUnique({
+      where: { id: dto.commandeId },
+    });
     if (!commande || commande.tenantId !== tenantId) {
       throw new NotFoundException('Commande introuvable');
     }
-    return this.prisma.compositionGlace.create({ data: { ...dto, tenantId }, include: { commande: true } });
+    return this.prisma.compositionGlace.create({
+      data: { ...dto, tenantId },
+      include: { commande: true },
+    });
   }
 
   async getStats(tenantId: string) {
@@ -142,12 +193,26 @@ export class GlacierService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const commandesJour = await this.prisma.commande.findMany({ where: { tenantId, createdAt: { gte: today, lt: tomorrow } } });
+    const commandesJour = await this.prisma.commande.findMany({
+      where: { tenantId, createdAt: { gte: today, lt: tomorrow } },
+    });
     const recettesJour = commandesJour.reduce((s, c) => s + c.total, 0);
-    const platsActifs = await this.prisma.plat.count({ where: { tenantId, disponible: true } });
-    const tablesOccupees = await this.prisma.table.count({ where: { tenantId, statut: 'OCCUPEE' } });
-    const totalCompositions = await this.prisma.compositionGlace.count({ where: { tenantId } });
+    const platsActifs = await this.prisma.plat.count({
+      where: { tenantId, disponible: true },
+    });
+    const tablesOccupees = await this.prisma.table.count({
+      where: { tenantId, statut: 'OCCUPEE' },
+    });
+    const totalCompositions = await this.prisma.compositionGlace.count({
+      where: { tenantId },
+    });
 
-    return { commandesJour: commandesJour.length, recettesJour, platsActifs, tablesOccupees, totalCompositions };
+    return {
+      commandesJour: commandesJour.length,
+      recettesJour,
+      platsActifs,
+      tablesOccupees,
+      totalCompositions,
+    };
   }
 }

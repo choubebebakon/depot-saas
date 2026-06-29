@@ -1,5 +1,10 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import { PaymentStatus, PaymentMethod, TenantStatus, Prisma } from '@prisma/client';
+import {
+  PaymentStatus,
+  PaymentMethod,
+  TenantStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { CampayService } from '../payments/campay.service';
 import { StripePaymentsService } from '../payments/stripe.service';
@@ -87,7 +92,6 @@ export class AdminService {
     }
   }
 
-
   /**
    * Recupere les statistiques globales pour le dashboard admin.
    */
@@ -106,7 +110,9 @@ export class AdminService {
     ] = await Promise.all([
       this.prisma.tenant.count(),
       this.prisma.tenant.count({ where: { status: TenantStatus.ACTIVE } }),
-      this.prisma.tenant.count({ where: { status: TenantStatus.GRACE_PERIOD } }),
+      this.prisma.tenant.count({
+        where: { status: TenantStatus.GRACE_PERIOD },
+      }),
       this.prisma.tenant.count({ where: { status: TenantStatus.EXPIRED } }),
       this.prisma.payment.count({ where: { status: PaymentStatus.PENDING } }),
       this.prisma.payment.count({ where: { status: PaymentStatus.SUCCESS } }),
@@ -184,7 +190,9 @@ export class AdminService {
       periodEnd: payment.periodEnd,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
-      isStale: payment.status === PaymentStatus.PENDING && payment.createdAt < twentyFourHoursAgo,
+      isStale:
+        payment.status === PaymentStatus.PENDING &&
+        payment.createdAt < twentyFourHoursAgo,
     }));
 
     return { transactions, total };
@@ -227,8 +235,11 @@ export class AdminService {
     const now = new Date();
 
     const tenantDtos: AdminTenantDto[] = tenants.map((tenant) => {
-      const daysUntilExpiry = tenant.subscriptionEnd 
-        ? Math.ceil((tenant.subscriptionEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      const daysUntilExpiry = tenant.subscriptionEnd
+        ? Math.ceil(
+            (tenant.subscriptionEnd.getTime() - now.getTime()) /
+              (1000 * 60 * 60 * 24),
+          )
         : 0;
 
       return {
@@ -239,8 +250,10 @@ export class AdminService {
         maxDepots: tenant.maxDepots,
         subscriptionEnd: tenant.subscriptionEnd,
         lastPaymentId: tenant.lastPaymentId,
-        userCount: (tenant as unknown as { _count: { users: number } })._count.users,
-        depotCount: (tenant as unknown as { _count: { depots: number } })._count.depots,
+        userCount: (tenant as unknown as { _count: { users: number } })._count
+          .users,
+        depotCount: (tenant as unknown as { _count: { depots: number } })._count
+          .depots,
         daysUntilExpiry,
       };
     });
@@ -277,33 +290,63 @@ export class AdminService {
 
     try {
       if (payment.method === PaymentMethod.MTN_MOMO && payment.operatorTxId) {
-        const status = await this.campayService.getTransactionStatus(payment.operatorTxId);
+        const status = await this.campayService.getTransactionStatus(
+          payment.operatorTxId,
+        );
 
         if (status.status === 'SUCCESSFUL' || status.status === 'SUCCESS') {
-          await this.paymentsService.markPaymentSuccess(payment.id, payment.operatorTxId);
-          return { success: true, message: 'Paiement confirme via Campay.', newStatus: PaymentStatus.SUCCESS };
+          await this.paymentsService.markPaymentSuccess(
+            payment.id,
+            payment.operatorTxId,
+          );
+          return {
+            success: true,
+            message: 'Paiement confirme via Campay.',
+            newStatus: PaymentStatus.SUCCESS,
+          };
         } else if (status.status === 'FAILED') {
           await this.paymentsService.markPaymentFailed(payment.id);
-          return { success: true, message: 'Paiement marque comme echoue.', newStatus: PaymentStatus.FAILED };
+          return {
+            success: true,
+            message: 'Paiement marque comme echoue.',
+            newStatus: PaymentStatus.FAILED,
+          };
         }
       }
 
       if (
-        (payment.method === PaymentMethod.VISA_CARD || payment.method === PaymentMethod.MASTERCARD) &&
+        (payment.method === PaymentMethod.VISA_CARD ||
+          payment.method === PaymentMethod.MASTERCARD) &&
         payment.stripePaymentIntentId
       ) {
-        const paymentIntent = await this.stripeService.retrievePaymentIntent(payment.stripePaymentIntentId);
+        const paymentIntent = await this.stripeService.retrievePaymentIntent(
+          payment.stripePaymentIntentId,
+        );
 
         if (paymentIntent.status === 'succeeded') {
-          await this.paymentsService.markPaymentSuccess(payment.id, paymentIntent.id);
-          return { success: true, message: 'Paiement confirme via Stripe.', newStatus: PaymentStatus.SUCCESS };
+          await this.paymentsService.markPaymentSuccess(
+            payment.id,
+            paymentIntent.id,
+          );
+          return {
+            success: true,
+            message: 'Paiement confirme via Stripe.',
+            newStatus: PaymentStatus.SUCCESS,
+          };
         } else if (paymentIntent.status === 'canceled') {
           await this.paymentsService.markPaymentFailed(payment.id);
-          return { success: true, message: 'Paiement marque comme annule.', newStatus: PaymentStatus.FAILED };
+          return {
+            success: true,
+            message: 'Paiement marque comme annule.',
+            newStatus: PaymentStatus.FAILED,
+          };
         }
       }
 
-      return { success: false, message: 'Statut toujours PENDING chez le provider.' };
+      return {
+        success: false,
+        message: 'Statut toujours PENDING chez le provider.',
+      };
     } catch (error) {
       return {
         success: false,

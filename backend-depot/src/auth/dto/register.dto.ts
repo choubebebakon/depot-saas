@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
@@ -31,7 +38,7 @@ export class RegisterDto {
 
   @ApiProperty({
     example: true,
-    description: "Acceptation obligatoire des CGU en vigueur.",
+    description: 'Acceptation obligatoire des CGU en vigueur.',
   })
   @IsBoolean()
   acceptTerms: boolean;

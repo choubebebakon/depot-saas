@@ -66,7 +66,6 @@ model Categorie {
 model Article {
   id                 String                     @id @default(uuid())
   designation        String
-  codeBarres         String?
   format             String                     @default("")
   prixVente          Float
   prixAchat          Float                      @default(0)
@@ -77,40 +76,41 @@ model Article {
   uniteParPalette    Int                        @default(120)
   familleId          String?
   marqueId           String?
-  categorieId        String?
   tenantId           String
   createdAt          DateTime                   @default(now())
+  codeBarres         String?
+  prixGros           Float?
+  unite              String                     @default("PIECE")
+  categorieId        String?
+  alimentations      AlimentationElevage[]
+  categorie          Categorie?                 @relation(fields: [categorieId], references: [id])
   famille            Famille?                   @relation(fields: [familleId], references: [id])
   marque             Marque?                    @relation(fields: [marqueId], references: [id])
-  categorie          Categorie?                 @relation(fields: [categorieId], references: [id])
   tenant             Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  codesBarres        CodeBarresArticle[]
   conditionnements   Conditionnement[]
+  consommationsHotel ConsommationHotel[]
+  recettes           IngredientRecette[]
   lignesChargement   LigneChargement[]
   lignesCommande     LigneCommandeFournisseur[]
+  lignesDevis        LigneDevis[]
+  lignesLivraisonBTP LigneLivraisonBTP[]
   lignesReception    LigneReception[]
-  piecesReparation   PieceReparation[]
   lignesTransfert    LigneTransfert[]
   lignesVentes       LigneVente[]
-  lots               LotStock[]
-  mouvements         MouvementStock[]
-  stocks             Stock[]
-  promotions         Promotion[]
-  lignesDevis        LigneDevis[]
-  medicament         Medicament?
-  telephone          Telephone?
-  produitCosmetique  ProduitCosmetique?
   livreDetail        LivreDetail?
-  rayons             RayonArticle[]
-  codesBarres        CodeBarresArticle[]
-  lignesLivraisonBTP LigneLivraisonBTP[]
+  lots               LotStock[]
+  medicament         Medicament?
+  mouvements         MouvementStock[]
   piecesGarage       PieceGarage[]
-  alimentations      AlimentationElevage[]
-  recettes           IngredientRecette[]
-  recettesProduit    Recette?
-  consommationsHotel ConsommationHotel[]
+  piecesReparation   PieceReparation[]
   prescriptions      Prescription[]
-  unite              String                     @default("PIECE")
-  prixGros           Float?
+  produitCosmetique  ProduitCosmetique?
+  promotions         Promotion[]
+  rayons             RayonArticle[]
+  recettesProduit    Recette?
+  stocks             Stock[]
+  telephone          Telephone?
 
   @@index([tenantId])
   @@index([familleId])
@@ -222,66 +222,62 @@ model LigneTransfert {
 
 model PieceReparation {
   id           String     @id @default(uuid())
+  reparationId String
   nom          String
-  prix         Float      @default(0) // Harmonisé sur 'prix'
   quantite     Int        @default(1)
+  prix         Float      @default(0)
   articleId    String
   article      Article    @relation(fields: [articleId], references: [id])
-  reparationId String
   reparation   Reparation @relation(fields: [reparationId], references: [id], onDelete: Cascade)
 }
 
 model Telephone {
-  id           String    @id @default(uuid())
+  id           String       @id @default(uuid())
   tenantId     String
-  articleId    String    @unique
-  imei         String    @unique
-  imei2        String?
+  articleId    String       @unique
+  imei         String       @unique
   marque       String
   modele       String
   couleur      String?
   stockage     String?
-  ram          String?
-  garantieMois Int       @default(12)
+  garantieMois Int          @default(12)
   dateAchat    DateTime?
+  vendu        Boolean      @default(false)
+  createdAt    DateTime     @default(now())
   dateVente    DateTime?
-  vendu        Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  article     Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  reparations Reparation[] // Le lien correct est ici
+  imei2        String?
+  ram          String?
+  updatedAt    DateTime     @updatedAt
+  reparations  Reparation[]
+  article      Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Reparation {
-  id           String           @id @default(uuid())
+  id           String            @id @default(uuid())
   tenantId     String
   clientId     String
-  telephoneId  String?
   imei         String?
   marque       String?
-  notes        String?
   modele       String?
   probleme     String
   diagnostic   String?
   montant      Float?
-  avance       Float            @default(0)
-  montantFinal Float            @default(0)
-  montantDevis Float? // Ajouté pour corriger l'erreur de ton service
-  statut       ReparationStatut @default(RECU)
+  statut       ReparationStatut  @default(RECU)
   technicienId String?
-  dateDepot    DateTime         @default(now())
+  dateDepot    DateTime          @default(now())
   dateRetrait  DateTime?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-
-  // Relations
-  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client    Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  telephone Telephone?        @relation(fields: [telephoneId], references: [id])
-  pieces    PieceReparation[]
+  avance       Float             @default(0)
+  createdAt    DateTime          @default(now())
+  montantDevis Float?
+  montantFinal Float             @default(0)
+  notes        String?
+  telephoneId  String?
+  updatedAt    DateTime          @updatedAt
+  pieces       PieceReparation[]
+  client       Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  telephone    Telephone?        @relation(fields: [telephoneId], references: [id])
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model CommandeFournisseur {
@@ -377,26 +373,26 @@ model Client {
   tenantId              String
   depotId               String?
   createdAt             DateTime               @default(now())
+  chantiers             Chantier[]
   depot                 Depot?                 @relation(fields: [depotId], references: [id])
   tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  dettes                DetteClient[]
-  portefeuilleConsignes PortefeuilleConsigne[]
-  ventes                Vente[]
-  credit                CreditClient?
-  devis                 Devis[]
-  chantiers             Chantier[]
-  ordonnances           Ordonnance[]
-  reparations           Reparation[]
-  ticketsPressing       TicketPressing[]
-  vehicules             VehiculeClient[]
-  fidelite              ProgrammeFidelite?
-  contratsLocation      ContratLocation[]
   colisExpedies         Colis[]
+  commandesSpeciales    CommandeSpeciale[]
+  contratsLocation      ContratLocation[]
+  credit                CreditClient?
+  dettes                DetteClient[]
+  devis                 Devis[]
   dossiersMedicaux      DossierMedical?
+  ordonnances           Ordonnance[]
+  portefeuilleConsignes PortefeuilleConsigne[]
+  fidelite              ProgrammeFidelite?
   rendezVousMedical     RendezVousMedical[]
   rdvSalon              RendezVousSalon[]
-  commandesSpeciales    CommandeSpeciale[]
+  reparations           Reparation[]
   reservationsHotel     ReservationHotel[]
+  ticketsPressing       TicketPressing[]
+  vehicules             VehiculeClient[]
+  ventes                Vente[]
 
   @@index([tenantId])
   @@index([depotId])
@@ -469,25 +465,24 @@ model MouvementConsigne {
   @@index([venteId])
   @@index([depotId])
 }
+
 model Fournisseur {
   id           String                 @id @default(uuid())
   nom          String
   telephone    String?
-  email        String?                // 🛠️ Ajouté pour le formulaire
-  adresse      String?                // 🛠️ Ajouté pour le formulaire
-  soldeInitial Float                  @default(0) // 🛠️ Ajouté pour la reprise de solde au démarrage
-  solde        Float                  @default(0) // Ton solde courant (comptabilité interne)
-  notes        String?                // 🛠️ Ajouté pour le champ "Notes optionnelles..."
+  solde        Float                  @default(0)
   tenantId     String
   depotId      String?
   createdAt    DateTime               @default(now())
-  
-  // Relations existantes conservées intactes
+  adresse      String?
+  email        String?
+  notes        String?
+  soldeInitial Float                  @default(0)
   commandes    CommandeFournisseur[]
   depot        Depot?                 @relation(fields: [depotId], references: [id])
   tenant       Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  receptions   ReceptionFournisseur[]
   medicaments  Medicament[]
+  receptions   ReceptionFournisseur[]
 
   @@index([tenantId])
   @@index([depotId])
@@ -735,108 +730,107 @@ model ParametreCommission {
 }
 
 model Tenant {
-  id               String           @id @default(uuid())
-  name             String?
-  nomEntreprise    String?
-  emailPatron      String?
-  telephone        String?
-  status           TenantStatus     @default(TRIAL)
-  statutAbonnement StatutAbonnement @default(TRIAL)
-  plan             String?
-  planAbonnement   PlanAbonnement?
-  planType         PlanType         @default(FREE)
-  subscriptionEnd  DateTime?
-  dateExpiration   DateTime?
-  dateEssaiFin     DateTime?
-  maxDepots        Int              @default(5)
-  lastPaymentId    String?
-  estActif         Boolean          @default(true)
-  graceUntil       DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  slogan           String?
-  adresse          String?
-  logo             String?
-  messageFin       String?          @default("Merci de votre fidélité !")
-  metier           MetierType       @default(DEPOT_BOISSONS)
-
-  depots               Depot[]
-  users                User[]
-  payments             Payment[]
-  ventes               Vente[]
-  notifications        Notification[]
+  id                   String                   @id @default(uuid())
+  name                 String?
+  nomEntreprise        String?
+  emailPatron          String?
+  telephone            String?
+  status               TenantStatus             @default(TRIAL)
+  statutAbonnement     StatutAbonnement         @default(TRIAL)
+  plan                 String?
+  planAbonnement       PlanAbonnement?
+  planType             PlanType                 @default(FREE)
+  subscriptionEnd      DateTime?
+  dateExpiration       DateTime?
+  dateEssaiFin         DateTime?
+  maxDepots            Int                      @default(5)
+  lastPaymentId        String?
+  estActif             Boolean                  @default(true)
+  graceUntil           DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  slogan               String?
+  adresse              String?
+  logo                 String?
+  messageFin           String?                  @default("Merci de votre fidélité !")
+  metier               MetierType               @default(DEPOT_BOISSONS)
+  alimentations        AlimentationElevage[]
   articles             Article[]
-  mouvements           MouvementStock[]
-  paiements            PaiementSouscription[]
+  biens                BienImmobilier[]
+  categories           Categorie[]
+  chambres             Chambre[]
+  chantiers            Chantier[]
   clients              Client[]
+  codesBarres          CodeBarresArticle[]
+  colis                Colis[]
+  commandesRestaurant  Commande[]
+  commandes            CommandeFournisseur[]
+  commandesSpeciales   CommandeSpeciale[]
+  commissions          Commission[]
+  compositionsGlace    CompositionGlace[]
+  conditionnements     Conditionnement[]
+  carburants           ConsommationCarburant[]
+  consultations        Consultation[]
+  contratsLocation     ContratLocation[]
+  creditsClients       CreditClient[]
+  depenses             Depense[]
+  depots               Depot[]
+  devis                Devis[]
+  dossiersMedicaux     DossierMedical[]
+  evenementsElevage    EvenementElevage[]
   familles             Famille[]
+  fichesTravaux        FicheTravailGarage[]
+  fournisseurs         Fournisseur[]
+  interventionsBien    InterventionBien[]
+  livraisonsBTP        LivraisonBTP[]
+  livresDetails        LivreDetail[]
+  lotsElevage          LotElevage[]
   lots                 LotStock[]
   maintenances         MaintenanceTricycle[]
-  carburants           ConsommationCarburant[]
-  commissions          Commission[]
-  conditionnements     Conditionnement[]
-  parametresCommission ParametreCommission[]
   marques              Marque[]
-  categories           Categorie[]
-  fournisseurs         Fournisseur[]
-  receptions           ReceptionFournisseur[]
-  commandes            CommandeFournisseur[]
-  tournees             Tournee[]
-  tricycles            Tricycle[]
-  sessionsCaisse       SessionCaisse[]
-  depenses             Depense[]
-  typesConsigne        TypeConsigneConfig[]
-  transferts           TransfertStock[]
-  promotions           Promotion[]
-  creditsClients       CreditClient[]
-  devis                Devis[]
-  chantiers            Chantier[]
   medicaments          Medicament[]
-  ordonnances          Ordonnance[]
-  tables               Table[]
-  commandesRestaurant  Commande[]
-  plats                Plat[]
-  telephones           Telephone[]
-  reparations          Reparation[]
-  vehiculesBTP         VehiculeBTP[]
-  livraisonsBTP        LivraisonBTP[]
-  ticketsPressing      TicketPressing[]
-  vehiculesClient      VehiculeClient[]
-  fichesTravaux        FicheTravailGarage[]
-  lotsElevage          LotElevage[]
-  evenementsElevage    EvenementElevage[]
-  alimentations        AlimentationElevage[]
-  prestations          Prestation[]
-  rendezVousSalon      RendezVousSalon[]
-  produitsCosmetiques  ProduitCosmetique[]
-  programmesFidelite   ProgrammeFidelite[]
-  recettes             Recette[]
-  productionsJour      ProductionJour[]
-  compositionsGlace    CompositionGlace[]
-  livresDetails        LivreDetail[]
-  commandesSpeciales   CommandeSpeciale[]
-  dossiersMedicaux     DossierMedical[]
-  consultations        Consultation[]
-  rendezVousMedical    RendezVousMedical[]
-  vehiculesTransport   VehiculeTransport[]
-  colis                Colis[]
-  trajets              Trajet[]
-  biens                BienImmobilier[]
-  contratsLocation     ContratLocation[]
-  paiementsLoyer       PaiementLoyer[]
-  interventionsBien    InterventionBien[]
-  rayons               Rayon[]
-  codesBarres          CodeBarresArticle[]
-  typesChambre         TypeChambre[]
-  chambres             Chambre[]
-  reservationsHotel    ReservationHotel[]
+  mouvements           MouvementStock[]
+  notifications        Notification[]
   notifPreferences     NotificationPreference[]
   notifTemplates       NotificationTemplate[]
+  ordonnances          Ordonnance[]
+  paiementsLoyer       PaiementLoyer[]
+  paiements            PaiementSouscription[]
+  parametresCommission ParametreCommission[]
+  payments             Payment[]
+  plats                Plat[]
+  prestations          Prestation[]
+  productionsJour      ProductionJour[]
+  produitsCosmetiques  ProduitCosmetique[]
+  programmesFidelite   ProgrammeFidelite[]
+  promotions           Promotion[]
+  rayons               Rayon[]
+  receptions           ReceptionFournisseur[]
+  recettes             Recette[]
+  rendezVousMedical    RendezVousMedical[]
+  rendezVousSalon      RendezVousSalon[]
+  reparations          Reparation[]
+  reservationsHotel    ReservationHotel[]
+  sessionsCaisse       SessionCaisse[]
+  tables               Table[]
+  telephones           Telephone[]
+  ticketsPressing      TicketPressing[]
+  tournees             Tournee[]
+  trajets              Trajet[]
+  transferts           TransfertStock[]
+  tricycles            Tricycle[]
+  typesChambre         TypeChambre[]
+  typesConsigne        TypeConsigneConfig[]
+  users                User[]
+  vehiculesBTP         VehiculeBTP[]
+  vehiculesClient      VehiculeClient[]
+  vehiculesTransport   VehiculeTransport[]
+  ventes               Vente[]
 }
 
 model User {
-  id               String                  @id @default(uuid())
   isActive         Boolean                 @default(true)
+  id               String                  @id @default(uuid())
   email            String                  @unique
   password         String
   refreshTokenHash String?
@@ -848,23 +842,23 @@ model User {
   updatedAt        DateTime                @updatedAt
   commandesCreees  CommandeFournisseur[]
   commissions      Commission[]
+  notifications    Notification[]
+  notifPreference  NotificationPreference?
   refreshTokens    RefreshToken[]
   sessionsCaisse   SessionCaisse[]
   tourneesOuvertes Tournee[]
   depot            Depot?                  @relation(fields: [depotId], references: [id])
   tenant           Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   ventesCreees     Vente[]                 @relation("VenteCreateur")
-  notifications    Notification[]
-  notifPreference  NotificationPreference?
 
   @@index([tenantId])
   @@index([depotId])
 }
 
 model Depot {
-  id                    String                  @id @default(uuid())
   isArchived            Boolean                 @default(false)
   updatedAt             DateTime                @updatedAt
+  id                    String                  @id @default(uuid())
   nom                   String
   adresse               String
   emplacement           String
@@ -931,6 +925,989 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Notification {
+  id             String         @id @default(uuid())
+  type           NotifType
+  title          String?
+  message        String?
+  isRead         Boolean        @default(false)
+  isSent         Boolean        @default(false)
+  sentAt         DateTime?
+  createdAt      DateTime       @default(now())
+  tenantId       String
+  userId         String?
+  category       NotifCategory  @default(SYSTEM)
+  priority       NotifPriority  @default(MEDIUM)
+  channel        NotifChannel   @default(IN_APP)
+  actionUrl      String?
+  actionLabel    String?
+  metadata       Json?
+  expiresAt      DateTime?
+  deliveryStatus DeliveryStatus @default(PENDING)
+  retryCount     Int            @default(0)
+  groupKey       String?
+  updatedAt      DateTime       @updatedAt
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user           User?          @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, isRead, createdAt])
+  @@index([tenantId, userId, priority])
+  @@index([groupKey])
+}
+
+model NotificationPreference {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  userId             String   @unique
+  inAppEnabled       Boolean  @default(true)
+  emailEnabled       Boolean  @default(true)
+  whatsappEnabled    Boolean  @default(false)
+  pushEnabled        Boolean  @default(false)
+  smsEnabled         Boolean  @default(false)
+  silenceStart       String?  @default("22:00")
+  silenceEnd         String?  @default("07:00")
+  disabledCategories Json?    @default("[]")
+  dailyDigest        Boolean  @default(false)
+  digestHour         Int      @default(8)
+  updatedAt          DateTime @updatedAt
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model NotificationTemplate {
+  id         String       @id @default(uuid())
+  tenantId   String?
+  type       NotifType
+  channel    NotifChannel
+  langue     String       @default("fr")
+  titleTpl   String
+  messageTpl String
+  actif      Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  tenant     Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([type, channel, langue])
+  @@index([tenantId])
+}
+
+model Promotion {
+  id        String        @id @default(uuid())
+  tenantId  String
+  articleId String
+  nom       String
+  type      PromotionType @default(POURCENTAGE)
+  valeur    Float
+  prixPromo Float
+  dateDebut DateTime
+  dateFin   DateTime
+  actif     Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  article   Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([articleId])
+  @@index([actif, dateFin])
+}
+
+model CreditClient {
+  id         String             @id @default(uuid())
+  tenantId   String
+  clientId   String             @unique
+  solde      Float              @default(0)
+  plafond    Float              @default(50000)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  client     Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  historique HistoriqueCredit[]
+
+  @@index([tenantId])
+}
+
+model Devis {
+  id         String       @id @default(uuid())
+  tenantId   String
+  clientId   String
+  chantierId String?
+  montantHT  Float
+  montantTTC Float
+  statut     DevisStatut  @default(EN_ATTENTE)
+  dateExpiry DateTime
+  createdAt  DateTime     @default(now())
+  chantier   Chantier?    @relation(fields: [chantierId], references: [id])
+  client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lignes     LigneDevis[]
+}
+
+model LigneDevis {
+  id        String  @id @default(uuid())
+  devisId   String
+  articleId String
+  quantite  Float
+  unite     String
+  prixUnit  Float
+  article   Article @relation(fields: [articleId], references: [id])
+  devis     Devis   @relation(fields: [devisId], references: [id], onDelete: Cascade)
+}
+
+model Chantier {
+  id         String         @id @default(uuid())
+  tenantId   String
+  clientId   String
+  nom        String
+  adresse    String?
+  statut     String         @default("EN_COURS")
+  dateDebut  DateTime
+  dateFin    DateTime?
+  createdAt  DateTime       @default(now())
+  client     Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  devis      Devis[]
+  livraisons LivraisonBTP[]
+}
+
+model HistoriqueCredit {
+  id             String       @id @default(uuid())
+  creditClientId String
+  montant        Float
+  type           CreditType
+  description    String?
+  createdAt      DateTime     @default(now())
+  creditClient   CreditClient @relation(fields: [creditClientId], references: [id], onDelete: Cascade)
+
+  @@index([creditClientId])
+}
+
+model Medicament {
+  id               String            @id @default(uuid())
+  tenantId         String
+  articleId        String            @unique
+  numeroLot        String
+  dateExpiration   DateTime
+  dosage           String?
+  famille          String
+  surOrdonnance    Boolean           @default(false)
+  fournisseurId    String?
+  createdAt        DateTime          @default(now())
+  lignesOrdonnance LigneOrdonnance[]
+  article          Article           @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  fournisseur      Fournisseur?      @relation(fields: [fournisseurId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Ordonnance {
+  id        String            @id @default(uuid())
+  tenantId  String
+  clientId  String
+  medecin   String?
+  photoUrl  String?
+  dateEmise DateTime
+  statut    String            @default("EN_COURS")
+  createdAt DateTime          @default(now())
+  lignes    LigneOrdonnance[]
+  client    Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model LigneOrdonnance {
+  id           String     @id @default(uuid())
+  ordonnanceId String
+  medicamentId String
+  quantite     Int
+  posologie    String?
+  medicament   Medicament @relation(fields: [medicamentId], references: [id])
+  ordonnance   Ordonnance @relation(fields: [ordonnanceId], references: [id], onDelete: Cascade)
+}
+
+model Table {
+  id        String      @id @default(uuid())
+  tenantId  String
+  numero    String
+  capacite  Int
+  statut    TableStatut @default(LIBRE)
+  nom       String?
+  commandes Commande[]
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, numero])
+}
+
+model Commande {
+  id               String            @id @default(uuid())
+  tenantId         String
+  tableId          String?
+  clientId         String?
+  statut           CommandeStatut    @default(EN_ATTENTE)
+  type             CommandeType      @default(SUR_PLACE)
+  total            Float
+  createdAt        DateTime          @default(now())
+  notes            String?
+  serveurId        String?
+  table            Table?            @relation(fields: [tableId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  compositionGlace CompositionGlace?
+  lignes           LigneCommande[]
+}
+
+model LigneCommande {
+  id         String   @id @default(uuid())
+  commandeId String
+  platId     String
+  quantite   Int
+  note       String?
+  statut     String   @default("EN_ATTENTE")
+  commande   Commande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+  plat       Plat     @relation(fields: [platId], references: [id])
+}
+
+model Plat {
+  id             String          @id @default(uuid())
+  tenantId       String
+  nom            String
+  prix           Float
+  categorie      String
+  disponible     Boolean         @default(true)
+  tempsPrep      Int?
+  lignesCommande LigneCommande[]
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Rayon {
+  id        String         @id @default(uuid())
+  tenantId  String
+  nom       String
+  couleur   String?
+  ordre     Int            @default(0)
+  actif     Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  articles  RayonArticle[]
+
+  @@index([tenantId])
+}
+
+model RayonArticle {
+  id        String  @id @default(uuid())
+  rayonId   String
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  rayon     Rayon   @relation(fields: [rayonId], references: [id], onDelete: Cascade)
+
+  @@unique([rayonId, articleId])
+}
+
+model CodeBarresArticle {
+  id        String  @id @default(uuid())
+  tenantId  String
+  articleId String
+  code      String  @unique
+  type      String  @default("EAN13")
+  actif     Boolean @default(true)
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([code])
+}
+
+model VehiculeBTP {
+  id              String         @id @default(uuid())
+  tenantId        String
+  immatriculation String
+  type            String
+  capaciteKg      Float?
+  disponible      Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  livraisons      LivraisonBTP[]
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model LivraisonBTP {
+  id            String              @id @default(uuid())
+  tenantId      String
+  chantierId    String
+  vehiculeId    String?
+  chauffeur     String?
+  reference     String              @unique
+  statut        LivraisonBTPStatut  @default(PLANIFIEE)
+  datePlanifiee DateTime?
+  dateLivraison DateTime?
+  notes         String?
+  createdAt     DateTime            @default(now())
+  lignes        LigneLivraisonBTP[]
+  chantier      Chantier            @relation(fields: [chantierId], references: [id])
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vehicule      VehiculeBTP?        @relation(fields: [vehiculeId], references: [id])
+
+  @@index([tenantId])
+  @@index([chantierId])
+}
+
+model LigneLivraisonBTP {
+  id          String       @id @default(uuid())
+  livraisonId String
+  articleId   String
+  quantite    Float
+  unite       String       @default("PIECE")
+  article     Article      @relation(fields: [articleId], references: [id])
+  livraison   LivraisonBTP @relation(fields: [livraisonId], references: [id], onDelete: Cascade)
+
+  @@index([livraisonId])
+}
+
+model TicketPressing {
+  id           String               @id @default(uuid())
+  tenantId     String
+  clientId     String
+  reference    String               @unique
+  statut       TicketPressingStatut @default(RECU)
+  dateDepot    DateTime             @default(now())
+  dateRetrait  DateTime?
+  dateRetirée DateTime?
+  montantTotal Float                @default(0)
+  avance       Float                @default(0)
+  notes        String?
+  createdAt    DateTime             @default(now())
+  client       Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vetements    VetementPressing[]
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([statut])
+}
+
+model VetementPressing {
+  id           String         @id @default(uuid())
+  ticketId     String
+  designation  String
+  couleur      String?
+  marque       String?
+  etat         EtatVetement   @default(RECU)
+  typeService  String
+  prix         Float
+  observations String?
+  ticket       TicketPressing @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+model VehiculeClient {
+  id              String               @id @default(uuid())
+  tenantId        String
+  clientId        String
+  immatriculation String
+  marque          String
+  modele          String
+  annee           Int?
+  couleur         String?
+  kilometrage     Float?
+  carburant       String?
+  createdAt       DateTime             @default(now())
+  fichesTravaux   FicheTravailGarage[]
+  client          Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([immatriculation])
+}
+
+model FicheTravailGarage {
+  id             String         @id @default(uuid())
+  tenantId       String
+  vehiculeId     String
+  reference      String         @unique
+  problemeClient String
+  diagnosticTech String?
+  travaux        String?
+  montantPieces  Float          @default(0)
+  montantMO      Float          @default(0)
+  montantTotal   Float          @default(0)
+  avance         Float          @default(0)
+  statut         GarageStatut   @default(RECU)
+  technicienId   String?
+  dateEntree     DateTime       @default(now())
+  dateSortiePrev DateTime?
+  dateSortie     DateTime?
+  notes          String?
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vehicule       VehiculeClient @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  pieces         PieceGarage[]
+
+  @@index([tenantId])
+  @@index([statut])
+}
+
+model PieceGarage {
+  id          String             @id @default(uuid())
+  ficheId     String
+  articleId   String?
+  designation String
+  reference   String?
+  quantite    Int                @default(1)
+  prix        Float
+  total       Float
+  article     Article?           @relation(fields: [articleId], references: [id])
+  fiche       FicheTravailGarage @relation(fields: [ficheId], references: [id], onDelete: Cascade)
+
+  @@index([ficheId])
+}
+
+model LotElevage {
+  id              String                @id @default(uuid())
+  tenantId        String
+  nom             String
+  espece          String
+  race            String?
+  dateAcquisition DateTime
+  nombreInitial   Int
+  nombreActuel    Int
+  poidsUnitMoyen  Float?
+  statut          ElevageStatut         @default(ACTIF)
+  notes           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  alimentations   AlimentationElevage[]
+  evenements      EvenementElevage[]
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([statut])
+}
+
+model EvenementElevage {
+  id       String               @id @default(uuid())
+  tenantId String
+  lotId    String
+  type     EvenementElevageType
+  quantite Int
+  poids    Float?
+  montant  Float?
+  notes    String?
+  date     DateTime             @default(now())
+  lot      LotElevage           @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([lotId])
+}
+
+model AlimentationElevage {
+  id         String     @id @default(uuid())
+  tenantId   String
+  lotId      String
+  articleId  String
+  quantiteKg Float
+  date       DateTime   @default(now())
+  notes      String?
+  article    Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  lot        LotElevage @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([lotId])
+}
+
+model Prestation {
+  id          String     @id @default(uuid())
+  tenantId    String
+  nom         String
+  description String?
+  prix        Float
+  dureeMin    Int?
+  categorie   String?
+  disponible  Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  lignes      LigneRdv[]
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model RendezVousSalon {
+  id           String     @id @default(uuid())
+  tenantId     String
+  clientId     String?
+  nomClient    String
+  telephone    String?
+  employeId    String?
+  dateHeure    DateTime
+  statut       RdvStatut  @default(CONFIRME)
+  montantTotal Float      @default(0)
+  notes        String?
+  createdAt    DateTime   @default(now())
+  lignes       LigneRdv[]
+  client       Client?    @relation(fields: [clientId], references: [id])
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([dateHeure])
+  @@index([statut])
+}
+
+model LigneRdv {
+  id           String          @id @default(uuid())
+  rdvId        String
+  prestationId String
+  prix         Float
+  prestation   Prestation      @relation(fields: [prestationId], references: [id])
+  rdv          RendezVousSalon @relation(fields: [rdvId], references: [id], onDelete: Cascade)
+
+  @@index([rdvId])
+}
+
+model ProduitCosmetique {
+  id             String  @id @default(uuid())
+  tenantId       String
+  articleId      String  @unique
+  marque         String
+  contenance     String?
+  typesPeau      String?
+  ingredients    String?
+  certifications String?
+  categorie      String
+  article        Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tenant         Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model ProgrammeFidelite {
+  id           String               @id @default(uuid())
+  tenantId     String
+  clientId     String               @unique
+  points       Int                  @default(0)
+  totalDepense Float                @default(0)
+  niveau       String               @default("BRONZE")
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  historique   HistoriqueFidelite[]
+  client       Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model HistoriqueFidelite {
+  id         String            @id @default(uuid())
+  fideliteId String
+  points     Int
+  motif      String
+  createdAt  DateTime          @default(now())
+  fidelite   ProgrammeFidelite @relation(fields: [fideliteId], references: [id], onDelete: Cascade)
+
+  @@index([fideliteId])
+}
+
+model Recette {
+  id            String              @id @default(uuid())
+  tenantId      String
+  articleId     String              @unique
+  nom           String
+  instructions  String?
+  tempsPrep     Int?
+  tempsCuisson  Int?
+  temperature   Int?
+  portionsUnite Int                 @default(1)
+  createdAt     DateTime            @default(now())
+  ingredients   IngredientRecette[]
+  productions   ProductionJour[]
+  article       Article             @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model IngredientRecette {
+  id        String  @id @default(uuid())
+  recetteId String
+  articleId String
+  quantite  Float
+  unite     String
+  article   Article @relation(fields: [articleId], references: [id])
+  recette   Recette @relation(fields: [recetteId], references: [id], onDelete: Cascade)
+
+  @@index([recetteId])
+}
+
+model ProductionJour {
+  id               String   @id @default(uuid())
+  tenantId         String
+  recetteId        String
+  date             DateTime @default(now())
+  quantiteProduite Int
+  quantiteVendue   Int      @default(0)
+  quantiteInvendue Int      @default(0)
+  coutProduction   Float?
+  notes            String?
+  recette          Recette  @relation(fields: [recetteId], references: [id], onDelete: Cascade)
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([date])
+}
+
+model CompositionGlace {
+  id          String   @id @default(uuid())
+  tenantId    String
+  commandeId  String   @unique
+  contenant   String
+  parfums     String
+  supplements String?
+  prix        Float
+  commande    Commande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model LivreDetail {
+  id            String  @id @default(uuid())
+  tenantId      String
+  articleId     String  @unique
+  isbn          String? @unique
+  auteur        String?
+  editeur       String?
+  anneeParution Int?
+  genre         String?
+  langue        String? @default("FR")
+  nbPages       Int?
+  article       Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model CommandeSpeciale {
+  id           String                 @id @default(uuid())
+  tenantId     String
+  clientId     String
+  designation  String
+  isbn         String?
+  quantite     Int                    @default(1)
+  statut       CommandeSpecialeStatut @default(EN_ATTENTE)
+  dateCommande DateTime               @default(now())
+  dateArrivee  DateTime?
+  notes        String?
+  client       Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant       Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([statut])
+}
+
+model DossierMedical {
+  id                String         @id @default(uuid())
+  tenantId          String
+  clientId          String         @unique
+  groupeSanguin     String?
+  allergies         String?
+  antecedents       String?
+  traitementEnCours String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  consultations     Consultation[]
+  client            Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model Consultation {
+  id            String         @id @default(uuid())
+  tenantId      String
+  dossierId     String
+  medecinId     String?
+  specialite    String?
+  motif         String
+  examen        String?
+  diagnostic    String?
+  montant       Float          @default(0)
+  statut        ConsultStatut  @default(EN_COURS)
+  date          DateTime       @default(now())
+  notes         String?
+  dossier       DossierMedical @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prescriptions Prescription[]
+
+  @@index([tenantId])
+  @@index([dossierId])
+}
+
+model Prescription {
+  id             String       @id @default(uuid())
+  consultationId String
+  articleId      String?
+  medicament     String
+  dosage         String?
+  posologie      String?
+  duree          String?
+  article        Article?     @relation(fields: [articleId], references: [id])
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId])
+}
+
+model RendezVousMedical {
+  id         String           @id @default(uuid())
+  tenantId   String
+  clientId   String
+  medecinId  String?
+  specialite String?
+  dateHeure  DateTime
+  motif      String?
+  statut     RdvMedicalStatut @default(PLANIFIE)
+  notes      String?
+  createdAt  DateTime         @default(now())
+  client     Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([dateHeure])
+}
+
+model VehiculeTransport {
+  id              String   @id @default(uuid())
+  tenantId        String
+  immatriculation String
+  type            String
+  marque          String?
+  modele          String?
+  capaciteKg      Float?
+  capaciteM3      Float?
+  chauffeurId     String?
+  disponible      Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  trajets         Trajet[]
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model Colis {
+  id            String      @id @default(uuid())
+  tenantId      String
+  expediteurId  String?
+  destinataire  String
+  telephoneDest String?
+  adresseDest   String
+  villeDest     String
+  poids         Float?
+  dimensions    String?
+  description   String?
+  valeur        Float?
+  reference     String      @unique
+  statut        ColisStatut @default(ENREGISTRE)
+  montant       Float       @default(0)
+  createdAt     DateTime    @default(now())
+  trajetId      String?
+  expediteur    Client?     @relation(fields: [expediteurId], references: [id])
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  trajet        Trajet?     @relation(fields: [trajetId], references: [id])
+
+  @@index([tenantId])
+  @@index([statut])
+  @@index([reference])
+}
+
+model Trajet {
+  id           String             @id @default(uuid())
+  tenantId     String
+  vehiculeId   String?
+  chauffeurId  String?
+  villeDepart  String
+  villeArrivee String
+  dateDepart   DateTime
+  dateArrivee  DateTime?
+  distance     Float?
+  montant      Float              @default(0)
+  statut       TrajetStatut       @default(PLANIFIE)
+  notes        String?
+  createdAt    DateTime           @default(now())
+  colis        Colis[]
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vehicule     VehiculeTransport? @relation(fields: [vehiculeId], references: [id])
+
+  @@index([tenantId])
+  @@index([statut])
+}
+
+model BienImmobilier {
+  id            String             @id @default(uuid())
+  tenantId      String
+  reference     String             @unique
+  type          BienType
+  adresse       String
+  ville         String
+  surface       Float?
+  nbPieces      Int?
+  etage         Int?
+  loyer         Float
+  charges       Float?
+  depot         Float?
+  disponible    Boolean            @default(true)
+  description   String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contrats      ContratLocation[]
+  interventions InterventionBien[]
+
+  @@index([tenantId])
+  @@index([disponible])
+}
+
+model ContratLocation {
+  id          String          @id @default(uuid())
+  tenantId    String
+  bienId      String
+  locataireId String
+  dateDebut   DateTime
+  dateFin     DateTime?
+  loyer       Float
+  charges     Float?
+  depot       Float?
+  statut      ContratStatut   @default(ACTIF)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  bien        BienImmobilier  @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  locataire   Client          @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paiements   PaiementLoyer[]
+
+  @@index([tenantId])
+  @@index([statut])
+  @@index([bienId])
+}
+
+model PaiementLoyer {
+  id           String              @id @default(uuid())
+  tenantId     String
+  contratId    String
+  mois         String
+  montant      Float
+  charges      Float?              @default(0)
+  modePaiement ModePaiement        @default(CASH)
+  statut       PaiementLoyerStatut @default(PAYE)
+  datePaiement DateTime            @default(now())
+  dateEcheance DateTime
+  notes        String?
+  contrat      ContratLocation     @relation(fields: [contratId], references: [id], onDelete: Cascade)
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([contratId, mois])
+  @@index([tenantId])
+  @@index([statut])
+}
+
+model InterventionBien {
+  id          String         @id @default(uuid())
+  tenantId    String
+  bienId      String
+  type        String
+  description String
+  cout        Float?
+  date        DateTime       @default(now())
+  statut      String         @default("EFFECTUEE")
+  bien        BienImmobilier @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([bienId])
+}
+
+model TypeChambre {
+  id          String    @id @default(uuid())
+  tenantId    String
+  nom         String
+  description String?
+  capacite    Int       @default(1)
+  prixNuit    Float
+  equipements String?
+  imageUrl    String?
+  actif       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  chambres    Chambre[]
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model Chambre {
+  id            String             @id @default(uuid())
+  tenantId      String
+  numero        String
+  etage         Int?
+  typeChambreId String
+  statut        ChambreStatut      @default(LIBRE)
+  notes         String?
+  createdAt     DateTime           @default(now())
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  typeChambre   TypeChambre        @relation(fields: [typeChambreId], references: [id])
+  reservations  ReservationHotel[]
+
+  @@unique([tenantId, numero])
+  @@index([tenantId])
+  @@index([statut])
+}
+
+model ReservationHotel {
+  id            String                 @id @default(uuid())
+  tenantId      String
+  clientId      String?
+  chambreId     String
+  reference     String                 @unique
+  nomClient     String
+  telephone     String?
+  email         String?
+  dateArrivee   DateTime
+  dateDepart    DateTime
+  nbNuits       Int
+  nbPersonnes   Int                    @default(1)
+  prixTotal     Float
+  avance        Float                  @default(0)
+  modePaiement  ModePaiement           @default(CASH)
+  statut        ReservationHotelStatut @default(CONFIRMEE)
+  source        String?
+  notes         String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  consommations ConsommationHotel[]
+  chambre       Chambre                @relation(fields: [chambreId], references: [id])
+  client        Client?                @relation(fields: [clientId], references: [id])
+  tenant        Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([statut])
+  @@index([dateArrivee])
+  @@index([chambreId])
+}
+
+model ConsommationHotel {
+  id            String           @id @default(uuid())
+  reservationId String
+  articleId     String?
+  designation   String
+  quantite      Int              @default(1)
+  prix          Float
+  total         Float
+  date          DateTime         @default(now())
+  article       Article?         @relation(fields: [articleId], references: [id])
+  reservation   ReservationHotel @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
 }
 
 enum StatutVente {
@@ -1092,11 +2069,9 @@ enum NotifType {
   PAYMENT_SUCCESS
   PAYMENT_FAILED
   SYSTEM
-  // Stock
   STOCK_CRITIQUE
   STOCK_RUPTURE
   STOCK_EXPIRATION
-  // Métier
   RESERVATION_NOUVELLE
   RESERVATION_ANNULEE
   COMMANDE_NOUVELLE
@@ -1110,10 +2085,8 @@ enum NotifType {
   RDV_ANNULE
   VACCINATION_PREVUE
   LIVRAISON_TERMINEE
-  // Sécurité
   CONNEXION_SUSPECTE
   TENTATIVE_ECHEC
-  // IA
   ALERTE_PREDICTIVE
   RAPPORT_JOURNALIER
 }
@@ -1173,78 +2146,6 @@ enum PaymentMethod {
   MASTERCARD
 }
 
-model Notification {
-  id             String         @id @default(uuid())
-  type           NotifType
-  title          String?
-  message        String?
-  isRead         Boolean        @default(false)
-  isSent         Boolean        @default(false)
-  sentAt         DateTime?
-  tenantId       String
-  createdAt      DateTime       @default(now())
-  userId         String?
-  category       NotifCategory  @default(SYSTEM)
-  priority       NotifPriority  @default(MEDIUM)
-  channel        NotifChannel   @default(IN_APP)
-  actionUrl      String?
-  actionLabel    String?
-  metadata       Json?
-  expiresAt      DateTime?
-  deliveryStatus DeliveryStatus @default(PENDING)
-  retryCount     Int            @default(0)
-  groupKey       String?
-  updatedAt      DateTime       @updatedAt
-  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([tenantId])
-  @@index([tenantId, isRead, createdAt])
-  @@index([tenantId, userId, priority])
-  @@index([groupKey])
-}
-
-model NotificationPreference {
-  id                 String   @id @default(uuid())
-  tenantId           String
-  userId             String   @unique
-  inAppEnabled       Boolean  @default(true)
-  emailEnabled       Boolean  @default(true)
-  whatsappEnabled    Boolean  @default(false)
-  pushEnabled        Boolean  @default(false)
-  smsEnabled         Boolean  @default(false)
-  silenceStart       String?  @default("22:00")
-  silenceEnd         String?  @default("07:00")
-  disabledCategories Json?    @default("[]")
-  dailyDigest        Boolean  @default(false)
-  digestHour         Int      @default(8)
-  updatedAt          DateTime @updatedAt
-  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-}
-
-model NotificationTemplate {
-  id         String       @id @default(uuid())
-  tenantId   String?
-  type       NotifType
-  channel    NotifChannel
-  langue     String       @default("fr")
-  titleTpl   String
-  messageTpl String
-  actif      Boolean      @default(true)
-  createdAt  DateTime     @default(now())
-  tenant     Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([type, channel, langue])
-  @@index([tenantId])
-}
-
-// ═════════════════════════════════════════════════════════════════
-// GESTOCK - NOUVEAUX MÉTIERS & BOUTIQUE INTÉGRÉS
-// ═════════════════════════════════════════════════════════════════
-
 enum MetierType {
   DEPOT_BOISSONS
   BOUTIQUE
@@ -1268,89 +2169,10 @@ enum MetierType {
   HOTEL
 }
 
-model Promotion {
-  id        String        @id @default(uuid())
-  tenantId  String
-  articleId String
-  nom       String
-  type      PromotionType @default(POURCENTAGE)
-  valeur    Float
-  prixPromo Float
-  dateDebut DateTime
-  dateFin   DateTime
-  actif     Boolean       @default(true)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  article   Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([articleId])
-  @@index([actif, dateFin])
-}
-
 enum PromotionType {
   POURCENTAGE
   MONTANT_FIXE
   PRIX_FIXE
-}
-
-model CreditClient {
-  id         String             @id @default(uuid())
-  tenantId   String
-  clientId   String             @unique
-  solde      Float              @default(0)
-  plafond    Float              @default(50000)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client     Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  historique HistoriqueCredit[]
-
-  @@index([tenantId])
-}
-
-model Devis {
-  id         String       @id @default(uuid())
-  tenantId   String
-  clientId   String
-  chantierId String?
-  montantHT  Float
-  montantTTC Float
-  statut     DevisStatut  @default(EN_ATTENTE)
-  dateExpiry DateTime
-  lignes     LigneDevis[]
-  createdAt  DateTime     @default(now())
-  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  chantier   Chantier?    @relation(fields: [chantierId], references: [id])
-}
-
-model LigneDevis {
-  id        String  @id @default(uuid())
-  devisId   String
-  articleId String
-  quantite  Float
-  unite     String
-  prixUnit  Float
-  devis     Devis   @relation(fields: [devisId], references: [id], onDelete: Cascade)
-  article   Article @relation(fields: [articleId], references: [id])
-}
-
-model Chantier {
-  id         String         @id @default(uuid())
-  tenantId   String
-  clientId   String
-  nom        String
-  adresse    String?
-  statut     String         @default("EN_COURS")
-  dateDebut  DateTime
-  dateFin    DateTime?
-  createdAt  DateTime       @default(now())
-  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client     Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  devis      Devis[]
-  livraisons LivraisonBTP[]
 }
 
 enum DevisStatut {
@@ -1358,59 +2180,6 @@ enum DevisStatut {
   ACCEPTE
   REFUSE
   CONVERTI
-}
-
-model HistoriqueCredit {
-  id             String       @id @default(uuid())
-  creditClientId String
-  montant        Float
-  type           CreditType
-  description    String?
-  createdAt      DateTime     @default(now())
-  creditClient   CreditClient @relation(fields: [creditClientId], references: [id], onDelete: Cascade)
-
-  @@index([creditClientId])
-}
-
-model Medicament {
-  id               String            @id @default(uuid())
-  tenantId         String
-  articleId        String            @unique
-  numeroLot        String
-  dateExpiration   DateTime
-  dosage           String?
-  famille          String
-  surOrdonnance    Boolean           @default(false)
-  fournisseurId    String?
-  createdAt        DateTime          @default(now())
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  article          Article           @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  fournisseur      Fournisseur?      @relation(fields: [fournisseurId], references: [id])
-  lignesOrdonnance LigneOrdonnance[]
-}
-
-model Ordonnance {
-  id        String            @id @default(uuid())
-  tenantId  String
-  clientId  String
-  medecin   String?
-  photoUrl  String?
-  dateEmise DateTime
-  statut    String            @default("EN_COURS")
-  lignes    LigneOrdonnance[]
-  createdAt DateTime          @default(now())
-  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client    Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
-}
-
-model LigneOrdonnance {
-  id           String     @id @default(uuid())
-  ordonnanceId String
-  medicamentId String
-  quantite     Int
-  posologie    String?
-  ordonnance   Ordonnance @relation(fields: [ordonnanceId], references: [id], onDelete: Cascade)
-  medicament   Medicament @relation(fields: [medicamentId], references: [id])
 }
 
 enum ReparationStatut {
@@ -1421,59 +2190,6 @@ enum ReparationStatut {
   LIVRE
   ANNULE
   IRREPARABLE
-}
-
-model Table {
-  id        String      @id @default(uuid())
-  tenantId  String
-  numero    String
-  nom       String?
-  capacite  Int
-  statut    TableStatut @default(LIBRE)
-  commandes Commande[]
-  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, numero])
-}
-
-model Commande {
-  id               String            @id @default(uuid())
-  tenantId         String
-  notes            String?
-  serveurId        String?
-  tableId          String?
-  clientId         String?
-  statut           CommandeStatut    @default(EN_ATTENTE)
-  type             CommandeType      @default(SUR_PLACE)
-  total            Float
-  lignes           LigneCommande[]
-  compositionGlace CompositionGlace?
-  createdAt        DateTime          @default(now())
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  table            Table?            @relation(fields: [tableId], references: [id])
-}
-
-model LigneCommande {
-  id         String   @id @default(uuid())
-  commandeId String
-  platId     String
-  quantite   Int
-  note       String?
-  statut     String   @default("EN_ATTENTE")
-  commande   Commande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
-  plat       Plat     @relation(fields: [platId], references: [id])
-}
-
-model Plat {
-  id             String          @id @default(uuid())
-  tenantId       String
-  nom            String
-  prix           Float
-  categorie      String
-  disponible     Boolean         @default(true)
-  tempsPrep      Int?
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lignesCommande LigneCommande[]
 }
 
 enum TableStatut {
@@ -1502,133 +2218,11 @@ enum CreditType {
   DEDUCTION
 }
 
-model Rayon {
-  id        String         @id @default(uuid())
-  tenantId  String
-  nom       String
-  couleur   String?
-  ordre     Int            @default(0)
-  actif     Boolean        @default(true)
-  createdAt DateTime       @default(now())
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  articles  RayonArticle[]
-
-  @@index([tenantId])
-}
-
-model RayonArticle {
-  id        String  @id @default(uuid())
-  rayonId   String
-  articleId String
-  rayon     Rayon   @relation(fields: [rayonId], references: [id], onDelete: Cascade)
-  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@unique([rayonId, articleId])
-}
-
-model CodeBarresArticle {
-  id        String  @id @default(uuid())
-  tenantId  String
-  articleId String
-  code      String  @unique
-  type      String  @default("EAN13")
-  actif     Boolean @default(true)
-  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([code])
-}
-
-model VehiculeBTP {
-  id              String         @id @default(uuid())
-  tenantId        String
-  immatriculation String
-  type            String
-  capaciteKg      Float?
-  disponible      Boolean        @default(true)
-  createdAt       DateTime       @default(now())
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  livraisons      LivraisonBTP[]
-
-  @@index([tenantId])
-}
-
-model LivraisonBTP {
-  id            String              @id @default(uuid())
-  tenantId      String
-  chantierId    String
-  vehiculeId    String?
-  chauffeur     String?
-  reference     String              @unique
-  statut        LivraisonBTPStatut  @default(PLANIFIEE)
-  datePlanifiee DateTime?
-  dateLivraison DateTime?
-  notes         String?
-  createdAt     DateTime            @default(now())
-  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  chantier      Chantier            @relation(fields: [chantierId], references: [id])
-  vehicule      VehiculeBTP?        @relation(fields: [vehiculeId], references: [id])
-  lignes        LigneLivraisonBTP[]
-
-  @@index([tenantId])
-  @@index([chantierId])
-}
-
-model LigneLivraisonBTP {
-  id          String       @id @default(uuid())
-  livraisonId String
-  articleId   String
-  quantite    Float
-  unite       String       @default("PIECE")
-  livraison   LivraisonBTP @relation(fields: [livraisonId], references: [id], onDelete: Cascade)
-  article     Article      @relation(fields: [articleId], references: [id])
-
-  @@index([livraisonId])
-}
-
 enum LivraisonBTPStatut {
   PLANIFIEE
   EN_ROUTE
   LIVREE
   ANNULEE
-}
-
-model TicketPressing {
-  id           String               @id @default(uuid())
-  tenantId     String
-  clientId     String
-  reference    String               @unique
-  statut       TicketPressingStatut @default(RECU)
-  dateDepot    DateTime             @default(now())
-  dateRetrait  DateTime?
-  dateRetirée DateTime?
-  montantTotal Float                @default(0)
-  avance       Float                @default(0)
-  notes        String?
-  createdAt    DateTime             @default(now())
-  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client       Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  vetements    VetementPressing[]
-
-  @@index([tenantId])
-  @@index([clientId])
-  @@index([statut])
-}
-
-model VetementPressing {
-  id           String         @id @default(uuid())
-  ticketId     String
-  designation  String
-  couleur      String?
-  marque       String?
-  etat         EtatVetement   @default(RECU)
-  typeService  String
-  prix         Float
-  observations String?
-  ticket       TicketPressing @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  @@index([ticketId])
 }
 
 enum TicketPressingStatut {
@@ -1646,68 +2240,6 @@ enum EtatVetement {
   LIVRE
 }
 
-model VehiculeClient {
-  id              String               @id @default(uuid())
-  tenantId        String
-  clientId        String
-  immatriculation String
-  marque          String
-  modele          String
-  annee           Int?
-  couleur         String?
-  kilometrage     Float?
-  carburant       String?
-  createdAt       DateTime             @default(now())
-  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client          Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  fichesTravaux   FicheTravailGarage[]
-
-  @@index([tenantId])
-  @@index([clientId])
-  @@index([immatriculation])
-}
-
-model FicheTravailGarage {
-  id             String         @id @default(uuid())
-  tenantId       String
-  vehiculeId     String
-  reference      String         @unique
-  problemeClient String
-  diagnosticTech String?
-  travaux        String?
-  montantPieces  Float          @default(0)
-  montantMO      Float          @default(0)
-  montantTotal   Float          @default(0)
-  avance         Float          @default(0)
-  statut         GarageStatut   @default(RECU)
-  technicienId   String?
-  dateEntree     DateTime       @default(now())
-  dateSortiePrev DateTime?
-  dateSortie     DateTime?
-  notes          String?
-  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vehicule       VehiculeClient @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
-  pieces         PieceGarage[]
-
-  @@index([tenantId])
-  @@index([statut])
-}
-
-model PieceGarage {
-  id          String             @id @default(uuid())
-  ficheId     String
-  articleId   String?
-  designation String
-  reference   String?
-  quantite    Int                @default(1)
-  prix        Float
-  total       Float
-  fiche       FicheTravailGarage @relation(fields: [ficheId], references: [id], onDelete: Cascade)
-  article     Article?           @relation(fields: [articleId], references: [id])
-
-  @@index([ficheId])
-}
-
 enum GarageStatut {
   RECU
   EN_DIAGNOSTIC
@@ -1719,109 +2251,6 @@ enum GarageStatut {
   ANNULE
 }
 
-model LotElevage {
-  id              String                @id @default(uuid())
-  tenantId        String
-  nom             String
-  espece          String
-  race            String?
-  dateAcquisition DateTime
-  nombreInitial   Int
-  nombreActuel    Int
-  poidsUnitMoyen  Float?
-  statut          ElevageStatut         @default(ACTIF)
-  notes           String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  evenements      EvenementElevage[]
-  alimentations   AlimentationElevage[]
-
-  @@index([tenantId])
-  @@index([statut])
-}
-
-model EvenementElevage {
-  id       String               @id @default(uuid())
-  tenantId String
-  lotId    String
-  type     EvenementElevageType
-  quantite Int
-  poids    Float?
-  montant  Float?
-  notes    String?
-  date     DateTime             @default(now())
-  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lot      LotElevage           @relation(fields: [lotId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([lotId])
-}
-
-model AlimentationElevage {
-  id         String     @id @default(uuid())
-  tenantId   String
-  lotId      String
-  articleId  String
-  quantiteKg Float
-  date       DateTime   @default(now())
-  notes      String?
-  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lot        LotElevage @relation(fields: [lotId], references: [id], onDelete: Cascade)
-  article    Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([lotId])
-}
-
-model Prestation {
-  id          String     @id @default(uuid())
-  tenantId    String
-  nom         String
-  description String?
-  prix        Float
-  dureeMin    Int?
-  categorie   String?
-  disponible  Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lignes      LigneRdv[]
-
-  @@index([tenantId])
-}
-
-model RendezVousSalon {
-  id           String     @id @default(uuid())
-  tenantId     String
-  clientId     String?
-  nomClient    String
-  telephone    String?
-  employeId    String?
-  dateHeure    DateTime
-  statut       RdvStatut  @default(CONFIRME)
-  montantTotal Float      @default(0)
-  notes        String?
-  createdAt    DateTime   @default(now())
-  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client       Client?    @relation(fields: [clientId], references: [id])
-  lignes       LigneRdv[]
-
-  @@index([tenantId])
-  @@index([dateHeure])
-  @@index([statut])
-}
-
-model LigneRdv {
-  id           String          @id @default(uuid())
-  rdvId        String
-  prestationId String
-  prix         Float
-  rdv          RendezVousSalon @relation(fields: [rdvId], references: [id], onDelete: Cascade)
-  prestation   Prestation      @relation(fields: [prestationId], references: [id])
-
-  @@index([rdvId])
-}
-
 enum RdvStatut {
   CONFIRME
   EN_COURS
@@ -1830,221 +2259,11 @@ enum RdvStatut {
   NO_SHOW
 }
 
-model ProduitCosmetique {
-  id             String  @id @default(uuid())
-  tenantId       String
-  articleId      String  @unique
-  marque         String
-  contenance     String?
-  typesPeau      String?
-  ingredients    String?
-  certifications String?
-  categorie      String
-  tenant         Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  article        Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-}
-
-model ProgrammeFidelite {
-  id           String               @id @default(uuid())
-  tenantId     String
-  clientId     String               @unique
-  points       Int                  @default(0)
-  totalDepense Float                @default(0)
-  niveau       String               @default("BRONZE")
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client       Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  historique   HistoriqueFidelite[]
-
-  @@index([tenantId])
-}
-
-model HistoriqueFidelite {
-  id         String            @id @default(uuid())
-  fideliteId String
-  points     Int
-  motif      String
-  createdAt  DateTime          @default(now())
-  fidelite   ProgrammeFidelite @relation(fields: [fideliteId], references: [id], onDelete: Cascade)
-
-  @@index([fideliteId])
-}
-
-model Recette {
-  id            String              @id @default(uuid())
-  tenantId      String
-  articleId     String              @unique
-  nom           String
-  instructions  String?
-  tempsPrep     Int?
-  tempsCuisson  Int?
-  temperature   Int?
-  portionsUnite Int                 @default(1)
-  createdAt     DateTime            @default(now())
-  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  article       Article             @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  ingredients   IngredientRecette[]
-  productions   ProductionJour[]
-
-  @@index([tenantId])
-}
-
-model IngredientRecette {
-  id        String  @id @default(uuid())
-  recetteId String
-  articleId String
-  quantite  Float
-  unite     String
-  recette   Recette @relation(fields: [recetteId], references: [id], onDelete: Cascade)
-  article   Article @relation(fields: [articleId], references: [id])
-
-  @@index([recetteId])
-}
-
-model ProductionJour {
-  id               String   @id @default(uuid())
-  tenantId         String
-  recetteId        String
-  date             DateTime @default(now())
-  quantiteProduite Int
-  quantiteVendue   Int      @default(0)
-  quantiteInvendue Int      @default(0)
-  coutProduction   Float?
-  notes            String?
-  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  recette          Recette  @relation(fields: [recetteId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([date])
-}
-
-model CompositionGlace {
-  id          String   @id @default(uuid())
-  tenantId    String
-  commandeId  String   @unique
-  contenant   String
-  parfums     String
-  supplements String?
-  prix        Float
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  commande    Commande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-}
-
-model LivreDetail {
-  id            String  @id @default(uuid())
-  tenantId      String
-  articleId     String  @unique
-  isbn          String? @unique
-  auteur        String?
-  editeur       String?
-  anneeParution Int?
-  genre         String?
-  langue        String? @default("FR")
-  nbPages       Int?
-  tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  article       Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-}
-
-model CommandeSpeciale {
-  id           String                 @id @default(uuid())
-  tenantId     String
-  clientId     String
-  designation  String
-  isbn         String?
-  quantite     Int                    @default(1)
-  statut       CommandeSpecialeStatut @default(EN_ATTENTE)
-  dateCommande DateTime               @default(now())
-  dateArrivee  DateTime?
-  notes        String?
-  tenant       Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client       Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([statut])
-}
-
 enum CommandeSpecialeStatut {
   EN_ATTENTE
   ARRIVE
   LIVRE
   ANNULE
-}
-
-model DossierMedical {
-  id                String         @id @default(uuid())
-  tenantId          String
-  clientId          String         @unique
-  groupeSanguin     String?
-  allergies         String?
-  antecedents       String?
-  traitementEnCours String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client            Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  consultations     Consultation[]
-
-  @@index([tenantId])
-}
-
-model Consultation {
-  id            String         @id @default(uuid())
-  tenantId      String
-  dossierId     String
-  medecinId     String?
-  specialite    String?
-  motif         String
-  examen        String?
-  diagnostic    String?
-  montant       Float          @default(0)
-  statut        ConsultStatut  @default(EN_COURS)
-  date          DateTime       @default(now())
-  notes         String?
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  dossier       DossierMedical @relation(fields: [dossierId], references: [id], onDelete: Cascade)
-  prescriptions Prescription[]
-
-  @@index([tenantId])
-  @@index([dossierId])
-}
-
-model Prescription {
-  id             String       @id @default(uuid())
-  consultationId String
-  articleId      String?
-  medicament     String
-  dosage         String?
-  posologie      String?
-  duree          String?
-  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
-  article        Article?     @relation(fields: [articleId], references: [id])
-
-  @@index([consultationId])
-}
-
-model RendezVousMedical {
-  id         String           @id @default(uuid())
-  tenantId   String
-  clientId   String
-  medecinId  String?
-  specialite String?
-  dateHeure  DateTime
-  motif      String?
-  statut     RdvMedicalStatut @default(PLANIFIE)
-  notes      String?
-  createdAt  DateTime         @default(now())
-  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client     Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([dateHeure])
 }
 
 enum ConsultStatut {
@@ -2062,72 +2281,6 @@ enum RdvMedicalStatut {
   NO_SHOW
 }
 
-model VehiculeTransport {
-  id              String   @id @default(uuid())
-  tenantId        String
-  immatriculation String
-  type            String
-  marque          String?
-  modele          String?
-  capaciteKg      Float?
-  capaciteM3      Float?
-  chauffeurId     String?
-  disponible      Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  trajets         Trajet[]
-
-  @@index([tenantId])
-}
-
-model Colis {
-  id            String      @id @default(uuid())
-  tenantId      String
-  expediteurId  String?
-  destinataire  String
-  telephoneDest String?
-  adresseDest   String
-  villeDest     String
-  poids         Float?
-  dimensions    String?
-  description   String?
-  valeur        Float?
-  reference     String      @unique
-  statut        ColisStatut @default(ENREGISTRE)
-  montant       Float       @default(0)
-  createdAt     DateTime    @default(now())
-  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  expediteur    Client?     @relation(fields: [expediteurId], references: [id])
-  trajet        Trajet?     @relation(fields: [trajetId], references: [id])
-  trajetId      String?
-
-  @@index([tenantId])
-  @@index([statut])
-  @@index([reference])
-}
-
-model Trajet {
-  id           String             @id @default(uuid())
-  tenantId     String
-  vehiculeId   String?
-  chauffeurId  String?
-  villeDepart  String
-  villeArrivee String
-  dateDepart   DateTime
-  dateArrivee  DateTime?
-  distance     Float?
-  montant      Float              @default(0)
-  statut       TrajetStatut       @default(PLANIFIE)
-  notes        String?
-  createdAt    DateTime           @default(now())
-  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vehicule     VehiculeTransport? @relation(fields: [vehiculeId], references: [id])
-  colis        Colis[]
-
-  @@index([tenantId])
-  @@index([statut])
-}
-
 enum ColisStatut {
   ENREGISTRE
   EN_TRANSIT
@@ -2141,91 +2294,6 @@ enum TrajetStatut {
   EN_COURS
   TERMINE
   ANNULE
-}
-
-model BienImmobilier {
-  id            String             @id @default(uuid())
-  tenantId      String
-  reference     String             @unique
-  type          BienType
-  adresse       String
-  ville         String
-  surface       Float?
-  nbPieces      Int?
-  etage         Int?
-  loyer         Float
-  charges       Float?
-  depot         Float?
-  disponible    Boolean            @default(true)
-  description   String?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contrats      ContratLocation[]
-  interventions InterventionBien[]
-
-  @@index([tenantId])
-  @@index([disponible])
-}
-
-model ContratLocation {
-  id          String          @id @default(uuid())
-  tenantId    String
-  bienId      String
-  locataireId String
-  dateDebut   DateTime
-  dateFin     DateTime?
-  loyer       Float
-  charges     Float?
-  depot       Float?
-  statut      ContratStatut   @default(ACTIF)
-  notes       String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  bien        BienImmobilier  @relation(fields: [bienId], references: [id], onDelete: Cascade)
-  locataire   Client          @relation(fields: [locataireId], references: [id], onDelete: Cascade)
-  paiements   PaiementLoyer[]
-
-  @@index([tenantId])
-  @@index([statut])
-  @@index([bienId])
-}
-
-model PaiementLoyer {
-  id           String              @id @default(uuid())
-  tenantId     String
-  contratId    String
-  mois         String
-  montant      Float
-  charges      Float?              @default(0)
-  modePaiement ModePaiement        @default(CASH)
-  statut       PaiementLoyerStatut @default(PAYE)
-  datePaiement DateTime            @default(now())
-  dateEcheance DateTime
-  notes        String?
-  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contrat      ContratLocation     @relation(fields: [contratId], references: [id], onDelete: Cascade)
-
-  @@unique([contratId, mois])
-  @@index([tenantId])
-  @@index([statut])
-}
-
-model InterventionBien {
-  id          String         @id @default(uuid())
-  tenantId    String
-  bienId      String
-  type        String
-  description String
-  cout        Float?
-  date        DateTime       @default(now())
-  statut      String         @default("EFFECTUEE")
-  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  bien        BienImmobilier @relation(fields: [bienId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([bienId])
 }
 
 enum PaiementLoyerStatut {
@@ -2250,88 +2318,6 @@ enum ContratStatut {
   EXPIRE
   RESILIE
   EN_ATTENTE
-}
-
-model TypeChambre {
-  id          String    @id @default(uuid())
-  tenantId    String
-  nom         String
-  description String?
-  capacite    Int       @default(1)
-  prixNuit    Float
-  equipements String?
-  imageUrl    String?
-  actif       Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  chambres    Chambre[]
-
-  @@index([tenantId])
-}
-
-model Chambre {
-  id            String             @id @default(uuid())
-  tenantId      String
-  numero        String
-  etage         Int?
-  typeChambreId String
-  statut        ChambreStatut      @default(LIBRE)
-  notes         String?
-  createdAt     DateTime           @default(now())
-  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  typeChambre   TypeChambre        @relation(fields: [typeChambreId], references: [id])
-  reservations  ReservationHotel[]
-
-  @@unique([tenantId, numero])
-  @@index([tenantId])
-  @@index([statut])
-}
-
-model ReservationHotel {
-  id            String                 @id @default(uuid())
-  tenantId      String
-  clientId      String?
-  chambreId     String
-  reference     String                 @unique
-  nomClient     String
-  telephone     String?
-  email         String?
-  dateArrivee   DateTime
-  dateDepart    DateTime
-  nbNuits       Int
-  nbPersonnes   Int                    @default(1)
-  prixTotal     Float
-  avance        Float                  @default(0)
-  modePaiement  ModePaiement           @default(CASH)
-  statut        ReservationHotelStatut @default(CONFIRMEE)
-  source        String?
-  notes         String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  tenant        Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client        Client?                @relation(fields: [clientId], references: [id])
-  chambre       Chambre                @relation(fields: [chambreId], references: [id])
-  consommations ConsommationHotel[]
-
-  @@index([tenantId])
-  @@index([statut])
-  @@index([dateArrivee])
-  @@index([chambreId])
-}
-
-model ConsommationHotel {
-  id            String           @id @default(uuid())
-  reservationId String
-  articleId     String?
-  designation   String
-  quantite      Int              @default(1)
-  prix          Float
-  total         Float
-  date          DateTime         @default(now())
-  reservation   ReservationHotel @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-  article       Article?         @relation(fields: [articleId], references: [id])
-
-  @@index([reservationId])
 }
 
 enum ChambreStatut {

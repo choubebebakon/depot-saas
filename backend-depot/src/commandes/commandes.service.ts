@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { StatutCommande } from '@prisma/client';
 import { CreateCommandeDto } from './dto/create-commande.dto';
@@ -6,11 +10,13 @@ import { UpdateCommandeDto } from './dto/update-commande.dto';
 
 @Injectable()
 export class CommandesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   private requireDepotId(depotId?: string) {
     if (!depotId) {
-      throw new BadRequestException('depotId est obligatoire pour isoler les commandes du depot actif.');
+      throw new BadRequestException(
+        'depotId est obligatoire pour isoler les commandes du depot actif.',
+      );
     }
 
     return depotId;
@@ -31,18 +37,18 @@ export class CommandesService {
       },
       include: {
         article: {
-          include: { marque: true }
+          include: { marque: true },
         },
       },
     });
 
     // 2. Filtrer les articles dont la quantité est <= seuil critique (spécifique au dépôt ou global)
-    const suggestions = stocks.filter(s => {
+    const suggestions = stocks.filter((s) => {
       const seuil = s.seuilCritique ?? s.article.seuilCritique;
       return s.quantite <= seuil;
     });
 
-    return suggestions.map(s => ({
+    return suggestions.map((s) => ({
       articleId: s.articleId,
       designation: s.article.designation,
       quantiteActuelle: s.quantite,
@@ -59,7 +65,10 @@ export class CommandesService {
   async createCommande(dto: CreateCommandeDto, actor: any) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Calcul du total
-      const total = dto.lignes.reduce((acc, l) => acc + (l.quantite * l.prixAchatUnit), 0);
+      const total = dto.lignes.reduce(
+        (acc, l) => acc + l.quantite * l.prixAchatUnit,
+        0,
+      );
 
       // 2. Création de l'entête
       const commande = await tx.commandeFournisseur.create({
@@ -73,7 +82,7 @@ export class CommandesService {
           tenantId: actor.tenantId,
           createurId: actor.userId,
           lignes: {
-            create: dto.lignes.map(l => ({
+            create: dto.lignes.map((l) => ({
               articleId: l.articleId,
               quantite: l.quantite,
               prixAchatUnit: l.prixAchatUnit,
@@ -106,15 +115,20 @@ export class CommandesService {
 
     return this.prisma.commandeFournisseur.findFirst({
       where: { id, tenantId, depotId: selectedDepotId },
-      include: { 
-        lignes: { include: { article: true } }, 
-        fournisseur: true, 
-        depot: true 
+      include: {
+        lignes: { include: { article: true } },
+        fournisseur: true,
+        depot: true,
       },
     });
   }
 
-  async updateStatut(id: string, statut: StatutCommande, tenantId: string, depotId?: string) {
+  async updateStatut(
+    id: string,
+    statut: StatutCommande,
+    tenantId: string,
+    depotId?: string,
+  ) {
     const selectedDepotId = this.requireDepotId(depotId);
 
     const commande = await this.prisma.commandeFournisseur.findFirst({
@@ -123,7 +137,9 @@ export class CommandesService {
     });
 
     if (!commande) {
-      throw new BadRequestException('Commande introuvable pour le depot actif.');
+      throw new BadRequestException(
+        'Commande introuvable pour le depot actif.',
+      );
     }
 
     return this.prisma.commandeFournisseur.update({

@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma.service';
 
 @Module({
   controllers: [ChatbotController],
-  providers:   [ChatbotService, PrismaService],
-  exports:     [ChatbotService],
+  providers: [ChatbotService, PrismaService],
+  exports: [ChatbotService],
 })
 export class ChatbotModule {}

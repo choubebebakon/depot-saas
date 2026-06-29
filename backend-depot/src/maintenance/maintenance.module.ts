@@ -4,8 +4,8 @@ import { MaintenanceController } from './maintenance.controller';
 import { PrismaService } from '../prisma.service';
 
 @Module({
-    controllers: [MaintenanceController],
-    providers: [MaintenanceService, PrismaService],
-    exports: [MaintenanceService],
+  controllers: [MaintenanceController],
+  providers: [MaintenanceService, PrismaService],
+  exports: [MaintenanceService],
 })
-export class MaintenanceModule { }
+export class MaintenanceModule {}

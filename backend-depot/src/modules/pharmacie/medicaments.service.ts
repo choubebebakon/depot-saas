@@ -12,18 +12,29 @@ export class MedicamentsService {
   ) {}
 
   async create(data: any): Promise<Medicament> {
-    const medicament = await this.prisma.medicament.create({ data, include: { article: true } });
+    const medicament = await this.prisma.medicament.create({
+      data,
+      include: { article: true },
+    });
     if (medicament.article) {
       const stocks = await this.prisma.stock.findMany({
-        where: { articleId: medicament.articleId, depot: { tenantId: medicament.tenantId } },
+        where: {
+          articleId: medicament.articleId,
+          depot: { tenantId: medicament.tenantId },
+        },
       });
       for (const stock of stocks) {
         if (stock.quantite <= (stock.seuilCritique || 5)) {
-          this.notifService.createFromTemplate(
-            medicament.tenantId,
-            NotifType.STOCK_CRITIQUE,
-            { articleNom: medicament.article.designation, quantite: stock.quantite, seuil: stock.seuilCritique || 5, articleId: medicament.articleId },
-          ).catch((e) => this.logger.error(`Erreur notif stock critique: ${e.message}`));
+          this.notifService
+            .createFromTemplate(medicament.tenantId, NotifType.STOCK_CRITIQUE, {
+              articleNom: medicament.article.designation,
+              quantite: stock.quantite,
+              seuil: stock.seuilCritique || 5,
+              articleId: medicament.articleId,
+            })
+            .catch((e) =>
+              this.logger.error(`Erreur notif stock critique: ${e.message}`),
+            );
         }
       }
     }

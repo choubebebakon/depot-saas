@@ -13,14 +13,14 @@ export class ChatMessageDto {
 }
 
 export class ChatResponseDto {
-  reponse:    string;
-  donnees?:   any;
+  reponse: string;
+  donnees?: any;
   suggestions: string[];
 }
 
 interface TenantContext {
-  tenantId:  string;
-  metier:    string;
+  tenantId: string;
+  metier: string;
   nomTenant: string;
 }
 
@@ -31,7 +31,10 @@ export class ChatbotService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async chat(ctx: TenantContext, dto: ChatMessageDto): Promise<ChatResponseDto> {
+  async chat(
+    ctx: TenantContext,
+    dto: ChatMessageDto,
+  ): Promise<ChatResponseDto> {
     const message = dto.message.trim().toLowerCase();
 
     const donnees = await this.getDonneesContextuelles(ctx, message);
@@ -42,19 +45,36 @@ export class ChatbotService {
     return { reponse: reponseIA, donnees, suggestions };
   }
 
-  private async getDonneesContextuelles(ctx: TenantContext, message: string): Promise<any> {
+  private async getDonneesContextuelles(
+    ctx: TenantContext,
+    message: string,
+  ): Promise<any> {
     const { tenantId } = ctx;
     const aujourd_hui = new Date();
     aujourd_hui.setHours(0, 0, 0, 0);
 
-    if (this.contient(message, ['stock', 'rupture', 'manque', 'quantité', 'reste', 'épuisé'])) {
+    if (
+      this.contient(message, [
+        'stock',
+        'rupture',
+        'manque',
+        'quantité',
+        'reste',
+        'épuisé',
+      ])
+    ) {
       const stocks = await this.prisma.stock.findMany({
         where: { depot: { tenantId } },
-        include: { article: { select: { designation: true, seuilCritique: true, prixVente: true } }, depot: { select: { nom: true } } },
+        include: {
+          article: {
+            select: { designation: true, seuilCritique: true, prixVente: true },
+          },
+          depot: { select: { nom: true } },
+        },
       });
 
       const enRupture = stocks.filter(
-        (s) => s.quantite <= (s.seuilCritique ?? s.article.seuilCritique ?? 0)
+        (s) => s.quantite <= (s.seuilCritique ?? s.article.seuilCritique ?? 0),
       );
 
       return {
@@ -69,11 +89,22 @@ export class ChatbotService {
       };
     }
 
-    if (this.contient(message, ['vente', 'ventes', 'vendu', 'chiffre', 'recette', 'aujourd'])) {
+    if (
+      this.contient(message, [
+        'vente',
+        'ventes',
+        'vendu',
+        'chiffre',
+        'recette',
+        'aujourd',
+      ])
+    ) {
       const [ventesJour, totalJour] = await Promise.all([
         this.prisma.vente.findMany({
           where: { tenantId, date: { gte: aujourd_hui }, statut: 'PAYE' },
-          include: { lignes: { include: { article: { select: { designation: true } } } } },
+          include: {
+            lignes: { include: { article: { select: { designation: true } } } },
+          },
           orderBy: { date: 'desc' },
           take: 20,
         }),
@@ -89,7 +120,7 @@ export class ChatbotService {
         v.lignes.forEach((l) => {
           const nom = l.article.designation;
           articlesCount[nom] = (articlesCount[nom] || 0) + l.quantite;
-        })
+        }),
       );
       const topArticles = Object.entries(articlesCount)
         .sort((a, b) => b[1] - a[1])
@@ -104,7 +135,15 @@ export class ChatbotService {
       };
     }
 
-    if (this.contient(message, ['client', 'clients', 'fidèle', 'fideles', 'meilleur'])) {
+    if (
+      this.contient(message, [
+        'client',
+        'clients',
+        'fidèle',
+        'fideles',
+        'meilleur',
+      ])
+    ) {
       const [totalClients, topClients] = await Promise.all([
         this.prisma.client.count({ where: { tenantId } }),
         this.prisma.client.findMany({
@@ -126,16 +165,25 @@ export class ChatbotService {
       };
     }
 
-    if (this.contient(message, ['caisse', 'argent', 'fond', 'solde', 'encaissement'])) {
+    if (
+      this.contient(message, [
+        'caisse',
+        'argent',
+        'fond',
+        'solde',
+        'encaissement',
+      ])
+    ) {
       const session = await this.prisma.sessionCaisse.findFirst({
         where: { tenantId, estOuverte: true },
         include: { mouvements: { orderBy: { createdAt: 'desc' }, take: 5 } },
         orderBy: { dateOuverture: 'desc' },
       });
 
-      const totalEncaisse = session?.mouvements
-        .filter((m) => m.type === 'ENCAISSEMENT_VENTE')
-        .reduce((sum, m) => sum + m.montant, 0) ?? 0;
+      const totalEncaisse =
+        session?.mouvements
+          .filter((m) => m.type === 'ENCAISSEMENT_VENTE')
+          .reduce((sum, m) => sum + m.montant, 0) ?? 0;
 
       return {
         type: 'CAISSE',
@@ -146,7 +194,14 @@ export class ChatbotService {
       };
     }
 
-    if (this.contient(message, ['fournisseur', 'fournisseurs', 'commande', 'livraison'])) {
+    if (
+      this.contient(message, [
+        'fournisseur',
+        'fournisseurs',
+        'commande',
+        'livraison',
+      ])
+    ) {
       const fournisseurs = await this.prisma.fournisseur.findMany({
         where: { tenantId },
         include: { _count: { select: { commandes: true } } },
@@ -190,7 +245,8 @@ export class ChatbotService {
           nom: m.article.designation,
           expiration: m.dateExpiration,
           joursRestants: Math.ceil(
-            (new Date(m.dateExpiration).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+            (new Date(m.dateExpiration).getTime() - Date.now()) /
+              (1000 * 60 * 60 * 24),
           ),
         })),
       };
@@ -198,7 +254,13 @@ export class ChatbotService {
 
     if (
       ctx.metier === 'HOTEL' &&
-      this.contient(message, ['chambre', 'libre', 'disponible', 'occupée', 'réservation'])
+      this.contient(message, [
+        'chambre',
+        'libre',
+        'disponible',
+        'occupée',
+        'réservation',
+      ])
     ) {
       const [libres, occupees, total] = await Promise.all([
         this.prisma.chambre.count({ where: { tenantId, statut: 'LIBRE' } }),
@@ -230,25 +292,36 @@ export class ChatbotService {
       return { type: 'TABLES_RESTO', libres, occupees, commandesEnCours };
     }
 
-    if (this.contient(message, ['stat', 'résumé', 'bilan', 'rapport', 'performance'])) {
+    if (
+      this.contient(message, [
+        'stat',
+        'résumé',
+        'bilan',
+        'rapport',
+        'performance',
+      ])
+    ) {
       const debutMois = new Date();
       debutMois.setDate(1);
       debutMois.setHours(0, 0, 0, 0);
 
-      const [ventesJour, ventesMois, nbClients, stockCritique] = await Promise.all([
-        this.prisma.vente.aggregate({
-          where: { tenantId, date: { gte: aujourd_hui }, statut: 'PAYE' },
-          _sum: { total: true }, _count: true,
-        }),
-        this.prisma.vente.aggregate({
-          where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
-          _sum: { total: true }, _count: true,
-        }),
-        this.prisma.client.count({ where: { tenantId } }),
-        this.prisma.stock.count({
-          where: { depot: { tenantId }, quantite: { lte: 5 } },
-        }),
-      ]);
+      const [ventesJour, ventesMois, nbClients, stockCritique] =
+        await Promise.all([
+          this.prisma.vente.aggregate({
+            where: { tenantId, date: { gte: aujourd_hui }, statut: 'PAYE' },
+            _sum: { total: true },
+            _count: true,
+          }),
+          this.prisma.vente.aggregate({
+            where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+            _sum: { total: true },
+            _count: true,
+          }),
+          this.prisma.client.count({ where: { tenantId } }),
+          this.prisma.stock.count({
+            where: { depot: { tenantId }, quantite: { lte: 5 } },
+          }),
+        ]);
 
       return {
         type: 'STATS_GENERALES',
@@ -264,7 +337,11 @@ export class ChatbotService {
     return null;
   }
 
-  private buildPrompt(ctx: TenantContext, question: string, donnees: any): string {
+  private buildPrompt(
+    ctx: TenantContext,
+    question: string,
+    donnees: any,
+  ): string {
     const donneesTexte = donnees
       ? `\nDonnées réelles de la base de données :\n${JSON.stringify(donnees, null, 2)}`
       : '\nAucune donnée spécifique disponible pour cette question.';
@@ -312,7 +389,10 @@ RÉPONSE :`;
             topP: 0.8,
           },
           safetySettings: [
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            {
+              category: 'HARM_CATEGORY_HARASSMENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
           ],
         }),
       });
@@ -322,12 +402,13 @@ RÉPONSE :`;
       }
 
       const data = await response.json();
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text
-        ?? "Je n'ai pas pu générer une réponse. Veuillez réessayer.";
-
+      return (
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ??
+        "Je n'ai pas pu générer une réponse. Veuillez réessayer."
+      );
     } catch (error) {
       console.error('Gemini error:', error);
-      return "Désolé, le service IA est temporairement indisponible.";
+      return 'Désolé, le service IA est temporairement indisponible.';
     }
   }
 
@@ -336,14 +417,14 @@ RÉPONSE :`;
       DEPOT_BOISSONS: [
         'Quels produits sont en rupture de stock ?',
         'Montre les ventes du jour',
-        'Quel est le chiffre d\'affaires de ce mois ?',
+        "Quel est le chiffre d'affaires de ce mois ?",
         'Combien de clients actifs ?',
       ],
       PHARMACIE: [
         'Quels médicaments expirent bientôt ?',
         'Montre les ventes du jour',
         'Quels médicaments sont presque épuisés ?',
-        'Combien d\'ordonnances ce mois ?',
+        "Combien d'ordonnances ce mois ?",
       ],
       RESTAURANT: [
         'Combien de tables sont occupées ?',
@@ -354,7 +435,7 @@ RÉPONSE :`;
       HOTEL: [
         'Combien de chambres libres ce soir ?',
         'Montre les réservations du jour',
-        'Quel est le taux d\'occupation ?',
+        "Quel est le taux d'occupation ?",
         'Montre les recettes du jour',
       ],
       BOUTIQUE: [
@@ -378,9 +459,9 @@ RÉPONSE :`;
       'Combien de clients actifs ?',
     ];
 
-    return (suggestions[metier] ?? defaults).filter(
-      (s) => s.length > 0
-    ).slice(0, 3);
+    return (suggestions[metier] ?? defaults)
+      .filter((s) => s.length > 0)
+      .slice(0, 3);
   }
 
   private contient(message: string, mots: string[]): boolean {

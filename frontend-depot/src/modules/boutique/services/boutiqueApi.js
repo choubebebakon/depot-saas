@@ -1,19 +1,17 @@
-import api from '../../../api/axios';
+﻿import api from '../../../api/axios';
 
 function getTenantHeaders() {
   const tenantId = localStorage.getItem('gestock_tenantId');
   const depotId = localStorage.getItem('depot_actif_id');
-  return {
-    headers: {
-      'X-Tenant-Id': tenantId || '',
-      'X-Depot-Id': depotId || '',
-    },
-  };
+  const headers = {};
+  if (tenantId) headers['X-Tenant-Id'] = tenantId;
+  if (depotId && depotId !== 'all') headers['X-Depot-Id'] = depotId;
+  return { headers };
 }
 
 /**
- * Supprime les clés dont la valeur est vide (""), null ou undefined
- * pour éviter d'envoyer des params invalides à l'API (ex: search="", categorieId="")
+ * Supprime les clÃ©s dont la valeur est vide (""), null ou undefined
+ * pour Ã©viter d'envoyer des params invalides Ã  l'API (ex: search="", categorieId="")
  */
 function cleanParams(params) {
   if (!params || typeof params !== 'object') return params;
@@ -69,7 +67,7 @@ export const boutiqueApi = {
   deleteFournisseur: (id) =>
     api.delete(`/boutique/fournisseurs/${id}`, getTenantHeaders()),
 
-  // Dépenses
+  // DÃ©penses
   getDepenses: (params) =>
     api.get('/boutique/depenses', { ...getTenantHeaders(), params: cleanParams(params) }),
   getDepense: (id) =>
@@ -119,13 +117,13 @@ export const boutiqueApi = {
   getRapports: (params) =>
     api.get('/boutique/rapports', { ...getTenantHeaders(), params: cleanParams(params) }),
 
-  // Paramètres
+  // ParamÃ¨tres
   getParametres: () =>
     api.get('/boutique/parametres', getTenantHeaders()),
   updateParametres: (data) =>
     api.put('/boutique/parametres', data, getTenantHeaders()),
 
-  // Catégories
+  // CatÃ©gories
   getCategories: () =>
     api.get('/boutique/categories', getTenantHeaders()),
   getCategorie: (id) =>
@@ -139,3 +137,4 @@ export const boutiqueApi = {
   seedCategories: (type) =>
     api.post(`/boutique/categories/seed/${type}`, {}, getTenantHeaders()),
 };
+

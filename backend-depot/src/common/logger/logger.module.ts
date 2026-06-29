@@ -44,7 +44,8 @@ interface ResponseWithStatus {
                   options: {
                     colorize: true,
                     singleLine: true,
-                    messageFormat: '{tenantId} {transactionId} {method} - {msg}',
+                    messageFormat:
+                      '{tenantId} {transactionId} {method} - {msg}',
                   },
                 },
             customProps: (req: any) => {

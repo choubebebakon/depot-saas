@@ -1,6 +1,21 @@
-import { Controller, Post, Get, Body, Query, UseGuards, Req, Patch, Param, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  Patch,
+  Param,
+  Put,
+} from '@nestjs/common';
 import { CimentBtpService, PaginationDto } from './ciment-btp.service';
-import { CreateVehiculeBtpDto, CreateLivraisonBtpDto, UpdateLivraisonStatutDto } from './dto/ciment-btp.dto';
+import {
+  CreateVehiculeBtpDto,
+  CreateLivraisonBtpDto,
+  UpdateLivraisonStatutDto,
+} from './dto/ciment-btp.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -23,8 +38,16 @@ export class CimentBtpController {
   }
 
   @Patch('vehicules/:id/disponibilite')
-  async updateVehiculeDispo(@Req() req: any, @Param('id') id: string, @Body('disponible') disponible: boolean) {
-    return this.service.updateVehiculeDisponibilite(id, req.user.tenantId, disponible);
+  async updateVehiculeDispo(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body('disponible') disponible: boolean,
+  ) {
+    return this.service.updateVehiculeDisponibilite(
+      id,
+      req.user.tenantId,
+      disponible,
+    );
   }
 
   @Get('livraisons')
@@ -38,7 +61,11 @@ export class CimentBtpController {
   }
 
   @Patch('livraisons/:id/statut')
-  async updateLivraisonStatut(@Req() req: any, @Param('id') id: string, @Body() data: UpdateLivraisonStatutDto) {
+  async updateLivraisonStatut(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: UpdateLivraisonStatutDto,
+  ) {
     return this.service.updateLivraisonStatut(id, req.user.tenantId, data);
   }
 

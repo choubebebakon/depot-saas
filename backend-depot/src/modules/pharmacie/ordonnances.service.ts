@@ -13,11 +13,11 @@ export class OrdonnancesService {
 
   async create(data: any): Promise<Ordonnance> {
     const ordonnance = await this.prisma.ordonnance.create({ data });
-    this.notifService.createFromTemplate(
-      ordonnance.tenantId,
-      NotifType.SYSTEM,
-      { message: `Nouvelle ordonnance créée (réf: ${ordonnance.id.slice(0, 8)})` },
-    ).catch((e) => this.logger.error(`Erreur notif ordonnance: ${e.message}`));
+    this.notifService
+      .createFromTemplate(ordonnance.tenantId, NotifType.SYSTEM, {
+        message: `Nouvelle ordonnance créée (réf: ${ordonnance.id.slice(0, 8)})`,
+      })
+      .catch((e) => this.logger.error(`Erreur notif ordonnance: ${e.message}`));
     return ordonnance;
   }
 

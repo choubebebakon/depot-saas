@@ -1,9 +1,24 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Req, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Put,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { ParfumerieService, CreateProduitCosmetiqueDto, AjouterPointsDto, PaginationDto } from './parfumerie.service';
+import {
+  ParfumerieService,
+  CreateProduitCosmetiqueDto,
+  AjouterPointsDto,
+  PaginationDto,
+} from './parfumerie.service';
 
 @Controller('parfumerie')
 @Metier(MetierType.PARFUMERIE)
@@ -17,7 +32,10 @@ export class ParfumerieController {
   }
 
   @Post('produits')
-  async createProduit(@Req() req: any, @Body() dto: CreateProduitCosmetiqueDto) {
+  async createProduit(
+    @Req() req: any,
+    @Body() dto: CreateProduitCosmetiqueDto,
+  ) {
     return this.parfumerieService.createProduit(req.user.tenantId, dto);
   }
 
@@ -38,7 +56,10 @@ export class ParfumerieController {
 
   @Get('fidelite/top-clients')
   async getTopClients(@Req() req: any, @Query('limit') limit?: string) {
-    return this.parfumerieService.getTopClients(req.user.tenantId, limit ? parseInt(limit) : 10);
+    return this.parfumerieService.getTopClients(
+      req.user.tenantId,
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   // --- Stubs Phase 4 ---

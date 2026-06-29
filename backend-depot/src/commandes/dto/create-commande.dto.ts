@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsArray, ValidateNested, IsInt, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsArray,
+  ValidateNested,
+  IsInt,
+  IsNumber,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class LigneCommandeDto {

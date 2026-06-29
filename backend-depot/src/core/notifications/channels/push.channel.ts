@@ -17,7 +17,9 @@ export class PushChannel {
     const privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY');
 
     if (!projectId || !clientEmail || !privateKey) {
-      this.logger.warn('Firebase non configuré — Push désactivé (mode dégradé)');
+      this.logger.warn(
+        'Firebase non configuré — Push désactivé (mode dégradé)',
+      );
       return;
     }
 
@@ -40,9 +42,15 @@ export class PushChannel {
     }
   }
 
-  async sendToDevice(token: string, title: string, body: string): Promise<boolean> {
+  async sendToDevice(
+    token: string,
+    title: string,
+    body: string,
+  ): Promise<boolean> {
     if (!this.initialized || !this.firebaseApp) {
-      this.logger.log(`[PUSH LOG] Device: ${token.substring(0, 20)}... | Title: ${title}`);
+      this.logger.log(
+        `[PUSH LOG] Device: ${token.substring(0, 20)}... | Title: ${title}`,
+      );
       return true;
     }
 
@@ -60,7 +68,11 @@ export class PushChannel {
     }
   }
 
-  async sendToTopic(topic: string, title: string, body: string): Promise<boolean> {
+  async sendToTopic(
+    topic: string,
+    title: string,
+    body: string,
+  ): Promise<boolean> {
     if (!this.initialized || !this.firebaseApp) {
       this.logger.log(`[PUSH LOG] Topic: ${topic} | Title: ${title}`);
       return true;

@@ -9,10 +9,10 @@ import { PaymentsModule } from '../payments/payments.module'; // 👈 Ajuste le 
 
 @Module({
   imports: [
-    PaymentsModule // 👈 2. On l'injecte ici pour donner accès à son PaymentsService
+    PaymentsModule, // 👈 2. On l'injecte ici pour donner accès à son PaymentsService
   ],
   controllers: [PaiementController],
   providers: [PaiementService, PrismaService],
-  exports: [PaiementService]
+  exports: [PaiementService],
 })
 export class PaiementModule {}

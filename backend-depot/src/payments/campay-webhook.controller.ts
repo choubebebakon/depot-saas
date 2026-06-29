@@ -1,4 +1,12 @@
-import { Controller, Headers, HttpCode, HttpStatus, Post, Req, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Request } from 'express';
@@ -95,7 +103,10 @@ export class CampayWebhookController {
    * @param signature - Signature recue dans le header X-Campay-Signature
    * @throws UnauthorizedException si la signature est invalide
    */
-  private assertValidSignature(rawBody: Buffer | undefined, signature: string | undefined): void {
+  private assertValidSignature(
+    rawBody: Buffer | undefined,
+    signature: string | undefined,
+  ): void {
     const secret = process.env.CAMPAY_WEBHOOK_SECRET;
 
     if (!rawBody || !signature || !secret) {
@@ -109,7 +120,10 @@ export class CampayWebhookController {
     const expectedBuffer = Buffer.from(expected, 'hex');
     const receivedBuffer = Buffer.from(signature, 'hex');
 
-    if (expectedBuffer.length !== receivedBuffer.length || !timingSafeEqual(expectedBuffer, receivedBuffer)) {
+    if (
+      expectedBuffer.length !== receivedBuffer.length ||
+      !timingSafeEqual(expectedBuffer, receivedBuffer)
+    ) {
       throw new UnauthorizedException({
         error: 'WEBHOOK_INVALID',
         message: 'Signature Campay invalide.',

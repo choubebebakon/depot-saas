@@ -1,9 +1,27 @@
-import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards, Req, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Put,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { CliniqueService, CreateDossierDto, CreateConsultationDto, CreatePrescriptionDto, CreateRdvDto, PaginationDto } from './clinique.service';
+import {
+  CliniqueService,
+  CreateDossierDto,
+  CreateConsultationDto,
+  CreatePrescriptionDto,
+  CreateRdvDto,
+  PaginationDto,
+} from './clinique.service';
 
 @Controller('clinique')
 @Metier(MetierType.CLINIQUE)
@@ -32,12 +50,18 @@ export class CliniqueController {
   }
 
   @Post('consultations')
-  async createConsultation(@Req() req: any, @Body() dto: CreateConsultationDto) {
+  async createConsultation(
+    @Req() req: any,
+    @Body() dto: CreateConsultationDto,
+  ) {
     return this.service.createConsultation(req.user.tenantId, dto);
   }
 
   @Post('consultations/:id/prescriptions')
-  async addPrescription(@Param('id') id: string, @Body() dto: CreatePrescriptionDto) {
+  async addPrescription(
+    @Param('id') id: string,
+    @Body() dto: CreatePrescriptionDto,
+  ) {
     return this.service.addPrescription(id, dto);
   }
 
@@ -52,7 +76,10 @@ export class CliniqueController {
   }
 
   @Post('rendez-vous/:id/statut')
-  async updateRdvStatut(@Param('id') id: string, @Body('statut') statut: string) {
+  async updateRdvStatut(
+    @Param('id') id: string,
+    @Body('statut') statut: string,
+  ) {
     return this.service.updateRdvStatut(id, statut);
   }
 

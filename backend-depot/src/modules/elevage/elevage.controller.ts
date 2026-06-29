@@ -1,9 +1,28 @@
-import { Controller, Post, Get, Put, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { ElevageService, CreateLotElevageDto, UpdateLotElevageDto, CreateEvenementElevageDto, CreateAlimentationElevageDto, PaginationDto } from './elevage.service';
+import {
+  ElevageService,
+  CreateLotElevageDto,
+  UpdateLotElevageDto,
+  CreateEvenementElevageDto,
+  CreateAlimentationElevageDto,
+  PaginationDto,
+} from './elevage.service';
 
 @Controller('elevage')
 @Metier(MetierType.ELEVAGE)
@@ -12,8 +31,14 @@ export class ElevageController {
   constructor(private readonly elevageService: ElevageService) {}
 
   @Post('/lots-elevage')
-  async createLot(@Req() req: any, @Body() createLotElevageDto: CreateLotElevageDto) {
-    return this.elevageService.createLot(req.user.tenantId, createLotElevageDto);
+  async createLot(
+    @Req() req: any,
+    @Body() createLotElevageDto: CreateLotElevageDto,
+  ) {
+    return this.elevageService.createLot(
+      req.user.tenantId,
+      createLotElevageDto,
+    );
   }
 
   @Get('/lots-elevage')
@@ -27,23 +52,55 @@ export class ElevageController {
   }
 
   @Patch('/lots-elevage/:id')
-  async updateLot(@Req() req: any, @Param('id') id: string, @Body() updateLotElevageDto: UpdateLotElevageDto) {
-    return this.elevageService.updateLot(req.user.tenantId, id, updateLotElevageDto);
+  async updateLot(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() updateLotElevageDto: UpdateLotElevageDto,
+  ) {
+    return this.elevageService.updateLot(
+      req.user.tenantId,
+      id,
+      updateLotElevageDto,
+    );
   }
 
   @Post('/lots-elevage/:id/evenements')
-  async addEvenement(@Req() req: any, @Param('id') lotId: string, @Body() createEvenementElevageDto: CreateEvenementElevageDto) {
-    return this.elevageService.addEvenement(req.user.tenantId, lotId, createEvenementElevageDto);
+  async addEvenement(
+    @Req() req: any,
+    @Param('id') lotId: string,
+    @Body() createEvenementElevageDto: CreateEvenementElevageDto,
+  ) {
+    return this.elevageService.addEvenement(
+      req.user.tenantId,
+      lotId,
+      createEvenementElevageDto,
+    );
   }
 
   @Get('/lots-elevage/:id/historique')
-  async getEvenementsHistorique(@Req() req: any, @Param('id') lotId: string, @Query() paginationDto: PaginationDto) {
-    return this.elevageService.getEvenementsHistorique(req.user.tenantId, lotId, paginationDto);
+  async getEvenementsHistorique(
+    @Req() req: any,
+    @Param('id') lotId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.elevageService.getEvenementsHistorique(
+      req.user.tenantId,
+      lotId,
+      paginationDto,
+    );
   }
 
   @Post('/lots-elevage/:id/alimentation')
-  async recordAlimentation(@Req() req: any, @Param('id') lotId: string, @Body() createAlimentationElevageDto: CreateAlimentationElevageDto) {
-    return this.elevageService.recordAlimentation(req.user.tenantId, lotId, createAlimentationElevageDto);
+  async recordAlimentation(
+    @Req() req: any,
+    @Param('id') lotId: string,
+    @Body() createAlimentationElevageDto: CreateAlimentationElevageDto,
+  ) {
+    return this.elevageService.recordAlimentation(
+      req.user.tenantId,
+      lotId,
+      createAlimentationElevageDto,
+    );
   }
 
   @Delete('/lots-elevage/:id')
