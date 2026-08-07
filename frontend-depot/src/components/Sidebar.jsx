@@ -1,17 +1,20 @@
 import React from 'react';
-import { LogOut } from 'lucide-react';
+import { 
+  LogOut, LayoutDashboard, Package, Truck, Users, Settings, 
+  ShieldCheck, LifeBuoy, AlertTriangle, AlertCircle, Building2, 
+  BarChart3, ShoppingCart, MapPin, Wrench, ArrowRightLeft, Target, 
+  Receipt, Warehouse, CreditCard, Tag, Box, ClipboardList, Users2, FileText, Activity
+} from 'lucide-react';
+import Icon from '../shared/components/Icon';
 
-/**
- * Composant Sidebar Poli
- * @param {Array} nav - Liste des items de navigation filtrés par rôle
- * @param {string} pageActive - ID de la page actuellement affichée
- * @param {function} setPageActive - Fonction pour changer de page
- * @param {object} user - Objet utilisateur (email, role, etc.)
- * @param {function} logout - Fonction de déconnexion
- * @param {string} logo - Chemin vers le logo
- * @param {number} totalAlertes - Nombre total d'alertes stock
- * @param {number} alertesCritiques - Nombre d'alertes critiques
- */
+// Dictionnaire de secours pour mapper les chaînes de texte vers de vrais composants Lucide si besoin
+const ICON_MAP = {
+  LayoutDashboard, Package, Truck, Users, Settings, ShieldCheck, 
+  LifeBuoy, Building2, BarChart3, ShoppingCart, MapPin, Wrench, 
+  ArrowRightLeft, Target, Receipt, Warehouse, CreditCard, Tag, Box, 
+  ClipboardList, Users2, FileText, Activity
+};
+
 export default function Sidebar({
   nav,
   pageActive,
@@ -24,6 +27,17 @@ export default function Sidebar({
   setSidebarOpen
 }) {
   const ICON_SIZE = 20;
+
+  // Fonction sécurisée pour rendre l'icône peu importe son format (chaîne ou composant)
+  const renderItemIcon = (iconProp) => {
+    if (!iconProp) return <Package size={ICON_SIZE} />;
+    if (typeof iconProp === 'string') {
+      const LucideIcon = ICON_MAP[iconProp] || Package;
+      return <LucideIcon size={ICON_SIZE} />;
+    }
+    // Si c'est déjà un composant ou un élément JSX
+    return <Icon name={iconProp} size={ICON_SIZE} />;
+  };
 
   return (
     <aside className="flex flex-col h-full bg-slate-950 border-r border-slate-800 w-64 shrink-0">
@@ -43,13 +57,13 @@ export default function Sidebar({
       {/* Indicateur d'Alertes Stock */}
       {totalAlertes > 0 && (
         <div
-          onClick={() => { setPageActive('stocks'); if(setSidebarOpen) setSidebarOpen(false); }}
+          onClick={() => { setPageActive('/stock'); if(setSidebarOpen) setSidebarOpen(false); }}
           className={`mx-3 mt-3 px-4 py-2.5 rounded-xl border cursor-pointer transition-all hover:opacity-80 ${
             alertesCritiques > 0 ? 'bg-red-500/10 border-red-500/30' : 'bg-orange-500/10 border-orange-500/20'
           }`}
         >
           <div className="flex items-center gap-3">
-            <span className="text-xl">{alertesCritiques > 0 ? '🚨' : '⚠️'}</span>
+            {alertesCritiques > 0 ? <AlertTriangle size={20} className="text-red-400" /> : <AlertCircle size={20} className="text-orange-400" />}
             <div>
               <p className={`text-xs font-black ${alertesCritiques > 0 ? 'text-red-400' : 'text-orange-400'}`}>
                 {totalAlertes} alerte{totalAlertes > 1 ? 's' : ''}
@@ -75,10 +89,9 @@ export default function Sidebar({
             <div className={`shrink-0 mr-3 transition-colors ${
               pageActive === item.id ? 'text-white' : 'text-slate-400 group-hover:text-white'
             }`}>
-              {/* L'icône est passée avec size={20} depuis MainLayout */}
-              {item.icon}
+              {renderItemIcon(item.icon)}
             </div>
-            <span className="flex-1 text-left">{item.label}</span>
+            <span className="flex-1 text-left truncate">{item.label}</span>
 
             {/* Badge de notification */}
             {item.badge != null && item.badge !== false && item.badge !== '' && (

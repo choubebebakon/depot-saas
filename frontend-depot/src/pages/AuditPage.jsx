@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Activity, Ban, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
@@ -12,14 +13,34 @@ const ACTION_LABELS = {
 
 function BadgeAction({ action }) {
   const palette = {
-    VENTE_ANNULEE: 'bg-red-500/10 border-red-500/30 text-red-400',
-    REMISE_ACCORDEE: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
-    VALIDATION_STOCK_MAGASINIER: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+    VENTE_ANNULEE: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', icon: <Ban size={14} /> },
+    REMISE_ACCORDEE: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', icon: <AlertCircle size={14} /> },
+    VALIDATION_STOCK_MAGASINIER: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', icon: <CheckCircle size={14} /> },
   };
 
+  const style = palette[action] || { bg: 'bg-slate-700', border: 'border-slate-600', text: 'text-slate-300', icon: <Activity size={14} /> };
+
   return (
-    <span className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-black ${palette[action] || 'bg-slate-700 border-slate-600 text-slate-300'}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-black ${style.bg} ${style.border} ${style.text}`}>
+      {style.icon}
       {ACTION_LABELS[action] || action}
+    </span>
+  );
+}
+
+function BadgeSeverite({ severite }) {
+  const palette = {
+    CRITIQUE: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', icon: <Ban size={14} /> },
+    ATTENTION: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', icon: <AlertCircle size={14} /> },
+    INFO: { bg: 'bg-sky-500/10', border: 'border-sky-500/30', text: 'text-sky-400', icon: <Activity size={14} /> },
+  };
+
+  const style = palette[severite] || palette.INFO;
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-black ${style.bg} ${style.border} ${style.text}`}>
+      {style.icon}
+      {severite || 'INFO'}
     </span>
   );
 }
@@ -33,7 +54,7 @@ export default function AuditPage() {
     endDate: '',
   });
 
-  const { data: rows = [], isLoading, isRefetching } = useQuery({
+const { data: rows = [], isLoading, isRefetching, error } = useQuery({
     queryKey: ['audit-journal', tenantId, depotId, filters],
     queryFn: async () => {
       if (!tenantId) return [];
@@ -54,7 +75,8 @@ export default function AuditPage() {
       <div className="flex items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black text-white">Journal d audit</h1>
+            <Activity size={28} className="text-indigo-400" />
+            <h1 className="text-2xl font-black text-white">Journal d'Audit</h1>
             <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider transition-all ${isRefetching ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isRefetching ? 'bg-indigo-400 animate-pulse' : 'bg-emerald-400'}`} />
               {isRefetching ? 'Syncing...' : 'Live Sync'}
@@ -64,13 +86,13 @@ export default function AuditPage() {
         </div>
       </div>
 
-      <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 mb-6">
+      <div className="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-2xl p-5 mb-6 shadow-xl shadow-black/20">
         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">Filtres</p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <select
             value={filters.action}
             onChange={(e) => setFilters((prev) => ({ ...prev, action: e.target.value }))}
-            className="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-slate-800/50 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
           >
             <option value="">Toutes les actions</option>
             <option value="VENTE_ANNULEE">Annulations</option>
@@ -82,46 +104,49 @@ export default function AuditPage() {
             type="date"
             value={filters.startDate}
             onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-            className="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-slate-800/50 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
           />
 
           <input
             type="date"
             value={filters.endDate}
             onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-            className="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-slate-800/50 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
           />
 
           <button
             onClick={() => setFilters({ action: '', startDate: '', endDate: '' })}
-            className="rounded-xl border border-slate-600 bg-slate-900 px-4 py-2.5 text-sm font-bold text-slate-300 hover:border-slate-500 hover:text-white transition-all"
+            className="rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm font-bold text-slate-300 hover:border-slate-500 hover:text-white hover:bg-slate-700/50 transition-all flex items-center justify-center gap-2"
           >
-            Reinitialiser
+            <RefreshCw size={14} />
+            Réinitialiser
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-sm text-red-400">
           {error.response?.data?.message || error.message || 'Impossible de charger le journal.'}
         </div>
       )}
 
-      <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+      <div className="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
             <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : rows.length === 0 ? (
           <div className="py-16 text-center text-slate-500">
-            Aucun evenement d audit trouve.
+            <Activity size={48} className="mx-auto mb-4 text-slate-600" />
+            <p>Aucun événement d'audit trouvé.</p>
           </div>
         ) : (
           <table className="w-full text-left">
             <thead>
-              <tr className="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-700">
+<tr className="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-700/50 bg-slate-800/30">
                 <th className="px-6 py-4">Action</th>
-                <th className="px-6 py-4">Reference</th>
+                <th className="px-6 py-4">Sévérité</th>
+                <th className="px-6 py-4">Référence</th>
                 <th className="px-6 py-4">Description</th>
                 <th className="px-6 py-4">Acteur</th>
                 <th className="px-6 py-4">Date</th>
@@ -129,8 +154,9 @@ export default function AuditPage() {
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-700/30">
+                <tr key={row.id} className="hover:bg-slate-800/50 transition-colors">
                   <td className="px-6 py-4"><BadgeAction action={row.action} /></td>
+                  <td className="px-6 py-4"><BadgeSeverite severite={row.severite} /></td>
                   <td className="px-6 py-4 text-indigo-400 font-black text-sm">{row.reference || '-'}</td>
                   <td className="px-6 py-4 text-slate-300 text-sm">
                     <div>{row.description}</div>
@@ -144,7 +170,7 @@ export default function AuditPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-400">
-                    <div>{row.actorEmail || 'Systeme'}</div>
+                    <div>{row.actorEmail || 'Système'}</div>
                     <div className="text-xs text-slate-600 mt-1">{row.actorRole || '-'}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-400">

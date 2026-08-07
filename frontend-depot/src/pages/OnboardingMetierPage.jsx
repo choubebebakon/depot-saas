@@ -10,12 +10,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuthToken } from "../utils/auth"; // FIX #2: Import de getAuthToken
+import Icon from "../shared/components/Icon";
 
 // ── Config des métiers ────────────────────────────────────────────
 const METIERS = [
   {
     id: "DEPOT_BOISSONS",
-    icon: "🥤",
+    icon: "Package",
     nom: "Dépôt de Boissons",
     description: "Gestion de stock, livraisons, consignes et tournées",
     couleur: "#2563eb",
@@ -24,7 +25,7 @@ const METIERS = [
   },
   {
     id: "BOUTIQUE",
-    icon: "🏪",
+    icon: "ShoppingBag",
     nom: "Boutique",
     description: "Commerce général, vente au détail",
     couleur: "#0891b2",
@@ -33,7 +34,7 @@ const METIERS = [
   },
   {
     id: "QUINCAILLERIE",
-    icon: "🛠",
+    icon: "Wrench",
     nom: "Quincaillerie / BTP",
     description: "Matériaux, devis et chantiers",
     couleur: "#b45309",
@@ -42,7 +43,7 @@ const METIERS = [
   },
   {
     id: "PHARMACIE",
-    icon: "💊",
+    icon: "Pill",
     nom: "Pharmacie",
     description: "Médicaments, lots et ordonnances",
     couleur: "#059669",
@@ -51,7 +52,7 @@ const METIERS = [
   },
   {
     id: "RESTAURANT",
-    icon: "🍽",
+    icon: "Utensils",
     nom: "Restaurant",
     description: "Tables, commandes et cuisine",
     couleur: "#dc2626",
@@ -60,7 +61,7 @@ const METIERS = [
   },
   {
     id: "TELEPHONIE",
-    icon: "📱",
+    icon: "Smartphone",
     nom: "Téléphonie",
     description: "Ventes, réparations et IMEI",
     couleur: "#7c3aed",
@@ -69,7 +70,7 @@ const METIERS = [
   },
   {
     id: "SUPERMARCHE",
-    icon: "🛒",
+    icon: "ShoppingCart",
     nom: "Supermarché",
     description: "Rayons, codes-barres et gestion stock",
     couleur: "#f59e0b",
@@ -78,7 +79,7 @@ const METIERS = [
   },
   {
     id: "CIMENT_BTP",
-    icon: "🏗️",
+    icon: "HardHat",
     nom: "Ciment / BTP",
     description: "Livraisons, chantiers et flotte véhicules",
     couleur: "#b45309",
@@ -87,24 +88,24 @@ const METIERS = [
   },
   {
     id: "PRESSING",
-    icon: "👔",
+    icon: "Shirt",
     nom: "Pressing",
     description: "Gestion des dépôts, lavages et retraits",
     couleur: "#7c3aed",
     gradient: "from-violet-500 to-violet-700",
     features: ["Suivi dépôts", "Gestion retraits", "Statuts vêtements", "Caisse", "Rapports"],
   },
-  { id: "ELEVAGE", icon: "🐄", nom: "Élevage", description: "Gestion des troupeaux, alimentation et suivi vétérinaire", couleur: "#65a30d", gradient: "from-lime-500 to-green-600", features: ["Suivi des lots d'animaux", "Événements vétérinaires", "Alimentation et croissance", "Ventes de bétail"] },
-  { id: "SALON_BEAUTE", icon: "💇", nom: "Salon de Coiffure / Beauté", description: "Rendez-vous, prestations et gestion clientèle", couleur: "#ec4899", gradient: "from-pink-500 to-rose-600", features: ["Agenda des rendez-vous", "Prestations et tarifs", "Fidélisation client", "Vente de produits"] },
-  { id: "PARFUMERIE", icon: "🧴", nom: "Parfumerie / Cosmétique", description: "Ventes, fidélité et catalogue produits", couleur: "#d946ef", gradient: "from-fuchsia-500 to-purple-600", features: ["Catalogue beauté", "Programme de fidélité", "Gestion des stocks", "Promotions"] },
-  { id: "BOULANGERIE", icon: "🥖", nom: "Boulangerie / Pâtisserie", description: "Production du jour, recettes et ventes", couleur: "#d97706", gradient: "from-amber-500 to-orange-600", features: ["Production journalière", "Recettes et ingrédients", "Gestion des invendus", "Ventes en boutique"] },
-  { id: "GLACIER_SNACK", icon: "🍦", nom: "Glacier / Snack", description: "Compositions, commandes rapides et caisse", couleur: "#06b6d4", gradient: "from-cyan-500 to-teal-600", features: ["Compositions de glaces", "Commandes rapides", "Menu du jour", "Caisse"] },
-  { id: "LIBRAIRIE", icon: "📚", nom: "Librairie / Papeterie", description: "Catalogue livres, papeterie et commandes spéciales", couleur: "#6366f1", gradient: "from-indigo-500 to-blue-600", features: ["Catalogue livres", "Recherche par ISBN", "Commandes spéciales", "Fournitures papeterie"] },
-  { id: "CLINIQUE", icon: "🏥", nom: "Clinique / Médical", description: "Dossiers patients, consultations et prescriptions", couleur: "#0ea5e9", gradient: "from-sky-500 to-blue-600", features: ["Dossiers médicaux", "Consultations", "Prescriptions", "Agenda RDV"] },
-  { id: "TRANSPORT", icon: "🚛", nom: "Transport / Logistique", description: "Suivi colis, flotte véhicules et trajets", couleur: "#f97316", gradient: "from-orange-500 to-red-600", features: ["Suivi colis en temps réel", "Gestion de flotte", "Planification trajets", "Clients transport"] },
-  { id: "IMMOBILIER", icon: "🏠", nom: "Gestion Immobilière", description: "Biens, locations, loyers et interventions", couleur: "#14b8a6", gradient: "from-teal-500 to-emerald-600", features: ["Portefeuille de biens", "Contrats de location", "Suivi des loyers", "Interventions techniques"] },
-  { id: "HOTEL", icon: "🏨", nom: "Hôtel", description: "Chambres, réservations et consommations", couleur: "#8b5cf6", gradient: "from-violet-500 to-purple-600", features: ["Plan des chambres", "Réservations en ligne", "Check-in/out", "Consommations"] },
-];
+  { id: "ELEVAGE", icon: "Tractor", nom: "Élevage", description: "Gestion des troupeaux, alimentation et suivi vétérinaire", couleur: "#65a30d", gradient: "from-lime-500 to-green-600", features: ["Suivi des lots d'animaux", "Événements vétérinaires", "Alimentation et croissance", "Ventes de bétail"] },
+  { id: "SALON_BEAUTE", icon: "Scissors", nom: "Salon de Coiffure / Beauté", description: "Rendez-vous, prestations et gestion clientèle", couleur: "#ec4899", gradient: "from-pink-500 to-rose-600", features: ["Agenda des rendez-vous", "Prestations et tarifs", "Fidélisation client", "Vente de produits"] },
+  { id: "PARFUMERIE", icon: "SprayCan", nom: "Parfumerie / Cosmétique", description: "Ventes, fidélité et catalogue produits", couleur: "#d946ef", gradient: "from-fuchsia-500 to-purple-600", features: ["Catalogue beauté", "Programme de fidélité", "Gestion des stocks", "Promotions"] },
+  { id: "BOULANGERIE", icon: "Bread", nom: "Boulangerie / Pâtisserie", description: "Production du jour, recettes et ventes", couleur: "#d97706", gradient: "from-amber-500 to-orange-600", features: ["Production journalière", "Recettes et ingrédients", "Gestion des invendus", "Ventes en boutique"] },
+  { id: "GLACIER_SNACK", icon: "IceCream", nom: "Glacier / Snack", description: "Compositions, commandes rapides et caisse", couleur: "#06b6d4", gradient: "from-cyan-500 to-teal-600", features: ["Compositions de glaces", "Commandes rapides", "Menu du jour", "Caisse"] },
+  { id: "LIBRAIRIE", icon: "Library", nom: "Librairie / Papeterie", description: "Catalogue livres, papeterie et commandes spéciales", couleur: "#6366f1", gradient: "from-indigo-500 to-blue-600", features: ["Catalogue livres", "Recherche par ISBN", "Commandes spéciales", "Fournitures papeterie"] },
+  { id: "CLINIQUE", icon: "Hospital", nom: "Clinique / Médical", description: "Dossiers patients, consultations et prescriptions", couleur: "#0ea5e9", gradient: "from-sky-500 to-blue-600", features: ["Dossiers médicaux", "Consultations", "Prescriptions", "Agenda RDV"] },
+  { id: "TRANSPORT", icon: "Truck", nom: "Transport / Logistique", description: "Suivi colis, flotte véhicules et trajets", couleur: "#f97316", gradient: "from-orange-500 to-red-600", features: ["Suivi colis en temps réel", "Gestion de flotte", "Planification trajets", "Clients transport"] },
+  { id: "IMMOBILIER", icon: "Home", nom: "Gestion Immobilière", description: "Biens, locations, loyers et interventions", couleur: "#14b8a6", gradient: "from-teal-500 to-emerald-600", features: ["Portefeuille de biens", "Contrats de location", "Suivi des loyers", "Interventions techniques"] },
+  { id: "HOTEL", icon: "Hotel", nom: "Hôtel", description: "Chambres, réservations et consommations", couleur: "#8b5cf6", gradient: "from-violet-500 to-purple-600", features: ["Plan des chambres", "Réservations en ligne", "Check-in/out", "Consommations"] },
+  ];
 
 export default function OnboardingMetierPage() {
   const navigate = useNavigate();
@@ -163,7 +164,7 @@ export default function OnboardingMetierPage() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <div style={styles.header}>
         <div style={styles.logo}>
-          <span style={styles.logoIcon}>📦</span>
+          <Icon name="Package" size={24} style={{ color: '#38bdf8' }} />
           <span style={styles.logoText}>GeStock</span>
         </div>
         <div style={styles.step}>
@@ -211,7 +212,7 @@ export default function OnboardingMetierPage() {
               {/* Indicateur sélection */}
               {isSelected && (
                 <div style={{ ...styles.checkBadge, backgroundColor: metier.couleur }}>
-                  ✓
+                  <Icon name="Check" size={12} />
                 </div>
               )}
 
@@ -224,7 +225,7 @@ export default function OnboardingMetierPage() {
                   transition: "all 0.2s ease",
                 }}
               >
-                <span style={styles.icon}>{metier.icon}</span>
+                <Icon name={metier.icon} size={26} />
               </div>
 
               {/* Nom & description */}
@@ -244,7 +245,7 @@ export default function OnboardingMetierPage() {
               >
                 {metier.features.map((f) => (
                   <span key={f} style={{ ...styles.featurePill, borderColor: metier.couleur + "60" }}>
-                    <span style={{ color: metier.couleur }}>✓</span> {f}
+                    <Icon name="Check" size={10} style={{ color: metier.couleur }} /> {f}
                   </span>
                 ))}
               </div>
@@ -261,7 +262,7 @@ export default function OnboardingMetierPage() {
           <p style={styles.selectionLabel}>
             Métier sélectionné :{" "}
             <strong style={{ color: selectedMetier?.couleur }}>
-              {selectedMetier?.icon} {selectedMetier?.nom}
+              <Icon name={selectedMetier?.icon} size={16} /> {selectedMetier?.nom}
             </strong>
           </p>
         )}
@@ -280,7 +281,7 @@ export default function OnboardingMetierPage() {
           }}
         >
           {loading ? (
-            <span style={styles.spinner}>⟳ Configuration en cours...</span>
+            <span style={styles.spinner}><Icon name="RefreshCw" size={16} /> Configuration en cours...</span>
           ) : (
             <>
               {selected
@@ -291,7 +292,7 @@ export default function OnboardingMetierPage() {
         </button>
 
         <p style={styles.note}>
-          ⚠️ Ce choix est définitif. Contactez le support pour le modifier.
+          <Icon name="AlertTriangle" size={12} /> Ce choix est définitif. Contactez le support pour le modifier.
         </p>
       </div>
 
@@ -457,7 +458,6 @@ const styles = {
     justifyContent: "center",
     marginBottom: "4px",
   },
-  icon: { fontSize: "26px" },
   cardTitle: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,

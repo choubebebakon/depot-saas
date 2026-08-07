@@ -13,6 +13,7 @@ import OfflineBanner from './components/OfflineBanner';
 import InstallPWA from './components/InstallPWA';
 import QuotaUpgradeAlert from './components/QuotaUpgradeAlert';
 import LandingPage from './pages/LandingPage';
+import GesTockLandingPage from './pages/GesTockLandingPage';
 import OnboardingMetierPage from "./pages/OnboardingMetierPage";
 import { OnboardingRoute } from "./components/guards/OnboardingGuard";
 import SectorGuard, { getSectorPrefix } from './components/guards/SectorGuard';
@@ -26,6 +27,11 @@ const ContactPage = lazy(() => import('./pages/ContactPage'));
 const CguPage = lazy(() => import('./pages/CguPage'));
 const BientotDisponible = lazy(() => import('./pages/BientotDisponible'));
 const MainLayout = lazy(() => import('./layouts/MainLayout'));
+
+// SuperAdmin
+const SuperAdminLayout = lazy(() => import('./layouts/SuperAdminLayout'));
+const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
+const SuperAdminSupport = lazy(() => import('./pages/superadmin/SuperAdminSupport'));
 
 // Importation des routes par métier
 const DepotBoissonsRoutes = lazy(() => import('./modules/depot-boissons/routes'));
@@ -63,6 +69,18 @@ function PrivateRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
+// Guard dédié aux routes SuperAdmin (/admin/*) — protège l'accès au panel.
+function SuperAdminRoute({ children }) {
+  const { isAuthenticated, loading, user } = useAuth();
+  if (loading) return <AppLoader />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === 'ADMIN';
+  if (!isSuperAdmin) return <Navigate to="/dashboard" replace />;
+
+  return children;
+}
+
 function SectorHomeRedirect() {
   const { metier, isAuthenticated, loading } = useAuth();
   if (loading) return <AppLoader />;
@@ -97,7 +115,8 @@ function AppRoutes() {
       <ErrorBoundary>
         <Routes>
           {/* Routes de base et d'authentification */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<GesTockLandingPage />} />
+          <Route path="/depot-boissons" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pricing" element={<PricingPage />} />
@@ -426,6 +445,25 @@ function AppRoutes() {
               </SectorGuard>
             } 
           />
+
+{/* 🔐 SUPERADMIN ROUTES */}
+          <Route 
+            path="/admin/*" 
+            element={
+              <SuperAdminRoute>
+                <PrivateRoute>
+                  <Suspense fallback={<AppLoader />}>
+                    <SuperAdminLayout />
+                  </Suspense>
+                </PrivateRoute>
+              </SuperAdminRoute>
+            }
+          >
+            <Route path="dashboard" element={<SuperAdminDashboard />} />
+            <Route path="support" element={<SuperAdminSupport />} />
+            <Route path="users" element={<div className="p-6 text-white">Gestion des utilisateurs (à venir)</div>} />
+            <Route path="analytics" element={<div className="p-6 text-white">Analytics avancés (à venir)</div>} />
+          </Route>
 
           {/* Route par défaut globale si l'URL ne correspond à rien */}
           <Route path="*" element={<SectorHomeRedirect />} />

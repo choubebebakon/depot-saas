@@ -2,33 +2,34 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { openNotchPayCheckout } from '../api/notchpayCheckout';
+import Icon from '../shared/components/Icon';
 
 const TVA = 0.1925;
 
 const PLANS = [
   {
-    id: 'TRIAL', name: 'TRIAL', icon: '🚀', color: 'slate',
+    id: 'TRIAL', name: 'TRIAL', icon: 'Rocket', color: 'slate',
     monthly: 0, annual: 0, depots: 1,
     badge: null,
     desc: 'Démarrez sans engagement',
     features: ['1 dépôt', '30 jours d\'essai', 'Toutes les fonctionnalités', 'Support email'],
   },
   {
-    id: 'SOLO', name: 'SOLO', icon: '⚡', color: 'blue',
+    id: 'SOLO', name: 'SOLO', icon: 'Zap', color: 'blue',
     monthly: 20000, annual: 200000, depots: 1,
     badge: null,
     desc: 'Pour les petits commerces',
     features: ['1 dépôt', 'Gestion des stocks', 'Rapports basiques', 'Support standard', 'Exports Excel'],
   },
   {
-    id: 'PME', name: 'PME', icon: '🏆', color: 'amber',
+    id: 'PME', name: 'PME', icon: 'Trophy', color: 'amber',
     monthly: 50000, annual: 500000, depots: 5,
     badge: 'RECOMMANDÉ',
     desc: 'La référence multi-dépôts',
     features: ['5 dépôts', 'Multi-stock avancé', 'Rapports détaillés', 'Support prioritaire', 'API complète', 'Tournées de livraison'],
   },
   {
-    id: 'ENTERPRISE', name: 'ENTERPRISE', icon: '🌐', color: 'purple',
+    id: 'ENTERPRISE', name: 'ENTERPRISE', icon: 'Globe', color: 'purple',
     monthly: 100000, annual: 1000000, depots: 20,
     badge: null,
     desc: 'Grandes structures',
@@ -37,11 +38,11 @@ const PLANS = [
 ];
 
 const PAYMENT_METHODS = [
-  { id: 'MTN_MOMO', label: 'MTN MoMo', icon: '📱', color: '#FFC107', bg: 'rgba(255,193,7,0.12)', border: 'rgba(255,193,7,0.4)', requiresPhone: true },
-  { id: 'ORANGE_MONEY', label: 'Orange Money', icon: '🟠', color: '#FF6B00', bg: 'rgba(255,107,0,0.12)', border: 'rgba(255,107,0,0.4)', requiresPhone: true },
-  { id: 'VISA_CARD', label: 'Visa', icon: '💳', color: '#1A73E8', bg: 'rgba(26,115,232,0.12)', border: 'rgba(26,115,232,0.4)', requiresPhone: false },
-  { id: 'MASTERCARD', label: 'Mastercard', icon: '💳', color: '#EB001B', bg: 'rgba(235,0,27,0.12)', border: 'rgba(235,0,27,0.4)', requiresPhone: false },
-  { id: 'STRIPE', label: 'Stripe', icon: '🔒', color: '#635BFF', bg: 'rgba(99,91,255,0.12)', border: 'rgba(99,91,255,0.4)', requiresPhone: false },
+  { id: 'MTN_MOMO', label: 'MTN MoMo', icon: 'Smartphone', color: '#FFC107', bg: 'rgba(255,193,7,0.12)', border: 'rgba(255,193,7,0.4)', requiresPhone: true },
+  { id: 'ORANGE_MONEY', label: 'Orange Money', icon: 'Circle', color: '#FF6B00', bg: 'rgba(255,107,0,0.12)', border: 'rgba(255,107,0,0.4)', requiresPhone: true },
+  { id: 'VISA_CARD', label: 'Visa', icon: 'CreditCard', color: '#1A73E8', bg: 'rgba(26,115,232,0.12)', border: 'rgba(26,115,232,0.4)', requiresPhone: false },
+  { id: 'MASTERCARD', label: 'Mastercard', icon: 'CreditCard', color: '#EB001B', bg: 'rgba(235,0,27,0.12)', border: 'rgba(235,0,27,0.4)', requiresPhone: false },
+  { id: 'STRIPE', label: 'Stripe', icon: 'Lock', color: '#635BFF', bg: 'rgba(99,91,255,0.12)', border: 'rgba(99,91,255,0.4)', requiresPhone: false },
 ];
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
@@ -225,13 +226,13 @@ export default function PricingPage() {
                 )}
                 {plan.badge && (
                   <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#000', fontSize: 11, fontWeight: 900, padding: '4px 16px', borderRadius: 100, letterSpacing: 1, whiteSpace: 'nowrap' }}>
-                    ⭐ {plan.badge}
+                    <Icon name="Star" size={12} /> {plan.badge}
                   </div>
                 )}
 
                 {/* Plan header */}
                 <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>{plan.icon}</div>
+                  <div style={{ fontSize: 36, marginBottom: 8 }}><Icon name={plan.icon} size={36} style={{ color: accent }} /></div>
                   <h3 style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: '0 0 4px', letterSpacing: -0.5 }}>{plan.name}</h3>
                   <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>{plan.desc}</p>
                 </div>
@@ -251,7 +252,7 @@ export default function PricingPage() {
                     </>
                   )}
                   <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: `rgba(${accent === planColors.amber ? '245,158,11' : '59,130,246'},0.1)`, border: `1px solid ${accent}33`, borderRadius: 100, padding: '4px 12px' }}>
-                    <span style={{ fontSize: 12, color: accent, fontWeight: 700 }}>🏪 {plan.depots} dépôt{plan.depots > 1 ? 's' : ''}</span>
+                    <Icon name="Store" size={12} style={{ color: accent }} /> <span style={{ fontSize: 12, color: accent, fontWeight: 700 }}>{plan.depots} dépôt{plan.depots > 1 ? 's' : ''}</span>
                   </div>
                 </div>
 
@@ -259,7 +260,7 @@ export default function PricingPage() {
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {plan.features.map((f, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#94a3b8' }}>
-                      <span style={{ width: 18, height: 18, borderRadius: '50%', background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: accent }}>✓</span>
+                      <span style={{ width: 18, height: 18, borderRadius: '50%', background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: accent }}><Icon name="Check" size={10} /></span>
                       {f}
                     </li>
                   ))}
@@ -282,7 +283,7 @@ export default function PricingPage() {
                           padding: '12px 8px', borderRadius: 12, background: m.bg, border: `1px solid ${m.border}`,
                           color: m.color, fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                         }}>
-                          {m.icon} {m.label}
+                          <Icon name={m.icon} size={16} /> {m.label}
                         </button>
                       ))}
                     </div>
@@ -294,7 +295,7 @@ export default function PricingPage() {
                           padding: '12px 4px', borderRadius: 12, background: m.bg, border: `1px solid ${m.border}`,
                           color: m.color, fontWeight: 700, fontSize: 11, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                         }}>
-                          <span style={{ fontSize: 18 }}>{m.icon}</span>
+                          <Icon name={m.icon} size={18} />
                           {m.label}
                         </button>
                       ))}
@@ -324,8 +325,14 @@ export default function PricingPage() {
             ))}
           </div>
           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
-            {['🔒 Paiements chiffrés SSL', '🏦 Fonds protégés', '✅ Remboursement 14 jours'].map(t => (
-              <span key={t} style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{t}</span>
+            {[
+              { icon: 'Lock', text: 'Paiements chiffrés SSL' },
+              { icon: 'Building2', text: 'Fonds protégés' },
+              { icon: 'CheckCircle', text: 'Remboursement 14 jours' }
+            ].map(t => (
+              <span key={t.text} style={{ fontSize: 13, color: '#475569', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name={t.icon} size={14} /> {t.text}
+              </span>
             ))}
           </div>
         </div>
@@ -346,7 +353,7 @@ export default function PricingPage() {
               {/* Modal header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
                 <div style={{ width: 56, height: 56, borderRadius: 16, background: m.bg, border: `1px solid ${m.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                  {m.icon}
+                  <Icon name={m.icon} size={28} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, color: '#fff', fontSize: 22, fontWeight: 900 }}>Payer via {m.label}</h3>
@@ -377,7 +384,7 @@ export default function PricingPage() {
                     Numéro {m.label}
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 15 }}>📱</span>
+                    <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 15 }}><Icon name="Smartphone" size={16} /></span>
                     <input
                       type="tel"
                       value={phone}
@@ -396,7 +403,7 @@ export default function PricingPage() {
 
               {!m.requiresPhone && (
                 <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 16, marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: 20 }}>🔒</span>
+                  <Icon name="Lock" size={20} />
                   <p style={{ margin: 0, color: '#94a3b8', fontSize: 13, lineHeight: 1.6 }}>
                     Vous serez redirigé vers la page de paiement sécurisée {m.label} pour entrer vos données bancaires.
                   </p>
@@ -415,12 +422,12 @@ export default function PricingPage() {
                   background: loading ? '#334155' : `linear-gradient(135deg, ${m.color}, ${m.color}cc)`,
                   color: '#fff', opacity: loading ? 0.7 : 1, boxShadow: loading ? 'none' : `0 8px 24px ${m.bg}`,
                 }}>
-                  {loading ? '⏳ Traitement...' : `Payer ${fmt(total)} FCFA`}
+                  {loading ? <><Icon name="Clock" size={16} /> Traitement...</> : `Payer ${fmt(total)} FCFA`}
                 </button>
               </div>
 
               <p style={{ textAlign: 'center', color: '#334155', fontSize: 12, marginTop: 16, marginBottom: 0 }}>
-                🔒 Transaction sécurisée · GeStock SaaS
+                <Icon name="Lock" size={12} /> Transaction sécurisée · GeStock SaaS
               </p>
             </div>
           </div>

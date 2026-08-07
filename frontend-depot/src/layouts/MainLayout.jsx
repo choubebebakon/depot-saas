@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, Package, MapPin, Users, Settings, LogOut, PlusCircle, Printer, BarChart3, Warehouse, CreditCard, Tag, AlertTriangle, Box, ClipboardList, Users2, FileText, Activity, ShieldCheck, Wrench, ArrowRightLeft, Target, Receipt, Truck } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, MapPin, Users, Settings, LogOut, PlusCircle, Printer, BarChart3, Warehouse, CreditCard, Tag, AlertTriangle, Box, ClipboardList, Users2, FileText, Activity, ShieldCheck, Wrench, ArrowRightLeft, Target, Receipt, Truck, Building2, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -59,10 +59,12 @@ import VehiculesPage from '../pages/garage/VehiculesPage';
 import CimentLivraisonsPage from '../pages/ciment-btp/LivraisonsPage';
 import CimentVehiculesPage from '../pages/ciment-btp/VehiculesPage';
 import SupermarchePage from '../pages/supermarche/SupermarchePage';
+import SupportPage from '../pages/SupportPage';
 
 import Sidebar from '../components/Sidebar';
 import PendingSaleAlert from '../components/PendingSaleAlert';
 import GeStockChatbot from '../components/chatbot/GeStockChatbot';
+import SupportWidget from '../components/SupportWidget';
 import logo from '../assets/logo-neon.png';
 
 const ICON_SIZE = 20;
@@ -78,15 +80,16 @@ function AccessDeniedCard() {
   );
 }
 
-const ADMIN_NAV = [
-  { id: '/settings', label: 'Paramètres', icon: '⚙️', roles: [ROLES.PATRON, ROLES.GERANT] },
-  { id: '/personnel', label: 'Utilisateurs', icon: '👤', roles: [ROLES.PATRON, ROLES.GERANT] },
-  { id: '/depots', label: 'Dépôts', icon: '🏢', roles: [ROLES.PATRON, ROLES.GERANT] },
-  { id: '/audit', label: 'Audit Patron', icon: '🛡️', roles: [ROLES.PATRON] },
-  { id: '/analyses', label: 'Analyses BI', icon: '📊', roles: [ROLES.PATRON, ROLES.GERANT] },
-];
-
 const ALL_ROLES = [ROLES.PATRON, ROLES.GERANT, ROLES.CAISSIER, ROLES.MAGASINIER, ROLES.COMMERCIAL, ROLES.COMPTABLE];
+
+const ADMIN_NAV = [
+  { id: '/settings', label: 'Paramètres', icon: 'Settings', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/personnel', label: 'Utilisateurs', icon: 'Users', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/depots', label: 'Dépôts', icon: 'Building2', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/audit', label: 'Audit Patron', icon: 'ShieldCheck', roles: [ROLES.PATRON] },
+  { id: '/analyses', label: 'Analyses BI', icon: 'BarChart3', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/support', label: 'Support & Aide', icon: 'LifeBuoy', roles: ALL_ROLES },
+];
 
 const PAGE_REGISTRY = {
   '/dashboard': <MetierDashboard />,
@@ -162,6 +165,7 @@ const PAGE_REGISTRY = {
   '/ciment-btp/vehicules': <CimentVehiculesPage />,
   '/supermarche/rayons': <SupermarchePage />,
   '/supermarche/scan': <SupermarchePage />,
+  '/support': <SupportPage />,
 };
 
 const ROLE_GATED = ['/personnel', '/depots', '/audit', '/analyses'];
@@ -341,13 +345,14 @@ export default function MainLayout() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <div className="absolute left-0 top-0 h-full">
+<div className="absolute left-0 top-0 h-full">
             <Sidebar {...commonSidebarProps} setSidebarOpen={setSidebarOpen} />
           </div>
         </div>
       )}
 
       <GeStockChatbot metier={user?.metier} tenantNom={user?.nomEntreprise} />
+      <SupportWidget />
 
       {paywallError && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">

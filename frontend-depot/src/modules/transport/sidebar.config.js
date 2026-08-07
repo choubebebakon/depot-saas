@@ -1,16 +1,16 @@
 export const SIDEBAR_MENUS = [
-  { label: 'Tableau de bord', icon: '📊', path: '/transport/dashboard' },
-  { label: 'Colis',           icon: '📦', path: '/transport/colis' },
+  { label: 'Tableau de bord', icon: 'BarChart3', path: '/transport/dashboard' },
+  { label: 'Colis',           icon: 'Package', path: '/transport/colis' },
   { label: 'Trajets',         icon: '🚛', path: '/transport/trajets' },
-  { label: 'Flotte',          icon: '🚚', path: '/transport/flotte' },
+  { label: 'Flotte',          icon: 'Truck', path: '/transport/flotte' },
   { label: 'Chauffeurs',      icon: '👨‍✈️', path: '/transport/chauffeurs' },
-  { label: 'Livraisons',      icon: '📋', path: '/transport/livraisons' },
+  { label: 'Livraisons',      icon: 'Clipboard', path: '/transport/livraisons' },
   { label: 'Clients',         icon: '👤', path: '/transport/clients' },
-  { label: 'Caisse',          icon: '🏧', path: '/transport/caisse' },
-  { label: 'Dépenses',        icon: '💸', path: '/transport/depenses' },
-  { label: 'Rapports',        icon: '📈', path: '/transport/rapports' },
-  { label: 'Personnel',       icon: '👥', path: '/transport/personnel' },
-  { label: 'Paramètres',      icon: '⚙️', path: '/transport/parametres' },
+  { label: 'Caisse',          icon: 'Wallet', path: '/transport/caisse' },
+  { label: 'Dépenses',        icon: 'TrendingUp', path: '/transport/depenses' },
+  { label: 'Rapports',        icon: 'TrendingUp', path: '/transport/rapports' },
+  { label: 'Personnel',       icon: 'Users', path: '/transport/personnel' },
+  { label: 'Paramètres',      icon: 'Settings', path: '/transport/parametres' },
 ];
 export const SIDEBAR_CONFIG = {
   TRANSPORT: {

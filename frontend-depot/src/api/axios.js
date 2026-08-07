@@ -107,7 +107,8 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       const isLoginRequest = originalRequest.url?.includes('/auth/login');
-      const isRefreshRequest = originalRequest.url?.includes('/auth/refresh');
+      // CORRECTION 1 : Vérification stricte pour la route de refresh
+      const isRefreshRequest = originalRequest.url?.endsWith('/auth/refresh');
 
       if (isLoginRequest || isRefreshRequest) {
         if (!isLoginRequest) {
@@ -119,10 +120,15 @@ api.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        return new Promise(resolve => {
-          subscribeTokenRefresh(token => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            resolve(api(originalRequest));
+        // CORRECTION 2 : Gestion du rejet si le refresh échoue pour les requêtes en attente
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh((token) => {
+            if (token) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(api(originalRequest));
+            } else {
+              reject(error);
+            }
           });
         });
       }
@@ -149,6 +155,10 @@ api.interceptors.response.use(
         isRefreshing = false;
         localStorage.removeItem('depot_token');
         localStorage.removeItem('depot_user');
+        
+        // CORRECTION 3 : On prévient les requêtes en attente que le refresh a échoué (token null)
+        onRefreshed(null); 
+        
         window.location.href = '/login';
         return Promise.reject(err);
       }
