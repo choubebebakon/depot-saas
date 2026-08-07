@@ -2,10 +2,15 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { StatutTransfert, TypeMouvement } from '@prisma/client';
 import { CreateTransfertDto } from './dto/create-transfert.dto';
+import { AuditService } from '../audit/audit.service';
+import { AUDIT_ACTIONS } from '../audit/audit-actions.constants';
 
 @Injectable()
 export class TransfertsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   /**
    * Crée un brouillon de transfert.
@@ -38,7 +43,7 @@ export class TransfertsService {
    * Valide le transfert et impacte physiquement les stocks.
    */
   async validerTransfert(id: string, tenantId: string, actor: any) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const transfert = await tx.transfertStock.findFirst({
         where: { id, tenantId },
         include: { lignes: true },
@@ -109,6 +114,22 @@ export class TransfertsService {
         data: { statut: StatutTransfert.TERMINE },
       });
     });
+
+    await this.auditService.logEvent({
+      tenantId,
+      depotId: result.sourceDepotId,
+      actorUserId: actor?.userId ?? null,
+      actorEmail: actor?.email ?? null,
+      actorRole: actor?.role ?? null,
+      action: AUDIT_ACTIONS.TRANSFERT_VALIDE,
+      targetType: 'TransfertStock',
+      targetId: result.id,
+      reference: result.reference,
+      description: `Transfert ${result.reference} validé (${result.sourceDepotId} → ${result.destDepotId})`,
+      valeurApres: result,
+    });
+
+    return result;
   }
 
   async findAll(tenantId: string) {

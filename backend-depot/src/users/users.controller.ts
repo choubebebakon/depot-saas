@@ -49,7 +49,6 @@ export class UsersController {
     },
     @Req() req: any,
   ) {
-    // Le tenantId est injecté depuis le JWT si absent du body
     const tenantId = body.tenantId || req.user?.tenantId;
     return this.usersService.create({ ...body, tenantId });
   }
@@ -62,7 +61,6 @@ export class UsersController {
     return this.usersService.findAll(tenantId, depotId);
   }
 
-  // Retourne uniquement les utilisateurs avec le rôle COMMERCIAL
   @Get('commerciaux')
   async findCommerciaux(@Query('tenantId') tenantId: string) {
     return this.usersService.findCommerciaux(tenantId);
@@ -78,8 +76,9 @@ export class UsersController {
   async updateStatus(
     @Param('id') id: string,
     @Body() body: { isActive: boolean },
+    @Req() req: any,
   ) {
-    return this.usersService.updateStatus(id, body.isActive);
+    return this.usersService.updateStatus(id, body.isActive, req.user);
   }
 
   // Mise à jour d'un utilisateur (rôle, nom, dépôt)
@@ -87,13 +86,14 @@ export class UsersController {
   async update(
     @Param('id') id: string,
     @Body() body: { nom?: string; role?: RoleUser; depotId?: string },
+    @Req() req: any,
   ) {
-    return this.usersService.update(id, body);
+    return this.usersService.update(id, body, req.user);
   }
 
   // Suppression d'un utilisateur
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+  async remove(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.remove(id, req.user);
   }
 }

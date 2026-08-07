@@ -6,7 +6,7 @@ import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 
-@Controller('tenants')
+@Controller('tenant')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
@@ -20,6 +20,12 @@ export class TenantsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateTenantDto: UpdateTenantDto) {
     return this.tenantsService.update(id, updateTenantDto);
+  }
+
+  @Roles(RoleUser.PATRON, RoleUser.GERANT)
+  @Get('info')
+  getInfo() {
+    return this.tenantsService.getInfo();
   }
 
   @Roles(RoleUser.PATRON, RoleUser.GERANT)

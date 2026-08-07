@@ -3,8 +3,10 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { MetierUsersController } from './metier-users.controller';
 import { PrismaService } from '../prisma.service';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
+  imports: [AuditModule],
   controllers: [UsersController, MetierUsersController],
   providers: [UsersService, PrismaService],
   exports: [UsersService],

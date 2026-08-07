@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { RoleUser } from '@prisma/client';
+import { AuditSeverite, RoleUser } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuditService } from './audit.service';
 
@@ -13,6 +13,7 @@ export class AuditController {
     @Query('tenantId') tenantId: string,
     @Query('depotId') depotId?: string,
     @Query('action') action?: string,
+    @Query('severite') severite?: AuditSeverite,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('limit') limit?: string,
@@ -20,6 +21,7 @@ export class AuditController {
     return this.auditService.getJournalPatron(tenantId, {
       depotId,
       action,
+      severite,
       startDate,
       endDate,
       limit: limit ? parseInt(limit, 10) : 100,

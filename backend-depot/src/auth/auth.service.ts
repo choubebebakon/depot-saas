@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service';
 import { EmailService } from '../common/email/email.service';
 import * as bcrypt from 'bcrypt';
 import * as argon2 from 'argon2';
+import { randomBytes } from 'crypto';
 import { Role, StatutAbonnement } from '@prisma/client';
 
 @Injectable()
@@ -114,6 +115,23 @@ export class AuthService {
       data: { refreshTokenHash },
     });
 
+    // Clean up old refresh tokens for this user
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    // Create new refresh token record with random token to avoid unique constraint violations
+    const randomToken = randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    await this.prisma.refreshToken.create({
+      data: {
+        token: randomToken,
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
     return {
       access_token,
       refresh_token,
@@ -147,6 +165,9 @@ export class AuthService {
       where: { id: userId },
       data: { refreshTokenHash: null },
     });
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
   }
 
   async validateRefreshTokenFromCookie(token: string) {
@@ -157,6 +178,7 @@ export class AuthService {
 
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
+        include: { refreshTokens: true },
       });
 
       if (
@@ -164,6 +186,14 @@ export class AuthService {
         !user.refreshTokenHash ||
         !(await argon2.verify(user.refreshTokenHash, token))
       ) {
+        return null;
+      }
+
+      // Check if there's a valid refresh token record
+      const validRefreshToken = user.refreshTokens.find(
+        (rt) => rt.expiresAt > new Date(),
+      );
+      if (!validRefreshToken) {
         return null;
       }
 

@@ -5,8 +5,10 @@ import { MetierDepotsController } from './metier-depots.controller';
 import { TransfertsService } from './transferts.service';
 import { TransfertsController } from './transferts.controller';
 import { PrismaService } from '../prisma.service';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
+  imports: [AuditModule],
   controllers: [DepotsController, TransfertsController, MetierDepotsController],
   providers: [DepotsService, TransfertsService, PrismaService],
   exports: [DepotsService],

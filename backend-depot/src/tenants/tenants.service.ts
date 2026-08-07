@@ -36,6 +36,14 @@ export class TenantsService {
     });
   }
 
+  async getInfo() {
+    // Récupère les infos du tenant actuel (basé sur l'utilisateur authentifié)
+    // Pour l'instant, retourne une structure de base
+    return {
+      message: 'Tenant info endpoint - implementation needed',
+    };
+  }
+
   async findOne(id: string) {
     return this.prisma.tenant.findUnique({
       where: { id },

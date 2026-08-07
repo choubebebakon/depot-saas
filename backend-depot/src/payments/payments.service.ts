@@ -22,6 +22,7 @@ import { NotificationsService } from '../core/notifications/notifications.servic
 
 interface CreatePendingPaymentInput {
   tenantId: string;
+  userId?: string;
   planPurchased: PlanType;
   billingCycle: BillingCycle;
   method: PaymentMethod;
@@ -29,6 +30,8 @@ interface CreatePendingPaymentInput {
   customerEmail: string;
   customerName?: string;
   momoPhoneNumber?: string | null;
+  customTotalAmount?: number;
+  changeType?: string;
 }
 
 // Pricing structure for Site Vitrine subscription plans

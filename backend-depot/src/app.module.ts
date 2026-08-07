@@ -71,6 +71,7 @@ import { HotellerieModule } from './modules/hotellerie/hotellerie.module';
 import { NotificationsModule } from './core/notifications/notifications.module';
 import { ExportsModule } from './exports/exports.module';
 import { InvoicesModule } from './invoices/invoices.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -140,6 +141,7 @@ import { InvoicesModule } from './invoices/invoices.module';
     NotificationsModule,
     ExportsModule,
     InvoicesModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [

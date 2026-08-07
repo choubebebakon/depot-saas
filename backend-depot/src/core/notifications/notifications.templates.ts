@@ -22,6 +22,20 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
     category: 'SUBSCRIPTION',
     priority: 'HIGH',
   },
+  EXPIRY_J5: {
+    title: 'Abonnement J-5',
+    message:
+      'Votre abonnement {{plan}} expire dans 5 jours, le {{dateExpiration}}.',
+    category: 'SUBSCRIPTION',
+    priority: 'HIGH',
+  },
+  EXPIRY_J14: {
+    title: 'Abonnement J-14',
+    message:
+      'Votre abonnement {{plan}} expire dans 14 jours, le {{dateExpiration}}.',
+    category: 'SUBSCRIPTION',
+    priority: 'MEDIUM',
+  },
   EXPIRY_J3: {
     title: 'Abonnement J-3',
     message: 'URGENT : Votre abonnement {{plan}} expire dans 3 jours.',
@@ -45,6 +59,18 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
     message: 'Le paiement de {{montant}} FCFA a échoué.{{raison}}',
     category: 'PAYMENT',
     priority: 'CRITICAL',
+  },
+  SUBSCRIPTION_CANCELED: {
+    title: 'Abonnement annulé',
+    message: 'Votre abonnement {{plan}} a été annulé.',
+    category: 'SUBSCRIPTION',
+    priority: 'HIGH',
+  },
+  DUNNING_RETRY: {
+    title: 'Tentative de paiement',
+    message: 'Nouvelle tentative de paiement pour votre abonnement {{plan}}.',
+    category: 'PAYMENT',
+    priority: 'HIGH',
   },
   SYSTEM: {
     title: 'Notification système',

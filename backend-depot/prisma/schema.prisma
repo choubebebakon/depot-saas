@@ -7,6 +7,7 @@ datasource db {
   provider = "postgresql"
 }
 
+/// @deprecated Legacy — Payment est la source de vérité confirmée.
 model PaiementSouscription {
   id           String   @id @default(uuid())
   montant      Float
@@ -634,8 +635,10 @@ model Depense {
   @@index([depotId])
 }
 
+/// Journal d'audit consolidé (fusion AuditLog → JournalAudit).
+/// Critère : les entrées de l'ancien `AuditLog` sont migrées ici (severite NORMALE→INFO, CRITIQUE→CRITIQUE).
 model JournalAudit {
-  id           String   @id @default(uuid())
+  id           String        @id @default(uuid())
   tenantId     String
   depotId      String?
   actorUserId  String?
@@ -646,13 +649,21 @@ model JournalAudit {
   targetId     String?
   reference    String?
   description  String
+  valeurAvant  Json?
+  valeurApres  Json?
   metadataText String?
-  createdAt    DateTime @default(now())
-  depot        Depot?   @relation(fields: [depotId], references: [id])
+  severite     AuditSeverite @default(INFO)
+  ipAddress    String?
+  userAgent    String?
+  montant      Float?
+  createdAt    DateTime      @default(now())
+  depot        Depot?        @relation(fields: [depotId], references: [id])
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([action])
   @@index([depotId])
+  @@index([severite])
 }
 
 model MaintenanceTricycle {
@@ -755,6 +766,14 @@ model Tenant {
   logo                 String?
   messageFin           String?                  @default("Merci de votre fidélité !")
   metier               MetierType               @default(DEPOT_BOISSONS)
+  subscriptionStatus   SubscriptionStatus       @default(TRIALING)
+  currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?
+  billingCycle         String?
+  paymentRetryCount    Int                      @default(0)
+  subscriptionAlerts   SubscriptionAlert[]
+  users                User[]
+  supportMessages      SupportMessage[]
   alimentations        AlimentationElevage[]
   articles             Article[]
   biens                BienImmobilier[]
@@ -783,6 +802,7 @@ model Tenant {
   fichesTravaux        FicheTravailGarage[]
   fournisseurs         Fournisseur[]
   interventionsBien    InterventionBien[]
+  journauxAudit        JournalAudit[]
   livraisonsBTP        LivraisonBTP[]
   livresDetails        LivreDetail[]
   lotsElevage          LotElevage[]
@@ -822,7 +842,6 @@ model Tenant {
   tricycles            Tricycle[]
   typesChambre         TypeChambre[]
   typesConsigne        TypeConsigneConfig[]
-  users                User[]
   vehiculesBTP         VehiculeBTP[]
   vehiculesClient      VehiculeClient[]
   vehiculesTransport   VehiculeTransport[]
@@ -839,6 +858,7 @@ model User {
   nom              String?
   tenantId         String
   depotId          String?
+  isSuperAdmin     Boolean                 @default(false)
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
   commandesCreees  CommandeFournisseur[]
@@ -848,6 +868,7 @@ model User {
   refreshTokens    RefreshToken[]
   sessionsCaisse   SessionCaisse[]
   tourneesOuvertes Tournee[]
+  supportMessages  SupportMessage[]
   depot            Depot?                  @relation(fields: [depotId], references: [id])
   tenant           Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   ventesCreees     Vente[]                 @relation("VenteCreateur")
@@ -926,6 +947,74 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// @deprecated Utilisé uniquement par le module legacy `platform-admin` (lecture). Ne pas utiliser pour de nouvelles écritures.
+/// @deprecated Inutilisé dans le code actuel.
+model Subscription {
+  id               String             @id @default(uuid())
+  tenantId         String             @unique
+  planType         String
+  status           SubscriptionStatus @default(TRIALING)
+  currentPeriodEnd DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  plan             Json?
+  payments         Json?
+}
+
+model SupportMessage {
+  id        String               @id @default(uuid())
+  tenantId  String
+  message   String
+  type      SupportMessageType   @default(MESSAGE)
+  statut    SupportMessageStatut @default(OUVERT)
+  pageUrl   String?
+  userAgent String?
+  userId    String
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @default(now()) @updatedAt
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([statut])
+}
+
+model PlatformMetricSnapshot {
+  id               String   @id @default(uuid())
+  data             Json
+  totalMrr         Float?
+  activeTenants    Int?
+  trialTenants     Int?
+  suspendedTenants Int?
+  createdAt        DateTime @default(now())
+}
+
+model BillingWebhookEvent {
+  id        String   @id @default(uuid())
+  eventId   String   @unique
+  eventKey  String?
+  eventType String?
+  reference String?
+  provider  String?
+  status    String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@unique([provider, eventKey])
+}
+
+model SubscriptionAlert {
+  id        String    @id @default(uuid())
+  tenantId  String
+  alertType AlertType
+  sentAt    DateTime  @default(now())
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, alertType])
+  @@index([tenantId])
 }
 
 model Notification {
@@ -2065,11 +2154,15 @@ enum BillingCycle {
 enum NotifType {
   EXPIRY_WARNING
   EXPIRY_J7
+  EXPIRY_J5
   EXPIRY_J3
   EXPIRY_J1
+  EXPIRY_J14
   PAYMENT_SUCCESS
   PAYMENT_FAILED
   SYSTEM
+  SUBSCRIPTION_CANCELED
+  DUNNING_RETRY
   STOCK_CRITIQUE
   STOCK_RUPTURE
   STOCK_EXPIRATION
@@ -2351,4 +2444,57 @@ enum EvenementElevageType {
   VACCINATION
   TRAITEMENT
   PESEE
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIAL_EXPIRED
+  GRACE
+  EXPIRED
+  READ_ONLY
+}
+
+enum AuditSeverite {
+  INFO
+  ATTENTION
+  CRITIQUE
+}
+
+enum AlertType {
+  EXPIRY_WARNING
+  EXPIRY_J7
+  EXPIRY_J5
+  EXPIRY_J3
+  EXPIRY_J1
+  EXPIRY_J14
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  SYSTEM
+  SUBSCRIPTION_CANCELED
+  DUNNING_RETRY
+  RAPPORT_JOURNALIER
+  TRIAL_J5
+  MONTHLY_J3
+  ANNUAL_J14
+  ANNUAL_J3
+  PAST_DUE_RETRY_1
+  PAST_DUE_RETRY_2
+  PAST_DUE_RETRY_3
+}
+
+enum SupportMessageType {
+  BUG
+  SUGGESTION
+  MESSAGE
+}
+
+enum SupportMessageStatut {
+  OUVERT
+  EN_COURS
+  TRAITE
 }
