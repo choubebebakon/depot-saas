@@ -12,7 +12,7 @@ export class SupportController {
 
   @Post('messages')
   async createMessage(@Request() req, @Body() createSupportDto: CreateSupportDto) {
-    const userId = req.user.sub || req.user.id;
+    const userId = req.user.userId;
     const tenantId = req.user.tenantId;
 
     return this.supportService.createMessage(userId, tenantId, createSupportDto);
