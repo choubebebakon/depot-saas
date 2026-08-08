@@ -65,6 +65,7 @@ import Sidebar from '../components/Sidebar';
 import PendingSaleAlert from '../components/PendingSaleAlert';
 import GeStockChatbot from '../components/chatbot/GeStockChatbot';
 import SupportWidget from '../components/SupportWidget';
+import Footer from '../components/Footer';
 import logo from '../assets/logo-neon.png';
 
 const ICON_SIZE = 20;
@@ -340,6 +341,8 @@ export default function MainLayout() {
             {renderPage()}
           </div>
         </main>
+
+        <Footer />
       </div>
 
       {sidebarOpen && (

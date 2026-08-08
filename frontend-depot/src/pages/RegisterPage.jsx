@@ -167,7 +167,7 @@ export default function RegisterPage() {
                 onChange={(e) => setFormData({ ...formData, acceptTerms: e.target.checked })}
               />
               <label htmlFor="acceptTerms" className="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-                J'accepte les <Link to="/cgu" className="text-indigo-400 hover:underline">conditions générales d'utilisation</Link>
+                J'accepte les <Link to="/terms" className="text-indigo-400 hover:underline">conditions générales d'utilisation</Link>
               </label>
             </div>
 

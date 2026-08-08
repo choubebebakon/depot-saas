@@ -25,6 +25,13 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const CguPage = lazy(() => import('./pages/CguPage'));
+const LegalNoticePage = lazy(() => import('./pages/LegalNoticePage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const FeaturesPage = lazy(() => import('./pages/Features'));
+const ChangelogPage = lazy(() => import('./pages/Changelog'));
+const FaqPage = lazy(() => import('./pages/Faq'));
+const BlogPage = lazy(() => import('./pages/Blog'));
 const BientotDisponible = lazy(() => import('./pages/BientotDisponible'));
 const MainLayout = lazy(() => import('./layouts/MainLayout'));
 
@@ -122,6 +129,20 @@ function AppRoutes() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/onboarding/metier" element={<OnboardingMetierPage />} />
           <Route path="/bientot-disponible" element={<BientotDisponible />} />
+          
+          {/* Routes légales */}
+          <Route path="/legal-notice" element={<LegalNoticePage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          
+          {/* Routes produit */}
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/changelog" element={<ChangelogPage />} />
+          
+          {/* Routes support */}
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           
           {/* Gestion des redirections initiales */}
           <Route path="/dashboard" element={<SectorHomeRedirect />} />

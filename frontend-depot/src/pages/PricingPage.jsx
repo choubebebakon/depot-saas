@@ -12,28 +12,28 @@ const PLANS = [
     monthly: 0, annual: 0, depots: 1,
     badge: null,
     desc: 'Démarrez sans engagement',
-    features: ['1 dépôt', '30 jours d\'essai', 'Toutes les fonctionnalités', 'Support email'],
+    features: ['1 structure', '14 jours d\'essai', 'Toutes les fonctionnalités', 'Notifications', 'IA (chatbot)'],
   },
   {
     id: 'SOLO', name: 'SOLO', icon: 'Zap', color: 'blue',
-    monthly: 20000, annual: 200000, depots: 1,
+    monthly: 25000, annual: 249000, depots: 1,
     badge: null,
     desc: 'Pour les petits commerces',
-    features: ['1 dépôt', 'Gestion des stocks', 'Rapports basiques', 'Support standard', 'Exports Excel'],
+    features: ['1 structure', 'Gestion des stocks', 'Rapport intelligent', 'Support standard', 'Export EXCEL', 'Notification', 'IA (chatbot)', 'Audit gestion'],
   },
   {
     id: 'PME', name: 'PME', icon: 'Trophy', color: 'amber',
-    monthly: 50000, annual: 500000, depots: 5,
+    monthly: 50000, annual: 498000, depots: 10,
     badge: 'RECOMMANDÉ',
-    desc: 'La référence multi-dépôts',
-    features: ['5 dépôts', 'Multi-stock avancé', 'Rapports détaillés', 'Support prioritaire', 'API complète', 'Tournées de livraison'],
+    desc: 'La référence multi-structures',
+    features: ['10 structures', 'Multi-stock avancé', 'Rapports détaillés', 'Support prioritaire', 'Gestion du personnel illimité', 'Gestion des rôles dans l\'entreprise', 'Notification — alerte stock — rupture', 'IA avancée'],
   },
   {
     id: 'ENTERPRISE', name: 'ENTERPRISE', icon: 'Globe', color: 'purple',
-    monthly: 100000, annual: 1000000, depots: 20,
+    monthly: 100000, annual: 996000, depots: 999,
     badge: null,
     desc: 'Grandes structures',
-    features: ['20 dépôts', 'Tout PME inclus', 'Rapports personnalisés', 'Support dédié 24/7', 'Formation incluse', 'SLA garanti'],
+    features: ['Illimité', 'Tout PME inclus', 'Rapports personnalisés', 'Support dédié 24/7', 'Formation incluse'],
   },
 ];
 
@@ -239,20 +239,37 @@ export default function PricingPage() {
 
                 {/* Price */}
                 <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2 }}>
-                      {isFree ? 'Gratuit' : fmt(p)}
-                    </span>
-                    {!isFree && <span style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>FCFA</span>}
-                  </div>
-                  {!isFree && (
+                  {cycle === 'ANNUAL' && !isFree ? (
                     <>
-                      <p style={{ fontSize: 12, color: '#475569', margin: '2px 0' }}>/{cycle === 'MONTHLY' ? 'mois HT' : 'an HT'}</p>
-                      <p style={{ fontSize: 12, color: '#d97706', margin: '4px 0 0', fontWeight: 600 }}>TVA (19,25%) : +{fmt(tva)} FCFA → TTC {fmt(total)}</p>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+                        <span style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2 }}>
+                          {fmt(p)}
+                        </span>
+                        <span style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>FCFA / an HT</span>
+                      </div>
+                      <p style={{ fontSize: 13, color: '#94a3b8', margin: '2px 0' }}>soit {fmt(Math.round(p / 12))} FCFA/mois</p>
+                      <p style={{ fontSize: 12, color: '#475569', margin: '4px 0', textDecoration: 'line-through' }}>{fmt(Math.round(p / 0.83))} FCFA</p>
+                      <p style={{ fontSize: 12, color: '#10b981', margin: '2px 0', fontWeight: 700 }}>Économisez {fmt(Math.round(p / 0.83) - p)} FCFA/an</p>
+                      <p style={{ fontSize: 12, color: '#d97706', margin: '4px 0 0', fontWeight: 600 }}>TTC annuel : {fmt(total)} FCFA</p>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+                        <span style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2 }}>
+                          {isFree ? 'Gratuit' : fmt(p)}
+                        </span>
+                        {!isFree && <span style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>FCFA</span>}
+                      </div>
+                      {!isFree && (
+                        <>
+                          <p style={{ fontSize: 12, color: '#475569', margin: '2px 0' }}>/{cycle === 'MONTHLY' ? 'mois HT' : 'an HT'}</p>
+                          <p style={{ fontSize: 12, color: '#d97706', margin: '4px 0 0', fontWeight: 600 }}>TVA (19,25%) : +{fmt(tva)} FCFA → TTC {fmt(total)}</p>
+                        </>
+                      )}
                     </>
                   )}
                   <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: `rgba(${accent === planColors.amber ? '245,158,11' : '59,130,246'},0.1)`, border: `1px solid ${accent}33`, borderRadius: 100, padding: '4px 12px' }}>
-                    <Icon name="Store" size={12} style={{ color: accent }} /> <span style={{ fontSize: 12, color: accent, fontWeight: 700 }}>{plan.depots} dépôt{plan.depots > 1 ? 's' : ''}</span>
+                    <Icon name="Store" size={12} style={{ color: accent }} /> <span style={{ fontSize: 12, color: accent, fontWeight: 700 }}>{plan.depots === 999 ? 'Illimité' : `${plan.depots} structure${plan.depots > 1 ? 's' : ''}`}</span>
                   </div>
                 </div>
 

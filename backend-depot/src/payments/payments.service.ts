@@ -36,9 +36,10 @@ interface CreatePendingPaymentInput {
 
 // Pricing structure for Site Vitrine subscription plans
 const SITE_VITRINE_PRICING = {
-  SOLO: 5000,
-  PME: 15000,
-  PREMIUM: 25000,
+  SOLO: 25000,
+  PME: 50000,
+  ENTERPRISE: 100000,
+  TRIAL: 0,
 };
 
 @Injectable()
@@ -60,7 +61,15 @@ export class PaymentsService {
   }
 
   public calculateAmount(plan: PlanType, billingCycle: BillingCycle) {
-    const amount = billingCycle === BillingCycle.MONTHLY ? 20000 : 200000;
+    const PRICING = {
+      [PlanType.SOLO]: { monthly: 25000, annual: 249000 },
+      [PlanType.PME]: { monthly: 50000, annual: 498000 },
+      [PlanType.ENTERPRISE]: { monthly: 100000, annual: 996000 },
+      [PlanType.TRIAL]: { monthly: 0, annual: 0 },
+    };
+
+    const planPricing = PRICING[plan] || { monthly: 25000, annual: 249000 };
+    const amount = billingCycle === BillingCycle.MONTHLY ? planPricing.monthly : planPricing.annual;
     const tvaAmount = Math.round(amount * 0.1925);
     return { amount, tvaAmount, totalAmount: amount + tvaAmount };
   }

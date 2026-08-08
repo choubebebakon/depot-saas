@@ -4,9 +4,9 @@ export const PLAN_DEPOT_LIMITS: Record<PlanType, number> = {
   FREE: 1,
   BASIC: 1,
   PREMIUM: 5,
-  ENTERPRISE: 20,
+  ENTERPRISE: 999,
   SOLO: 1,
-  PME: 3,
+  PME: 10,
   TRIAL: 1,
   UNLIMITED: Number.MAX_SAFE_INTEGER,
 };

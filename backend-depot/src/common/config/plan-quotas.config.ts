@@ -82,7 +82,7 @@ export const PLAN_QUOTAS: Record<PlanType, PlanQuota> = {
   },
 
   [PlanType.PME]: {
-    depots: 3,
+    depots: 10,
     utilisateurs: 10,
     articles: 5000,
     clients: 2000,
@@ -108,7 +108,7 @@ export const PLAN_QUOTAS: Record<PlanType, PlanQuota> = {
   },
 
   [PlanType.ENTERPRISE]: {
-    depots: 50,
+    depots: 999,
     utilisateurs: 100,
     articles: 100000,
     clients: 50000,

@@ -10,6 +10,7 @@ import { SubscriptionLifecycleService } from './services/subscription-lifecycle.
 import { EmailModule } from '../common/email/email.module';
 import { NotificationsModule } from '../core/notifications/notifications.module';
 import { NotchPayWebhookController } from '../payments/notchpay-webhook.controller';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { NotchPayWebhookController } from '../payments/notchpay-webhook.controll
     ScheduleModule,
     EmailModule,
     NotificationsModule,
+    AuditModule,
   ],
   // NotchPayWebhookController est enregistré ici (et non dans PaymentsModule)
   // car il dépend de BillingService pour l'idempotence des webhooks —
