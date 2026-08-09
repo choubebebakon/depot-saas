@@ -144,6 +144,7 @@ export class AuthService {
         nomEntreprise: user.tenant.nomEntreprise ?? user.tenant.name,
         metier: user.tenant.metier,
         statutAbonnement: user.tenant.statutAbonnement,
+        isSuperAdmin: user.isSuperAdmin,
       },
     };
   }

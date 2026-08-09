@@ -77,7 +77,18 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000);
+if (process.env.DISABLE_SUBSCRIPTION_CHECKS === 'true') {
+    console.warn('\n' + '⚠️ '.repeat(20));
+    console.warn(
+      '⚠️  DISABLE_SUBSCRIPTION_CHECKS=true — CONTRÔLES ABONNEMENT DÉSACTIVÉS',
+    );
+    console.warn(
+      '⚠️  Ne JAMAIS déployer en production avec ce flag actif.',
+    );
+    console.warn('⚠️ '.repeat(20) + '\n');
+  }
+
+await app.listen(3000);
   console.log(`🚀 Backend GeStock SaaS stabilisé sur http://localhost:3000`);
 }
 bootstrap();

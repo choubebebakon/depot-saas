@@ -19,7 +19,6 @@ import { TenantsModule } from './tenants/tenants.module';
 import { DepotsModule } from './depots/depots.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
-import { SaasGuard } from './common/guards/saas.guard';
 import { AccessStatusGuard } from './common/guards/access-status.guard';
 import { QuotaDepotGuard } from './common/guards/quota-depot.guard';
 
@@ -155,7 +154,6 @@ import { BillingModule } from './billing/billing.module';
     // 2. Le JwtAuthGuard décode et valide la session (génère request.user)
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // 3. Les Guards SaaS s'exécutent
-    { provide: APP_GUARD, useClass: SaasGuard },
     { provide: APP_GUARD, useClass: AccessStatusGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
 

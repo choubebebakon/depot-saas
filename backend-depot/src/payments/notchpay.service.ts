@@ -6,8 +6,14 @@ import * as crypto from 'crypto';
 export class NotchPayService {
   private readonly logger = new Logger(NotchPayService.name);
 
-  getWebhookSecret(): string {
-    return process.env.NOTCHPAY_WEBHOOK_SECRET || 'secret';
+ getWebhookSecret(): string {
+    const secret = process.env.NOTCHPAY_HASH_KEY;
+    if (!secret) {
+      throw new Error(
+        'NOTCHPAY_HASH_KEY manquant dans .env — obligatoire pour verifier les webhooks NotchPay.',
+      );
+    }
+    return secret;
   }
 
   /**
@@ -20,11 +26,13 @@ export class NotchPayService {
       .update(payload)
       .digest('hex');
 
-    // Use timing-safe comparison to prevent timing attacks
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature),
-    );
+   // Use timing-safe comparison to prevent timing attacks
+    const sigBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+    if (sigBuffer.length !== expectedBuffer.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(sigBuffer, expectedBuffer);
   }
 
   async initializePayment(data: any) {

@@ -14,18 +14,7 @@ import { AuditService } from '../../audit/audit.service';
 import { AUDIT_ACTIONS } from '../../audit/audit-actions.constants';
 import { AuditSeverite } from '@prisma/client';
 
-/**
- * Moteur de cycle de vie des abonnements GesTock.
- *
- * CRON minuit (heure Douala) :
- * ─ lockExpiredTenants()     : TRIALING→TRIAL_EXPIRED, nettoie les PAST_DUE épuisés
- * ─ sendTrialAlerts()        : Alerte J-5 avant trialEndsAt
- * ─ sendRenewalAlerts()      : Alerte J-3 MONTHLY, J-14 + J-3 ANNUAL
- * ─ processDunning()         : Retries J+1, J+3, J+5 pour les PAST_DUE
- *
- * Logique de date : TOUJOURS une plage [startOfDay, startOfNextDay)
- * pour que l'heure d'exécution du CRON ne change pas le résultat.
- */
+
 @Injectable()
 export class SubscriptionLifecycleService {
   private readonly logger = new Logger(SubscriptionLifecycleService.name);
@@ -167,13 +156,10 @@ export class SubscriptionLifecycleService {
         name: true,
         planType: true,
         trialEndsAt: true,
+        emailPatron: true,
         subscriptionAlerts: {
           where: { alertType: AlertType.TRIAL_J5 },
           select: { id: true },
-        },
-        users: {
-          where: { role: 'ADMIN' },
-          select: { email: true },
         },
       },
     });
@@ -185,7 +171,7 @@ export class SubscriptionLifecycleService {
       // Déjà envoyé ce cycle ?
       if (tenant.subscriptionAlerts.length > 0) continue;
 
-      const adminEmails = tenant.users.map((u) => u.email).filter(Boolean);
+      const recipientEmails = [tenant.emailPatron].filter(Boolean);
 
       // Notification in-app
       await this.notifService
@@ -198,8 +184,8 @@ export class SubscriptionLifecycleService {
           this.logger.error(`Notif TRIAL_J5 échouée: ${e.message}`),
         );
 
-      // Email à chaque admin
-      for (const email of adminEmails) {
+      // Email au patron
+      for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
         this.emailService
           .sendExpiryReminder(
             email,
@@ -248,11 +234,11 @@ export class SubscriptionLifecycleService {
       },
       select: {
         id: true, name: true, planType: true, currentPeriodEnd: true,
+        emailPatron: true,
         subscriptionAlerts: {
           where: { alertType: AlertType.MONTHLY_J3 },
           select: { id: true },
         },
-        users: { where: { role: 'ADMIN' }, select: { email: true } },
       },
     });
 
@@ -268,20 +254,18 @@ export class SubscriptionLifecycleService {
         })
         .catch((e) => this.logger.error(`Notif MONTHLY_J3: ${e.message}`));
 
-      for (const { email } of tenant.users) {
-        if (email) {
-          this.emailService
-            .sendExpiryReminder(
-              email,
-              tenant.name || 'Votre entreprise',
-              3,
-              tenant.currentPeriodEnd!,
-              tenant.planType || 'Standard',
-            )
-            .catch((err) =>
-              this.logger.error(`Email MONTHLY_J3 ${email}: ${err.message}`),
-            );
-        }
+      for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+        this.emailService
+          .sendExpiryReminder(
+            email,
+            tenant.name || 'Votre entreprise',
+            3,
+            tenant.currentPeriodEnd!,
+            tenant.planType || 'Standard',
+          )
+          .catch((err) =>
+            this.logger.error(`Email MONTHLY_J3 ${email}: ${err.message}`),
+          );
       }
 
       await this.markAlertSent(tenant.id, AlertType.MONTHLY_J3);
@@ -303,11 +287,11 @@ export class SubscriptionLifecycleService {
       },
       select: {
         id: true, name: true, planType: true, currentPeriodEnd: true,
+        emailPatron: true,
         subscriptionAlerts: {
           where: { alertType: AlertType.ANNUAL_J14 },
           select: { id: true },
         },
-        users: { where: { role: 'ADMIN' }, select: { email: true } },
       },
     });
 
@@ -321,21 +305,18 @@ export class SubscriptionLifecycleService {
           plan: tenant.planType,
         })
         .catch((e) => this.logger.error(`Notif ANNUAL_J14: ${e.message}`));
-
-      for (const { email } of tenant.users) {
-        if (email) {
-          this.emailService
-            .sendExpiryReminder(
-              email,
-              tenant.name || 'Votre entreprise',
-              14,
-              tenant.currentPeriodEnd!,
-              tenant.planType || 'Standard',
-            )
-            .catch((err) =>
-              this.logger.error(`Email ANNUAL_J14 ${email}: ${err.message}`),
-            );
-        }
+for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+        this.emailService
+          .sendExpiryReminder(
+            email,
+            tenant.name || 'Votre entreprise',
+            14,
+            tenant.currentPeriodEnd!,
+            tenant.planType || 'Standard',
+          )
+          .catch((err) =>
+            this.logger.error(`Email ANNUAL_J14 ${email}: ${err.message}`),
+          );
       }
 
       await this.markAlertSent(tenant.id, AlertType.ANNUAL_J14);
@@ -355,11 +336,11 @@ export class SubscriptionLifecycleService {
       },
       select: {
         id: true, name: true, planType: true, currentPeriodEnd: true,
+        emailPatron: true,
         subscriptionAlerts: {
           where: { alertType: AlertType.ANNUAL_J3 },
           select: { id: true },
         },
-        users: { where: { role: 'ADMIN' }, select: { email: true } },
       },
     });
 
@@ -374,20 +355,18 @@ export class SubscriptionLifecycleService {
         })
         .catch((e) => this.logger.error(`Notif ANNUAL_J3: ${e.message}`));
 
-      for (const { email } of tenant.users) {
-        if (email) {
-          this.emailService
-            .sendExpiryReminder(
-              email,
-              tenant.name || 'Votre entreprise',
-              3,
-              tenant.currentPeriodEnd!,
-              tenant.planType || 'Standard',
-            )
-            .catch((err) =>
-              this.logger.error(`Email ANNUAL_J3 ${email}: ${err.message}`),
-            );
-        }
+      for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+        this.emailService
+          .sendExpiryReminder(
+            email,
+            tenant.name || 'Votre entreprise',
+            3,
+            tenant.currentPeriodEnd!,
+            tenant.planType || 'Standard',
+          )
+          .catch((err) =>
+            this.logger.error(`Email ANNUAL_J3 ${email}: ${err.message}`),
+          );
       }
 
       await this.markAlertSent(tenant.id, AlertType.ANNUAL_J3);
@@ -448,7 +427,6 @@ export class SubscriptionLifecycleService {
           emailPatron: true,
           planType: true,
           currentPeriodEnd: true,
-          users: { where: { role: 'ADMIN' }, select: { email: true } },
         },
       });
 
@@ -471,22 +449,20 @@ export class SubscriptionLifecycleService {
         // Email avec lien de paiement
         const frontendUrl =
           process.env.FRONTEND_URL || 'http://localhost:5173';
-        for (const { email } of tenant.users) {
-          if (email) {
-            this.emailService
-              .sendPaymentFailed(
-                email,
-                tenant.name || 'Votre entreprise',
-                0, // montant inconnu à ce stade — l'email contient le lien
-                tenant.planType || 'Standard',
-                `Tentative ${attemptNumber}/3 — Renouvelez sur ${frontendUrl}/settings/billing`,
-              )
-              .catch((err) =>
-                this.logger.error(
-                  `Email dunning ${attemptNumber} ${email}: ${err.message}`,
-                ),
-              );
-          }
+        for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+          this.emailService
+            .sendPaymentFailed(
+              email,
+              tenant.name || 'Votre entreprise',
+              0, // montant inconnu à ce stade — l'email contient le lien
+              tenant.planType || 'Standard',
+              `Tentative ${attemptNumber}/3 — Renouvelez sur ${frontendUrl}/settings/billing`,
+            )
+            .catch((err) =>
+              this.logger.error(
+                `Email dunning ${attemptNumber} ${email}: ${err.message}`,
+              ),
+            );
         }
 
         // Incrémenter le compteur de retries
@@ -508,21 +484,32 @@ export class SubscriptionLifecycleService {
   // ──────────────────────────────────────────────────────────
 
   /**
-   * Calcule une plage [startOfDay(today + daysOffset), startOfDay(today + daysOffset + 1)).
-   * Garantit que l'heure d'exécution du CRON n'affecte pas la détection.
+   * Calcule la plage [startOfDay, endOfDay) pour "aujourd'hui + daysOffset"
+   * ANCRÉE sur le calendrier Africa/Douala (UTC+1, pas de DST), peu importe
+   * le fuseau horaire du serveur qui exécute le process Node. Sans cet
+   * ancrage explicite, un serveur en UTC calculerait "minuit" à un instant
+   * différent de minuit Douala, ce qui pouvait faire rater ou dédoubler
+   * une détection J-5/J-3/J-14 pile aux limites de journée.
    */
   private getDayRange(daysOffset: number): {
     startOfDay: Date;
     endOfDay: Date;
   } {
-    const target = new Date();
-    target.setDate(target.getDate() + daysOffset);
+    const DOUALA_OFFSET_MS = 60 * 60 * 1000; // UTC+1 fixe
 
-    const startOfDay = new Date(target);
-    startOfDay.setHours(0, 0, 0, 0);
+    const nowDouala = new Date(Date.now() + DOUALA_OFFSET_MS);
 
-    const endOfDay = new Date(startOfDay);
-    endOfDay.setDate(startOfDay.getDate() + 1); // startOfDay du lendemain (lt strict)
+    const targetDouala = new Date(
+      Date.UTC(
+        nowDouala.getUTCFullYear(),
+        nowDouala.getUTCMonth(),
+        nowDouala.getUTCDate() + daysOffset,
+      ),
+    );
+
+    // Minuit Douala converti en instant UTC réel (= 23:00 UTC la veille)
+    const startOfDay = new Date(targetDouala.getTime() - DOUALA_OFFSET_MS);
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
     return { startOfDay, endOfDay };
   }

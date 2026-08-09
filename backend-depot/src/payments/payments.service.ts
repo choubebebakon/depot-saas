@@ -13,6 +13,7 @@ import {
   PlanType,
   NotifType,
   StatutAbonnement,
+  SubscriptionStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { EmailService } from '../common/email/email.service';
@@ -232,12 +233,23 @@ export class PaymentsService {
     );
   }
 
-  public async markPaymentFailed(paymentId: string): Promise<Payment> {
+ public async markPaymentFailed(paymentId: string): Promise<Payment> {
     const payment = await this.prisma.payment.update({
       where: { id: paymentId },
       data: { status: PaymentStatus.FAILED },
-      include: { tenant: { select: { name: true, emailPatron: true } } },
+      include: {
+        tenant: {
+          select: { name: true, emailPatron: true, subscriptionStatus: true },
+        },
+      },
     });
+
+    if (payment.tenant?.subscriptionStatus === SubscriptionStatus.ACTIVE) {
+      await this.prisma.tenant.update({
+        where: { id: payment.tenantId },
+        data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
+      });
+    }
 
     if (payment.tenant?.emailPatron) {
       this.emailService
@@ -292,7 +304,7 @@ export class PaymentsService {
       nextExp.setMonth(nextExp.getMonth() + 1); // Prolongation d'un mois
     }
 
-    await this.prisma.tenant.update({
+   await this.prisma.tenant.update({
       where: { id: payment.tenantId },
       data: {
         statutAbonnement: StatutAbonnement.ACTIVE,
@@ -301,6 +313,10 @@ export class PaymentsService {
         subscriptionEnd: nextExp,
         estActif: true,
         graceUntil: null,
+        // Champs consolidés (source de vérité pour AccessStatusGuard)
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        currentPeriodEnd: nextExp,
+        paymentRetryCount: 0,
       },
     });
 
