@@ -7,6 +7,7 @@ import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
+import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
 
 const articleSchema = z.object({
   designation: z.string().min(2, 'La désignation doit contenir au moins 2 caractères'),
@@ -18,13 +19,14 @@ const articleSchema = z.object({
   uniteParCasier: z.coerce.number().min(1, 'Minimum 1 unité'),
   uniteParPack: z.coerce.number().min(1, 'Minimum 1 unité'),
   uniteParPalette: z.coerce.number().min(1, 'Minimum 1 unité'),
+  photoUrl: z.string().nullable().optional(),
 });
 
 export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(articleSchema),
     defaultValues: {
       designation: '',
@@ -36,6 +38,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
       uniteParCasier: 12,
       uniteParPack: 6,
       uniteParPalette: 120,
+      photoUrl: null,
     }
   });
 
@@ -51,6 +54,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
         uniteParCasier: edit.uniteParCasier || 12,
         uniteParPack: edit.uniteParPack || 6,
         uniteParPalette: edit.uniteParPalette || 120,
+        photoUrl: edit.photoUrl || null,
       });
     } else {
       reset({
@@ -63,6 +67,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
         uniteParCasier: 12,
         uniteParPack: 6,
         uniteParPalette: 120,
+        photoUrl: null,
       });
     }
   }, [edit, isOpen, reset]);
@@ -227,6 +232,15 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
               error={errors.uniteParPalette?.message}
             />
           )}
+        />
+      </div>
+
+      <div className="mt-4">
+        <PhotoUpload
+          label="Photo de l'article"
+          name="photoUrl"
+          value={watch('photoUrl')}
+          onChange={(e) => setValue('photoUrl', e.target.value)}
         />
       </div>
 

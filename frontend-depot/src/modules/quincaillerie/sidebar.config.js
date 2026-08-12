@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Rapports',        icon: 'TrendingUp', path: '/quincaillerie/rapports' },
   { label: 'Paramètres',      icon: 'Settings', path: '/quincaillerie/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   QUINCAILLERIE: {
     label: 'Quincaillerie',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#b45309',
     description: 'Gestion des produits, stock et chantiers',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/quincaillerie/audit-patron' },
+    ],
   },
 };

@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Personnel',       icon: 'Users', path: '/boulangerie/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/boulangerie/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   BOULANGERIE: {
     label: 'Boulangerie / Pâtisserie',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#d97706',
     description: 'Gestion de la production, recettes et ventes',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/boulangerie/audit-patron' },
+    ],
   },
 };

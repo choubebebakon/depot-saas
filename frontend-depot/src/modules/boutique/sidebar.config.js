@@ -10,9 +10,9 @@ export const SIDEBAR_MENUS = [
   { label: 'Fournisseurs',    icon: 'Factory', path: '/boutique/fournisseurs' },
   { label: 'Dépenses',        icon: 'TrendingUp', path: '/boutique/depenses' },
   { label: 'Rapports',        icon: 'TrendingUp', path: '/boutique/rapports' },
-  { label: 'Personnel',       icon: 'Users', path: '/boutique/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/boutique/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   BOUTIQUE: {
     label: 'Boutique',
@@ -20,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#0891b2',
     description: 'Ventes, caisse, stock et fidélité client',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/boutique/audit-patron' },
+    ],
   },
 };

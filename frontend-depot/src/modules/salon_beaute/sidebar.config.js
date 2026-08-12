@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Fidélité',        icon: 'Gift', path: '/salon/abonnements' },
   { label: 'Paramètres',      icon: 'Settings', path: '/salon/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   SALON_BEAUTE: {
     label: 'Salon de Coiffure / Beauté',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#ec4899',
     description: 'Gestion des rendez-vous, prestations et clientèle',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/salon/audit-patron' },
+    ],
   },
 };

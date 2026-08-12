@@ -20,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#dc2626',
     description: 'Tables, commandes, cuisine et réservations',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/restaurant/audit-patron' },
+    ],
   },
 };

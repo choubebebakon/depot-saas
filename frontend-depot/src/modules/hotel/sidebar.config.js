@@ -19,5 +19,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#8b5cf6',
     description: 'Chambres, réservations, ménage et services hôteliers',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/hotel/audit-patron' },
+    ],
   },
 };

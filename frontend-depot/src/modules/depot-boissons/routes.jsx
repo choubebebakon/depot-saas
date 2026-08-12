@@ -8,6 +8,7 @@ import NotificationBell from '../../core/notifications/NotificationBell';
 import NotificationToast from '../../core/notifications/NotificationToast';
 import PendingSaleAlert from '../../components/PendingSaleAlert';
 import GeStockChatbot from '../../components/chatbot/GeStockChatbot';
+import SupportWidget from '../../components/SupportWidget';
 
 const UtilisateursPage = lazy(() => import('../../components/admin/UtilisateursPage'));
 const DepotsPage = lazy(() => import('../../components/admin/DepotsPage'));
@@ -142,6 +143,7 @@ function DepotLayout() {
       )}
 
       <GeStockChatbot metier={user?.metier} tenantNom={user?.nomEntreprise} />
+      <SupportWidget />
     </div>
   );
 }

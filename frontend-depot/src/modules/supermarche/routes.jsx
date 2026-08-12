@@ -6,6 +6,7 @@ import DynamicSidebar from '../../components/DynamicSidebar';
 import NotificationBell from '../../core/notifications/NotificationBell';
 import NotificationToast from '../../core/notifications/NotificationToast';
 import GeStockChatbot from '../../components/chatbot/GeStockChatbot';
+import SupportWidget from '../../components/SupportWidget';
 
 const DashboardSupermarche = lazy(() => import('./pages/DashboardSupermarche'));
 const POSCaissePage         = lazy(() => import('./pages/POSCaissePage'));
@@ -103,6 +104,7 @@ function SupermarcheLayout() {
       )}
 
       <GeStockChatbot metier={user?.metier} tenantNom={user?.nomEntreprise} />
+      <SupportWidget />
     </div>
   );
 }

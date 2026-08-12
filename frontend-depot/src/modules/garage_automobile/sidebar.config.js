@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Rapports',        icon: 'TrendingUp', path: '/garage/rapports' },
   { label: 'Paramètres',      icon: 'Settings', path: '/garage/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   GARAGE_AUTOMOBILE: {
     label: 'Garage Automobile',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#f97316',
     description: 'Gestion des réparations, entretien et pièces détachées',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/garage/audit-patron' },
+    ],
   },
 };

@@ -19,5 +19,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#65a30d',
     description: 'Gestion des troupeaux, alimentation et suivi vétérinaire',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/elevage/audit-patron' },
+    ],
   },
 };

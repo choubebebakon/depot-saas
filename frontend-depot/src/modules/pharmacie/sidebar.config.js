@@ -21,5 +21,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#059669',
     description: 'Gestion de pharmacie, médicaments, ordonnances et lots',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/pharmacie/audit-patron' },
+    ],
   },
 };

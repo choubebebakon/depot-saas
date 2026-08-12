@@ -20,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#f59e0b',
     description: 'Gestion de supermarché, caisse, rayons, code-barres et promotions',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/supermarche/audit-patron' },
+    ],
   },
 };

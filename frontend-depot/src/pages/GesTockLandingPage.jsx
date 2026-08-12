@@ -38,53 +38,53 @@ const copy = {
     nav: ['Produit', 'GeStock AI', 'Métiers', 'Tarifs', 'Témoignages', 'FAQ'],
     login: 'Se connecter',
     trial: 'Essai gratuit',
-    badge: 'La solution de gestion intelligente pour PME africaines',
-    title: 'Digitalisez votre entreprise. Pilotez avec l\'IA.',
-    subtitle: 'La solution de gestion tout-en-un conçue pour les PME africaines, dopée à l\'Intelligence Artificielle. Gérez vos stocks, prédiction des ventes et caisse depuis une seule plateforme moderne.',
+    badge: 'La plateforme intelligente qui transforme vos opérations en décisions rentables',
+    title: 'Prenez le contrôle de votre entreprise. Décidez plus vite. Gagnez en visibilité.',
+    subtitle: 'GESTOCK centralise vos stocks, ventes, achats, caisse et indicateurs dans une expérience moderne pensée pour les réalités africaines. Avec GeStock AI, transformez vos données en alertes utiles, prévisions et décisions plus intelligentes.',
     primary: 'Démarrer gratuitement',
     secondary: 'Voir la démo',
     reassurance: ['Sans carte bancaire', 'Essai 14 jours', 'Annulable à tout moment', 'Support en français'],
     trust: ['+5000 entreprises', '15 pays africains', '99.9% disponibilité', 'Support 24/7'],
-    problemsTitle: 'Les défis des PME africaines',
-    problemsText: 'Des milliers d\'entreprises perdent du temps et de l\'argent avec ces problèmes quotidiens. GESTOCK les a résolus.',
-    solutionsTitle: 'Comment GESTOCK transforme votre entreprise',
-    aiSectionTitle: 'GeStock AI : Votre Assistant Intelligent',
-    aiSectionText: 'Anticipez l\'avenir de votre commerce grâce à des algorithmes prédictifs conçus pour maximiser vos profits.',
-    metiersTitle: 'Les métiers que nous servons',
-    metiersText: 'Une solution experte adaptée aux 3 secteurs clés de distribution',
-    whyTitle: 'Pourquoi choisir GESTOCK',
-    testimonialsTitle: 'Ce que nos clients disent',
-    faqTitle: 'Questions fréquentes',
-    ctaTitle: 'Prêt à transformer votre entreprise avec l\'IA ?',
-    ctaText: 'Rejoignez les centaines d\'entreprises africaines qui font confiance à GESTOCK.',
-    ctaButton: 'Commencer l\'essai gratuit',
-    footerTagline: 'La solution de gestion pensée pour l\'Afrique.',
+    problemsTitle: 'Arrêtez de gérer votre entreprise à l’aveugle',
+    problemsText: 'Chaque erreur de stock, chaque vente oubliée et chaque heure passée sur des tableaux dispersés coûte de l’argent. GESTOCK vous aide à reprendre le contrôle avec une vision claire, centralisée et exploitable.',
+    solutionsTitle: 'Passez d’une gestion réactive à une gestion intelligente',
+    aiSectionTitle: 'GeStock AI : votre copilote pour décider avec plus de confiance',
+    aiSectionText: 'Ne vous contentez plus de regarder ce qui s’est passé. Détectez les signaux importants, anticipez les risques et identifiez les opportunités à partir de vos données.',
+    metiersTitle: 'Une expérience pensée pour votre métier, pas un logiciel générique',
+    metiersText: 'Dépôt de boissons, supermarché ou boutique : retrouvez les outils essentiels à votre activité sans vous perdre dans des fonctions inutiles.',
+    whyTitle: 'Pourquoi les entreprises choisissent GESTOCK',
+    testimonialsTitle: 'Des résultats qui parlent mieux que les promesses',
+    faqTitle: 'Tout ce qu’il faut savoir avant de commencer',
+    ctaTitle: 'Votre prochaine décision mérite de meilleures données.',
+    ctaText: 'Centralisez votre activité, réduisez les tâches inutiles et donnez à votre équipe une vision claire de ce qui compte vraiment. Commencez simplement, puis faites grandir votre gestion avec GESTOCK.',
+    ctaButton: 'Commencer gratuitement',
+    footerTagline: 'Pilotez mieux. Décidez plus vite. Faites grandir votre activité.',
   },
   en: {
     nav: ['Product', 'GeStock AI', 'Industries', 'Pricing', 'Testimonials', 'FAQ'],
     login: 'Log in',
     trial: 'Start free',
-    badge: 'The smart management solution for African SMEs',
-    title: 'Digitalize your business. Drive with AI.',
-    subtitle: 'The all-in-one management solution designed for African SMEs, powered by Artificial Intelligence. Manage inventory, sales forecasting and POS from a single modern platform.',
+    badge: 'The intelligent platform that turns operations into better decisions',
+    title: 'Take control of your business. Decide faster. See more clearly.',
+    subtitle: 'GESTOCK brings inventory, sales, purchasing, POS and key business indicators into one modern experience built for African realities. With GeStock AI, turn your data into useful alerts, forecasts and smarter decisions.',
     primary: 'Start free trial',
     secondary: 'Watch demo',
     reassurance: ['No credit card', '14-day trial', 'Cancel anytime', 'French support'],
     trust: ['+5000 businesses', '15 African countries', '99.9% uptime', '24/7 support'],
-    problemsTitle: 'Challenges faced by African SMEs',
-    problemsText: 'Thousands of businesses lose time and money with these daily issues. GESTOCK has solved them.',
-    solutionsTitle: 'How GESTOCK transforms your business',
-    aiSectionTitle: 'GeStock AI: Your Intelligent Assistant',
-    aiSectionText: 'Anticipate your business future using predictive algorithms designed to maximize your profits.',
-    metiersTitle: 'Industries we serve',
-    metiersText: 'An expert solution tailored for the 3 key distribution sectors',
-    whyTitle: 'Why choose GESTOCK',
-    testimonialsTitle: 'What our clients say',
-    faqTitle: 'Frequently asked questions',
-    ctaTitle: 'Ready to transform your business with AI?',
-    ctaText: 'Join the hundreds of African businesses already trusting GESTOCK.',
-    ctaButton: 'Start free trial',
-    footerTagline: 'The management solution designed for Africa.',
+    problemsTitle: 'Stop running your business in the dark',
+    problemsText: 'Every stock discrepancy, missed sale and hour spent reconciling scattered records has a cost. GESTOCK helps you regain control with one clear, centralized and actionable view.',
+    solutionsTitle: 'Move from reactive management to intelligent operations',
+    aiSectionTitle: 'GeStock AI: your copilot for more confident decisions',
+    aiSectionText: 'Do more than look at what happened. Detect important signals, anticipate risks and uncover opportunities from your business data.',
+    metiersTitle: 'Built around your business, not generic software',
+    metiersText: 'Beverage depot, supermarket or retail store: get the tools your activity actually needs without unnecessary complexity.',
+    whyTitle: 'Why businesses choose GESTOCK',
+    testimonialsTitle: 'Results speak louder than promises',
+    faqTitle: 'Everything you need to know before getting started',
+    ctaTitle: 'Your next decision deserves better data.',
+    ctaText: 'Centralize your operations, remove unnecessary manual work and give your team a clear view of what matters. Start simple, then grow your management with GESTOCK.',
+    ctaButton: 'Start for free',
+    footerTagline: 'Manage better. Decide faster. Grow with confidence.',
   },
 };
 
@@ -93,42 +93,42 @@ const problems = [
     icon: AlertTriangle,
     fr: 'Pertes de stock importantes',
     en: 'Significant inventory losses',
-    frDesc: '15 à 30% de perte annuelle due à une mauvaise gestion des stocks',
+    frDesc: 'Les écarts, produits oubliés et réapprovisionnements mal anticipés grignotent vos marges sans toujours être visibles.',
     enDesc: '15 to 30% annual loss due to poor inventory management',
   },
   {
     icon: TrendingDown,
     fr: 'Erreurs de caisse et manque de traçabilité',
     en: 'Cash register errors and lack of traceability',
-    frDesc: 'Écarts de caisse non identifiés et vols internes difficiles à détecter',
+    frDesc: 'Chaque opération doit laisser une trace claire : ventes, encaissements, écarts et responsabilités.',
     enDesc: 'Unidentified cash discrepancies and internal theft hard to detect',
   },
   {
     icon: BarChart3,
     fr: 'Manque de visibilité sur l\'activité',
     en: 'Lack of visibility on activity',
-    frDesc: 'Absence de statistiques en temps réel et impossibilité de prendre des décisions éclairées',
+    frDesc: 'Sans vision en temps réel, vous découvrez souvent les problèmes après qu’ils ont déjà coûté cher.',
     enDesc: 'No real-time statistics and inability to make informed decisions',
   },
   {
     icon: Clock,
     fr: 'Gestion manuelle chronophage',
     en: 'Time-consuming manual management',
-    frDesc: 'Saisies répétitives, sources d\'erreurs et temps perdu dans la consolidation',
+    frDesc: 'Libérez votre équipe des tâches répétitives et consacrez son temps à servir les clients et développer l’activité.',
     enDesc: 'Repetitive entries, error sources and time lost consolidating data',
   },
   {
     icon: X,
     fr: 'Erreurs humaines coûteuses',
     en: 'Costly human errors',
-    frDesc: 'Doubles commandes, erreurs de facturation et oublis de relances clients',
+    frDesc: 'Réduisez les oublis et incohérences qui se transforment en pertes, retards ou clients insatisfaits.',
     enDesc: 'Double orders, billing errors and forgotten customer follow-ups',
   },
   {
     icon: ShieldCheck,
     fr: 'Absence d\'outils adaptés',
     en: 'Lack of adapted tools',
-    frDesc: 'Solutions occidentales inadaptées et coûts prohibitifs pour les PME locales',
+    frDesc: 'Une expérience simple, moderne et pensée pour les contraintes opérationnelles des PME africaines.',
     enDesc: 'Unadapted Western solutions and prohibitive costs for local SMEs',
   },
 ];
@@ -189,7 +189,7 @@ const activeMetiers = [
     enDesc: 'Batch management, consignment tracking and multi-supplier monitoring',
     frBenefits: ['Réduction des pertes de 40%', 'Optimisation de la trésorerie', 'Visibilité sur les marges'],
     enBenefits: ['40% loss reduction', 'Cash flow optimization', 'Margin visibility'],
-    color: '#2563eb',
+    color: '#f59e0b',
   },
   {
     icon: ShoppingBag,
@@ -291,14 +291,14 @@ const faqs = {
   fr: [
     ['Qu\'est-ce que GESTOCK exactement ?', 'GESTOCK est une plateforme SaaS de gestion d\'entreprise tout-en-un dotée d\'IA, conçue spécifiquement pour les PME africaines. Elle gère stocks, ventes, achats et caisse depuis une seule interface.'],
     ['Quel est le rôle de l\'IA dans GeStock ?', 'GeStock AI analyse vos flux de vente en temps réel pour prédire les risques de rupture de stock, suggérer vos commandes fournisseurs optimales et identifier les tendances cachées de rentabilité.'],
-    ['À quels métiers s\'adresse la plateforme ?', 'GeStock est optimisé pour les Dépôts de boissons, les Supermarchés et les Boutiques de détail.'],
+    ['À quels métiers s\'adresse la plateforme ?', 'GeStock est optimisé pour les Dépôts de boissons, les Supermarchés, les Boutiques de détail, et pleins d\'autres metiers encore.'],
     ['Mes données sont-elles sécurisées ?', 'Absolument. Vos données sont isolées (architecture multi-tenant) et hébergées sur des serveurs hautement sécurisés avec des sauvegardes quotidiennes.'],
     ['Y a-t-il un essai gratuit ?', 'Oui, nous proposons une période d\'essai gratuit de 14 jours sans engagement.'],
   ],
   en: [
     ['What is GESTOCK exactly?', 'GESTOCK is an AI-powered all-in-one business management SaaS platform designed specifically for African SMEs, handling inventory, sales, and POS from a single interface.'],
     ['What is the role of AI in GeStock?', 'GeStock AI analyzes your sales flows in real-time to predict stockout risks, suggest optimal supplier orders, and identify hidden profitability trends.'],
-    ['Which industries does the platform target?', 'GeStock is optimized for Beverage Depots, Supermarkets, and Retail Stores.'],
+    ['Which industries does the platform target?', 'GeStock is optimized for Beverage Depots, Supermarkets, Retail Stores and many other jobs.'],
     ['Is my data secure?', 'Absolutely. Your data is isolated (multi-tenant architecture) and hosted on highly secure servers with daily backups.'],
     ['Is there a free trial?', 'Yes, we offer a 14-day risk-free trial period.'],
   ],
@@ -349,6 +349,9 @@ export default function GesTockLandingPage() {
     <div className="gesstock-landing">
       {/* Background Effects */}
       <div className="gradient-bg" />
+      <div className="liquid-orb orb-one" />
+      <div className="liquid-orb orb-two" />
+      <div className="liquid-orb orb-three" />
       <div className="noise-overlay" />
 
       {/* Navigation */}
@@ -424,6 +427,9 @@ export default function GesTockLandingPage() {
               </div>
             </div>
             <div className="hero-visual">
+              <div className="hero-glow-ring" />
+              <div className="floating-glass-chip chip-sales"><TrendingUp size={14} /> <span>Ventes en hausse</span></div>
+              <div className="floating-glass-chip chip-stock"><Package size={14} /> <span>Stock maîtrisé</span></div>
               <div className="dashboard-mockup">
                 <div className="mockup-header">
                   <div className="mockup-dots">
@@ -443,6 +449,7 @@ export default function GesTockLandingPage() {
                       <div>
                         <span className="ai-label">GeStock AI Insight</span>
                         <p>Alerte de réapprovisionnement imminente sur 3 articles phares.</p>
+                        <span className="ai-status-pill"><span /> Action recommandée</span>
                       </div>
                     </div>
                     <div className="mockup-stats">
@@ -600,10 +607,20 @@ export default function GesTockLandingPage() {
                         </li>
                       ))}
                     </ul>
-                    <button 
-                      className="btn btn-primary" 
-                      type="button" 
-                      onClick={() => navigate('/register')}
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      onClick={() => {
+                        if (activeMetier === 'depot-boissons') {
+                          navigate('/depot-boissons-landing');
+                        } else if (activeMetier === 'supermarche') {
+                          navigate('/supermarche-landing');
+                        } else if (activeMetier === 'boutique') {
+                          navigate('/boutique-landing');
+                        } else {
+                          navigate('/register');
+                        }
+                      }}
                       style={{ background: color, borderColor: color }}
                     >
                       {isFr ? 'Découvrir cette solution' : 'Discover this solution'}
@@ -1484,12 +1501,502 @@ export default function GesTockLandingPage() {
           transform: translateY(0);
         }
 
+
+        /* =========================================================
+           LIQUID GLASS 2026 — VISUAL SYSTEM
+           Purely visual layer: existing navigation, state and routing
+           logic are intentionally preserved.
+           ========================================================= */
+        .gesstock-landing {
+          --glass-bg: rgba(13, 24, 49, 0.46);
+          --glass-bg-strong: rgba(15, 27, 56, 0.68);
+          --glass-border: rgba(191, 219, 254, 0.18);
+          --glass-highlight: rgba(255, 255, 255, 0.18);
+          --cyan: #5ee7ff;
+          --violet: #8b7cff;
+          --blue: #4f8cff;
+          background: #030817;
+          overflow: hidden;
+        }
+
+        .gesstock-landing::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: -3;
+          background:
+            radial-gradient(circle at 50% 0%, rgba(71, 113, 255, .18), transparent 32%),
+            radial-gradient(circle at 5% 50%, rgba(63, 227, 255, .07), transparent 28%),
+            radial-gradient(circle at 95% 70%, rgba(133, 84, 255, .09), transparent 30%);
+        }
+
+        .gradient-bg {
+          background:
+            radial-gradient(ellipse 70% 50% at 50% -10%, rgba(67, 119, 255, .24), transparent 65%),
+            radial-gradient(ellipse 55% 45% at 90% 55%, rgba(123, 77, 255, .14), transparent 70%),
+            radial-gradient(ellipse 45% 35% at 10% 80%, rgba(29, 208, 255, .10), transparent 70%),
+            linear-gradient(180deg, #020714 0%, #071226 45%, #030817 100%);
+          z-index: -4;
+        }
+
+        .liquid-orb {
+          position: fixed;
+          width: 28rem;
+          height: 28rem;
+          border-radius: 50%;
+          pointer-events: none;
+          filter: blur(80px);
+          opacity: .16;
+          z-index: -2;
+          animation: liquidFloat 14s ease-in-out infinite alternate;
+        }
+        .orb-one { top: 8%; left: -12rem; background: #4cc9ff; }
+        .orb-two { top: 35%; right: -14rem; background: #735cff; animation-delay: -5s; }
+        .orb-three { bottom: -16rem; left: 38%; background: #2f74ff; animation-delay: -9s; }
+
+        @keyframes liquidFloat {
+          from { transform: translate3d(0, -18px, 0) scale(1); }
+          to { transform: translate3d(30px, 22px, 0) scale(1.08); }
+        }
+
+        .gesstock-nav {
+          top: 14px;
+          left: 50%;
+          right: auto;
+          width: min(1180px, calc(100% - 28px));
+          transform: translateX(-50%);
+          padding: .72rem .9rem;
+          border: 1px solid rgba(191, 219, 254, .14);
+          border-radius: 22px;
+          background: rgba(7, 15, 34, .48);
+          backdrop-filter: blur(28px) saturate(160%);
+          -webkit-backdrop-filter: blur(28px) saturate(160%);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.12),
+            0 18px 55px rgba(0,0,0,.28),
+            0 0 40px rgba(65, 109, 255, .08);
+        }
+
+        .gesstock-nav::after {
+          content: '';
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          pointer-events: none;
+          background: linear-gradient(120deg, rgba(255,255,255,.10), transparent 28%, transparent 72%, rgba(94,231,255,.05));
+        }
+
+        .gesstock-nav.is-scrolled {
+          top: 8px;
+          background: rgba(5, 12, 28, .74);
+          border-color: rgba(191, 219, 254, .20);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.14),
+            0 20px 60px rgba(0,0,0,.38),
+            0 0 45px rgba(79, 140, 255, .10);
+        }
+
+        .nav-container { position: relative; z-index: 2; max-width: none; }
+        .brand { text-shadow: 0 0 20px rgba(93, 208, 255, .18); }
+        .brand-logo { filter: drop-shadow(0 0 12px rgba(82, 139, 255, .45)); }
+        .nav-links { gap: .35rem; }
+        .nav-links button {
+          padding: .65rem .85rem;
+          border-radius: 12px;
+          color: #9eb0ca;
+        }
+        .nav-links button:hover {
+          color: #fff;
+          background: rgba(255,255,255,.055);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+        }
+
+        .lang-toggle {
+          border-radius: 14px;
+          background: rgba(255,255,255,.045);
+          border-color: rgba(191,219,254,.12);
+          backdrop-filter: blur(14px);
+        }
+        .lang-toggle button { border-radius: 10px; }
+        .lang-toggle button.active {
+          background: linear-gradient(135deg, rgba(80,140,255,.95), rgba(117,84,255,.95));
+          box-shadow: 0 0 18px rgba(91,113,255,.35), inset 0 1px 0 rgba(255,255,255,.25);
+        }
+
+        .btn {
+          position: relative;
+          overflow: hidden;
+          border-radius: 15px;
+          border: 1px solid rgba(191,219,254,.14);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 28px rgba(0,0,0,.18);
+          transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
+        }
+        .btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(115deg, rgba(255,255,255,.15), transparent 30%, transparent 70%, rgba(94,231,255,.08));
+          opacity: .65;
+          pointer-events: none;
+        }
+        .btn > * { position: relative; z-index: 1; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-primary {
+          background: linear-gradient(135deg, rgba(72,133,255,.95), rgba(118,78,255,.95));
+          border-color: rgba(177,206,255,.32);
+          box-shadow: 0 0 0 1px rgba(118,139,255,.08), 0 12px 35px rgba(67,96,255,.32), inset 0 1px 0 rgba(255,255,255,.25);
+        }
+        .btn-primary:hover {
+          background: linear-gradient(135deg, #5a96ff, #8b67ff);
+          box-shadow: 0 0 0 1px rgba(118,139,255,.16), 0 16px 42px rgba(67,96,255,.42), inset 0 1px 0 rgba(255,255,255,.3);
+        }
+        .btn-secondary, .btn-ghost {
+          background: rgba(255,255,255,.045);
+          border-color: rgba(191,219,254,.14);
+        }
+        .btn-secondary:hover, .btn-ghost:hover { background: rgba(255,255,255,.085); border-color: rgba(191,219,254,.24); }
+        .btn-lg { padding: .9rem 1.35rem; border-radius: 17px; }
+
+        .hero-section { padding-top: 11.5rem; padding-bottom: 7rem; }
+        .hero-container { gap: 5rem; }
+        .hero-content { position: relative; z-index: 2; }
+        .hero-badge, .inline-badge {
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, rgba(74,125,255,.16), rgba(132,91,255,.10));
+          border: 1px solid rgba(156,190,255,.22);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 0 28px rgba(79,140,255,.08);
+          backdrop-filter: blur(18px) saturate(150%);
+          -webkit-backdrop-filter: blur(18px) saturate(150%);
+        }
+        .hero-badge::after, .inline-badge::after {
+          content: '';
+          position: absolute;
+          width: 90px;
+          height: 2px;
+          left: 12%;
+          top: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+          filter: blur(.5px);
+          animation: shineSweep 5s ease-in-out infinite;
+        }
+        @keyframes shineSweep {
+          0%, 55% { transform: translateX(-120px); opacity: 0; }
+          65% { opacity: 1; }
+          82%, 100% { transform: translateX(260px); opacity: 0; }
+        }
+
+        .hero-title {
+          max-width: 760px;
+          font-size: clamp(3.1rem, 5.2vw, 5rem);
+          line-height: 1.02;
+          letter-spacing: -.055em;
+          background: linear-gradient(105deg, #ffffff 8%, #dbeafe 45%, #9bb9ff 72%, #b69cff 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          filter: drop-shadow(0 10px 30px rgba(58,106,255,.12));
+        }
+        .hero-subtitle { max-width: 700px; color: #a8b7cf; font-size: 1.12rem; }
+        .hero-reassurance span {
+          padding: .38rem .65rem;
+          border: 1px solid rgba(191,219,254,.09);
+          border-radius: 999px;
+          background: rgba(255,255,255,.025);
+        }
+
+        .hero-visual { position: relative; min-height: 490px; display: grid; place-items: center; }
+        .hero-glow-ring {
+          position: absolute;
+          width: 82%;
+          aspect-ratio: 1;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(75,128,255,.22), rgba(109,78,255,.08) 42%, transparent 70%);
+          filter: blur(18px);
+          animation: breathe 6s ease-in-out infinite;
+        }
+        @keyframes breathe { 0%,100% { transform: scale(.94); opacity: .7; } 50% { transform: scale(1.06); opacity: 1; } }
+
+        .dashboard-mockup {
+          position: relative;
+          z-index: 2;
+          width: min(100%, 590px);
+          background: linear-gradient(145deg, rgba(21,38,76,.70), rgba(5,13,31,.72));
+          border: 1px solid rgba(191,219,254,.22);
+          border-radius: 30px;
+          overflow: hidden;
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.20),
+            inset 0 -1px 0 rgba(255,255,255,.04),
+            0 35px 90px rgba(0,0,0,.48),
+            0 0 60px rgba(67,112,255,.16);
+          backdrop-filter: blur(28px) saturate(155%);
+          -webkit-backdrop-filter: blur(28px) saturate(155%);
+          transform: perspective(1200px) rotateY(-4deg) rotateX(2deg);
+          animation: mockupFloat 7s ease-in-out infinite;
+        }
+        .dashboard-mockup::before {
+          content: '';
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          pointer-events: none;
+          background: linear-gradient(125deg, rgba(255,255,255,.15), transparent 23%, transparent 70%, rgba(95,194,255,.07));
+        }
+        @keyframes mockupFloat { 0%,100% { transform: perspective(1200px) rotateY(-4deg) rotateX(2deg) translateY(0); } 50% { transform: perspective(1200px) rotateY(-2deg) rotateX(1deg) translateY(-10px); } }
+        .mockup-header {
+          background: rgba(255,255,255,.035);
+          border-bottom-color: rgba(191,219,254,.10);
+          padding: .9rem 1.1rem;
+        }
+        .mockup-dots span { box-shadow: 0 0 10px rgba(95,194,255,.12); }
+        .mockup-title { color: #a9b9d4; letter-spacing: .04em; }
+        .mockup-body { min-height: 330px; }
+        .mockup-sidebar { background: rgba(0,0,0,.18); border-right-color: rgba(191,219,254,.08); }
+        .mockup-item { height: 10px; background: rgba(184,205,238,.12); border-radius: 8px; }
+        .mockup-item.active { background: linear-gradient(90deg, #4f8cff, #8a70ff); box-shadow: 0 0 18px rgba(79,140,255,.42); }
+        .mockup-main { padding: 1.4rem; }
+        .ai-preview-box, .mockup-stat, .mockup-chart {
+          background: linear-gradient(145deg, rgba(74,126,255,.13), rgba(255,255,255,.035));
+          border-color: rgba(148,181,255,.16);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.09);
+          backdrop-filter: blur(18px);
+        }
+        .ai-preview-box { position: relative; align-items: flex-start; }
+        .ai-preview-box p { max-width: 360px; }
+        .ai-status-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: .35rem;
+          margin-top: .55rem;
+          padding: .3rem .55rem;
+          border-radius: 999px;
+          background: rgba(45, 212, 191, .08);
+          border: 1px solid rgba(45,212,191,.14);
+          color: #8ee9da;
+          font-size: .65rem;
+          font-weight: 700;
+        }
+        .ai-status-pill span { width: 6px; height: 6px; border-radius: 50%; background: #5ee7c6; box-shadow: 0 0 10px #5ee7c6; }
+
+        .floating-glass-chip {
+          position: absolute;
+          z-index: 4;
+          display: inline-flex;
+          align-items: center;
+          gap: .45rem;
+          padding: .62rem .82rem;
+          border-radius: 16px;
+          color: #dce9ff;
+          font-size: .72rem;
+          font-weight: 700;
+          background: rgba(9,19,42,.58);
+          border: 1px solid rgba(191,219,254,.18);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 18px 40px rgba(0,0,0,.25), 0 0 24px rgba(79,140,255,.10);
+          backdrop-filter: blur(20px) saturate(160%);
+          -webkit-backdrop-filter: blur(20px) saturate(160%);
+          animation: chipFloat 5s ease-in-out infinite;
+        }
+        .floating-glass-chip svg { color: #6ee7ff; }
+        .chip-sales { top: 17%; right: -2%; }
+        .chip-stock { bottom: 14%; left: -3%; animation-delay: -2.3s; }
+        @keyframes chipFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+
+        .trust-band {
+          position: relative;
+          background: rgba(8,17,36,.35);
+          border-color: rgba(191,219,254,.08);
+          backdrop-filter: blur(20px);
+        }
+        .trust-item {
+          padding: .75rem 1rem;
+          border: 1px solid rgba(191,219,254,.07);
+          border-radius: 16px;
+          background: rgba(255,255,255,.022);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+        }
+        .trust-item svg { color: #6aa5ff; filter: drop-shadow(0 0 8px rgba(106,165,255,.5)); }
+
+        .section { position: relative; padding: 7.5rem 0; }
+        .section-alt, .section-dark { background: transparent; }
+        .section-header h2 { font-size: clamp(2.1rem, 4vw, 3.15rem); letter-spacing: -.045em; }
+        .section-header p { color: #91a4c1; }
+
+        .problem-card, .solution-card, .feature-card, .testimonial-card, .faq-item, .metier-detail, .ai-card {
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(145deg, rgba(20,35,69,.48), rgba(7,15,33,.38));
+          border: 1px solid rgba(191,219,254,.13);
+          border-radius: 24px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 20px 50px rgba(0,0,0,.16);
+          backdrop-filter: blur(24px) saturate(145%);
+          -webkit-backdrop-filter: blur(24px) saturate(145%);
+        }
+        .problem-card::before, .solution-card::before, .feature-card::before, .testimonial-card::before, .faq-item::before, .metier-detail::before, .ai-card::before {
+          content: '';
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          pointer-events: none;
+          background: linear-gradient(125deg, rgba(255,255,255,.10), transparent 24%, transparent 75%, rgba(92,185,255,.05));
+        }
+        .problem-card:hover, .solution-card:hover, .feature-card:hover, .testimonial-card:hover, .ai-card:hover {
+          transform: translateY(-8px);
+          border-color: rgba(126,173,255,.28);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 26px 60px rgba(0,0,0,.24), 0 0 32px rgba(75,128,255,.08);
+        }
+        .problem-card, .solution-card, .feature-card, .testimonial-card, .ai-card { transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
+
+        .problem-icon, .solution-icon, .ai-card-icon {
+          position: relative;
+          border-radius: 18px;
+          border: 1px solid rgba(191,219,254,.14);
+          background: linear-gradient(145deg, rgba(92,137,255,.18), rgba(123,77,255,.08));
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 10px 25px rgba(0,0,0,.16), 0 0 22px rgba(79,140,255,.10);
+        }
+        .problem-icon.danger { color: #ff9aa8; background: linear-gradient(145deg, rgba(255,92,122,.13), rgba(109,50,86,.08)); }
+        .solution-icon.success { color: #75f0d4; background: linear-gradient(145deg, rgba(55,224,192,.13), rgba(65,103,255,.08)); }
+        .ai-card-icon { color: #91b4ff; }
+        .problem-card h3, .solution-card h3, .feature-card h3, .ai-card h3 { letter-spacing: -.02em; }
+        .problem-card p, .solution-card p, .feature-card p, .ai-card p { color: #9aabc4; }
+
+        .ai-showcase-section { background: radial-gradient(circle at 50% 45%, rgba(74,117,255,.10), transparent 55%); }
+        .ai-card { border-color: rgba(115,135,255,.18); }
+        .ai-card:hover { border-color: rgba(123,158,255,.38); }
+
+        .metier-tabs button {
+          position: relative;
+          background: rgba(255,255,255,.035);
+          border-color: rgba(191,219,254,.13);
+          border-radius: 16px;
+          backdrop-filter: blur(18px);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+        }
+        .metier-tabs button:hover, .metier-tabs button.active {
+          background: linear-gradient(135deg, rgba(75,128,255,.13), rgba(126,84,255,.10));
+          color: #fff;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 12px 30px rgba(0,0,0,.18), 0 0 26px rgba(79,140,255,.08);
+        }
+        .metier-detail { padding: 3.25rem; }
+        .metier-visual {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid rgba(191,219,254,.10);
+          background: linear-gradient(145deg, rgba(76,126,255,.12), rgba(120,77,255,.06)) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.09);
+        }
+        .metier-visual::before {
+          content: '';
+          position: absolute;
+          width: 230px;
+          height: 230px;
+          border-radius: 50%;
+          background: rgba(85,142,255,.20);
+          filter: blur(55px);
+        }
+        .metier-icon-large {
+          position: relative;
+          z-index: 1;
+          background: linear-gradient(145deg, rgba(88,143,255,.9), rgba(117,83,255,.85)) !important;
+          border: 1px solid rgba(255,255,255,.25);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 20px 45px rgba(0,0,0,.28), 0 0 45px rgba(79,140,255,.22);
+          backdrop-filter: blur(18px);
+        }
+        .benefit-list li {
+          padding: .6rem .75rem;
+          border-radius: 13px;
+          background: rgba(255,255,255,.025);
+          border: 1px solid rgba(191,219,254,.07);
+        }
+
+        .testimonial-card p { color: #c5d3e8; }
+        .testimonial-stars { filter: drop-shadow(0 0 7px rgba(245,158,11,.25)); }
+        .testimonial-author { border-top-color: rgba(191,219,254,.08); }
+
+        .faq-item.open {
+          border-color: rgba(108,153,255,.25);
+          background: linear-gradient(145deg, rgba(25,43,82,.54), rgba(8,17,37,.46));
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 20px 45px rgba(0,0,0,.20), 0 0 28px rgba(79,140,255,.06);
+        }
+        .faq-item button { padding: 1.35rem 1.5rem; }
+        .faq-item button svg { transition: transform .3s ease; color: #89aaff; }
+        .faq-item.open button svg { transform: rotate(180deg); }
+        .faq-answer { color: #9aabc4; }
+
+        .cta-card {
+          background: linear-gradient(135deg, rgba(55,100,220,.22), rgba(116,74,224,.13) 55%, rgba(22,180,225,.08));
+          border: 1px solid rgba(166,197,255,.24);
+          border-radius: 30px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 30px 80px rgba(0,0,0,.3), 0 0 70px rgba(79,140,255,.12);
+          backdrop-filter: blur(30px) saturate(155%);
+          -webkit-backdrop-filter: blur(30px) saturate(155%);
+        }
+        .cta-card::before {
+          content: '';
+          position: absolute;
+          width: 380px;
+          height: 380px;
+          right: -100px;
+          top: -160px;
+          border-radius: 50%;
+          background: rgba(88,139,255,.20);
+          filter: blur(65px);
+        }
+        .cta-icon { filter: drop-shadow(0 0 28px rgba(103,144,255,.45)); opacity: .65; }
+
+        [data-reveal] { transform: translateY(28px) scale(.985); transition: opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1); }
+        [data-reveal].is-visible { transform: translateY(0) scale(1); }
+
+        @media (prefers-reduced-motion: reduce) {
+          .liquid-orb, .dashboard-mockup, .hero-glow-ring, .floating-glass-chip, .hero-badge::after, .inline-badge::after { animation: none !important; }
+          [data-reveal] { transition: opacity .2s ease !important; transform: none !important; }
+          .btn, .problem-card, .solution-card, .feature-card, .testimonial-card, .ai-card { transition: none !important; }
+        }
+
         @media (max-width: 968px) {
+          .gesstock-nav { top: 8px; width: calc(100% - 16px); }
           .nav-links { display: none; }
           .btn-mobile { display: block; }
-          .hero-container, .metier-content, .cta-card { grid-template-columns: 1fr; gap: 2rem; }
-          .hero-title { font-size: 2.5rem; }
+          .hero-container, .metier-content { grid-template-columns: 1fr; gap: 2rem; }
+          .cta-card { display: flex; flex-direction: column; align-items: flex-start; gap: 2rem; }
+          .hero-title { font-size: clamp(2.55rem, 9vw, 3.8rem); }
+          .hero-section { padding-top: 9rem; }
+          .hero-visual { min-height: 420px; margin-top: 1rem; }
+          .dashboard-mockup { transform: none; animation: mockupFloatMobile 7s ease-in-out infinite; }
+          @keyframes mockupFloatMobile { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+          .chip-sales { right: -1%; top: 8%; }
+          .chip-stock { left: -1%; bottom: 8%; }
           .trust-container, .grid-3, .ai-grid, .testimonials-grid { grid-template-columns: 1fr; }
+          .metier-detail { padding: 1.5rem; }
+          .metier-visual { height: 230px; }
+        }
+
+        @media (max-width: 560px) {
+          .nav-actions { gap: .35rem; }
+          .nav-actions .btn-ghost, .nav-actions .lang-toggle { display: none; }
+          .brand span { font-size: 1rem; }
+          .hero-section { padding-bottom: 4rem; }
+          .hero-cta { flex-direction: column; align-items: stretch; }
+          .hero-cta .btn { width: 100%; }
+          .hero-reassurance { gap: .45rem; }
+          .hero-reassurance span { font-size: .72rem; }
+          .hero-visual { min-height: 330px; }
+          .dashboard-mockup { border-radius: 22px; }
+          .mockup-body { min-height: 240px; }
+          .mockup-sidebar { width: 44px; }
+          .mockup-main { padding: .8rem; }
+          .ai-preview-box { padding: .75rem; gap: .65rem; }
+          .ai-preview-box p { font-size: .68rem; }
+          .floating-glass-chip { font-size: .62rem; padding: .5rem .62rem; }
+          .chip-sales { right: -2%; }
+          .chip-stock { left: -2%; }
+          .section { padding: 5rem 0; }
+          .section-header { margin-bottom: 2.5rem; }
+          .cta-card { padding: 2rem; }
+          .cta-content h2 { font-size: 2rem; }
+          .cta-visual { display: none; }
         }
       `}</style>
     </div>

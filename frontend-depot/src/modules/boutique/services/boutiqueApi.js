@@ -91,18 +91,6 @@ export const boutiqueApi = {
   deleteFacture: (id) =>
     api.delete(`/boutique/factures/${id}`, getTenantHeaders()),
 
-  // Personnel
-  getPersonnel: (params) =>
-    api.get('/boutique/personnel', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getPersonnelMember: (id) =>
-    api.get(`/boutique/personnel/${id}`, getTenantHeaders()),
-  createPersonnelMember: (data) =>
-    api.post('/boutique/personnel', data, getTenantHeaders()),
-  updatePersonnelMember: (id, data) =>
-    api.patch(`/boutique/personnel/${id}`, data, getTenantHeaders()),
-  deletePersonnelMember: (id) =>
-    api.delete(`/boutique/personnel/${id}`, getTenantHeaders()),
-
   // Promotions
   getPromotions: (params) =>
     api.get('/boutique/promotions', { ...getTenantHeaders(), params: cleanParams(params) }),
@@ -137,4 +125,3 @@ export const boutiqueApi = {
   seedCategories: (type) =>
     api.post(`/boutique/categories/seed/${type}`, {}, getTenantHeaders()),
 };
-

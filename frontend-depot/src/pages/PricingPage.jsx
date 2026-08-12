@@ -140,7 +140,7 @@ export default function PricingPage() {
   const highlightedPlan = new URLSearchParams(location.search).get('highlight')?.toUpperCase();
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a1a 0%, #0d1117 50%, #0a0a1a 100%)', fontFamily: "'Inter', -apple-system, sans-serif", position: 'relative', overflow: 'hidden' }}>
+    <div className="pricing-liquid" style={{ minHeight: '100vh', background: '#ffffff', fontFamily: "'Inter', -apple-system, sans-serif", position: 'relative', overflow: 'hidden' }}>
       {/* Animated BG */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: 600, height: 600, background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', borderRadius: '50%', animation: 'pulse 8s ease-in-out infinite' }} />
@@ -162,6 +162,224 @@ export default function PricingPage() {
           .pay-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
           .pay-btn:active { transform: translateY(0); }
           .modal-overlay { animation: fadeInUp 0.2s ease; }
+
+          /* ===== GESTOCK LIQUID GLASS — VISUAL LAYER ONLY ===== */
+          .pricing-liquid {
+            color: #e8efff !important;
+            background:
+              radial-gradient(circle at 8% 5%, rgba(77,123,255,.20), transparent 28%),
+              radial-gradient(circle at 92% 8%, rgba(139,92,246,.20), transparent 30%),
+              radial-gradient(circle at 50% 100%, rgba(38,91,180,.16), transparent 34%),
+              linear-gradient(145deg,#020617 0%,#061126 48%,#030816 100%) !important;
+          }
+
+          .pricing-liquid::before {
+            content:"";
+            position:fixed;
+            inset:0;
+            pointer-events:none;
+            z-index:0;
+            opacity:.38;
+            background-image:
+              linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+              linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+            background-size:42px 42px;
+            mask-image:linear-gradient(to bottom,black,transparent 90%);
+          }
+
+          .pricing-liquid > div[style*="maxWidth"] {
+            max-width:1320px !important;
+            padding:52px 24px 90px !important;
+          }
+
+          .pricing-liquid h1 {
+            color:#f8fbff !important;
+            text-shadow:0 10px 40px rgba(66,112,255,.18);
+          }
+
+          .pricing-liquid h1 span {
+            background:linear-gradient(135deg,#6ee7ff 0%,#7297ff 42%,#b58cff 100%) !important;
+            -webkit-background-clip:text !important;
+            background-clip:text !important;
+          }
+
+          .pricing-liquid p { color:#91a4c4 !important; }
+
+          /* Glass label */
+          .pricing-liquid [style*="rgba(139,92,246,0.1)"] {
+            background:linear-gradient(135deg,rgba(87,130,255,.16),rgba(139,92,246,.11)) !important;
+            border-color:rgba(157,190,255,.20) !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 28px rgba(85,113,255,.10) !important;
+            backdrop-filter:blur(18px) saturate(150%);
+            -webkit-backdrop-filter:blur(18px) saturate(150%);
+          }
+          .pricing-liquid [style*="rgba(139,92,246,0.1)"] span { color:#a8c7ff !important; }
+
+          /* Billing switch */
+          .pricing-liquid [style*="background: '#f1f5f9'"] {
+            background:rgba(14,27,52,.58) !important;
+            border:1px solid rgba(166,196,255,.16) !important;
+            border-radius:22px !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 18px 45px rgba(0,0,0,.22) !important;
+            backdrop-filter:blur(24px) saturate(150%);
+            -webkit-backdrop-filter:blur(24px) saturate(150%);
+          }
+          .pricing-liquid [style*="background: cycle === 'MONTHLY'"] { border-radius:17px !important; }
+
+          /* Premium glass cards */
+          .pricing-liquid .plan-card {
+            overflow:hidden;
+            isolation:isolate;
+            background:linear-gradient(145deg,rgba(37,60,101,.58),rgba(7,18,38,.70)) !important;
+            border:1px solid rgba(171,202,255,.17) !important;
+            border-radius:30px !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,.14),
+              inset 0 -1px 0 rgba(0,0,0,.22),
+              0 28px 80px rgba(0,0,0,.32),
+              0 0 0 1px rgba(91,130,255,.035) !important;
+            backdrop-filter:blur(28px) saturate(145%);
+            -webkit-backdrop-filter:blur(28px) saturate(145%);
+          }
+
+          .pricing-liquid .plan-card::before {
+            content:"";
+            position:absolute;
+            inset:1px;
+            border-radius:29px;
+            pointer-events:none;
+            z-index:-1;
+            background:
+              radial-gradient(circle at 12% 0%,rgba(164,213,255,.16),transparent 30%),
+              linear-gradient(135deg,rgba(255,255,255,.08),transparent 32%);
+          }
+
+          .pricing-liquid .plan-card::after {
+            content:"";
+            position:absolute;
+            width:180px;
+            height:180px;
+            top:-95px;
+            right:-70px;
+            border-radius:50%;
+            pointer-events:none;
+            background:rgba(89,129,255,.16);
+            filter:blur(35px);
+            z-index:-1;
+          }
+
+          .pricing-liquid .plan-card:hover {
+            transform:translateY(-10px) scale(1.008) !important;
+            border-color:rgba(176,211,255,.31) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,.18),
+              0 34px 95px rgba(0,0,0,.40),
+              0 0 45px rgba(74,119,255,.13) !important;
+          }
+
+          .pricing-liquid .plan-card h3 { color:#f4f8ff !important; }
+          .pricing-liquid .plan-card p { color:#8ea2c3 !important; }
+          .pricing-liquid .plan-card [style*="font-size: 48px"] {
+            color:#f7faff !important;
+            text-shadow:0 6px 25px rgba(92,132,255,.12);
+          }
+          .pricing-liquid .plan-card [style*="borderBottom: '1px solid #e2e8f0'"] {
+            border-bottom-color:rgba(169,198,255,.13) !important;
+          }
+          .pricing-liquid .plan-card li { color:#b3c1d8 !important; }
+
+          .pricing-liquid .plan-card .pay-btn {
+            border-radius:17px !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 25px rgba(0,0,0,.16) !important;
+            backdrop-filter:blur(14px);
+            -webkit-backdrop-filter:blur(14px);
+          }
+          .pricing-liquid .plan-card .pay-btn:hover {
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,.22),
+              0 14px 30px rgba(0,0,0,.22),
+              0 0 25px rgba(95,132,255,.12) !important;
+          }
+
+          .pricing-liquid .highlighted-plan {
+            border-color:rgba(255,197,76,.72) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,.16),
+              0 0 0 1px rgba(255,190,55,.42),
+              0 28px 85px rgba(0,0,0,.34),
+              0 0 65px rgba(255,178,42,.18) !important;
+          }
+
+          .pricing-liquid [style*="borderTop: '1px solid #e2e8f0'"] {
+            border-top-color:rgba(167,197,255,.13) !important;
+          }
+
+          /* Payment modal */
+          .pricing-liquid [style*="background: 'rgba(0,0,10,0.85)'"] {
+            background:rgba(1,6,18,.72) !important;
+            backdrop-filter:blur(24px) saturate(130%) !important;
+            -webkit-backdrop-filter:blur(24px) saturate(130%) !important;
+          }
+
+          .pricing-liquid .modal-overlay {
+            animation:liquidModalIn .42s cubic-bezier(.2,.8,.2,1) both !important;
+            background:
+              radial-gradient(circle at 90% 0%,rgba(91,120,255,.18),transparent 34%),
+              linear-gradient(145deg,rgba(25,43,76,.90),rgba(5,13,28,.94)) !important;
+            border:1px solid rgba(184,211,255,.20) !important;
+            border-radius:32px !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,.15),
+              0 40px 100px rgba(0,0,0,.58),
+              0 0 70px rgba(76,116,255,.14) !important;
+            backdrop-filter:blur(30px) saturate(145%);
+            -webkit-backdrop-filter:blur(30px) saturate(145%);
+          }
+
+          @keyframes liquidModalIn {
+            from { opacity:0; transform:translateY(18px) scale(.97); }
+            to { opacity:1; transform:translateY(0) scale(1); }
+          }
+
+          .pricing-liquid .modal-overlay h3 { color:#f6f9ff !important; }
+
+          .pricing-liquid .modal-overlay [style*="background: 'rgba(255,255,255,0.04)'"] {
+            background:rgba(255,255,255,.045) !important;
+            border-color:rgba(190,213,255,.12) !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.07) !important;
+            backdrop-filter:blur(18px);
+            -webkit-backdrop-filter:blur(18px);
+          }
+
+          .pricing-liquid .modal-overlay input {
+            background:rgba(4,13,29,.62) !important;
+            border-color:rgba(175,204,255,.16) !important;
+          }
+          .pricing-liquid .modal-overlay input:focus {
+            border-color:rgba(112,159,255,.58) !important;
+            box-shadow:0 0 0 4px rgba(88,126,255,.10),inset 0 1px 10px rgba(0,0,0,.20) !important;
+          }
+          .pricing-liquid .modal-overlay .pay-btn {
+            border-radius:17px !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 28px rgba(0,0,0,.22) !important;
+          }
+
+          @media (max-width:760px) {
+            .pricing-liquid > div[style*="maxWidth"] { padding:34px 14px 64px !important; }
+            .pricing-liquid h1 { font-size:clamp(34px,11vw,48px) !important; letter-spacing:-1.5px !important; }
+            .pricing-liquid .plan-card { border-radius:26px !important; padding:26px 20px !important; }
+            .pricing-liquid .plan-card:hover { transform:translateY(-5px) !important; }
+            .pricing-liquid .modal-overlay { border-radius:26px !important; }
+          }
+
+          @media (prefers-reduced-motion:reduce) {
+            .pricing-liquid *, .pricing-liquid *::before, .pricing-liquid *::after {
+              animation-duration:.01ms !important;
+              animation-iteration-count:1 !important;
+              transition-duration:.01ms !important;
+              scroll-behavior:auto !important;
+            }
+          }
         `}</style>
       </div>
 
@@ -169,21 +387,21 @@ export default function PricingPage() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 56, animation: 'fadeInUp 0.6s ease' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 100, padding: '6px 18px', marginBottom: 24 }}>
-            <span style={{ fontSize: 12, color: '#a78bfa', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>Plans & Tarifs</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 100, padding: '6px 18px', marginBottom: 24 }}>
+            <span style={{ fontSize: 12, color: '#8b5cf6', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>Plans & Tarifs</span>
           </div>
-          <h1 style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 900, color: '#fff', lineHeight: 1.1, margin: '0 0 20px', letterSpacing: -2 }}>
+          <h1 style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 900, color: '#1e293b', lineHeight: 1.1, margin: '0 0 20px', letterSpacing: -2 }}>
             Gérez vos dépôts<br />
             <span style={{ background: 'linear-gradient(135deg, #f59e0b, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>sans limite</span>
           </h1>
-          <p style={{ fontSize: 18, color: '#94a3b8', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
+          <p style={{ fontSize: 18, color: '#64748b', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
             Paiement local simplifié via MTN MoMo, Orange Money ou carte bancaire internationale.
           </p>
         </div>
 
         {/* Billing Toggle */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 56 }}>
-          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 6, display: 'inline-flex', gap: 4 }}>
+          <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 16, padding: 6, display: 'inline-flex', gap: 4 }}>
             {['MONTHLY', 'ANNUAL'].map(c => (
               <button key={c} onClick={() => setCycle(c)} style={{
                 padding: '12px 28px', borderRadius: 12, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: 'all 0.3s ease',
@@ -211,13 +429,12 @@ export default function PricingPage() {
             return (
               <div key={plan.id} className={`plan-card${isHighlighted ? ' highlighted-plan' : ''}`} style={{
                 background: isPopular
-                  ? 'linear-gradient(160deg, rgba(245,158,11,0.08) 0%, rgba(15,15,30,0.95) 40%)'
-                  : 'rgba(255,255,255,0.03)',
-                border: isHighlighted ? '1px solid rgba(245,158,11,0.95)' : (isPopular ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(255,255,255,0.07)'),
+                  ? 'linear-gradient(160deg, rgba(245,158,11,0.05) 0%, #ffffff 40%)'
+                  : '#ffffff',
+                border: isHighlighted ? '2px solid rgba(245,158,11,0.95)' : (isPopular ? '1px solid rgba(245,158,11,0.3)' : '1px solid #e2e8f0'),
                 borderRadius: 24, padding: '32px 28px', position: 'relative',
-                boxShadow: isHighlighted ? '0 0 0 1px rgba(245,158,11,0.75), 0 0 34px rgba(245,158,11,0.22)' : (isPopular ? '0 0 60px rgba(245,158,11,0.12), inset 0 1px 0 rgba(255,255,255,0.05)' : 'inset 0 1px 0 rgba(255,255,255,0.04)'),
+                boxShadow: isHighlighted ? '0 0 0 1px rgba(245,158,11,0.75), 0 0 34px rgba(245,158,11,0.22)' : (isPopular ? '0 0 60px rgba(245,158,11,0.12), 0 4px 20px rgba(0,0,0,0.05)' : '0 4px 20px rgba(0,0,0,0.05)'),
                 animation: `fadeInUp ${0.3 + idx * 0.1}s ease`,
-                backdropFilter: 'blur(20px)',
               }}>
                 {isHighlighted && (
                   <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(245,158,11,0.16)', border: '1px solid rgba(245,158,11,0.55)', color: '#fbbf24', fontSize: 10, fontWeight: 900, padding: '4px 10px', borderRadius: 100, letterSpacing: 1, textTransform: 'uppercase' }}>
@@ -233,36 +450,36 @@ export default function PricingPage() {
                 {/* Plan header */}
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ fontSize: 36, marginBottom: 8 }}><Icon name={plan.icon} size={36} style={{ color: accent }} /></div>
-                  <h3 style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: '0 0 4px', letterSpacing: -0.5 }}>{plan.name}</h3>
+                  <h3 style={{ fontSize: 22, fontWeight: 900, color: '#1e293b', margin: '0 0 4px', letterSpacing: -0.5 }}>{plan.name}</h3>
                   <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>{plan.desc}</p>
                 </div>
 
                 {/* Price */}
-                <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid #e2e8f0' }}>
                   {cycle === 'ANNUAL' && !isFree ? (
                     <>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-                        <span style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2 }}>
+                        <span style={{ fontSize: 48, fontWeight: 900, color: '#1e293b', lineHeight: 1, letterSpacing: -2 }}>
                           {fmt(p)}
                         </span>
                         <span style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>FCFA / an HT</span>
                       </div>
-                      <p style={{ fontSize: 13, color: '#94a3b8', margin: '2px 0' }}>soit {fmt(Math.round(p / 12))} FCFA/mois</p>
-                      <p style={{ fontSize: 12, color: '#475569', margin: '4px 0', textDecoration: 'line-through' }}>{fmt(Math.round(p / 0.83))} FCFA</p>
+                      <p style={{ fontSize: 13, color: '#64748b', margin: '2px 0' }}>soit {fmt(Math.round(p / 12))} FCFA/mois</p>
+                      <p style={{ fontSize: 12, color: '#94a3b8', margin: '4px 0', textDecoration: 'line-through' }}>{fmt(Math.round(p / 0.83))} FCFA</p>
                       <p style={{ fontSize: 12, color: '#10b981', margin: '2px 0', fontWeight: 700 }}>Économisez {fmt(Math.round(p / 0.83) - p)} FCFA/an</p>
                       <p style={{ fontSize: 12, color: '#d97706', margin: '4px 0 0', fontWeight: 600 }}>TTC annuel : {fmt(total)} FCFA</p>
                     </>
                   ) : (
                     <>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-                        <span style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2 }}>
+                        <span style={{ fontSize: 48, fontWeight: 900, color: '#1e293b', lineHeight: 1, letterSpacing: -2 }}>
                           {isFree ? 'Gratuit' : fmt(p)}
                         </span>
                         {!isFree && <span style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>FCFA</span>}
                       </div>
                       {!isFree && (
                         <>
-                          <p style={{ fontSize: 12, color: '#475569', margin: '2px 0' }}>/{cycle === 'MONTHLY' ? 'mois HT' : 'an HT'}</p>
+                          <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0' }}>/{cycle === 'MONTHLY' ? 'mois HT' : 'an HT'}</p>
                           <p style={{ fontSize: 12, color: '#d97706', margin: '4px 0 0', fontWeight: 600 }}>TVA (19,25%) : +{fmt(tva)} FCFA → TTC {fmt(total)}</p>
                         </>
                       )}
@@ -276,7 +493,7 @@ export default function PricingPage() {
                 {/* Features */}
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {plan.features.map((f, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#94a3b8' }}>
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#64748b' }}>
                       <span style={{ width: 18, height: 18, borderRadius: '50%', background: `${accent}22`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: accent }}><Icon name="Check" size={10} /></span>
                       {f}
                     </li>
@@ -286,7 +503,7 @@ export default function PricingPage() {
                 {/* CTA Buttons */}
                 {isFree ? (
                   <button onClick={() => navigate('/register')} className="pay-btn" style={{
-                    width: '100%', padding: '14px', borderRadius: 14, background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 700, fontSize: 15,
+                    width: '100%', padding: '14px', borderRadius: 14, background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 15,
                   }}>
                     Commencer l'essai gratuit →
                   </button>
@@ -325,8 +542,8 @@ export default function PricingPage() {
         </div>
 
         {/* Trust badges */}
-        <div style={{ textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 48 }}>
-          <p style={{ color: '#334155', fontSize: 13, fontWeight: 600, marginBottom: 24, textTransform: 'uppercase', letterSpacing: 1 }}>Paiements sécurisés via</p>
+        <div style={{ textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: 48 }}>
+          <p style={{ color: '#64748b', fontSize: 13, fontWeight: 600, marginBottom: 24, textTransform: 'uppercase', letterSpacing: 1 }}>Paiements sécurisés via</p>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
             {[
               { label: 'MTN MoMo', bg: '#FFC107', color: '#000', text: 'M' },
@@ -347,7 +564,7 @@ export default function PricingPage() {
               { icon: 'Building2', text: 'Fonds protégés' },
               { icon: 'CheckCircle', text: 'Remboursement 14 jours' }
             ].map(t => (
-              <span key={t.text} style={{ fontSize: 13, color: '#475569', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span key={t.text} style={{ fontSize: 13, color: '#64748b', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Icon name={t.icon} size={14} /> {t.text}
               </span>
             ))}

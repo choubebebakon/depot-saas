@@ -20,11 +20,16 @@ export default function LoginPage() {
       const userData = await login(form.email, form.password);
 
       // Le backend renvoie user.metier dans la réponse login
+      // Le backend renvoie user.metier dans la réponse login
       if (userData?.metier) {
         localStorage.setItem('gestock_metier', userData.metier);
       }
 
-      navigate('/dashboard');
+      if (userData?.isSuperAdmin) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect');
     } finally {
@@ -33,10 +38,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{
+      background: 'radial-gradient(circle at 8% 5%, rgba(34,211,238,.20), transparent 28%), radial-gradient(circle at 92% 8%, rgba(6,182,212,.20), transparent 30%), radial-gradient(circle at 50% 100%, rgba(8,145,178,.16), transparent 34%), linear-gradient(145deg,#020617 0%,#061126 48%,#030816 100%)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 -left-20 w-80 h-80 bg-blue-500/15 rounded-full blur-[100px]" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.15) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 -left-20 w-80 h-80 rounded-full blur-[100px]" style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)' }} />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -44,23 +53,52 @@ export default function LoginPage() {
           <img
             src={logoNeon}
             alt="GesTock"
-            className="w-40 h-auto object-contain mx-auto mb-4 drop-shadow-[0_0_24px_rgba(34,211,238,0.75)]"
+            className="w-40 h-auto object-contain mx-auto mb-4"
+            style={{ filter: 'drop-shadow(0 0 24px rgba(34,211,238,0.75))' }}
           />
           <h1 className="text-3xl font-extrabold text-white tracking-tight">GesStock</h1>
           <p className="text-slate-400 text-sm mt-1">Gestion de stock · Cameroun</p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+        <div style={{
+          background: 'linear-gradient(145deg, rgba(37,60,101,.58), rgba(7,18,38,.70))',
+          border: '1px solid rgba(171,202,255,.17)',
+          borderRadius: '24px',
+          padding: '2rem',
+          backdropFilter: 'blur(28px) saturate(145%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(145%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(0,0,0,.22), 0 28px 80px rgba(0,0,0,.32)'
+        }}>
           <h2 className="text-lg font-bold text-white mb-6">Connexion</h2>
 
           {successMessage && (
-            <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-xl mb-5 text-center font-bold">
+            <div style={{
+              background: 'rgba(34,197,94,0.15)',
+              border: '1px solid rgba(34,197,94,0.3)',
+              color: '#22c55e',
+              fontSize: '0.875rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              marginBottom: '1.25rem',
+              textAlign: 'center',
+              fontWeight: 700
+            }}>
               ✅ {successMessage}
             </div>
           )}
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl mb-5 text-center font-bold">
+            <div style={{
+              background: 'rgba(239,68,68,0.15)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              color: '#ef4444',
+              fontSize: '0.875rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              marginBottom: '1.25rem',
+              textAlign: 'center',
+              fontWeight: 700
+            }}>
               {error}
             </div>
           )}
@@ -76,7 +114,25 @@ export default function LoginPage() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="patron@exemple.cm"
-                className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(171,202,255,.17)',
+                  color: '#fff',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  transition: 'all 0.3s ease'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(34,211,238,0.5)';
+                  e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(171,202,255,.17)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
 
@@ -90,24 +146,77 @@ export default function LoginPage() {
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="••••••••"
-                className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(171,202,255,.17)',
+                  color: '#fff',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  transition: 'all 0.3s ease'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(34,211,238,0.5)';
+                  e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(171,202,255,.17)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-3.5 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/20 mt-2 uppercase text-sm tracking-widest"
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #22d3ee, #06b6d4)',
+                color: '#fff',
+                fontWeight: 900,
+                padding: '0.875rem 1.5rem',
+                borderRadius: '12px',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 20px rgba(34,211,238,0.4)',
+                marginTop: '0.5rem',
+                textTransform: 'uppercase',
+                fontSize: '0.875rem',
+                letterSpacing: '0.1em',
+                border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.5 : 1
+              }}
             >
               {loading ? 'Connexion en cours...' : 'Se connecter'}
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(171,202,255,.17)', textAlign: 'center' }}>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-4">Nouveau sur GesTock ?</p>
             <Link
               to="/register"
-              className="inline-block w-full py-3 rounded-xl border border-indigo-500/30 text-indigo-400 text-xs font-black hover:bg-indigo-500/10 transition-all uppercase tracking-widest"
+              style={{
+                display: 'inline-block',
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '12px',
+                border: '1px solid rgba(34,211,238,0.3)',
+                color: '#22d3ee',
+                fontSize: '0.75rem',
+                fontWeight: 900,
+                transition: 'all 0.3s ease',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                textDecoration: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(34,211,238,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'transparent';
+              }}
             >
               Créer mon compte
             </Link>

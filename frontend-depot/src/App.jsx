@@ -18,6 +18,7 @@ import OnboardingMetierPage from "./pages/OnboardingMetierPage";
 import { OnboardingRoute } from "./components/guards/OnboardingGuard";
 import SectorGuard, { getSectorPrefix } from './components/guards/SectorGuard';
 import { METIER_MODULES } from './modules/ModuleRegistry';
+import DevModeBanner from './components/DevModeBanner';
 
 // Pages Publiques
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -33,6 +34,10 @@ const ChangelogPage = lazy(() => import('./pages/Changelog'));
 const FaqPage = lazy(() => import('./pages/Faq'));
 const BlogPage = lazy(() => import('./pages/Blog'));
 const BientotDisponible = lazy(() => import('./pages/BientotDisponible'));
+const DepotBoissonsLandingPage = lazy(() => import('./pages/DepotBoissonsLandingPage'));
+const SupermarcheLandingPage = lazy(() => import('./pages/SupermarcheLandingPage'));
+const BoutiqueLandingPage = lazy(() => import('./pages/BoutiqueLandingPage'));
+const MetierComingSoonPage = lazy(() => import('./pages/MetierComingSoonPage'));
 const MainLayout = lazy(() => import('./layouts/MainLayout'));
 
 // SuperAdmin
@@ -124,6 +129,10 @@ function AppRoutes() {
           {/* Routes de base et d'authentification */}
           <Route path="/" element={<GesTockLandingPage />} />
           <Route path="/depot-boissons" element={<LandingPage />} />
+          <Route path="/depot-boissons-landing" element={<DepotBoissonsLandingPage />} />
+          <Route path="/supermarche-landing" element={<SupermarcheLandingPage />} />
+          <Route path="/boutique-landing" element={<BoutiqueLandingPage />} />
+          <Route path="/metier/:metierKey" element={<MetierComingSoonPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pricing" element={<PricingPage />} />
@@ -502,6 +511,7 @@ export default function App() {
           <NotifProvider>
             <DataProvider>
               <BrowserRouter>
+               <DevModeBanner />
                 <AppRoutes />
                 <OfflineBanner />
                 <InstallPWA />

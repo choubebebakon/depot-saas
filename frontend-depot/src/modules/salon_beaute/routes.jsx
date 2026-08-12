@@ -6,6 +6,7 @@ import DynamicSidebar from '../../components/DynamicSidebar';
 import NotificationBell from '../../core/notifications/NotificationBell';
 import NotificationToast from '../../core/notifications/NotificationToast';
 import GeStockChatbot from '../../components/chatbot/GeStockChatbot';
+import SupportWidget from '../../components/SupportWidget';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -113,6 +114,7 @@ function SalonLayout() {
       </div>
       {sidebarOpen && <div className="fixed inset-0 z-50 lg:hidden"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} /><div className="absolute left-0 top-0 h-full"><DynamicSidebar user={user} tenant={user?.tenant} onLogout={handleLogout} /></div></div>}
       <GeStockChatbot metier={user?.metier} tenantNom={user?.nomEntreprise} />
+      <SupportWidget />
     </div>
   );
 }

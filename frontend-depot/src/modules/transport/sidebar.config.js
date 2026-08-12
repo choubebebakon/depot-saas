@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Personnel',       icon: 'Users', path: '/transport/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/transport/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   TRANSPORT: {
     label: 'Transport / Logistique',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#f97316',
     description: 'Suivi colis, flotte véhicules et trajets',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/transport/audit-patron' },
+    ],
   },
 };

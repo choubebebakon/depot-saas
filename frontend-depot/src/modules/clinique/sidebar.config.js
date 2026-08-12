@@ -18,5 +18,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#0ea5e9',
     description: 'Dossiers patients, consultations et prescriptions',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/clinique/audit-patron' },
+    ],
   },
 };

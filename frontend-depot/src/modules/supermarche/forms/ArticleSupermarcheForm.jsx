@@ -7,7 +7,6 @@ import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import BarcodeScanner from '../../../shared/components/forms/BarcodeScanner';
-import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
 import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
 import { supermarcheApi } from '../services/supermarcheApi';
 
@@ -20,7 +19,6 @@ const articleSchema = z.object({
   codeBarres: z.string().optional(),
   unite: z.string().default('PIECE'),
   rayonId: z.string().optional(),
-  dateExpiration: z.string().optional(),
   photoUrl: z.string().nullable().optional(),
 });
 
@@ -33,7 +31,6 @@ const defaultValues = {
   codeBarres: '',
   unite: 'PIECE',
   rayonId: '',
-  dateExpiration: '',
   photoUrl: null,
 };
 
@@ -68,7 +65,6 @@ export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edi
         codeBarres: edit.codeBarres || '',
         unite: edit.unite || 'PIECE',
         rayonId: edit.rayons?.[0]?.rayonId || edit.rayonId || '',
-        dateExpiration: edit.dateExpiration?.slice?.(0, 10) || '',
         photoUrl: edit.photoUrl || null,
       });
     } else {
@@ -85,7 +81,6 @@ export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edi
         prixGros: prixGros === '' ? undefined : Number(prixGros),
         seuilCritique: Number(data.seuilCritique),
         codeBarres: data.codeBarres || undefined,
-        dateExpiration: data.dateExpiration || undefined,
         photoUrl: data.photoUrl || undefined,
       };
 
@@ -284,19 +279,6 @@ export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edi
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <Controller
-          name="dateExpiration"
-          control={control}
-          render={({ field }) => (
-            <DateTimePicker
-              label="Date d'expiration"
-              name="dateExpiration"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              hint="Optionnelle"
-            />
-          )}
-        />
-        <Controller
           name="seuilCritique"
           control={control}
           render={({ field }) => (
@@ -311,6 +293,9 @@ export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edi
             />
           )}
         />
+        <div className="text-xs text-slate-500 flex items-end pb-2">
+          La date de péremption se gère désormais par lot, dans Stock → Lots.
+        </div>
       </div>
 
       <div className="mt-4">

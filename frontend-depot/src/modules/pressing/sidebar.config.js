@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Calendrier',      icon: 'Calendar', path: '/pressing/calendrier' },
   { label: 'Paramètres',      icon: 'Settings', path: '/pressing/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   PRESSING: {
     label: 'Pressing',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#7c3aed',
     description: 'Gestion des dépôts, lavages, retraits et services',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/pressing/audit-patron' },
+    ],
   },
 };

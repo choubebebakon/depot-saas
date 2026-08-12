@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Personnel',       icon: 'Users', path: '/ciment-btp/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/ciment-btp/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   CIMENT_BTP: {
     label: 'Ciment / BTP',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#b45309',
     description: 'Gestion des livraisons, véhicules et chantiers',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/ciment-btp/audit-patron' },
+    ],
   },
 };

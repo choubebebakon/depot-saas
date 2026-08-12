@@ -73,7 +73,7 @@ export default function SupportWidget() {
         title="Support & Aide"
         style={{
           position: 'fixed',
-          bottom: '92px',
+          bottom: '90px',
           right: '24px',
           width: '56px',
           height: '56px',
@@ -82,7 +82,7 @@ export default function SupportWidget() {
           cursor: 'pointer',
           background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
           boxShadow: '0 4px 20px rgba(99,102,241,0.55)',
-          zIndex: 1000,
+          zIndex: 999,
           transition: 'all 0.2s ease',
           display: 'flex',
           alignItems: 'center',
@@ -98,7 +98,7 @@ export default function SupportWidget() {
         <div
           style={{
             position: 'fixed',
-            bottom: '158px',
+            bottom: '156px',
             right: '24px',
             width: '360px',
             maxWidth: 'calc(100vw - 32px)',

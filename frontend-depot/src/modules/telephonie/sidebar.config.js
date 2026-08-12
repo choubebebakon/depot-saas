@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Rapports',        icon: 'TrendingUp', path: '/telephonie/rapports' },
   { label: 'Paramètres',      icon: 'Settings', path: '/telephonie/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   TELEPHONIE: {
     label: 'Téléphonie',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#7c3aed',
     description: 'Gestion des téléphones, accessoires et réparations',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/telephonie/audit-patron' },
+    ],
   },
 };

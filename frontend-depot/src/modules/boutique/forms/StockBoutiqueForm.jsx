@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
+import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
 import { boutiqueApi } from '../services/boutiqueApi';
 
 const articleSchema = z.object({
@@ -18,6 +19,7 @@ const articleSchema = z.object({
   familleId: z.string().optional(),
   marqueId: z.string().optional(),
   categorieId: z.string().uuid('Catégorie invalide').optional(),
+  photoUrl: z.string().nullable().optional(),
 });
 
 const defaultValues = {
@@ -30,6 +32,7 @@ const defaultValues = {
   familleId: '',
   marqueId: '',
   categorieId: '',
+  photoUrl: null,
 };
 
 export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) {
@@ -45,7 +48,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
     },
   });
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(articleSchema),
     defaultValues,
   });
@@ -62,6 +65,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
         familleId: edit.familleId || '',
         marqueId: edit.marqueId || '',
         categorieId: edit.categorieId ?? '',
+        photoUrl: edit.photoUrl || null,
       });
     } else {
       reset(defaultValues);
@@ -170,6 +174,14 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
           </div>
         )}
       />
+      <div className="mt-4">
+        <PhotoUpload
+          label="Photo de l'article"
+          name="photoUrl"
+          value={watch('photoUrl')}
+          onChange={(e) => setValue('photoUrl', e.target.value)}
+        />
+      </div>
     </FormModal>
   );
 }

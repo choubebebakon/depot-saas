@@ -6,6 +6,7 @@ import DynamicSidebar from '../../components/DynamicSidebar';
 import NotificationBell from '../../core/notifications/NotificationBell';
 import NotificationToast from '../../core/notifications/NotificationToast';
 import GeStockChatbot from '../../components/chatbot/GeStockChatbot';
+import SupportWidget from '../../components/SupportWidget';
 
 const UtilisateursPage = lazy(() => import('../../components/admin/UtilisateursPage'));
 const DepotsPage = lazy(() => import('../../components/admin/DepotsPage'));
@@ -21,7 +22,6 @@ const FacturesPage      = lazy(() => import('./pages/FacturesPage'));
 const FournisseursPage  = lazy(() => import('./pages/FournisseursPage'));
 const DepensesPage      = lazy(() => import('./pages/DepensesPage'));
 const RapportsPage      = lazy(() => import('./pages/RapportsPage'));
-const PersonnelPage     = lazy(() => import('./pages/PersonnelPage'));
 const ParametresPage    = lazy(() => import('./pages/ParametresPage'));
 const CategoriesPage    = lazy(() => import('./pages/CategoriesPage'));
 
@@ -60,6 +60,7 @@ function BoutiqueLayout() {
       </div>
       {sidebarOpen && <div className="fixed inset-0 z-50 lg:hidden"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} /><div className="absolute left-0 top-0 h-full"><DynamicSidebar user={user} tenant={user?.tenant} onLogout={handleLogout} /></div></div>}
       <GeStockChatbot metier={user?.metier} tenantNom={user?.nomEntreprise} />
+      <SupportWidget />
     </div>
   );
 }
@@ -79,7 +80,6 @@ export default function BoutiqueRoutes() {
           <Route path="fournisseurs" element={<FournisseursPage />} />
           <Route path="depenses"     element={<DepensesPage />} />
           <Route path="rapports"     element={<RapportsPage />} />
-          <Route path="personnel"    element={<PersonnelPage />} />
           <Route path="parametres"   element={<ParametresPage />} />
           <Route path="categories"   element={<CategoriesPage />} />
            <Route path="utilisateurs" element={<UtilisateursPage />} />

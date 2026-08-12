@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Personnel',       icon: 'Users', path: '/librairie/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/librairie/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   LIBRAIRIE: {
     label: 'Librairie / Papeterie',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#6366f1',
     description: 'Catalogue livres, papeterie et commandes spéciales',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/librairie/audit-patron' },
+    ],
   },
 };

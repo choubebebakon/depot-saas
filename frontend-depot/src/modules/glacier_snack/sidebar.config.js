@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Personnel',       icon: 'Users', path: '/glacier/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/glacier/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   GLACIER_SNACK: {
     label: 'Glacier / Snack',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#06b6d4',
     description: 'Compositions, commandes rapides et caisse',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/glacier/audit-patron' },
+    ],
   },
 };

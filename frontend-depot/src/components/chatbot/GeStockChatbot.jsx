@@ -39,7 +39,7 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
     setMessages([{
       id: Date.now(),
       role: 'assistant',
-      texte: `Bonjour ! Je suis votre assistant GeStock ${config.icon}\n\nJe peux vous aider avec :\n\u2022 Vos ventes et statistiques\n\u2022 Votre stock et alertes\n\u2022 Vos clients et fournisseurs\n\u2022 Et plus encore...\n\nQue voulez-vous savoir ?`,
+      texte: `Bonjour ! Je suis votre assistant GeStock ${config.icon}\n\nJe peux vous aider avec :\n\u2022 \uD83D\uDCC8 Prévoir vos ventes (tendances et anticipations)\n\u2022 \uD83D\uDEA8 Détecter les anomalies (écarts et pertes invisibles)\n\u2022 \uD83D\uDEE2 Recommandations de réapprovisionnement\n\u2022 \uD83D\uDCB0 Identifier vos produits les plus rentables\n\u2022 \uD83D\uDCCB Créer automatiquement des rapports\n\u2022 \u26A1 Automatiser les tâches répétitives\n\u2022 \uD83D\uDD25 Anticiper les périodes de forte activité\n\u2022 \uD83C\uDF81 Optimiser vos promotions\n\u2022 \uD83D\uDE80 Découvrir des opportunités de croissance\n\nQue voulez-vous savoir ?`,
       heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
     }]);
     fetchSuggestions();
@@ -60,7 +60,16 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
         setSuggestions(data.suggestions ?? []);
       }
     } catch {
-      setSuggestions(['Ventes du jour ?', 'Stock en rupture ?', 'Bilan du mois ?']);
+      setSuggestions([
+        'Prévoir les ventes du mois',
+        'Détecter les anomalies de stock',
+        'Recommandations de réapprovisionnement',
+        'Produits les plus rentables',
+        'Générer un rapport automatique',
+        'Anticiper les pics d\'activité',
+        'Optimiser mes promotions',
+        'Opportunités de croissance'
+      ]);
     }
   }
 

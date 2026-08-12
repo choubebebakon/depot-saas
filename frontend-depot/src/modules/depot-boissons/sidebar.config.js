@@ -21,5 +21,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#2563eb',
     description: 'Gestion de stock, livraisons et consignes',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/depot/audit-patron' },
+    ],
   },
 };

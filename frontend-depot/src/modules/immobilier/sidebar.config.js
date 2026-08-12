@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Personnel',       icon: 'Users', path: '/immobilier/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/immobilier/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   IMMOBILIER: {
     label: 'Gestion Immobilière',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#14b8a6',
     description: 'Biens, locations, loyers et interventions',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/immobilier/audit-patron' },
+    ],
   },
 };

@@ -51,6 +51,11 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
     [moduleConfig, metier]
   );
 
+  const adminMenus = useMemo(
+    () => moduleConfig?.ADMINISTRATION_MENUS || [],
+    [moduleConfig]
+  );
+
   const menus = useMemo(() => {
     return rawMenus.map(m => ({
       ...m,
@@ -220,6 +225,28 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
                     <span style={styles.navLabel}>{item.label}</span>
                   )}
                 </NavLink>
+              );
+            })}
+
+            {adminMenus.map((item) => {
+              const adminPath = item.path.startsWith(prefix) ? item.path : prefix + (item.path.startsWith('/') ? '' : '/') + item.path;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => handleNavClick(adminPath)}
+                  title={collapsed ? item.label : undefined}
+                  style={{
+                    ...styles.navItem,
+                    backgroundColor: location.pathname === adminPath ? couleur + "18" : "transparent",
+                    borderLeft: location.pathname === adminPath ? `3px solid ${couleur}` : "3px solid transparent",
+                    color: location.pathname === adminPath ? couleur : "#94a3b8",
+                  }}
+                >
+                  <span style={styles.navIcon}>{item.icon}</span>
+                  {!collapsed && (
+                    <span style={styles.navLabel}>{item.label}</span>
+                  )}
+                </button>
               );
             })}
           </>

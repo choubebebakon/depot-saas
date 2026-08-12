@@ -108,16 +108,34 @@ export default function TermsPage() {
       <style>{`
         .legal-page {
           min-height: 100vh;
-          background: #0a0a0f;
+          background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
           color: #f8fafc;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
           -webkit-font-smoothing: antialiased;
+          position: relative;
+        }
+
+        .legal-page::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 40% 60%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+          pointer-events: none;
+          z-index: 0;
         }
 
         .legal-container {
           max-width: 900px;
           margin: 0 auto;
           padding: 6rem 2rem 4rem;
+          position: relative;
+          z-index: 1;
         }
 
         .back-link {
@@ -168,12 +186,25 @@ export default function TermsPage() {
         }
 
         .legal-section {
-          background: rgba(30, 41, 59, 0.6);
-          border: 1px solid rgba(148, 163, 184, 0.15);
-          border-radius: 20px;
+          background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+          border: 1px solid rgba(148, 163, 184, 0.2);
+          border-radius: 24px;
           padding: 2.5rem;
-          backdrop-filter: blur(30px);
+          backdrop-filter: blur(40px) saturate(180%);
           position: relative;
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+            0 -20px 40px rgba(0, 0, 0, 0.2);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .legal-section:hover {
+          transform: translateY(-2px);
+          box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+            0 -25px 50px rgba(0, 0, 0, 0.25);
         }
 
         .legal-section::before {
@@ -183,7 +214,20 @@ export default function TermsPage() {
           left: 0;
           right: 0;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+          background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), rgba(34, 211, 238, 0.3), transparent);
+          border-radius: 24px 24px 0 0;
+        }
+
+        .legal-section::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+          border-radius: 24px;
+          pointer-events: none;
         }
 
         .legal-section h2 {
@@ -212,9 +256,22 @@ export default function TermsPage() {
           gap: 1rem;
           align-items: flex-start;
           padding: 1.25rem;
-          background: rgba(15, 23, 42, 0.5);
-          border: 1px solid rgba(99, 102, 241, 0.1);
-          border-radius: 12px;
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%);
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          border-radius: 16px;
+          backdrop-filter: blur(20px);
+          box-shadow: 
+            0 4px 16px rgba(0, 0, 0, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .term-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 
+            0 8px 24px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+          border-color: rgba(99, 102, 241, 0.3);
         }
 
         .term-icon {

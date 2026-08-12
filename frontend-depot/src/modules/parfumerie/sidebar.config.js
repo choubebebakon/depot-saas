@@ -12,6 +12,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Personnel',       icon: 'Users', path: '/parfumerie/personnel' },
   { label: 'Paramètres',      icon: 'Settings', path: '/parfumerie/parametres' },
 ];
+
 export const SIDEBAR_CONFIG = {
   PARFUMERIE: {
     label: 'Parfumerie / Cosmétique',
@@ -19,5 +20,8 @@ export const SIDEBAR_CONFIG = {
     couleur: '#d946ef',
     description: 'Gestion des produits, ventes et fidélité client',
     menus: SIDEBAR_MENUS,
+    ADMINISTRATION_MENUS: [
+      { label: 'Audit Patron', icon: 'Shield', path: '/parfumerie/audit-patron' },
+    ],
   },
 };
