@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -166,6 +166,7 @@ export class ArticlesService {
         familleId: data.familleId || null,
         marqueId: data.marqueId || null,
         categorieId: data.categorieId || null,
+        photoUrl: data.photoUrl || null,
       },
       include: { famille: true, marque: true, categorie: true },
     });
@@ -183,6 +184,7 @@ export class ArticlesService {
     if (data.familleId !== undefined) updateData.familleId = data.familleId || null;
     if (data.marqueId !== undefined) updateData.marqueId = data.marqueId || null;
     if (data.categorieId !== undefined) updateData.categorieId = data.categorieId || null;
+    if (data.photoUrl !== undefined) updateData.photoUrl = data.photoUrl || null;
 
     return this.prisma.article.update({
       where: { id },
@@ -475,143 +477,6 @@ export class DepensesService {
   async delete(id: string, tenantId: string) {
     await this.findOne(id, tenantId);
     return this.prisma.depense.delete({ where: { id } });
-  }
-}
-
-// ── Personnel ─────────────────────────────────────────────────────────────────
-
-@Injectable()
-export class PersonnelService {
-  constructor(private prisma: PrismaService) {}
-
-  async findAll(tenantId: string, params?: any) {
-    const page = toPositiveInt(params?.page, 1);
-    const limit = toPositiveInt(params?.limit, 50);
-    const search = params?.search;
-    const role = params?.role;
-    const depotId = params?.depotId;
-    const skip = (page - 1) * limit;
-
-    const where: any = { tenantId, isActive: true };
-    if (depotId) where.depotId = depotId;
-    if (search) {
-      where.OR = [
-        { nom: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    // Mapper VENDEUR → COMMERCIAL pour la recherche
-    if (role) where.role = role === 'VENDEUR' ? 'COMMERCIAL' : role;
-
-    const [data, total] = await Promise.all([
-      this.prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          nom: true,
-          email: true,
-          role: true,
-          depotId: true,
-          createdAt: true,
-          isActive: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.user.count({ where }),
-    ]);
-
-    return { data, total, page, limit };
-  }
-
-  async findOne(id: string, tenantId: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { id, tenantId },
-      select: {
-        id: true,
-        nom: true,
-        email: true,
-        role: true,
-        depotId: true,
-        createdAt: true,
-        isActive: true,
-      },
-    });
-    if (!user) throw new NotFoundException('Employé non trouvé');
-    return user;
-  }
-
-  async create(data: any, tenantId: string) {
-    requireString(data.nom, 'nom');
-    requireString(data.email, 'email');
-    // Mapper VENDEUR → COMMERCIAL (enum Prisma)
-    const role = data.role === 'VENDEUR' ? 'COMMERCIAL' : (data.role || 'COMMERCIAL');
-
-    // Vérifier si email déjà utilisé dans ce tenant
-    const existing = await this.prisma.user.findFirst({
-      where: { email: data.email, tenantId },
-    });
-    if (existing) throw new ConflictException('Cet email est déjà utilisé');
-
-    return this.prisma.user.create({
-      data: {
-        tenantId,
-        nom: data.nom.trim(),
-        email: data.email.trim().toLowerCase(),
-        password: data.password || `TEMP_${Date.now()}`, // password temporaire
-        role: role as any,
-        depotId: data.depotId || null,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        nom: true,
-        email: true,
-        role: true,
-        depotId: true,
-        createdAt: true,
-        isActive: true,
-      },
-    });
-  }
-
-  async update(id: string, data: any, tenantId: string) {
-    await this.findOne(id, tenantId);
-    const updateData: any = {};
-    if (data.nom !== undefined) updateData.nom = data.nom.trim();
-    if (data.email !== undefined) updateData.email = data.email.trim().toLowerCase();
-    if (data.role !== undefined) {
-      updateData.role = data.role === 'VENDEUR' ? 'COMMERCIAL' : data.role;
-    }
-    if (data.depotId !== undefined) updateData.depotId = data.depotId || null;
-    if (data.telephone !== undefined) {
-      // telephone n'est pas dans le modèle User — ignorer silencieusement
-    }
-
-    return this.prisma.user.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        nom: true,
-        email: true,
-        role: true,
-        depotId: true,
-        createdAt: true,
-        isActive: true,
-      },
-    });
-  }
-
-  async delete(id: string, tenantId: string) {
-    await this.findOne(id, tenantId);
-    // Soft delete : marquer isActive = false
-    return this.prisma.user.update({
-      where: { id },
-      data: { isActive: false },
-      select: { id: true, isActive: true },
-    });
   }
 }
 

@@ -48,5 +48,8 @@ export class UpdateArticleDto {
 
   @IsOptional()
   estConsigne?: boolean;
-}
 
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+}

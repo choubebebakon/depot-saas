@@ -47,5 +47,8 @@ export class CreateArticleDto {
 
   @IsOptional()
   estConsigne?: boolean;
-}
 
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+}

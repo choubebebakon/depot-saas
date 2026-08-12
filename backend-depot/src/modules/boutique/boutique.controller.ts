@@ -29,7 +29,6 @@ import {
   ClientsService,
   FournisseursService,
   DepensesService,
-  PersonnelService,
   VentesService,
 } from './boutique.service';
 import { StockQueryDto } from './dto/stock-query.dto';
@@ -45,7 +44,6 @@ export class BoutiqueController {
     private clientsService: ClientsService,
     private fournisseursService: FournisseursService,
     private depensesService: DepensesService,
-    private personnelService: PersonnelService,
     private ventesService: VentesService,
   ) {}
 
@@ -294,54 +292,6 @@ export class BoutiqueController {
   @HttpCode(HttpStatus.OK)
   async deleteDepense(@Param('id') id: string, @Req() req: any) {
     return this.depensesService.delete(id, this.getTenantId(req));
-  }
-
-  // ── Personnel ─────────────────────────────────────────────────────────────
-
-  @Get('personnel')
-  async findAllPersonnel(@Req() req: any, @Query() params: any) {
-    return this.personnelService.findAll(this.getTenantId(req), {
-      ...params,
-      depotId: params.depotId || this.getDepotId(req),
-    });
-  }
-
-  @Get('personnel/:id')
-  async findOnePersonnel(@Param('id') id: string, @Req() req: any) {
-    return this.personnelService.findOne(id, this.getTenantId(req));
-  }
-
-  @Post('personnel')
-  async createPersonnel(@Body() data: any, @Req() req: any) {
-    const depotId = data.depotId || this.getDepotId(req);
-    return this.personnelService.create(
-      { ...data, depotId },
-      this.getTenantId(req),
-    );
-  }
-
-  @Patch('personnel/:id')
-  async updatePersonnel(
-    @Param('id') id: string,
-    @Body() data: any,
-    @Req() req: any,
-  ) {
-    return this.personnelService.update(id, data, this.getTenantId(req));
-  }
-
-  @Put('personnel/:id')
-  async updatePersonnelPut(
-    @Param('id') id: string,
-    @Body() data: any,
-    @Req() req: any,
-  ) {
-    return this.personnelService.update(id, data, this.getTenantId(req));
-  }
-
-  @Delete('personnel/:id')
-  @HttpCode(HttpStatus.OK)
-  async deletePersonnel(@Param('id') id: string, @Req() req: any) {
-    return this.personnelService.delete(id, this.getTenantId(req));
   }
 
   // ── Ventes ────────────────────────────────────────────────────────────────

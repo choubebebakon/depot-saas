@@ -298,6 +298,7 @@ export class DepotBoissonsService {
         prixVente: parseFloat(data.prix) || 0,
         seuilCritique: parseInt(data.seuil) || 10,
         familleId: data.famille || undefined,
+        photoUrl: data.photoUrl || undefined,
         tenantId,
       },
     });

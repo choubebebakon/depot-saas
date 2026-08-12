@@ -17,12 +17,16 @@ import {
   getCategory,
   getPriority,
 } from './notifications.templates';
+import { ChannelDispatcher } from './channels/channel.dispatcher';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly channelDispatcher: ChannelDispatcher,
+  ) {}
 
   private buildUserFilter(userId: string | undefined) {
     if (!userId) return {};
@@ -50,6 +54,8 @@ export class NotificationsService {
       userId: dto.userId,
     };
 
+    let notification: any = null;
+
     if (dto.groupKey) {
       const existing = await this.prisma.notification.findFirst({
         where: {
@@ -59,7 +65,7 @@ export class NotificationsService {
         },
       });
       if (existing) {
-        return this.prisma.notification.update({
+        notification = await this.prisma.notification.update({
           where: { id: existing.id },
           data: {
             updatedAt: new Date(),
@@ -70,7 +76,46 @@ export class NotificationsService {
       }
     }
 
-    return this.prisma.notification.create({ data });
+    if (!notification) {
+      notification = await this.prisma.notification.create({ data });
+    }
+
+    // Émission temps réel (WebSocket) + canaux externes (email/WhatsApp/push).
+    // Volontairement non "awaité" : la création de la notification en base ne
+    // doit jamais échouer ou ralentir à cause d'un canal de diffusion externe.
+    this.dispatchRealtime(notification, dto.userId).catch((e) =>
+      this.logger.error(
+        `Échec dispatch temps réel pour notif ${notification.id}: ${(e as Error).message}`,
+      ),
+    );
+
+    return notification;
+  }
+
+ 
+  private async dispatchRealtime(
+    notification: any,
+    userId?: string,
+  ): Promise<void> {
+    let prefs: {
+      emailEnabled?: boolean;
+      whatsappEnabled?: boolean;
+      pushEnabled?: boolean;
+    } = {};
+
+    if (userId) {
+      const userPrefs = await this.getPreferences(
+        notification.tenantId,
+        userId,
+      );
+      prefs = {
+        emailEnabled: userPrefs.emailEnabled,
+        whatsappEnabled: userPrefs.whatsappEnabled,
+        pushEnabled: userPrefs.pushEnabled,
+      };
+    }
+
+    await this.channelDispatcher.dispatch(notification, prefs);
   }
 
   async createBulk(
@@ -89,6 +134,7 @@ export class NotificationsService {
     type: NotifType,
     data: Record<string, unknown>,
     userId?: string,
+    groupKey?: string,
   ) {
     const tpl = getTemplate(type, data);
     return this.create(tenantId, {
@@ -97,6 +143,7 @@ export class NotificationsService {
       message: tpl.message,
       userId,
       metadata: data,
+      groupKey,
     });
   }
 

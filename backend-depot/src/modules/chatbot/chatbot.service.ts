@@ -334,6 +334,484 @@ export class ChatbotService {
       };
     }
 
+    // Prévision des ventes
+    if (
+      this.contient(message, [
+        'prévoir',
+        'prévision',
+        'tendance',
+        'anticiper',
+        'futur',
+        'prédire',
+      ])
+    ) {
+      const debutMois = new Date();
+      debutMois.setDate(1);
+      debutMois.setHours(0, 0, 0, 0);
+
+      const ventesMois = await this.prisma.vente.aggregate({
+        where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+        _sum: { total: true },
+        _count: true,
+      });
+
+      const ventesParJour = await this.prisma.vente.groupBy({
+        by: ['date'],
+        where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+        _sum: { total: true },
+        orderBy: { date: 'asc' },
+      });
+
+      const moyenneJournaliere = ventesMois._count > 0 && ventesMois._sum.total
+        ? ventesMois._sum.total / ventesMois._count 
+        : 0;
+
+      const joursRestantsMois = new Date(debutMois.getFullYear(), debutMois.getMonth() + 1, 0).getDate() - aujourd_hui.getDate();
+      const previsionFinMois = moyenneJournaliere * joursRestantsMois;
+
+      return {
+        type: 'PREVISION_VENTES',
+        moyenneJournaliere,
+        totalMoisActuel: ventesMois._sum.total ?? 0,
+        previsionFinMois,
+        joursRestants: joursRestantsMois,
+        tendance: ventesParJour.length > 5 ? 'croissante' : 'stable',
+      };
+    }
+
+    // Détection des anomalies
+    if (
+      this.contient(message, [
+        'anomalie',
+        'écart',
+        'perte',
+        'incohérence',
+        'anormal',
+        'suspect',
+      ])
+    ) {
+      const debutMois = new Date();
+      debutMois.setDate(1);
+      debutMois.setHours(0, 0, 0, 0);
+
+      const [ventesMois, stocks, depenses] = await Promise.all([
+        this.prisma.vente.aggregate({
+          where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+          _sum: { total: true },
+        }),
+        this.prisma.stock.findMany({
+          where: { depot: { tenantId } },
+          include: { article: { select: { designation: true, prixAchat: true, prixVente: true } } },
+        }),
+        this.prisma.depense.aggregate({
+          where: { tenantId, createdAt: { gte: debutMois } },
+          _sum: { montant: true },
+        }),
+      ]);
+
+      const anomalies: any[] = [];
+      
+      // Détection de marges anormales
+      stocks.forEach(s => {
+        const marge = (s.article.prixVente - s.article.prixAchat) / s.article.prixAchat * 100;
+        if (marge < 10) {
+          anomalies.push({
+            type: 'MARGE_FAIBLE',
+            produit: s.article.designation,
+            marge: marge.toFixed(2) + '%',
+          });
+        }
+      });
+
+      // Détection de ratio dépenses/ventes anormal
+      const ratioDepenses = ventesMois._sum.total && ventesMois._sum.total > 0 
+        ? ((depenses._sum?.montant ?? 0) / ventesMois._sum.total) * 100 
+        : 0;
+      
+      if (ratioDepenses > 50) {
+        anomalies.push({
+          type: 'DEPENSES_ELEVEES',
+          ratio: ratioDepenses.toFixed(2) + '%',
+        });
+      }
+
+      return {
+        type: 'DETECTION_ANOMALIES',
+        totalAnomalies: anomalies.length,
+        anomalies: anomalies.slice(0, 10),
+        ratioDepenses,
+      };
+    }
+
+    // Recommandations de réapprovisionnement
+    if (
+      this.contient(message, [
+        'réapprovisionnement',
+        'recommander',
+        'commander',
+        'réapprovisionner',
+        'restock',
+      ])
+    ) {
+      const stocks = await this.prisma.stock.findMany({
+        where: { depot: { tenantId } },
+        include: { 
+          article: { 
+            select: { 
+              designation: true, 
+              seuilCritique: true,
+              prixAchat: true 
+            } 
+          } 
+        },
+      });
+
+      const recommandations = stocks
+        .filter(s => s.quantite <= (s.seuilCritique ?? s.article.seuilCritique ?? 10))
+        .map(s => ({
+          produit: s.article.designation,
+          quantiteActuelle: s.quantite,
+          seuilCritique: s.seuilCritique ?? s.article.seuilCritique ?? 10,
+          quantiteSuggeree: Math.max((s.seuilCritique ?? s.article.seuilCritique ?? 10) * 3, 50),
+          priorite: s.quantite === 0 ? 'URGENT' : s.quantite < 5 ? 'HAUTE' : 'MOYENNE',
+          estimationCout: Math.max((s.seuilCritique ?? s.article.seuilCritique ?? 10) * 3, 50) * s.article.prixAchat,
+        }))
+        .sort((a, b) => {
+          const prioriteOrder = { 'URGENT': 0, 'HAUTE': 1, 'MOYENNE': 2 };
+          return prioriteOrder[a.priorite] - prioriteOrder[b.priorite];
+        })
+        .slice(0, 15);
+
+      return {
+        type: 'RECOMMANDATIONS_REAPPROVISIONNEMENT',
+        totalRecommandations: recommandations.length,
+        recommandations,
+        estimationCoutTotal: recommandations.reduce((sum, r) => sum + r.estimationCout, 0),
+      };
+    }
+
+    // Identification des produits rentables
+    if (
+      this.contient(message, [
+        'rentable',
+        'rentabilité',
+        'marge',
+        'profit',
+        'bénéfice',
+        'performant',
+      ])
+    ) {
+      const debutMois = new Date();
+      debutMois.setDate(1);
+      debutMois.setHours(0, 0, 0, 0);
+
+      const ventes = await this.prisma.vente.findMany({
+        where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+        include: {
+          lignes: {
+            include: {
+              article: {
+                select: { 
+                  designation: true, 
+                  prixAchat: true, 
+                  prixVente: true 
+                } 
+              } 
+            } 
+          },
+        },
+      });
+
+      const rentabiliteParProduit: Record<string, { 
+        ventes: number; 
+        quantite: number; 
+        margeTotale: number; 
+        prixAchat: number; 
+        prixVente: number; 
+      }> = {};
+
+      ventes.forEach(v => {
+        v.lignes.forEach(l => {
+          const nom = l.article.designation;
+          const marge = (l.article.prixVente - l.article.prixAchat) * l.quantite;
+          
+          if (!rentabiliteParProduit[nom]) {
+            rentabiliteParProduit[nom] = {
+              ventes: 0,
+              quantite: 0,
+              margeTotale: 0,
+              prixAchat: l.article.prixAchat,
+              prixVente: l.article.prixVente,
+            };
+          }
+          
+          rentabiliteParProduit[nom].ventes += l.prix * l.quantite;
+          rentabiliteParProduit[nom].quantite += l.quantite;
+          rentabiliteParProduit[nom].margeTotale += marge;
+        });
+      });
+
+      const produitsRentables = Object.entries(rentabiliteParProduit)
+        .map(([nom, data]) => ({
+          produit: nom,
+          ventes: data.ventes,
+          quantite: data.quantite,
+          margeTotale: data.margeTotale,
+          margeUnitaire: data.prixVente - data.prixAchat,
+          tauxMarge: ((data.prixVente - data.prixAchat) / data.prixAchat * 100).toFixed(2) + '%',
+        }))
+        .sort((a, b) => b.margeTotale - a.margeTotale)
+        .slice(0, 10);
+
+      return {
+        type: 'PRODUITS_RENTABLES',
+        totalProduits: produitsRentables.length,
+        produits: produitsRentables,
+      };
+    }
+
+    // Création automatique de rapports
+    if (
+      this.contient(message, [
+        'rapport automatique',
+        'générer rapport',
+        'résumé automatique',
+        'bilan automatique',
+      ])
+    ) {
+      const debutMois = new Date();
+      debutMois.setDate(1);
+      debutMois.setHours(0, 0, 0, 0);
+
+      const [ventesMois, ventesPrecedent, stockCritique, topClients] = await Promise.all([
+        this.prisma.vente.aggregate({
+          where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+          _sum: { total: true },
+          _count: true,
+        }),
+        this.prisma.vente.aggregate({
+          where: { 
+            tenantId, 
+            date: { 
+              gte: new Date(debutMois.getFullYear(), debutMois.getMonth() - 1, 1),
+              lt: debutMois 
+            }, 
+            statut: 'PAYE' 
+          },
+          _sum: { total: true },
+        }),
+        this.prisma.stock.count({
+          where: { depot: { tenantId }, quantite: { lte: 5 } },
+        }),
+        this.prisma.client.findMany({
+          where: { tenantId },
+          include: { _count: { select: { ventes: true } } },
+          orderBy: { ventes: { _count: 'desc' } },
+          take: 5,
+        }),
+      ]);
+
+      const evolution = ventesPrecedent._sum.total && ventesPrecedent._sum.total > 0 && ventesMois._sum.total
+        ? ((ventesMois._sum.total - ventesPrecedent._sum.total) / ventesPrecedent._sum.total * 100).toFixed(2) + '%'
+        : 'N/A';
+
+      return {
+        type: 'RAPPORT_AUTOMATIQUE',
+        periode: debutMois.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+        ventesMois: ventesMois._sum.total ?? 0,
+        nbVentes: ventesMois._count,
+        evolutionMoisPrecedent: evolution,
+        stockCritique,
+        topClients: topClients.map(c => ({ nom: c.nom, nbAchats: c._count.ventes })),
+        recommandations: stockCritique > 0 
+          ? 'Attention : plusieurs produits en stock critique. Vérifiez les réapprovisionnements.'
+          : 'Stock stable. Continuez à surveiller les ventes.',
+      };
+    }
+
+    // Anticipation des périodes de forte activité
+    if (
+      this.contient(message, [
+        'période forte activité',
+        'pic',
+        'saison',
+        'forte demande',
+        'pointe',
+      ])
+    ) {
+      const ventesParMois = await this.prisma.vente.groupBy({
+        by: ['date'],
+        where: { tenantId, statut: 'PAYE' },
+        _sum: { total: true },
+        orderBy: { date: 'desc' },
+        take: 90,
+      });
+
+      const ventesParJourSemaine: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      
+      ventesParMois.forEach(v => {
+        const jour = new Date(v.date).getDay();
+        ventesParJourSemaine[jour] += v._sum.total ?? 0;
+      });
+
+      const joursNoms = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+      const jourPlusActif = Object.entries(ventesParJourSemaine)
+        .sort((a, b) => b[1] - a[1])[0];
+
+      return {
+        type: 'ANTICIPATION_PICS',
+        jourPlusActif: joursNoms[parseInt(jourPlusActif[0])],
+        moyenneJourPlusActif: jourPlusActif[1],
+        distributionParJour: Object.entries(ventesParJourSemaine).map(([jour, total]) => ({
+          jour: joursNoms[parseInt(jour)],
+          total,
+        })),
+        recommandation: 'Planifiez vos stocks et personnel en conséquence pour maximiser les ventes.',
+      };
+    }
+
+    // Optimisation des promotions
+    if (
+      this.contient(message, [
+        'promotion',
+        'réduction',
+        'offre',
+        'optimiser promotion',
+      ])
+    ) {
+      const debutMois = new Date();
+      debutMois.setDate(1);
+      debutMois.setHours(0, 0, 0, 0);
+
+      const [ventes, stocksLents] = await Promise.all([
+        this.prisma.vente.findMany({
+          where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+          include: {
+            lignes: {
+              include: {
+                article: { select: { designation: true, prixVente: true } }
+              }
+            }
+          },
+        }),
+        this.prisma.stock.findMany({
+          where: { 
+            depot: { tenantId },
+            quantite: { gt: 20 }
+          },
+          include: { 
+            article: { 
+              select: { designation: true, prixVente: true, prixAchat: true } 
+            } 
+          },
+        }),
+      ]);
+
+      const ventesParProduit: Record<string, number> = {};
+      ventes.forEach(v => {
+        v.lignes.forEach(l => {
+          ventesParProduit[l.article.designation] = (ventesParProduit[l.article.designation] || 0) + l.quantite;
+        });
+      });
+
+      const produitsLents = stocksLents
+        .filter(s => (ventesParProduit[s.article.designation] || 0) < 5)
+        .map(s => ({
+          produit: s.article.designation,
+          stock: s.quantite,
+          ventesMois: ventesParProduit[s.article.designation] || 0,
+          margeActuelle: ((s.article.prixVente - s.article.prixAchat) / s.article.prixAchat * 100).toFixed(2) + '%',
+          reductionSuggeree: '10-15%',
+          objectif: 'Écouler le stock',
+        }))
+        .slice(0, 10);
+
+      return {
+        type: 'OPTIMISATION_PROMOTIONS',
+        produitsLents,
+        recommandation: 'Ciblez les produits à rotation lente avec des réductions de 10-15% pour accélérer les ventes.',
+      };
+    }
+
+    // Découverte d'opportunités de croissance
+    if (
+      this.contient(message, [
+        'opportunité',
+        'croissance',
+        'développer',
+        'expansion',
+        'potentiel',
+      ])
+    ) {
+      const debutMois = new Date();
+      debutMois.setDate(1);
+      debutMois.setHours(0, 0, 0, 0);
+
+      const [ventes, clients, categories] = await Promise.all([
+        this.prisma.vente.findMany({
+          where: { tenantId, date: { gte: debutMois }, statut: 'PAYE' },
+          include: {
+            lignes: {
+              include: {
+                article: { 
+                  select: { 
+                    designation: true, 
+                    categorie: true,
+                    prixVente: true 
+                  } 
+                } 
+              }
+            }
+          },
+        }),
+        this.prisma.client.findMany({
+          where: { tenantId },
+          include: { _count: { select: { ventes: true } } },
+        }),
+        this.prisma.article.findMany({
+          where: { tenantId },
+          select: { categorie: true, prixVente: true },
+        }),
+      ]);
+
+      const ventesParCategorie: Record<string, { total: number; quantite: number }> = {};
+      ventes.forEach(v => {
+        v.lignes.forEach(l => {
+          const cat = l.article.categorie?.nom || 'Non classé';
+          if (!ventesParCategorie[cat]) {
+            ventesParCategorie[cat] = { total: 0, quantite: 0 };
+          }
+          ventesParCategorie[cat].total += l.prix * l.quantite;
+          ventesParCategorie[cat].quantite += l.quantite;
+        });
+      });
+
+      const categoriesPerformantes = Object.entries(ventesParCategorie)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 5)
+        .map(([cat, data]) => ({
+          categorie: cat,
+          total: data.total,
+          quantite: data.quantite,
+        }));
+
+      const clientsFideles = clients.filter(c => c._count.ventes > 5).length;
+      const tauxFidelite = clients.length > 0 ? (clientsFideles / clients.length * 100).toFixed(2) + '%' : '0%';
+      const tauxFideliteNumber = parseFloat(tauxFidelite);
+
+      return {
+        type: 'OPPORTUNITES_CROISSANCE',
+        categoriesPerformantes,
+        tauxFidelite,
+        totalClients: clients.length,
+        recommandations: [
+          'Focus sur les catégories les plus performantes',
+          tauxFideliteNumber < 30 ? 'Lancer un programme de fidélité' : 'Maintenir la satisfaction client',
+          'Explorer les produits complémentaires aux catégories leaders',
+        ],
+      };
+    }
+
     return null;
   }
 

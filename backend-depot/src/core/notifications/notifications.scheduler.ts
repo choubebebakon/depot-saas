@@ -49,6 +49,8 @@ export class NotificationsScheduler {
                 seuil,
                 articleId: stock.articleId,
               },
+              undefined,
+              `stock_critique:${stock.articleId}`,
             );
           }
 
@@ -60,12 +62,21 @@ export class NotificationsScheduler {
                 articleNom: stock.article?.designation || 'Inconnu',
                 articleId: stock.articleId,
               },
+              undefined,
+              `stock_rupture:${stock.articleId}`,
             );
           }
         }
 
-        if (tenant.metier === MetierType.PHARMACIE) {
-          await this.checkMedicamentExpirations(tenant.id);
+       if (
+          ([
+            MetierType.PHARMACIE,
+            MetierType.BOUTIQUE,
+            MetierType.SUPERMARCHE,
+            MetierType.DEPOT_BOISSONS,
+          ] as MetierType[]).includes(tenant.metier)
+        ) {
+          await this.checkPeremptionLots(tenant.id);
         }
       } catch (e) {
         this.logger.error(
@@ -106,7 +117,12 @@ export class NotificationsScheduler {
     }
   }
 
-  private async checkMedicamentExpirations(tenantId: string): Promise<void> {
+  /**
+   * Vérifie les lots (LotStock) dont la date de péremption approche, pour
+   * tous les métiers qui suivent la DLC par lot (Pharmacie à l'origine,
+   * étendu à Boutique/Supermarché/Dépôt Boissons — cf. checkStockCritique).
+   */
+  private async checkPeremptionLots(tenantId: string): Promise<void> {
     const lots = await this.prisma.lotStock.findMany({
       where: {
         tenantId,
@@ -132,6 +148,8 @@ export class NotificationsScheduler {
           lotId: lot.id,
           joursRestants,
         },
+        undefined,
+        `dlc:${lot.id}`,
       );
     }
   }

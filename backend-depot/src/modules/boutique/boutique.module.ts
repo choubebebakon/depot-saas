@@ -8,7 +8,6 @@ import {
   ClientsService,
   FournisseursService,
   DepensesService,
-  PersonnelService,
   VentesService,
 } from './boutique.service';
 import { BoutiqueController } from './boutique.controller';
@@ -24,7 +23,6 @@ import { BoutiqueController } from './boutique.controller';
     ClientsService,
     FournisseursService,
     DepensesService,
-    PersonnelService,
     VentesService,
   ],
   exports: [
@@ -35,7 +33,6 @@ import { BoutiqueController } from './boutique.controller';
     ClientsService,
     FournisseursService,
     DepensesService,
-    PersonnelService,
     VentesService,
   ],
 })

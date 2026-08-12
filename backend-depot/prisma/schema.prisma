@@ -63,7 +63,6 @@ model Categorie {
   @@index([tenantId])
   @@index([tenantId, actif])
 }
-
 model Article {
   id                 String                     @id @default(uuid())
   designation        String
@@ -80,6 +79,7 @@ model Article {
   tenantId           String
   createdAt          DateTime                   @default(now())
   codeBarres         String?
+  photoUrl           String?
   prixGros           Float?
   unite              String                     @default("PIECE")
   categorieId        String?
