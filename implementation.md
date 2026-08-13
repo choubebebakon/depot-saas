@@ -152,7 +152,7 @@ widget chatbot, lever ce point explicitement avec lui avant de le développer �
 Non audité en détail dans cette revue (nécessite un passage formulaire par formulaire sur la trentaine de
 sous-modules des 3 métiers). Le pattern react-hook-form + zod est confirmé en place. Garder la méthode
 d'origine : explorer chaque sous-module, lister ceux dont le formulaire est incomplet/non validé, corriger
-un par un.
+un par un et optimiser chaque formulaire.
 
 ### B.2 (= 1.2) Rapports — export PDF/Excel + temps réel
 - Export : `backend-depot/src/exports/` existe mais est dédié aux rapports de downgrade d'abonnement
@@ -327,3 +327,4 @@ Sauter C.2 (non-issue confirmé).
 - Code fonctionnel pour l'ensemble des points ci-dessus, dans les 3 modules métier concernés.
 - Un résumé final listant : les fichiers créés, les fichiers modifiés, les fichiers supprimés, et les
   éventuelles migrations Prisma exécutées.
+-ET DIRE A LA DES TRAVEAUX: "pret pour la production". 

@@ -1,0 +1,896 @@
+{"file":"frontend-depot/src/components/DynamicSidebar.jsx","line":8,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/components/DynamicSidebar.jsx","line":9,"category":"config-string","emojis":["🏢"],"suggested":["Building2"],"excerpt":"🏢"}
+{"file":"frontend-depot/src/components/DynamicSidebar.jsx","line":10,"category":"config-string","emojis":["⚙"],"suggested":["Settings"],"excerpt":"⚙️"}
+{"file":"frontend-depot/src/components/DynamicSidebar.jsx","line":11,"category":"config-string","emojis":["💳"],"suggested":["CreditCard"],"excerpt":"💳"}
+{"file":"frontend-depot/src/components/DynamicSidebar.jsx","line":122,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/components/GenericMetierDashboard.jsx","line":40,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/components/StatsCards.jsx","line":55,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/components/StatsCards.jsx","line":63,"category":"config-string","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/components/StatsCards.jsx","line":71,"category":"config-string","emojis":["⭐"],"suggested":["Star"],"excerpt":"⭐"}
+{"file":"frontend-depot/src/components/VenteForm.jsx","line":14,"category":"config-string","emojis":["🍺"],"suggested":["Beer"],"excerpt":"🍺"}
+{"file":"frontend-depot/src/components/VenteForm.jsx","line":15,"category":"config-string","emojis":["🍺"],"suggested":["Beer"],"excerpt":"🍺"}
+{"file":"frontend-depot/src/components/VenteForm.jsx","line":16,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/components/VenteForm.jsx","line":17,"category":"config-string","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️"}
+{"file":"frontend-depot/src/components/VenteForm.jsx","line":18,"category":"config-string","emojis":["💧"],"suggested":["Droplet"],"excerpt":"💧"}
+{"file":"frontend-depot/src/context/NotifContext.jsx","line":49,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/context/NotifContext.jsx","line":50,"category":"config-string","emojis":["❌"],"suggested":["XCircle"],"excerpt":"❌"}
+{"file":"frontend-depot/src/context/NotifContext.jsx","line":51,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/contexts/ToastContext.jsx","line":47,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/contexts/ToastContext.jsx","line":48,"category":"config-string","emojis":["❌"],"suggested":["XCircle"],"excerpt":"❌"}
+{"file":"frontend-depot/src/contexts/ToastContext.jsx","line":49,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/config/metier-dashboard.config.ts","line":281,"category":"config-string","emojis":["🚗"],"suggested":["Car"],"excerpt":"🚗"}
+{"file":"frontend-depot/src/pages/AboutPage.jsx","line":5,"category":"config-string","emojis":["👨","💼"],"suggested":["User","Briefcase"],"excerpt":"👨‍💼"}
+{"file":"frontend-depot/src/pages/AboutPage.jsx","line":6,"category":"config-string","emojis":["👩","💻"],"suggested":["User","Laptop"],"excerpt":"👩‍💻"}
+{"file":"frontend-depot/src/pages/AboutPage.jsx","line":7,"category":"config-string","emojis":["👨","🎨"],"suggested":["User","Palette"],"excerpt":"👨‍🎨"}
+{"file":"frontend-depot/src/pages/AboutPage.jsx","line":8,"category":"config-string","emojis":["👩","🎯"],"suggested":["User","Target"],"excerpt":"👩‍🎯"}
+{"file":"frontend-depot/src/pages/BoutiqueLandingPage.jsx","line":596,"category":"config-string","emojis":["→","→","→"],"suggested":["ArrowRight","ArrowRight","ArrowRight"],"excerpt":"Hommes → Femmes → Enfants → Accessoires"}
+{"file":"frontend-depot/src/pages/BoutiqueLandingPage.jsx","line":597,"category":"config-string","emojis":["→","→","→"],"suggested":["ArrowRight","ArrowRight","ArrowRight"],"excerpt":"Smartphones → Accessoires → Chargeurs → Audio"}
+{"file":"frontend-depot/src/pages/BoutiqueLandingPage.jsx","line":598,"category":"config-string","emojis":["→","→","→"],"suggested":["ArrowRight","ArrowRight","ArrowRight"],"excerpt":"Parfums → Maquillage → Soins → Cheveux"}
+{"file":"frontend-depot/src/pages/BoutiqueLandingPage.jsx","line":599,"category":"config-string","emojis":["→","→","→"],"suggested":["ArrowRight","ArrowRight","ArrowRight"],"excerpt":"Livres → Papeterie → Scolaire → Bureau"}
+{"file":"frontend-depot/src/pages/BoutiqueLandingPage.jsx","line":600,"category":"config-string","emojis":["→","→","→"],"suggested":["ArrowRight","ArrowRight","ArrowRight"],"excerpt":"Cuisine → Froid → Lavage → Petit électro"}
+{"file":"frontend-depot/src/pages/CaissePage.jsx","line":351,"category":"config-string","emojis":["💵"],"suggested":["Banknote"],"excerpt":"💵"}
+{"file":"frontend-depot/src/pages/CaissePage.jsx","line":352,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱"}
+{"file":"frontend-depot/src/pages/CaissePage.jsx","line":353,"category":"config-string","emojis":["📲"],"suggested":["Smartphone"],"excerpt":"📲"}
+{"file":"frontend-depot/src/pages/CaissePage.jsx","line":354,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/pages/CaissePage.jsx","line":380,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Résumé"}
+{"file":"frontend-depot/src/pages/CaissePage.jsx","line":380,"category":"other","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸 Dépenses"}
+{"file":"frontend-depot/src/pages/CaissePage.jsx","line":380,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Historique"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":37,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":38,"category":"other","emojis":["🍺"],"suggested":["Beer"],"excerpt":"🍺"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":38,"category":"other","emojis":["🥤"],"suggested":["CupSoda"],"excerpt":"🥤"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":38,"category":"other","emojis":["💧"],"suggested":["Droplet"],"excerpt":"💧"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":38,"category":"other","emojis":["🧃"],"suggested":["CupSoda"],"excerpt":"🧃"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":38,"category":"other","emojis":["🍷"],"suggested":["Wine"],"excerpt":"🍷"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":38,"category":"other","emojis":["🥛"],"suggested":["Milk"],"excerpt":"🥛"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":38,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":278,"category":"other","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":278,"category":"other","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Créer"}
+{"file":"frontend-depot/src/pages/CataloguePage.jsx","line":438,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un article..."}
+{"file":"frontend-depot/src/pages/CareersPage.jsx","line":13,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/pages/CareersPage.jsx","line":14,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱"}
+{"file":"frontend-depot/src/pages/CareersPage.jsx","line":15,"category":"config-string","emojis":["🌍"],"suggested":["Globe"],"excerpt":"🌍"}
+{"file":"frontend-depot/src/pages/CareersPage.jsx","line":16,"category":"config-string","emojis":["🎓"],"suggested":["GraduationCap"],"excerpt":"🎓"}
+{"file":"frontend-depot/src/pages/CareersPage.jsx","line":17,"category":"config-string","emojis":["🏡"],"suggested":["Home"],"excerpt":"🏡"}
+{"file":"frontend-depot/src/pages/CareersPage.jsx","line":18,"category":"config-string","emojis":["🚀"],"suggested":["Rocket"],"excerpt":"🚀"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":8,"category":"config-string","emojis":["🍺"],"suggested":["Beer"],"excerpt":"🍺"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":9,"category":"config-string","emojis":["🍺"],"suggested":["Beer"],"excerpt":"🍺"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":10,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":11,"category":"config-string","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":12,"category":"config-string","emojis":["💧"],"suggested":["Droplet"],"excerpt":"💧"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":236,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":301,"category":"other","emojis":["💵"],"suggested":["Banknote"],"excerpt":"💵 Rembourser"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":301,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Créer Avoir"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":423,"category":"other","emojis":["🏭"],"suggested":["Factory"],"excerpt":"🏭 Inventaire Vides"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":424,"category":"other","emojis":["⚙"],"suggested":["Settings"],"excerpt":"⚙️ Configuration"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":426,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Historique"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":458,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":537,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":605,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/ConsignesPage.jsx","line":648,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":9,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ OK"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":10,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ Attention"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":11,"category":"config-string","emojis":["🔥"],"suggested":["Flame"],"excerpt":"🔥 Urgent"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":12,"category":"config-string","emojis":["☠"],"suggested":["Skull"],"excerpt":"☠️ Expiré"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":282,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ OK"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":283,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ Attention"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":284,"category":"config-string","emojis":["🔥"],"suggested":["Flame"],"excerpt":"🔥 Urgent"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":285,"category":"config-string","emojis":["☠"],"suggested":["Skull"],"excerpt":"☠️ Expirés"}
+{"file":"frontend-depot/src/pages/DlcPage.jsx","line":388,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/pages/Changelog.jsx","line":29,"category":"config-string","emojis":["🚀"],"suggested":["Rocket"],"excerpt":"Lancement Officiel de GeStock 🚀"}
+{"file":"frontend-depot/src/pages/HelpCenterPage.jsx","line":6,"category":"config-string","emojis":["→"],"suggested":["ArrowRight"],"excerpt":"Dans GeStock, allez dans Stock → Inventaire. Lancez un nouvel inventaire : l'app vous présente chaque article avec le st"}
+{"file":"frontend-depot/src/pages/HelpCenterPage.jsx","line":7,"category":"config-string","emojis":["→","→"],"suggested":["ArrowRight","ArrowRight"],"excerpt":"Allez dans Stock → Ajustements → Déclarer une perte. Sélectionnez le produit, saisissez la quantité cassée et le motif ("}
+{"file":"frontend-depot/src/pages/HelpCenterPage.jsx","line":8,"category":"config-string","emojis":["→"],"suggested":["ArrowRight"],"excerpt":"Lors d'une livraison, ouvrez le bon de livraison correspondant et cliquez sur \"Retour vides\". Saisissez les quantités ré"}
+{"file":"frontend-depot/src/pages/HelpCenterPage.jsx","line":9,"category":"config-string","emojis":["→","→"],"suggested":["ArrowRight","ArrowRight"],"excerpt":"GeStock garde un historique complet de toutes les livraisons et retours pour chaque client. Allez dans Clients → [Nom du"}
+{"file":"frontend-depot/src/pages/HelpCenterPage.jsx","line":10,"category":"config-string","emojis":["→"],"suggested":["ArrowRight"],"excerpt":"Lors de la création d'une vente, choisissez \"Paiement différé\" comme mode de règlement. Entrez le montant versé maintena"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":8,"category":"config-string","emojis":["⚫"],"suggested":["Circle"],"excerpt":"⚫"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":9,"category":"config-string","emojis":["🔴"],"suggested":["Circle"],"excerpt":"🔴"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":10,"category":"config-string","emojis":["⛽"],"suggested":["Fuel"],"excerpt":"⛽"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":11,"category":"config-string","emojis":["🛠"],"suggested":["Hammer"],"excerpt":"🛠️"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":12,"category":"config-string","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":13,"category":"config-string","emojis":["📝"],"suggested":["FileText"],"excerpt":"📝"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":394,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Tableau de bord"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":515,"category":"other","emojis":["🚨"],"suggested":["Siren"],"excerpt":"🚨 En retard"}
+{"file":"frontend-depot/src/pages/MaintenancePage.jsx","line":515,"category":"other","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Planifiée"}
+{"file":"frontend-depot/src/pages/MobileAppPage.jsx","line":138,"category":"other","emojis":["→","→"],"suggested":["ArrowRight","ArrowRight"],"excerpt":"Scan QR → saisie quantités → récupération vides"}
+{"file":"frontend-depot/src/pages/SecurityPage.jsx","line":55,"category":"other","emojis":["→"],"suggested":["ArrowRight"],"excerpt":"Dépôt Central Bonanjo → son propre schéma de données"}
+{"file":"frontend-depot/src/pages/SecurityPage.jsx","line":55,"category":"other","emojis":["→"],"suggested":["ArrowRight"],"excerpt":"Dépôt Bonabéri → son propre schéma de données"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":679,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Montant fixe"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":680,"category":"config-string","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️ Prix fixe"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1014,"category":"config-string","emojis":["👑"],"suggested":["Crown"],"excerpt":"👑 Gérant"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1015,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Magasinier"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1016,"category":"config-string","emojis":["💳"],"suggested":["CreditCard"],"excerpt":"💳 Caissier"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1017,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Comptable"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1073,"category":"other","emojis":["🧴"],"suggested":["SprayCan"],"excerpt":"🧴 Hygiène"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1074,"category":"other","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 Électronique"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1075,"category":"other","emojis":["🏠"],"suggested":["Home"],"excerpt":"🏠 Bazar"}
+{"file":"frontend-depot/src/pages/SupermarcheLandingPage.jsx","line":1076,"category":"other","emojis":["🥤"],"suggested":["CupSoda"],"excerpt":"🥤 Liquide"}
+{"file":"frontend-depot/src/pages/TourneesPage.jsx","line":10,"category":"config-string","emojis":["⏳"],"suggested":["Hourglass"],"excerpt":"⏳ Attente Magasinier"}
+{"file":"frontend-depot/src/pages/TourneesPage.jsx","line":11,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Validée"}
+{"file":"frontend-depot/src/pages/TourneesPage.jsx","line":12,"category":"config-string","emojis":["✖"],"suggested":["X"],"excerpt":"✖ Annulée"}
+{"file":"frontend-depot/src/pages/TourneesPage.jsx","line":396,"category":"config-string","emojis":["💵"],"suggested":["Banknote"],"excerpt":"💵 Cash remis (FCFA)"}
+{"file":"frontend-depot/src/pages/TourneesPage.jsx","line":397,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 Orange Money remis (FCFA)"}
+{"file":"frontend-depot/src/pages/TourneesPage.jsx","line":398,"category":"config-string","emojis":["📲"],"suggested":["Smartphone"],"excerpt":"📲 MTN MoMo remis (FCFA)"}
+{"file":"frontend-depot/src/pages/TourneesPage.jsx","line":678,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Historique"}
+{"file":"frontend-depot/src/pages/WholesalersPage.jsx","line":48,"category":"other","emojis":["🍺"],"suggested":["Beer"],"excerpt":"🍺 SABC"}
+{"file":"frontend-depot/src/pages/WholesalersPage.jsx","line":48,"category":"other","emojis":["🍻"],"suggested":["Beer"],"excerpt":"🍻 Guinness Cameroun"}
+{"file":"frontend-depot/src/pages/WholesalersPage.jsx","line":48,"category":"other","emojis":["🟡"],"suggested":["Circle"],"excerpt":"🟡 Castel Group"}
+{"file":"frontend-depot/src/pages/WholesalersPage.jsx","line":48,"category":"other","emojis":["💧"],"suggested":["Droplet"],"excerpt":"💧 Supermont"}
+{"file":"frontend-depot/src/pages/WholesalersPage.jsx","line":48,"category":"other","emojis":["🍹"],"suggested":["CupSoda"],"excerpt":"🍹 Top Boissons"}
+{"file":"frontend-depot/src/pages/WholesalersPage.jsx","line":48,"category":"other","emojis":["🧃"],"suggested":["CupSoda"],"excerpt":"🧃 Fruiteq"}
+{"file":"frontend-depot/src/components/admin/DepotsPage.jsx","line":80,"category":"other","emojis":["✓"],"suggested":["Check"],"excerpt":"Dépôt créé ✓"}
+{"file":"frontend-depot/src/components/admin/DepotsPage.jsx","line":181,"category":"other","emojis":["🏢"],"suggested":["Building2"],"excerpt":"🏢 Nouveau Dépôt"}
+{"file":"frontend-depot/src/components/admin/DepotsPage.jsx","line":181,"category":"other","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕"}
+{"file":"frontend-depot/src/components/admin/UtilisateursPage.jsx","line":71,"category":"other","emojis":["✓"],"suggested":["Check"],"excerpt":"Utilisateur créé ✓"}
+{"file":"frontend-depot/src/components/admin/UtilisateursPage.jsx","line":116,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/components/admin/UtilisateursPage.jsx","line":177,"category":"other","emojis":["👤"],"suggested":["User"],"excerpt":"👤 Nouvel Utilisateur"}
+{"file":"frontend-depot/src/components/admin/UtilisateursPage.jsx","line":177,"category":"other","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":5,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":6,"category":"config-string","emojis":["🏪"],"suggested":["Store"],"excerpt":"🏪"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":7,"category":"config-string","emojis":["💊"],"suggested":["Pill"],"excerpt":"💊"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":8,"category":"config-string","emojis":["🍽"],"suggested":["UtensilsCrossed"],"excerpt":"🍽"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":9,"category":"config-string","emojis":["🏨"],"suggested":["Hotel"],"excerpt":"🏨"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":10,"category":"config-string","emojis":["🛠"],"suggested":["Hammer"],"excerpt":"🛠"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":11,"category":"config-string","emojis":["🛒"],"suggested":["ShoppingCart"],"excerpt":"🛒"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":12,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":13,"category":"config-string","emojis":["🏥"],"suggested":["Building2"],"excerpt":"🏥"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":14,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":15,"category":"config-string","emojis":["🏢"],"suggested":["Building2"],"excerpt":"🏢"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":17,"category":"config-string","emojis":["🍞"],"suggested":["Croissant"],"excerpt":"🍞"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":18,"category":"config-string","emojis":["👔"],"suggested":["Shirt"],"excerpt":"👔"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":19,"category":"config-string","emojis":["💇"],"suggested":["Scissors"],"excerpt":"💇"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":20,"category":"config-string","emojis":["🧴"],"suggested":["SprayCan"],"excerpt":"🧴"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":21,"category":"config-string","emojis":["📚"],"suggested":["BookOpen"],"excerpt":"📚"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":22,"category":"config-string","emojis":["🍦"],"suggested":["IceCreamCone"],"excerpt":"🍦"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":23,"category":"config-string","emojis":["🧱"],"suggested":["Box"],"excerpt":"🧱"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":26,"category":"config-string","emojis":["🤖"],"suggested":["Bot"],"excerpt":"🤖"}
+{"file":"frontend-depot/src/components/chatbot/GeStockChatbot.jsx","line":120,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ Service temporairement indisponible. Réessayez dans un moment."}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":9,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":9,"category":"config-string","emojis":["💳"],"suggested":["CreditCard"],"excerpt":"💳"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":9,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":9,"category":"config-string","emojis":["🏨"],"suggested":["Hotel"],"excerpt":"🏨"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":10,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":10,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":10,"category":"config-string","emojis":["🔒"],"suggested":["Lock"],"excerpt":"🔒"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":10,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":11,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":11,"category":"config-string","emojis":["⚙"],"suggested":["Settings"],"excerpt":"⚙️"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":11,"category":"config-string","emojis":["🏪"],"suggested":["Store"],"excerpt":"🏪"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":11,"category":"config-string","emojis":["🤖"],"suggested":["Bot"],"excerpt":"🤖"}
+{"file":"frontend-depot/src/core/notifications/NotificationsPage.jsx","line":152,"category":"other","emojis":["🔔"],"suggested":["Bell"],"excerpt":"🔔"}
+{"file":"frontend-depot/src/core/notifications/NotificationToast.jsx","line":5,"category":"config-string","emojis":["❌"],"suggested":["XCircle"],"excerpt":"❌"}
+{"file":"frontend-depot/src/core/notifications/NotificationToast.jsx","line":6,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/core/notifications/NotificationToast.jsx","line":8,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/modules/boulangerie/dashboard.config.js","line":2,"category":"config-string","emojis":["🥖"],"suggested":["Croissant"],"excerpt":"🥖"}
+{"file":"frontend-depot/src/modules/boulangerie/dashboard.config.js","line":3,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/boulangerie/dashboard.config.js","line":4,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/boulangerie/dashboard.config.js","line":5,"category":"config-string","emojis":["📉"],"suggested":["TrendingDown"],"excerpt":"📉"}
+{"file":"frontend-depot/src/modules/boutique/dashboard.config.js","line":2,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/boutique/dashboard.config.js","line":3,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/boutique/dashboard.config.js","line":4,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/boutique/dashboard.config.js","line":5,"category":"config-string","emojis":["🏧"],"suggested":["Landmark"],"excerpt":"🏧"}
+{"file":"frontend-depot/src/modules/boutique/sidebar.config.js","line":5,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/boutique/sidebar.config.js","line":9,"category":"config-string","emojis":["📄"],"suggested":["File"],"excerpt":"📄"}
+{"file":"frontend-depot/src/modules/ciment_btp/dashboard.config.js","line":2,"category":"config-string","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️"}
+{"file":"frontend-depot/src/modules/ciment_btp/dashboard.config.js","line":3,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/modules/ciment_btp/dashboard.config.js","line":4,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/modules/ciment_btp/dashboard.config.js","line":5,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/ciment_btp/sidebar.config.js","line":7,"category":"config-string","emojis":["🚛"],"suggested":["Truck"],"excerpt":"🚛"}
+{"file":"frontend-depot/src/modules/ciment_btp/sidebar.config.js","line":9,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/clinique/dashboard.config.js","line":2,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/clinique/dashboard.config.js","line":3,"category":"config-string","emojis":["🩺"],"suggested":["Stethoscope"],"excerpt":"🩺"}
+{"file":"frontend-depot/src/modules/clinique/dashboard.config.js","line":4,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/clinique/dashboard.config.js","line":5,"category":"config-string","emojis":["🏧"],"suggested":["Landmark"],"excerpt":"🏧"}
+{"file":"frontend-depot/src/modules/depot-boissons/dashboard.config.js","line":2,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/depot-boissons/dashboard.config.js","line":3,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/depot-boissons/dashboard.config.js","line":4,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/modules/depot-boissons/dashboard.config.js","line":5,"category":"config-string","emojis":["🏧"],"suggested":["Landmark"],"excerpt":"🏧"}
+{"file":"frontend-depot/src/modules/depot-boissons/dashboard.config.js","line":6,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/depot-boissons/dashboard.config.js","line":7,"category":"config-string","emojis":["🛺"],"suggested":["Car"],"excerpt":"🛺"}
+{"file":"frontend-depot/src/modules/elevage/dashboard.config.js","line":2,"category":"config-string","emojis":["🐄"],"suggested":["Beef"],"excerpt":"🐄"}
+{"file":"frontend-depot/src/modules/elevage/dashboard.config.js","line":3,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/elevage/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/elevage/dashboard.config.js","line":5,"category":"config-string","emojis":["🌾"],"suggested":["Wheat"],"excerpt":"🌾"}
+{"file":"frontend-depot/src/modules/garage_automobile/dashboard.config.js","line":2,"category":"config-string","emojis":["🚗"],"suggested":["Car"],"excerpt":"🚗"}
+{"file":"frontend-depot/src/modules/garage_automobile/dashboard.config.js","line":3,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/modules/garage_automobile/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/garage_automobile/dashboard.config.js","line":5,"category":"config-string","emojis":["⚙"],"suggested":["Settings"],"excerpt":"⚙️"}
+{"file":"frontend-depot/src/modules/garage_automobile/sidebar.config.js","line":3,"category":"config-string","emojis":["🚗"],"suggested":["Car"],"excerpt":"🚗"}
+{"file":"frontend-depot/src/modules/garage_automobile/sidebar.config.js","line":5,"category":"config-string","emojis":["📄"],"suggested":["File"],"excerpt":"📄"}
+{"file":"frontend-depot/src/modules/garage_automobile/sidebar.config.js","line":6,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/glacier_snack/dashboard.config.js","line":2,"category":"config-string","emojis":["🍦"],"suggested":["IceCreamCone"],"excerpt":"🍦"}
+{"file":"frontend-depot/src/modules/glacier_snack/dashboard.config.js","line":3,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/glacier_snack/dashboard.config.js","line":4,"category":"config-string","emojis":["🌟"],"suggested":["Star"],"excerpt":"🌟"}
+{"file":"frontend-depot/src/modules/glacier_snack/dashboard.config.js","line":5,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/hotel/dashboard.config.js","line":2,"category":"config-string","emojis":["🛏"],"suggested":["BedDouble"],"excerpt":"🛏️"}
+{"file":"frontend-depot/src/modules/hotel/dashboard.config.js","line":3,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/hotel/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/hotel/dashboard.config.js","line":5,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/glacier_snack/sidebar.config.js","line":8,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/immobilier/dashboard.config.js","line":2,"category":"config-string","emojis":["🏠"],"suggested":["Home"],"excerpt":"🏠"}
+{"file":"frontend-depot/src/modules/immobilier/dashboard.config.js","line":3,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/immobilier/dashboard.config.js","line":4,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/immobilier/dashboard.config.js","line":5,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/hotel/sidebar.config.js","line":7,"category":"config-string","emojis":["👨","💼"],"suggested":["User","Briefcase"],"excerpt":"👨‍💼"}
+{"file":"frontend-depot/src/modules/librairie/dashboard.config.js","line":2,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/librairie/dashboard.config.js","line":3,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/modules/librairie/dashboard.config.js","line":4,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/librairie/dashboard.config.js","line":5,"category":"config-string","emojis":["🏧"],"suggested":["Landmark"],"excerpt":"🏧"}
+{"file":"frontend-depot/src/modules/immobilier/sidebar.config.js","line":9,"category":"config-string","emojis":["📄"],"suggested":["File"],"excerpt":"📄"}
+{"file":"frontend-depot/src/modules/parfumerie/dashboard.config.js","line":2,"category":"config-string","emojis":["🧴"],"suggested":["SprayCan"],"excerpt":"🧴"}
+{"file":"frontend-depot/src/modules/parfumerie/dashboard.config.js","line":3,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/parfumerie/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/parfumerie/dashboard.config.js","line":5,"category":"config-string","emojis":["🎁"],"suggested":["Gift"],"excerpt":"🎁"}
+{"file":"frontend-depot/src/modules/librairie/sidebar.config.js","line":8,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/parfumerie/sidebar.config.js","line":6,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/pharmacie/dashboard.config.js","line":2,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/pharmacie/dashboard.config.js","line":3,"category":"config-string","emojis":["📝"],"suggested":["FileText"],"excerpt":"📝"}
+{"file":"frontend-depot/src/modules/pharmacie/dashboard.config.js","line":4,"category":"config-string","emojis":["⏰"],"suggested":["AlarmClock"],"excerpt":"⏰"}
+{"file":"frontend-depot/src/modules/pharmacie/dashboard.config.js","line":5,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/pressing/dashboard.config.js","line":2,"category":"config-string","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/pressing/dashboard.config.js","line":3,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/modules/pressing/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/pressing/dashboard.config.js","line":5,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/quincaillerie/dashboard.config.js","line":2,"category":"config-string","emojis":["🛠"],"suggested":["Hammer"],"excerpt":"🛠"}
+{"file":"frontend-depot/src/modules/quincaillerie/dashboard.config.js","line":3,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/quincaillerie/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/quincaillerie/dashboard.config.js","line":5,"category":"config-string","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️"}
+{"file":"frontend-depot/src/modules/pressing/sidebar.config.js","line":4,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/pressing/sidebar.config.js","line":5,"category":"config-string","emojis":["🧼"],"suggested":["Droplet"],"excerpt":"🧼"}
+{"file":"frontend-depot/src/modules/quincaillerie/sidebar.config.js","line":6,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/quincaillerie/sidebar.config.js","line":10,"category":"config-string","emojis":["📄"],"suggested":["File"],"excerpt":"📄"}
+{"file":"frontend-depot/src/modules/restaurant/dashboard.config.js","line":2,"category":"config-string","emojis":["🍽"],"suggested":["UtensilsCrossed"],"excerpt":"🍽️"}
+{"file":"frontend-depot/src/modules/restaurant/dashboard.config.js","line":3,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/modules/restaurant/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/restaurant/dashboard.config.js","line":5,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/salon_beaute/dashboard.config.js","line":2,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/salon_beaute/dashboard.config.js","line":3,"category":"config-string","emojis":["💇"],"suggested":["Scissors"],"excerpt":"💇"}
+{"file":"frontend-depot/src/modules/salon_beaute/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/salon_beaute/dashboard.config.js","line":5,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/supermarche/dashboard.config.js","line":2,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/supermarche/dashboard.config.js","line":3,"category":"config-string","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/supermarche/dashboard.config.js","line":4,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/supermarche/dashboard.config.js","line":5,"category":"config-string","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/salon_beaute/sidebar.config.js","line":6,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/telephonie/dashboard.config.js","line":2,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱"}
+{"file":"frontend-depot/src/modules/telephonie/dashboard.config.js","line":3,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/modules/telephonie/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/telephonie/dashboard.config.js","line":5,"category":"config-string","emojis":["🔋"],"suggested":["BatteryFull"],"excerpt":"🔋"}
+{"file":"frontend-depot/src/modules/supermarche/sidebar.config.js","line":5,"category":"config-string","emojis":["🗂"],"suggested":["FolderOpen"],"excerpt":"🗂️"}
+{"file":"frontend-depot/src/modules/transport/dashboard.config.js","line":2,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/modules/transport/dashboard.config.js","line":3,"category":"config-string","emojis":["🚛"],"suggested":["Truck"],"excerpt":"🚛"}
+{"file":"frontend-depot/src/modules/transport/dashboard.config.js","line":4,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/transport/dashboard.config.js","line":5,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/modules/telephonie/sidebar.config.js","line":6,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/pages/boulangerie/ProductionPage.jsx","line":101,"category":"other","emojis":["🥖"],"suggested":["Croissant"],"excerpt":"🥖 Production"}
+{"file":"frontend-depot/src/pages/boulangerie/ProductionPage.jsx","line":101,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Statistiques"}
+{"file":"frontend-depot/src/modules/transport/sidebar.config.js","line":4,"category":"config-string","emojis":["🚛"],"suggested":["Truck"],"excerpt":"🚛"}
+{"file":"frontend-depot/src/modules/transport/sidebar.config.js","line":6,"category":"config-string","emojis":["👨","✈"],"suggested":["User","Plane"],"excerpt":"👨‍✈️"}
+{"file":"frontend-depot/src/modules/transport/sidebar.config.js","line":8,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/transport/sidebar.config.js","line":19,"category":"config-string","emojis":["🚛"],"suggested":["Truck"],"excerpt":"🚛"}
+{"file":"frontend-depot/src/pages/clinique/CliniquePage.jsx","line":70,"category":"other","emojis":["🩺"],"suggested":["Stethoscope"],"excerpt":"🩺 Consultations"}
+{"file":"frontend-depot/src/pages/clinique/CliniquePage.jsx","line":70,"category":"other","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Rendez-vous"}
+{"file":"frontend-depot/src/pages/clinique/CliniquePage.jsx","line":70,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Stats"}
+{"file":"frontend-depot/src/pages/glacier/GlacierPage.jsx","line":93,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Stats"}
+{"file":"frontend-depot/src/pages/glacier/GlacierPage.jsx","line":93,"category":"config-string","emojis":["📖"],"suggested":["BookOpen"],"excerpt":"📖 Menu"}
+{"file":"frontend-depot/src/pages/glacier/GlacierPage.jsx","line":94,"category":"config-string","emojis":["🪑"],"suggested":["Armchair"],"excerpt":"🪑 Tables"}
+{"file":"frontend-depot/src/pages/glacier/GlacierPage.jsx","line":94,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Commandes"}
+{"file":"frontend-depot/src/pages/glacier/GlacierPage.jsx","line":95,"category":"config-string","emojis":["🍦"],"suggested":["IceCreamCone"],"excerpt":"🍦 Compositions"}
+{"file":"frontend-depot/src/pages/hotellerie/HotelleriePage.jsx","line":63,"category":"other","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Réservations"}
+{"file":"frontend-depot/src/pages/hotellerie/HotelleriePage.jsx","line":63,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️ Types"}
+{"file":"frontend-depot/src/pages/hotellerie/HotelleriePage.jsx","line":63,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Stats"}
+{"file":"frontend-depot/src/pages/immobilier/ImmobilierPage.jsx","line":89,"category":"other","emojis":["📝"],"suggested":["FileText"],"excerpt":"📝 Contrats"}
+{"file":"frontend-depot/src/pages/immobilier/ImmobilierPage.jsx","line":89,"category":"other","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Loyers"}
+{"file":"frontend-depot/src/pages/immobilier/ImmobilierPage.jsx","line":89,"category":"other","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧 Interventions"}
+{"file":"frontend-depot/src/pages/immobilier/ImmobilierPage.jsx","line":89,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Stats"}
+{"file":"frontend-depot/src/pages/librairie/LibrairiePage.jsx","line":73,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Commandes"}
+{"file":"frontend-depot/src/pages/librairie/LibrairiePage.jsx","line":73,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Stats"}
+{"file":"frontend-depot/src/pages/restaurant/RestaurantPage.jsx","line":63,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Commandes"}
+{"file":"frontend-depot/src/pages/restaurant/RestaurantPage.jsx","line":63,"category":"other","emojis":["📖"],"suggested":["BookOpen"],"excerpt":"📖 Menu"}
+{"file":"frontend-depot/src/pages/transport/TransportPage.jsx","line":63,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Colis"}
+{"file":"frontend-depot/src/pages/transport/TransportPage.jsx","line":63,"category":"other","emojis":["🗺"],"suggested":["Map"],"excerpt":"🗺️ Trajets"}
+{"file":"frontend-depot/src/pages/transport/TransportPage.jsx","line":63,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Stats"}
+{"file":"frontend-depot/src/shared/components/ConfirmDialog.jsx","line":1,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/shared/components/EmptyState.jsx","line":1,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/shared/components/DataTable.jsx","line":11,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/shared/components/DataTable.jsx","line":15,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/shared/components/PrintButton.jsx","line":1,"category":"other","emojis":["🖨"],"suggested":["Printer"],"excerpt":"🖨️ Imprimer"}
+{"file":"frontend-depot/src/shared/components/SearchBar.jsx","line":3,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":64,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier mouvement"}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":64,"category":"jsx-attribute","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Mouvement de stock"}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":64,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":75,"category":"other","emojis":["📥"],"suggested":["ArrowDownToLine"],"excerpt":"📥 Entrée"}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":75,"category":"other","emojis":["📤"],"suggested":["ArrowUpFromLine"],"excerpt":"📤 Sortie"}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":75,"category":"other","emojis":["⚖"],"suggested":["Scale"],"excerpt":"⚖️ Ajustement"}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":75,"category":"other","emojis":["🔄"],"suggested":["RefreshCw"],"excerpt":"🔄 Transfert"}
+{"file":"frontend-depot/src/shared/forms/MouvementStockForm.jsx","line":75,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Inventaire"}
+{"file":"frontend-depot/src/shared/forms/FournisseurForm.jsx","line":104,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier le fournisseur"}
+{"file":"frontend-depot/src/shared/forms/FournisseurForm.jsx","line":104,"category":"jsx-attribute","emojis":["🏭"],"suggested":["Factory"],"excerpt":"🏭 Nouveau fournisseur"}
+{"file":"frontend-depot/src/shared/forms/ClientForm.jsx","line":113,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier le client"}
+{"file":"frontend-depot/src/shared/forms/ClientForm.jsx","line":113,"category":"jsx-attribute","emojis":["👤"],"suggested":["User"],"excerpt":"👤 Nouveau client"}
+{"file":"frontend-depot/src/shared/forms/ClientForm.jsx","line":113,"category":"jsx-attribute","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/shared/forms/ClientForm.jsx","line":113,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕"}
+{"file":"frontend-depot/src/shared/forms/ArticleBaseForm.jsx","line":79,"category":"jsx-attribute","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/shared/forms/ArticleBaseForm.jsx","line":79,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕"}
+{"file":"frontend-depot/src/shared/forms/ArticleBaseForm.jsx","line":79,"category":"other","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier l'article"}
+{"file":"frontend-depot/src/shared/forms/ArticleBaseForm.jsx","line":79,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Nouvel article"}
+{"file":"frontend-depot/src/modules/boulangerie/forms/RecetteForm.jsx","line":95,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier recette"}
+{"file":"frontend-depot/src/modules/boulangerie/forms/RecetteForm.jsx","line":95,"category":"jsx-attribute","emojis":["📖"],"suggested":["BookOpen"],"excerpt":"📖 Nouvelle recette"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/DashboardBoulangerie.jsx","line":99,"category":"config-string","emojis":["🥖"],"suggested":["Croissant"],"excerpt":"🥖"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/DashboardBoulangerie.jsx","line":100,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/DashboardBoulangerie.jsx","line":101,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/DashboardBoulangerie.jsx","line":102,"category":"config-string","emojis":["📉"],"suggested":["TrendingDown"],"excerpt":"📉"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/RapportsPage.jsx","line":93,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/RapportsPage.jsx","line":94,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/RapportsPage.jsx","line":95,"category":"config-string","emojis":["🥖"],"suggested":["Croissant"],"excerpt":"🥖"}
+{"file":"frontend-depot/src/modules/boulangerie/pages/RapportsPage.jsx","line":96,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/modules/boutique/components/TypeBoutiqueSelector.jsx","line":7,"category":"config-string","emojis":["🛍"],"suggested":["ShoppingBag"],"excerpt":"🛍️"}
+{"file":"frontend-depot/src/modules/boutique/components/TypeBoutiqueSelector.jsx","line":8,"category":"config-string","emojis":["🌸"],"suggested":["Flower2"],"excerpt":"🌸"}
+{"file":"frontend-depot/src/modules/boutique/components/TypeBoutiqueSelector.jsx","line":9,"category":"config-string","emojis":["📚"],"suggested":["BookOpen"],"excerpt":"📚"}
+{"file":"frontend-depot/src/modules/boutique/components/TypeBoutiqueSelector.jsx","line":10,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱"}
+{"file":"frontend-depot/src/modules/boutique/components/TypeBoutiqueSelector.jsx","line":11,"category":"config-string","emojis":["💅"],"suggested":["Sparkles"],"excerpt":"💅"}
+{"file":"frontend-depot/src/modules/boutique/components/TypeBoutiqueSelector.jsx","line":12,"category":"config-string","emojis":["🍦"],"suggested":["IceCreamCone"],"excerpt":"🍦"}
+{"file":"frontend-depot/src/modules/boulangerie/forms/ProductionJourForm.jsx","line":104,"category":"other","emojis":["🏭"],"suggested":["Factory"],"excerpt":"🏭 Production du jour"}
+{"file":"frontend-depot/src/modules/boulangerie/forms/ProductionJourForm.jsx","line":104,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/boutique/forms/DepenseBoutiqueForm.jsx","line":88,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/boutique/forms/DepenseBoutiqueForm.jsx","line":88,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouvelle Dépense"}
+{"file":"frontend-depot/src/modules/boutique/forms/CategorieForm.jsx","line":88,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier catégorie"}
+{"file":"frontend-depot/src/modules/boutique/forms/CategorieForm.jsx","line":88,"category":"jsx-attribute","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️ Nouvelle catégorie"}
+{"file":"frontend-depot/src/modules/boutique/forms/CategorieForm.jsx","line":25,"category":"config-string","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/boutique/forms/CategorieForm.jsx","line":45,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/boutique/forms/CategorieForm.jsx","line":60,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/boutique/forms/CategorieForm.jsx","line":135,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/boutique/forms/ClientBoutiqueForm.jsx","line":47,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/boutique/forms/ClientBoutiqueForm.jsx","line":47,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau Client"}
+{"file":"frontend-depot/src/modules/boutique/forms/FactureBoutiqueForm.jsx","line":47,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/boutique/forms/FactureBoutiqueForm.jsx","line":47,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouvelle Facture"}
+{"file":"frontend-depot/src/modules/boutique/forms/CaisseBoutiqueForm.jsx","line":46,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/boutique/forms/CaisseBoutiqueForm.jsx","line":46,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouvelle Opération"}
+{"file":"frontend-depot/src/modules/boutique/forms/FournisseurBoutiqueForm.jsx","line":47,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/boutique/forms/FournisseurBoutiqueForm.jsx","line":47,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau Fournisseur"}
+{"file":"frontend-depot/src/modules/boutique/pages/CategoriesPage.jsx","line":10,"category":"config-string","emojis":["🌸"],"suggested":["Flower2"],"excerpt":"🌸"}
+{"file":"frontend-depot/src/modules/boutique/pages/CategoriesPage.jsx","line":11,"category":"config-string","emojis":["📚"],"suggested":["BookOpen"],"excerpt":"📚"}
+{"file":"frontend-depot/src/modules/boutique/pages/CategoriesPage.jsx","line":12,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱"}
+{"file":"frontend-depot/src/modules/boutique/pages/CategoriesPage.jsx","line":13,"category":"config-string","emojis":["💅"],"suggested":["Sparkles"],"excerpt":"💅"}
+{"file":"frontend-depot/src/modules/boutique/pages/CategoriesPage.jsx","line":14,"category":"config-string","emojis":["🍦"],"suggested":["IceCreamCone"],"excerpt":"🍦"}
+{"file":"frontend-depot/src/modules/boutique/pages/CategoriesPage.jsx","line":103,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher une catégorie..."}
+{"file":"frontend-depot/src/modules/boutique/pages/CategoriesPage.jsx","line":134,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/boutique/pages/ClientsPage.jsx","line":70,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, email..."}
+{"file":"frontend-depot/src/modules/boutique/pages/DashboardBoutique.jsx","line":60,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/boutique/pages/DashboardBoutique.jsx","line":61,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/modules/boutique/pages/DashboardBoutique.jsx","line":62,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/boutique/pages/DashboardBoutique.jsx","line":63,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/boutique/pages/DepensesPage.jsx","line":82,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libellé..."}
+{"file":"frontend-depot/src/modules/boutique/pages/FacturesPage.jsx","line":47,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 N° facture, client..."}
+{"file":"frontend-depot/src/modules/boutique/pages/FournisseursPage.jsx","line":70,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, email..."}
+{"file":"frontend-depot/src/modules/boutique/pages/PromotionsPage.jsx","line":74,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libellé..."}
+{"file":"frontend-depot/src/modules/boutique/pages/RapportsPage.jsx","line":25,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/boutique/pages/RapportsPage.jsx","line":26,"category":"config-string","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/boutique/pages/StockPage.jsx","line":88,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom produit..."}
+{"file":"frontend-depot/src/modules/boutique/pages/VentesPage.jsx","line":77,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Produit, client..."}
+{"file":"frontend-depot/src/modules/boutique/forms/PromotionBoutiqueForm.jsx","line":49,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/boutique/forms/PromotionBoutiqueForm.jsx","line":49,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouvelle Promotion"}
+{"file":"frontend-depot/src/modules/boutique/forms/StockBoutiqueForm.jsx","line":106,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/boutique/forms/StockBoutiqueForm.jsx","line":106,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouvel Article"}
+{"file":"frontend-depot/src/modules/ciment_btp/forms/DevisForm.jsx","line":109,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier devis"}
+{"file":"frontend-depot/src/modules/ciment_btp/forms/DevisForm.jsx","line":109,"category":"jsx-attribute","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Nouveau devis"}
+{"file":"frontend-depot/src/modules/ciment_btp/pages/DashboardCimentBtp.jsx","line":90,"category":"config-string","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️"}
+{"file":"frontend-depot/src/modules/ciment_btp/pages/DashboardCimentBtp.jsx","line":91,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/modules/ciment_btp/pages/DashboardCimentBtp.jsx","line":92,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/modules/ciment_btp/pages/DashboardCimentBtp.jsx","line":93,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/ciment_btp/pages/RapportsPage.jsx","line":86,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/ciment_btp/pages/RapportsPage.jsx","line":87,"category":"config-string","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️"}
+{"file":"frontend-depot/src/modules/ciment_btp/pages/RapportsPage.jsx","line":88,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/clinique/forms/ConsultationForm.jsx","line":101,"category":"other","emojis":["🩺"],"suggested":["Stethoscope"],"excerpt":"🩺 Consultation"}
+{"file":"frontend-depot/src/modules/clinique/forms/ConsultationForm.jsx","line":101,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/ciment_btp/forms/ChantierForm.jsx","line":92,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier chantier"}
+{"file":"frontend-depot/src/modules/ciment_btp/forms/ChantierForm.jsx","line":92,"category":"jsx-attribute","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️ Nouveau chantier"}
+{"file":"frontend-depot/src/modules/clinique/pages/ConsultationsPage.jsx","line":139,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Patient, mdecin..."}
+{"file":"frontend-depot/src/modules/clinique/pages/DashboardClinique.jsx","line":94,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/clinique/pages/DashboardClinique.jsx","line":95,"category":"config-string","emojis":["🩺"],"suggested":["Stethoscope"],"excerpt":"🩺"}
+{"file":"frontend-depot/src/modules/clinique/pages/DashboardClinique.jsx","line":96,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/clinique/pages/DashboardClinique.jsx","line":97,"category":"config-string","emojis":["🏧"],"suggested":["Landmark"],"excerpt":"🏧"}
+{"file":"frontend-depot/src/modules/clinique/pages/MedecinsPage.jsx","line":164,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/clinique/pages/MedicamentsPage.jsx","line":164,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Mdicament..."}
+{"file":"frontend-depot/src/modules/clinique/pages/PatientsPage.jsx","line":142,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, tlphone..."}
+{"file":"frontend-depot/src/modules/clinique/pages/PrescriptionsPage.jsx","line":160,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Patient, mdecin..."}
+{"file":"frontend-depot/src/modules/clinique/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["🩺"],"suggested":["Stethoscope"],"excerpt":"🩺"}
+{"file":"frontend-depot/src/modules/clinique/pages/RapportsPage.jsx","line":79,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/modules/clinique/pages/RapportsPage.jsx","line":80,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/clinique/pages/RapportsPage.jsx","line":81,"category":"config-string","emojis":["🔄"],"suggested":["RefreshCw"],"excerpt":"🔄"}
+{"file":"frontend-depot/src/modules/clinique/pages/RapportsPage.jsx","line":82,"category":"config-string","emojis":["👨"],"suggested":["User"],"excerpt":"👨‍⚕️"}
+{"file":"frontend-depot/src/modules/clinique/pages/RapportsPage.jsx","line":83,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/clinique/pages/RendezVousPage.jsx","line":103,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Patient ou mdecin..."}
+{"file":"frontend-depot/src/modules/clinique/forms/PatientForm.jsx","line":84,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier patient"}
+{"file":"frontend-depot/src/modules/clinique/forms/PatientForm.jsx","line":84,"category":"jsx-attribute","emojis":["👤"],"suggested":["User"],"excerpt":"👤 Nouveau patient"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ChargementForm.jsx","line":88,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier chargement"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ChargementForm.jsx","line":88,"category":"jsx-attribute","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Chargement de tournée"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ChargementForm.jsx","line":88,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/clinique/forms/RendezVousForm.jsx","line":94,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier RDV"}
+{"file":"frontend-depot/src/modules/clinique/forms/RendezVousForm.jsx","line":94,"category":"jsx-attribute","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Nouveau rendez-vous"}
+{"file":"frontend-depot/src/modules/clinique/forms/DossierMedicalForm.jsx","line":79,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Dossier médical"}
+{"file":"frontend-depot/src/modules/clinique/forms/DossierMedicalForm.jsx","line":79,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConsigneForm.jsx","line":122,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier mouvement consigne"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConsigneForm.jsx","line":122,"category":"jsx-attribute","emojis":["🔄"],"suggested":["RefreshCw"],"excerpt":"🔄 Mouvement consigne"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConsigneForm.jsx","line":187,"category":"jsx-attribute","emojis":["📤"],"suggested":["ArrowUpFromLine"],"excerpt":"📤 Sortie consigne"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConsigneForm.jsx","line":187,"category":"jsx-attribute","emojis":["📥"],"suggested":["ArrowDownToLine"],"excerpt":"📥 Retour consigne"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConsigneForm.jsx","line":205,"category":"other","emojis":["💵"],"suggested":["Banknote"],"excerpt":"💵 Rembourser en cash"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/TricycleForm.jsx","line":100,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier tricycle"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/TricycleForm.jsx","line":100,"category":"jsx-attribute","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚 Nouveau tricycle"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/VenteBoissonsForm.jsx","line":157,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier vente"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/VenteBoissonsForm.jsx","line":157,"category":"jsx-attribute","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Nouvelle vente"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/VenteBoissonsForm.jsx","line":157,"category":"other","emojis":["💵"],"suggested":["Banknote"],"excerpt":"💵"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/VenteBoissonsForm.jsx","line":189,"category":"config-string","emojis":["💵"],"suggested":["Banknote"],"excerpt":"💵 Cash"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/VenteBoissonsForm.jsx","line":190,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 Orange Money"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/VenteBoissonsForm.jsx","line":191,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 MTN MoMo"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/VenteBoissonsForm.jsx","line":192,"category":"config-string","emojis":["🔀"],"suggested":["Shuffle"],"excerpt":"🔀 Mixte"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/ClientsPage.jsx","line":115,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un client..."}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/ConsignesPage.jsx","line":75,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un client..."}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/DepensesPage.jsx","line":124,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher une dépense..."}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/FournisseursPage.jsx","line":244,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Commander au fournisseur"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/FournisseursPage.jsx","line":273,"category":"other","emojis":["📥"],"suggested":["ArrowDownToLine"],"excerpt":"📥 Réceptionner livraison"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/ParametresPage.jsx","line":71,"category":"config-string","emojis":["✓"],"suggested":["Check"],"excerpt":"Paramètres sauvegardés avec succès ✓"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/ParametresPage.jsx","line":100,"category":"other","emojis":["🏪"],"suggested":["Store"],"excerpt":"🏪"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/ParametresPage.jsx","line":112,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/ParametresPage.jsx","line":120,"category":"other","emojis":["🛒"],"suggested":["ShoppingCart"],"excerpt":"🛒"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/RapportsPage.jsx","line":6,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/RapportsPage.jsx","line":7,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/RapportsPage.jsx","line":8,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/RapportsPage.jsx","line":9,"category":"config-string","emojis":["💼"],"suggested":["Briefcase"],"excerpt":"💼"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/RapportsPage.jsx","line":10,"category":"config-string","emojis":["🛺"],"suggested":["Car"],"excerpt":"🛺"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/RapportsPage.jsx","line":11,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/StockArticlesPage.jsx","line":234,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un article..."}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/StockArticlesPage.jsx","line":326,"category":"other","emojis":["📥"],"suggested":["ArrowDownToLine"],"excerpt":"📥 Entrée de stock"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/StockArticlesPage.jsx","line":359,"category":"other","emojis":["📤"],"suggested":["ArrowUpFromLine"],"excerpt":"📤 Sortie de stock"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/StockArticlesPage.jsx","line":393,"category":"other","emojis":["🔄"],"suggested":["RefreshCw"],"excerpt":"🔄 Transfert de stock"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/StockArticlesPage.jsx","line":433,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Historique des mouvements"}
+{"file":"frontend-depot/src/modules/depot-boissons/pages/TourneesPage.jsx","line":148,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher une tournée..."}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/TourneeForm.jsx","line":98,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier tournée"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/TourneeForm.jsx","line":98,"category":"jsx-attribute","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚 Nouvelle tournée"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ArticleBoissonsForm.jsx","line":104,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier article"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ArticleBoissonsForm.jsx","line":104,"category":"jsx-attribute","emojis":["🍺"],"suggested":["Beer"],"excerpt":"🍺 Nouvel article boissons"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConditionnementForm.jsx","line":94,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier conditionnement"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConditionnementForm.jsx","line":94,"category":"jsx-attribute","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Nouveau conditionnement"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConditionnementForm.jsx","line":142,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Casier"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConditionnementForm.jsx","line":143,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Pack"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConditionnementForm.jsx","line":144,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Palette"}
+{"file":"frontend-depot/src/modules/depot-boissons/forms/ConditionnementForm.jsx","line":145,"category":"config-string","emojis":["🔢"],"suggested":["Hash"],"excerpt":"🔢 Unité"}
+{"file":"frontend-depot/src/modules/elevage/forms/AlimentationForm.jsx","line":88,"category":"other","emojis":["🍽"],"suggested":["UtensilsCrossed"],"excerpt":"🍽️ Alimentation"}
+{"file":"frontend-depot/src/modules/elevage/forms/AlimentationForm.jsx","line":88,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier événement"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":85,"category":"jsx-attribute","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Nouvel événement"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":90,"category":"config-string","emojis":["🐣"],"suggested":["Egg"],"excerpt":"🐣 Naissance"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":90,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Achat"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":91,"category":"config-string","emojis":["💵"],"suggested":["Banknote"],"excerpt":"💵 Vente"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":91,"category":"config-string","emojis":["💀"],"suggested":["Skull"],"excerpt":"💀 Mortalité"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":92,"category":"config-string","emojis":["💉"],"suggested":["Syringe"],"excerpt":"💉 Vaccination"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":92,"category":"config-string","emojis":["🏥"],"suggested":["Building2"],"excerpt":"🏥 Traitement"}
+{"file":"frontend-depot/src/modules/elevage/forms/EvenementElevageForm.jsx","line":93,"category":"config-string","emojis":["⚖"],"suggested":["Scale"],"excerpt":"⚖️ Pesée"}
+{"file":"frontend-depot/src/modules/elevage/pages/AlimentationPage.jsx","line":159,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Type ou enclos..."}
+{"file":"frontend-depot/src/modules/elevage/pages/DashboardElevage.jsx","line":99,"category":"config-string","emojis":["🐄"],"suggested":["Beef"],"excerpt":"🐄"}
+{"file":"frontend-depot/src/modules/elevage/pages/DashboardElevage.jsx","line":100,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/elevage/pages/DashboardElevage.jsx","line":101,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/elevage/pages/DashboardElevage.jsx","line":102,"category":"config-string","emojis":["🌾"],"suggested":["Wheat"],"excerpt":"🌾"}
+{"file":"frontend-depot/src/modules/elevage/pages/DepensesPage.jsx","line":159,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell ou catgorie..."}
+{"file":"frontend-depot/src/modules/elevage/pages/EvenementsPage.jsx","line":165,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Animal, type..."}
+{"file":"frontend-depot/src/modules/elevage/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["🌾"],"suggested":["Wheat"],"excerpt":"🌾"}
+{"file":"frontend-depot/src/modules/elevage/pages/RapportsPage.jsx","line":79,"category":"config-string","emojis":["💉"],"suggested":["Syringe"],"excerpt":"💉"}
+{"file":"frontend-depot/src/modules/elevage/pages/RapportsPage.jsx","line":80,"category":"config-string","emojis":["👨","🌾"],"suggested":["User","Wheat"],"excerpt":"👨‍🌾"}
+{"file":"frontend-depot/src/modules/elevage/pages/RapportsPage.jsx","line":81,"category":"config-string","emojis":["🚛"],"suggested":["Truck"],"excerpt":"🚛"}
+{"file":"frontend-depot/src/modules/elevage/pages/RapportsPage.jsx","line":82,"category":"config-string","emojis":["🐄"],"suggested":["Beef"],"excerpt":"🐄"}
+{"file":"frontend-depot/src/modules/elevage/pages/RapportsPage.jsx","line":83,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/elevage/forms/VaccinationForm.jsx","line":80,"category":"other","emojis":["💉"],"suggested":["Syringe"],"excerpt":"💉 Vaccination"}
+{"file":"frontend-depot/src/modules/elevage/forms/VaccinationForm.jsx","line":80,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/elevage/forms/LotElevageForm.jsx","line":81,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier lot"}
+{"file":"frontend-depot/src/modules/elevage/pages/StockPage.jsx","line":159,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou catgorie..."}
+{"file":"frontend-depot/src/modules/elevage/pages/TroupeauxPage.jsx","line":159,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Identifiant, espce..."}
+{"file":"frontend-depot/src/modules/elevage/pages/VentesPage.jsx","line":159,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Type ou client..."}
+{"file":"frontend-depot/src/modules/elevage/pages/SantePage.jsx","line":112,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Animal, type..."}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/OrdreTravailForm.jsx","line":108,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier OT"}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/OrdreTravailForm.jsx","line":108,"category":"jsx-attribute","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧 Nouvel ordre de travail"}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/DiagnosticForm.jsx","line":80,"category":"other","emojis":["🩺"],"suggested":["Stethoscope"],"excerpt":"🩺 Diagnostic"}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/DiagnosticForm.jsx","line":80,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/CaissePage.jsx","line":95,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libellé..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/ClientsPage.jsx","line":144,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, tlphone ou email..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/DashboardGarage.jsx","line":99,"category":"config-string","emojis":["🚗"],"suggested":["Car"],"excerpt":"🚗"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/DashboardGarage.jsx","line":100,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/DashboardGarage.jsx","line":101,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/DashboardGarage.jsx","line":102,"category":"config-string","emojis":["⚙"],"suggested":["Settings"],"excerpt":"⚙️"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/DepensesPage.jsx","line":166,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell ou catgorie..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/DevisPage.jsx","line":168,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/FournisseursPage.jsx","line":144,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou spcialit..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/OrdresReparationPage.jsx","line":94,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rf., immatriculation..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/PersonnelPage.jsx","line":144,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou fonction..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/PiecesStockPage.jsx","line":148,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou rfrence..."}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/RapportsPage.jsx","line":79,"category":"config-string","emojis":["⚙"],"suggested":["Settings"],"excerpt":"⚙️"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/RapportsPage.jsx","line":80,"category":"config-string","emojis":["🩺"],"suggested":["Stethoscope"],"excerpt":"🩺"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/RapportsPage.jsx","line":81,"category":"config-string","emojis":["🛠"],"suggested":["Hammer"],"excerpt":"🛠️"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/RapportsPage.jsx","line":82,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/RapportsPage.jsx","line":83,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/garage_automobile/pages/VehiculesPage.jsx","line":144,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Immatriculation, marque, modle..."}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/PieceGarageForm.jsx","line":79,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier pièce"}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/PieceGarageForm.jsx","line":79,"category":"jsx-attribute","emojis":["🔩"],"suggested":["Cog"],"excerpt":"🔩 Nouvelle pièce"}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/VehiculeClientForm.jsx","line":87,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier véhicule"}
+{"file":"frontend-depot/src/modules/garage_automobile/forms/VehiculeClientForm.jsx","line":87,"category":"jsx-attribute","emojis":["🚗"],"suggested":["Car"],"excerpt":"🚗 Nouveau véhicule"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/DepenseGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/DepenseGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/PersonnelGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/PersonnelGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/glacier_snack/pages/DashboardGlacier.jsx","line":90,"category":"config-string","emojis":["🍦"],"suggested":["IceCreamCone"],"excerpt":"🍦"}
+{"file":"frontend-depot/src/modules/glacier_snack/pages/DashboardGlacier.jsx","line":91,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/glacier_snack/pages/DashboardGlacier.jsx","line":92,"category":"config-string","emojis":["🌟"],"suggested":["Star"],"excerpt":"🌟"}
+{"file":"frontend-depot/src/modules/glacier_snack/pages/DashboardGlacier.jsx","line":93,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/glacier_snack/pages/RapportsPage.jsx","line":86,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/glacier_snack/pages/RapportsPage.jsx","line":87,"category":"config-string","emojis":["🍦"],"suggested":["IceCreamCone"],"excerpt":"🍦"}
+{"file":"frontend-depot/src/modules/glacier_snack/pages/RapportsPage.jsx","line":88,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/FournisseurGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/FournisseurGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/StockGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/StockGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/hotel/forms/ChambreForm.jsx","line":88,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier chambre"}
+{"file":"frontend-depot/src/modules/hotel/forms/ChambreForm.jsx","line":88,"category":"jsx-attribute","emojis":["🛏"],"suggested":["BedDouble"],"excerpt":"🛏️ Nouvelle chambre"}
+{"file":"frontend-depot/src/modules/hotel/forms/ChambreForm.jsx","line":97,"category":"config-string","emojis":["🟢"],"suggested":["Circle"],"excerpt":"🟢 Libre"}
+{"file":"frontend-depot/src/modules/hotel/forms/ChambreForm.jsx","line":97,"category":"config-string","emojis":["🔴"],"suggested":["Circle"],"excerpt":"🔴 Occupée"}
+{"file":"frontend-depot/src/modules/hotel/forms/ChambreForm.jsx","line":98,"category":"config-string","emojis":["🔵"],"suggested":["Circle"],"excerpt":"🔵 Réservée"}
+{"file":"frontend-depot/src/modules/hotel/forms/ChambreForm.jsx","line":98,"category":"config-string","emojis":["🧹"],"suggested":["Brush"],"excerpt":"🧹 En nettoyage"}
+{"file":"frontend-depot/src/modules/hotel/forms/ChambreForm.jsx","line":99,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧 Hors service"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/ClientGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/glacier_snack/forms/ClientGlacierForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/hotel/forms/CheckOutForm.jsx","line":75,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾 Check-out"}
+{"file":"frontend-depot/src/modules/hotel/forms/CheckOutForm.jsx","line":103,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾 Check-out"}
+{"file":"frontend-depot/src/modules/hotel/forms/CheckOutForm.jsx","line":103,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/hotel/forms/CheckInForm.jsx","line":85,"category":"other","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Check-in"}
+{"file":"frontend-depot/src/modules/hotel/forms/CheckInForm.jsx","line":85,"category":"other","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/modules/hotel/forms/ReservationHotelForm.jsx","line":132,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier réservation"}
+{"file":"frontend-depot/src/modules/hotel/forms/ReservationHotelForm.jsx","line":132,"category":"jsx-attribute","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Nouvelle réservation"}
+{"file":"frontend-depot/src/modules/hotel/pages/ChambresPage.jsx","line":200,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/hotel/pages/ClientsPage.jsx","line":146,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/hotel/pages/DashboardHotel.jsx","line":102,"category":"config-string","emojis":["🛏"],"suggested":["BedDouble"],"excerpt":"🛏️"}
+{"file":"frontend-depot/src/modules/hotel/pages/DashboardHotel.jsx","line":103,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/hotel/pages/DashboardHotel.jsx","line":104,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/hotel/pages/DashboardHotel.jsx","line":105,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/hotel/pages/FacturationPage.jsx","line":166,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Client ou chambre..."}
+{"file":"frontend-depot/src/modules/hotel/pages/FournisseursPage.jsx","line":146,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/hotel/pages/MenagePage.jsx","line":168,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Chambre ou agent..."}
+{"file":"frontend-depot/src/modules/hotel/pages/PersonnelPage.jsx","line":168,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou fonction..."}
+{"file":"frontend-depot/src/modules/hotel/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/hotel/pages/RapportsPage.jsx","line":79,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/hotel/pages/RapportsPage.jsx","line":80,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/modules/hotel/pages/RapportsPage.jsx","line":81,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/hotel/pages/RapportsPage.jsx","line":82,"category":"config-string","emojis":["🛎"],"suggested":["BellRing"],"excerpt":"🛎️"}
+{"file":"frontend-depot/src/modules/hotel/pages/RapportsPage.jsx","line":83,"category":"config-string","emojis":["👨","💼"],"suggested":["User","Briefcase"],"excerpt":"👨‍💼"}
+{"file":"frontend-depot/src/modules/hotel/pages/ReservationsPage.jsx","line":148,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Client..."}
+{"file":"frontend-depot/src/modules/hotel/pages/ServicesPage.jsx","line":175,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Chambre, type..."}
+{"file":"frontend-depot/src/modules/hotel/forms/TypeChambreForm.jsx","line":87,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier type"}
+{"file":"frontend-depot/src/modules/hotel/forms/TypeChambreForm.jsx","line":87,"category":"jsx-attribute","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️ Nouveau type de chambre"}
+{"file":"frontend-depot/src/modules/hotel/forms/ConsommationHotelForm.jsx","line":82,"category":"other","emojis":["🍽"],"suggested":["UtensilsCrossed"],"excerpt":"🍽️ Ajouter consommation"}
+{"file":"frontend-depot/src/modules/hotel/forms/ConsommationHotelForm.jsx","line":82,"category":"other","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕"}
+{"file":"frontend-depot/src/modules/immobilier/forms/PaiementLoyerForm.jsx","line":92,"category":"other","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Paiement de loyer"}
+{"file":"frontend-depot/src/modules/immobilier/forms/PaiementLoyerForm.jsx","line":92,"category":"other","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/immobilier/pages/BiensPage.jsx","line":135,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, adresse ou type..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/ContratsPage.jsx","line":137,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Bien ou locataire..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/DashboardImmobilier.jsx","line":90,"category":"config-string","emojis":["🏠"],"suggested":["Home"],"excerpt":"🏠"}
+{"file":"frontend-depot/src/modules/immobilier/pages/DashboardImmobilier.jsx","line":91,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/immobilier/pages/DashboardImmobilier.jsx","line":92,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/immobilier/pages/DashboardImmobilier.jsx","line":93,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/immobilier/pages/DepensesPage.jsx","line":167,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell ou catgorie..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/DocumentsPage.jsx","line":167,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Titre, type ou bien..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/InterventionsPage.jsx","line":135,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Bien, type..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/LocatairesPage.jsx","line":135,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, email ou tlphone..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/LoyersPage.jsx","line":172,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Bien, locataire ou mois..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/PersonnelPage.jsx","line":163,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, poste..."}
+{"file":"frontend-depot/src/modules/immobilier/pages/RapportsPage.jsx","line":86,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/immobilier/pages/RapportsPage.jsx","line":87,"category":"config-string","emojis":["🏠"],"suggested":["Home"],"excerpt":"🏠"}
+{"file":"frontend-depot/src/modules/immobilier/pages/RapportsPage.jsx","line":88,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/immobilier/pages/VisitesPage.jsx","line":167,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Client, bien..."}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":81,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier bien"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":81,"category":"jsx-attribute","emojis":["🏠"],"suggested":["Home"],"excerpt":"🏠 Nouveau bien"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":84,"category":"config-string","emojis":["🏢"],"suggested":["Building2"],"excerpt":"🏢 Appartement"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":84,"category":"config-string","emojis":["🏠"],"suggested":["Home"],"excerpt":"🏠 Maison"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":85,"category":"config-string","emojis":["🏡"],"suggested":["Home"],"excerpt":"🏡 Villa"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":85,"category":"config-string","emojis":["🏪"],"suggested":["Store"],"excerpt":"🏪 Local commercial"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":86,"category":"config-string","emojis":["🏢"],"suggested":["Building2"],"excerpt":"🏢 Bureau"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":86,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Entrepôt"}
+{"file":"frontend-depot/src/modules/immobilier/forms/BienImmobilierForm.jsx","line":87,"category":"config-string","emojis":["🌳"],"suggested":["TreePine"],"excerpt":"🌳 Terrain"}
+{"file":"frontend-depot/src/modules/immobilier/forms/InterventionBienForm.jsx","line":86,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier intervention"}
+{"file":"frontend-depot/src/modules/immobilier/forms/InterventionBienForm.jsx","line":86,"category":"jsx-attribute","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧 Nouvelle intervention"}
+{"file":"frontend-depot/src/modules/immobilier/forms/InterventionBienForm.jsx","line":96,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Planifiée"}
+{"file":"frontend-depot/src/modules/immobilier/forms/InterventionBienForm.jsx","line":96,"category":"config-string","emojis":["⚡"],"suggested":["Zap"],"excerpt":"⚡ En cours"}
+{"file":"frontend-depot/src/modules/immobilier/forms/InterventionBienForm.jsx","line":97,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Effectuée"}
+{"file":"frontend-depot/src/modules/immobilier/forms/ContratLocationForm.jsx","line":98,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier contrat"}
+{"file":"frontend-depot/src/modules/immobilier/forms/ContratLocationForm.jsx","line":98,"category":"jsx-attribute","emojis":["📝"],"suggested":["FileText"],"excerpt":"📝 Nouveau contrat de location"}
+{"file":"frontend-depot/src/modules/librairie/forms/FournisseurLibrairieForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/librairie/forms/FournisseurLibrairieForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/librairie/forms/DepenseLibrairieForm.jsx","line":87,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/librairie/forms/DepenseLibrairieForm.jsx","line":87,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/librairie/pages/CaissePage.jsx","line":117,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell..."}
+{"file":"frontend-depot/src/modules/librairie/pages/CataloguePage.jsx","line":161,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Titre, auteur, ISBN..."}
+{"file":"frontend-depot/src/modules/librairie/pages/ClientsPage.jsx","line":146,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, email..."}
+{"file":"frontend-depot/src/modules/librairie/pages/CommandesPage.jsx","line":161,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Article, fournisseur..."}
+{"file":"frontend-depot/src/modules/librairie/pages/DashboardLibrairie.jsx","line":90,"category":"config-string","emojis":["📚"],"suggested":["BookOpen"],"excerpt":"📚"}
+{"file":"frontend-depot/src/modules/librairie/pages/DashboardLibrairie.jsx","line":91,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/librairie/pages/DashboardLibrairie.jsx","line":92,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/modules/librairie/pages/DashboardLibrairie.jsx","line":93,"category":"config-string","emojis":["⏳"],"suggested":["Hourglass"],"excerpt":"⏳"}
+{"file":"frontend-depot/src/modules/librairie/pages/DepensesPage.jsx","line":144,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell..."}
+{"file":"frontend-depot/src/modules/librairie/pages/FournisseursPage.jsx","line":146,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, email..."}
+{"file":"frontend-depot/src/modules/librairie/pages/ParametresPage.jsx","line":65,"category":"other","emojis":["✓"],"suggested":["Check"],"excerpt":"Paramètres enregistrés ✓"}
+{"file":"frontend-depot/src/modules/librairie/pages/PersonnelPage.jsx","line":146,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom, poste..."}
+{"file":"frontend-depot/src/modules/librairie/pages/RapportsPage.jsx","line":75,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/librairie/pages/RapportsPage.jsx","line":76,"category":"config-string","emojis":["📚"],"suggested":["BookOpen"],"excerpt":"📚"}
+{"file":"frontend-depot/src/modules/librairie/pages/RapportsPage.jsx","line":77,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/librairie/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/librairie/pages/StockPage.jsx","line":146,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Article..."}
+{"file":"frontend-depot/src/modules/librairie/pages/VentesPage.jsx","line":161,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Article, client..."}
+{"file":"frontend-depot/src/modules/librairie/forms/PersonnelLibrairieForm.jsx","line":86,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/librairie/forms/PersonnelLibrairieForm.jsx","line":86,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/librairie/forms/ClientLibrairieForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/librairie/forms/ClientLibrairieForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/librairie/forms/StockLibrairieForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/librairie/forms/StockLibrairieForm.jsx","line":85,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/DashboardParfumerie.jsx","line":90,"category":"config-string","emojis":["🧴"],"suggested":["SprayCan"],"excerpt":"🧴"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/DashboardParfumerie.jsx","line":91,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/DashboardParfumerie.jsx","line":92,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/DashboardParfumerie.jsx","line":93,"category":"config-string","emojis":["🎁"],"suggested":["Gift"],"excerpt":"🎁"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/RapportsPage.jsx","line":93,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/RapportsPage.jsx","line":94,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/RapportsPage.jsx","line":95,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/parfumerie/pages/RapportsPage.jsx","line":96,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/modules/pharmacie/components/AlertCard.jsx","line":15,"category":"other","emojis":["🔴"],"suggested":["Circle"],"excerpt":"🔴"}
+{"file":"frontend-depot/src/modules/pharmacie/components/AlertCard.jsx","line":16,"category":"other","emojis":["🟠"],"suggested":["Circle"],"excerpt":"🟠"}
+{"file":"frontend-depot/src/modules/pharmacie/components/AlertCard.jsx","line":17,"category":"other","emojis":["🟡"],"suggested":["Circle"],"excerpt":"🟡"}
+{"file":"frontend-depot/src/modules/pharmacie/components/AlertCard.jsx","line":18,"category":"other","emojis":["⚪"],"suggested":["Circle"],"excerpt":"⚪"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/MedicamentForm.jsx","line":121,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier médicament"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/MedicamentForm.jsx","line":121,"category":"jsx-attribute","emojis":["💊"],"suggested":["Pill"],"excerpt":"💊 Nouveau médicament"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/MedicamentForm.jsx","line":135,"category":"jsx-attribute","emojis":["🔴"],"suggested":["Circle"],"excerpt":"🔴 Sur ordonnance"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/MedicamentForm.jsx","line":135,"category":"jsx-attribute","emojis":["🟢"],"suggested":["Circle"],"excerpt":"🟢 Libre"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/OrdonnanceForm.jsx","line":126,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier ordonnance"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/OrdonnanceForm.jsx","line":126,"category":"jsx-attribute","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Nouvelle ordonnance"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/POSPharmacieForm.jsx","line":180,"category":"other","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 Orange Money"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/POSPharmacieForm.jsx","line":180,"category":"other","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 MTN MoMo"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/POSPharmacieForm.jsx","line":180,"category":"other","emojis":["💳"],"suggested":["CreditCard"],"excerpt":"💳 Carte"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":125,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":126,"category":"config-string","emojis":["📝"],"suggested":["FileText"],"excerpt":"📝"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":127,"category":"config-string","emojis":["⏰"],"suggested":["AlarmClock"],"excerpt":"⏰"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":128,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":140,"category":"other","emojis":["🔴"],"suggested":["Circle"],"excerpt":"🔴 Expirés"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":140,"category":"other","emojis":["🔴"],"suggested":["Circle"],"excerpt":"🔴"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":141,"category":"other","emojis":["🟠"],"suggested":["Circle"],"excerpt":"🟠 < 7 jours"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":141,"category":"other","emojis":["🟠"],"suggested":["Circle"],"excerpt":"🟠"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":142,"category":"other","emojis":["🟡"],"suggested":["Circle"],"excerpt":"🟡 < 30 jours"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":142,"category":"other","emojis":["🟡"],"suggested":["Circle"],"excerpt":"🟡"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":175,"category":"config-string","emojis":["💊"],"suggested":["Pill"],"excerpt":"💊"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":176,"category":"config-string","emojis":["📝"],"suggested":["FileText"],"excerpt":"📝"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":177,"category":"config-string","emojis":["⏰"],"suggested":["AlarmClock"],"excerpt":"⏰"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/DashboardPharmacie.jsx","line":178,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/FournisseursPage.jsx","line":150,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/pharmacie/pages/LotsPage.jsx","line":152,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un lot ou mdicament..."}
+{"file":"frontend-depot/src/modules/pharmacie/pages/MedicamentsPage.jsx","line":154,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/pharmacie/pages/OrdonnancesPage.jsx","line":178,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher une ordonnance..."}
+{"file":"frontend-depot/src/modules/pharmacie/pages/PatientsPage.jsx","line":150,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un patient..."}
+{"file":"frontend-depot/src/modules/pharmacie/pages/RapportsPage.jsx","line":92,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/RapportsPage.jsx","line":93,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/RapportsPage.jsx","line":94,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/pharmacie/pages/RapportsPage.jsx","line":95,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/DelivranceForm.jsx","line":104,"category":"other","emojis":["💊"],"suggested":["Pill"],"excerpt":"💊 Délivrance"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/DelivranceForm.jsx","line":104,"category":"other","emojis":["💊"],"suggested":["Pill"],"excerpt":"💊"}
+{"file":"frontend-depot/src/modules/pressing/forms/RetraitPressingForm.jsx","line":82,"category":"other","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Retrait vêtements"}
+{"file":"frontend-depot/src/modules/pressing/forms/RetraitPressingForm.jsx","line":82,"category":"other","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/modules/pressing/forms/TicketPressingForm.jsx","line":96,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier ticket"}
+{"file":"frontend-depot/src/modules/pressing/forms/TicketPressingForm.jsx","line":96,"category":"jsx-attribute","emojis":["🎫"],"suggested":["Ticket"],"excerpt":"🎫 Nouveau ticket pressing"}
+{"file":"frontend-depot/src/modules/pressing/forms/TicketPressingForm.jsx","line":110,"category":"config-string","emojis":["🧺"],"suggested":["ShoppingBasket"],"excerpt":"🧺 Lavage"}
+{"file":"frontend-depot/src/modules/pressing/forms/TicketPressingForm.jsx","line":110,"category":"config-string","emojis":["👔"],"suggested":["Shirt"],"excerpt":"👔 Repassage"}
+{"file":"frontend-depot/src/modules/pressing/forms/TicketPressingForm.jsx","line":111,"category":"config-string","emojis":["🧼"],"suggested":["Droplet"],"excerpt":"🧼 Nettoyage sec"}
+{"file":"frontend-depot/src/modules/pressing/forms/TicketPressingForm.jsx","line":111,"category":"config-string","emojis":["✨"],"suggested":["Sparkles"],"excerpt":"✨ Détachage"}
+{"file":"frontend-depot/src/modules/pressing/forms/TicketPressingForm.jsx","line":112,"category":"config-string","emojis":["🔄"],"suggested":["RefreshCw"],"excerpt":"🔄 Pressing complet"}
+{"file":"frontend-depot/src/shared/components/ExportButton.jsx","line":3,"category":"other","emojis":["📤"],"suggested":["ArrowUpFromLine"],"excerpt":"📤 Exporter"}
+{"file":"frontend-depot/src/shared/components/ExportButton.jsx","line":31,"category":"other","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/shared/components/ExportButton.jsx","line":31,"category":"other","emojis":["📃"],"suggested":["FileText"],"excerpt":"📃"}
+{"file":"frontend-depot/src/modules/pressing/pages/RapportsPage.jsx","line":94,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/pressing/pages/RapportsPage.jsx","line":95,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/pressing/pages/RapportsPage.jsx","line":96,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/pressing/pages/RapportsPage.jsx","line":97,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/modules/pressing/pages/ServicesPage.jsx","line":83,"category":"config-string","emojis":["👕"],"suggested":["Shirt"],"excerpt":"👕"}
+{"file":"frontend-depot/src/modules/pressing/pages/ServicesPage.jsx","line":83,"category":"config-string","emojis":["🔥"],"suggested":["Flame"],"excerpt":"🔥"}
+{"file":"frontend-depot/src/modules/pressing/pages/ServicesPage.jsx","line":83,"category":"config-string","emojis":["✨"],"suggested":["Sparkles"],"excerpt":"✨"}
+{"file":"frontend-depot/src/modules/pressing/pages/ServicesPage.jsx","line":83,"category":"config-string","emojis":["🎨"],"suggested":["Palette"],"excerpt":"🎨"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/CategoriesPage.jsx","line":157,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier Catégorie"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/CategoriesPage.jsx","line":157,"category":"jsx-attribute","emojis":["📁"],"suggested":["Folder"],"excerpt":"📁 Nouvelle Catégorie"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/ChantiersPage.jsx","line":173,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom..."}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/ClientsPage.jsx","line":165,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou tlphone..."}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/DashboardQuincaillerie.jsx","line":90,"category":"config-string","emojis":["🛠"],"suggested":["Hammer"],"excerpt":"🛠"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/DashboardQuincaillerie.jsx","line":91,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/DashboardQuincaillerie.jsx","line":92,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/DashboardQuincaillerie.jsx","line":93,"category":"config-string","emojis":["🏗"],"suggested":["HardHat"],"excerpt":"🏗️"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/DepensesPage.jsx","line":168,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell ou catgorie..."}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/DevisPage.jsx","line":168,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell..."}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/FournisseursPage.jsx","line":165,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou spcialit..."}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/ProduitsPage.jsx","line":169,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Dsignation ou rfrence..."}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["🔩"],"suggested":["Cog"],"excerpt":"🔩"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/RapportsPage.jsx","line":79,"category":"config-string","emojis":["🧱"],"suggested":["Box"],"excerpt":"🧱"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/RapportsPage.jsx","line":80,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/RapportsPage.jsx","line":81,"category":"config-string","emojis":["⚡"],"suggested":["Zap"],"excerpt":"⚡"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/RapportsPage.jsx","line":82,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/RapportsPage.jsx","line":83,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/StockPage.jsx","line":170,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Produit..."}
+{"file":"frontend-depot/src/modules/quincaillerie/pages/VentesPage.jsx","line":173,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Produit..."}
+{"file":"frontend-depot/src/modules/pharmacie/pages/StockPage.jsx","line":162,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/restaurant/forms/MenuJourForm.jsx","line":104,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Menu du jour"}
+{"file":"frontend-depot/src/modules/restaurant/forms/MenuJourForm.jsx","line":104,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/LotForm.jsx","line":124,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier lot"}
+{"file":"frontend-depot/src/modules/pharmacie/forms/LotForm.jsx","line":124,"category":"jsx-attribute","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️ Nouveau lot"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PriseCommandeForm.jsx","line":121,"category":"config-string","emojis":["🍽"],"suggested":["UtensilsCrossed"],"excerpt":"🍽️ Sur place"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PriseCommandeForm.jsx","line":121,"category":"config-string","emojis":["🛍"],"suggested":["ShoppingBag"],"excerpt":"🛍️ À emporter"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PriseCommandeForm.jsx","line":121,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚 Livraison"}
+{"file":"frontend-depot/src/modules/restaurant/forms/ReservationRestaurantForm.jsx","line":88,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier réservation"}
+{"file":"frontend-depot/src/modules/restaurant/forms/ReservationRestaurantForm.jsx","line":88,"category":"jsx-attribute","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Nouvelle réservation"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":85,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier plat"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":85,"category":"jsx-attribute","emojis":["🍽"],"suggested":["UtensilsCrossed"],"excerpt":"🍽️ Nouveau plat"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":98,"category":"jsx-attribute","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Disponible"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":98,"category":"jsx-attribute","emojis":["❌"],"suggested":["XCircle"],"excerpt":"❌ Indisponible"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":90,"category":"config-string","emojis":["🥗"],"suggested":["Salad"],"excerpt":"🥗 Entrée"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":91,"category":"config-string","emojis":["🍰"],"suggested":["CakeSlice"],"excerpt":"🍰 Dessert"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":91,"category":"config-string","emojis":["🥤"],"suggested":["CupSoda"],"excerpt":"🥤 Boisson"}
+{"file":"frontend-depot/src/modules/restaurant/forms/PlatForm.jsx","line":92,"category":"config-string","emojis":["⭐"],"suggested":["Star"],"excerpt":"⭐ Spécialité"}
+{"file":"frontend-depot/src/modules/restaurant/pages/ClientsPage.jsx","line":136,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/restaurant/pages/CommandesPage.jsx","line":169,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Table ou articles..."}
+{"file":"frontend-depot/src/modules/restaurant/pages/DashboardRestaurant.jsx","line":108,"category":"config-string","emojis":["🍽"],"suggested":["UtensilsCrossed"],"excerpt":"🍽️"}
+{"file":"frontend-depot/src/modules/restaurant/pages/DashboardRestaurant.jsx","line":109,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/restaurant/pages/DashboardRestaurant.jsx","line":110,"category":"config-string","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋"}
+{"file":"frontend-depot/src/modules/restaurant/pages/DashboardRestaurant.jsx","line":111,"category":"config-string","emojis":["⭐"],"suggested":["Star"],"excerpt":"⭐"}
+{"file":"frontend-depot/src/modules/restaurant/pages/FournisseursPage.jsx","line":136,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/restaurant/pages/MenuPage.jsx","line":139,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/restaurant/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["🍖"],"suggested":["Beef"],"excerpt":"🍖"}
+{"file":"frontend-depot/src/modules/restaurant/pages/RapportsPage.jsx","line":79,"category":"config-string","emojis":["🥗"],"suggested":["Salad"],"excerpt":"🥗"}
+{"file":"frontend-depot/src/modules/restaurant/pages/RapportsPage.jsx","line":80,"category":"config-string","emojis":["🍰"],"suggested":["CakeSlice"],"excerpt":"🍰"}
+{"file":"frontend-depot/src/modules/restaurant/pages/RapportsPage.jsx","line":81,"category":"config-string","emojis":["🥤"],"suggested":["CupSoda"],"excerpt":"🥤"}
+{"file":"frontend-depot/src/modules/restaurant/pages/RapportsPage.jsx","line":82,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/restaurant/pages/RapportsPage.jsx","line":83,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/restaurant/pages/ReservationsPage.jsx","line":136,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Client..."}
+{"file":"frontend-depot/src/modules/restaurant/pages/StockPage.jsx","line":139,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Article..."}
+{"file":"frontend-depot/src/modules/restaurant/forms/TableForm.jsx","line":83,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier table"}
+{"file":"frontend-depot/src/modules/restaurant/forms/TableForm.jsx","line":83,"category":"jsx-attribute","emojis":["🪑"],"suggested":["Armchair"],"excerpt":"🪑 Nouvelle table"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":81,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier prestation"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":81,"category":"jsx-attribute","emojis":["💇"],"suggested":["Scissors"],"excerpt":"💇 Nouvelle prestation"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":95,"category":"jsx-attribute","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Disponible"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":95,"category":"jsx-attribute","emojis":["❌"],"suggested":["XCircle"],"excerpt":"❌ Indisponible"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":86,"category":"config-string","emojis":["💇"],"suggested":["Scissors"],"excerpt":"💇 Coiffure"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":86,"category":"config-string","emojis":["🎨"],"suggested":["Palette"],"excerpt":"🎨 Couleur"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":87,"category":"config-string","emojis":["✨"],"suggested":["Sparkles"],"excerpt":"✨ Mèches"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":88,"category":"config-string","emojis":["🧴"],"suggested":["SprayCan"],"excerpt":"🧴 Soin"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":88,"category":"config-string","emojis":["💄"],"suggested":["Sparkles"],"excerpt":"💄 Beauté"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/PrestationForm.jsx","line":89,"category":"config-string","emojis":["💅"],"suggested":["Sparkles"],"excerpt":"💅 Onglerie"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/RendezVousSalonForm.jsx","line":112,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier RDV"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/RendezVousSalonForm.jsx","line":112,"category":"jsx-attribute","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Nouveau rendez-vous"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/DashboardSalon.jsx","line":99,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/DashboardSalon.jsx","line":100,"category":"config-string","emojis":["💇"],"suggested":["Scissors"],"excerpt":"💇"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/DashboardSalon.jsx","line":101,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/DashboardSalon.jsx","line":102,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/RapportsPage.jsx","line":94,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/RapportsPage.jsx","line":95,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/RapportsPage.jsx","line":96,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/salon_beaute/pages/RapportsPage.jsx","line":97,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/modules/supermarche/forms/ArticleSupermarcheForm.jsx","line":123,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier article"}
+{"file":"frontend-depot/src/modules/supermarche/forms/ArticleSupermarcheForm.jsx","line":123,"category":"jsx-attribute","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Nouvel article"}
+{"file":"frontend-depot/src/modules/supermarche/forms/InventaireForm.jsx","line":98,"category":"other","emojis":["📋"],"suggested":["ClipboardList"],"excerpt":"📋 Inventaire"}
+{"file":"frontend-depot/src/modules/supermarche/forms/InventaireForm.jsx","line":98,"category":"other","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/modules/supermarche/forms/POSSupermarcheForm.jsx","line":216,"category":"other","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 Orange Money"}
+{"file":"frontend-depot/src/modules/supermarche/forms/POSSupermarcheForm.jsx","line":216,"category":"other","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 MTN MoMo"}
+{"file":"frontend-depot/src/modules/supermarche/forms/POSSupermarcheForm.jsx","line":216,"category":"other","emojis":["💳"],"suggested":["CreditCard"],"excerpt":"💳 Carte"}
+{"file":"frontend-depot/src/modules/supermarche/forms/PromotionSupermarcheForm.jsx","line":116,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier promotion"}
+{"file":"frontend-depot/src/modules/supermarche/forms/PromotionSupermarcheForm.jsx","line":116,"category":"jsx-attribute","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️ Nouvelle promotion"}
+{"file":"frontend-depot/src/modules/supermarche/forms/PromotionSupermarcheForm.jsx","line":138,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Montant fixe"}
+{"file":"frontend-depot/src/modules/supermarche/forms/PromotionSupermarcheForm.jsx","line":139,"category":"config-string","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️ Prix fixe"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/EncaissementSalonForm.jsx","line":83,"category":"other","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Encaissement"}
+{"file":"frontend-depot/src/modules/salon_beaute/forms/EncaissementSalonForm.jsx","line":83,"category":"other","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/supermarche/forms/RayonForm.jsx","line":77,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier rayon"}
+{"file":"frontend-depot/src/modules/supermarche/forms/RayonForm.jsx","line":77,"category":"jsx-attribute","emojis":["🏪"],"suggested":["Store"],"excerpt":"🏪 Nouveau rayon"}
+{"file":"frontend-depot/src/modules/supermarche/pages/ClientsPage.jsx","line":72,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un client..."}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":131,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":131,"category":"other","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":139,"category":"other","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":140,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":141,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":142,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":218,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":219,"category":"config-string","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":220,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DashboardSupermarche.jsx","line":221,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/supermarche/pages/DepensesPage.jsx","line":105,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/supermarche/pages/DepensesPage.jsx","line":183,"category":"other","emojis":["✓"],"suggested":["Check"],"excerpt":"Dépense enregistrée ✓"}
+{"file":"frontend-depot/src/modules/supermarche/pages/FournisseursPage.jsx","line":54,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un fournisseur..."}
+{"file":"frontend-depot/src/modules/supermarche/pages/InventairePage.jsx","line":99,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un produit..."}
+{"file":"frontend-depot/src/modules/supermarche/pages/InventairePage.jsx","line":176,"category":"other","emojis":["✓"],"suggested":["Check"],"excerpt":"Inventaire enregistré ✓"}
+{"file":"frontend-depot/src/modules/supermarche/pages/ParametresPage.jsx","line":71,"category":"config-string","emojis":["✓"],"suggested":["Check"],"excerpt":"Paramètres sauvegardés avec succès ✓"}
+{"file":"frontend-depot/src/modules/supermarche/pages/ParametresPage.jsx","line":87,"category":"other","emojis":["🏪"],"suggested":["Store"],"excerpt":"🏪"}
+{"file":"frontend-depot/src/modules/supermarche/pages/ParametresPage.jsx","line":99,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/supermarche/pages/ParametresPage.jsx","line":107,"category":"other","emojis":["🛒"],"suggested":["ShoppingCart"],"excerpt":"🛒"}
+{"file":"frontend-depot/src/modules/supermarche/pages/RapportsPage.jsx","line":67,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/supermarche/pages/RapportsPage.jsx","line":68,"category":"config-string","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/supermarche/pages/RapportsPage.jsx","line":69,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/modules/supermarche/pages/RapportsPage.jsx","line":70,"category":"config-string","emojis":["📈"],"suggested":["TrendingUp"],"excerpt":"📈"}
+{"file":"frontend-depot/src/modules/supermarche/pages/StockPage.jsx","line":145,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher..."}
+{"file":"frontend-depot/src/modules/supermarche/pages/RayonsPage.jsx","line":71,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Rechercher un rayon..."}
+{"file":"frontend-depot/src/modules/telephonie/forms/ReparationTelephoneForm.jsx","line":109,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier réparation"}
+{"file":"frontend-depot/src/modules/telephonie/forms/ReparationTelephoneForm.jsx","line":109,"category":"jsx-attribute","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧 Nouvelle réparation"}
+{"file":"frontend-depot/src/modules/telephonie/forms/TelephoneForm.jsx","line":105,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier téléphone"}
+{"file":"frontend-depot/src/modules/telephonie/forms/TelephoneForm.jsx","line":105,"category":"jsx-attribute","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 Nouveau téléphone"}
+{"file":"frontend-depot/src/modules/telephonie/forms/TelephoneForm.jsx","line":125,"category":"config-string","emojis":["✨"],"suggested":["Sparkles"],"excerpt":"✨ Neuf"}
+{"file":"frontend-depot/src/modules/telephonie/forms/TelephoneForm.jsx","line":125,"category":"config-string","emojis":["🔄"],"suggested":["RefreshCw"],"excerpt":"🔄 Recond."}
+{"file":"frontend-depot/src/modules/telephonie/forms/TelephoneForm.jsx","line":125,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱 Occasion"}
+{"file":"frontend-depot/src/modules/telephonie/pages/AccessoiresPage.jsx","line":172,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Dsignation ou type..."}
+{"file":"frontend-depot/src/modules/telephonie/pages/ClientsPage.jsx","line":139,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou tlphone..."}
+{"file":"frontend-depot/src/modules/restaurant/forms/AdditionForm.jsx","line":90,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾 Addition"}
+{"file":"frontend-depot/src/modules/restaurant/forms/AdditionForm.jsx","line":90,"category":"other","emojis":["🧾"],"suggested":["Receipt"],"excerpt":"🧾"}
+{"file":"frontend-depot/src/modules/telephonie/pages/DashboardTelephonie.jsx","line":103,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱"}
+{"file":"frontend-depot/src/modules/telephonie/pages/DashboardTelephonie.jsx","line":104,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/modules/telephonie/pages/DashboardTelephonie.jsx","line":105,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/telephonie/pages/DashboardTelephonie.jsx","line":106,"category":"config-string","emojis":["🔋"],"suggested":["BatteryFull"],"excerpt":"🔋"}
+{"file":"frontend-depot/src/modules/telephonie/pages/DepensesPage.jsx","line":169,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Libell ou catgorie..."}
+{"file":"frontend-depot/src/modules/telephonie/pages/FournisseursPage.jsx","line":139,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Nom ou spcialit..."}
+{"file":"frontend-depot/src/modules/telephonie/pages/RapportsPage.jsx","line":78,"category":"config-string","emojis":["📱"],"suggested":["Smartphone"],"excerpt":"📱"}
+{"file":"frontend-depot/src/modules/telephonie/pages/RapportsPage.jsx","line":79,"category":"config-string","emojis":["🎧"],"suggested":["Headphones"],"excerpt":"🎧"}
+{"file":"frontend-depot/src/modules/telephonie/pages/RapportsPage.jsx","line":80,"category":"config-string","emojis":["🔧"],"suggested":["Wrench"],"excerpt":"🔧"}
+{"file":"frontend-depot/src/modules/telephonie/pages/RapportsPage.jsx","line":81,"category":"config-string","emojis":["🔋"],"suggested":["BatteryFull"],"excerpt":"🔋"}
+{"file":"frontend-depot/src/modules/telephonie/pages/RapportsPage.jsx","line":82,"category":"config-string","emojis":["👥"],"suggested":["Users"],"excerpt":"👥"}
+{"file":"frontend-depot/src/modules/telephonie/pages/RapportsPage.jsx","line":83,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/telephonie/pages/RechargesPage.jsx","line":172,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Numro, oprateur..."}
+{"file":"frontend-depot/src/modules/telephonie/pages/ReparationsPage.jsx","line":144,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Panne, tlphone..."}
+{"file":"frontend-depot/src/modules/telephonie/pages/StockPage.jsx","line":174,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Article..."}
+{"file":"frontend-depot/src/modules/telephonie/pages/TelephonesPage.jsx","line":143,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Modle, marque, IMEI..."}
+{"file":"frontend-depot/src/modules/telephonie/pages/VentesPage.jsx","line":177,"category":"other","emojis":["🔍"],"suggested":["Search"],"excerpt":"🔍 Tlphone ou accessoire..."}
+{"file":"frontend-depot/src/modules/supermarche/forms/DepenseForm.jsx","line":65,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier la dépense"}
+{"file":"frontend-depot/src/modules/supermarche/forms/DepenseForm.jsx","line":65,"category":"jsx-attribute","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰 Nouvelle dépense"}
+{"file":"frontend-depot/src/modules/supermarche/forms/DepenseForm.jsx","line":65,"category":"other","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/transport/forms/CaisseForm.jsx","line":86,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/transport/forms/CaisseForm.jsx","line":86,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/transport/forms/ColisForm.jsx","line":90,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier colis"}
+{"file":"frontend-depot/src/modules/transport/forms/ColisForm.jsx","line":90,"category":"jsx-attribute","emojis":["📦"],"suggested":["Package"],"excerpt":"📦 Nouveau colis"}
+{"file":"frontend-depot/src/modules/transport/forms/DepenseForm.jsx","line":86,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/transport/forms/DepenseForm.jsx","line":86,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/transport/forms/FlotteForm.jsx","line":83,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier véhicule"}
+{"file":"frontend-depot/src/modules/transport/forms/FlotteForm.jsx","line":83,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau véhicule"}
+{"file":"frontend-depot/src/modules/transport/forms/ChauffeurForm.jsx","line":83,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier chauffeur"}
+{"file":"frontend-depot/src/modules/transport/forms/ChauffeurForm.jsx","line":83,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau chauffeur"}
+{"file":"frontend-depot/src/modules/transport/forms/LivraisonForm.jsx","line":83,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier livraison"}
+{"file":"frontend-depot/src/modules/transport/forms/LivraisonForm.jsx","line":83,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouvelle livraison"}
+{"file":"frontend-depot/src/modules/transport/forms/PersonnelForm.jsx","line":86,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier"}
+{"file":"frontend-depot/src/modules/transport/forms/PersonnelForm.jsx","line":86,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau"}
+{"file":"frontend-depot/src/modules/transport/forms/TrajetForm.jsx","line":88,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier trajet"}
+{"file":"frontend-depot/src/modules/transport/forms/TrajetForm.jsx","line":88,"category":"jsx-attribute","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚 Nouveau trajet"}
+{"file":"frontend-depot/src/modules/transport/pages/DashboardTransport.jsx","line":99,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/modules/transport/pages/DashboardTransport.jsx","line":100,"category":"config-string","emojis":["🚛"],"suggested":["Truck"],"excerpt":"🚛"}
+{"file":"frontend-depot/src/modules/transport/pages/DashboardTransport.jsx","line":101,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/transport/pages/DashboardTransport.jsx","line":102,"category":"config-string","emojis":["🚚"],"suggested":["Truck"],"excerpt":"🚚"}
+{"file":"frontend-depot/src/modules/transport/pages/RapportsPage.jsx","line":86,"category":"config-string","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"frontend-depot/src/modules/transport/pages/RapportsPage.jsx","line":87,"category":"config-string","emojis":["🚛"],"suggested":["Truck"],"excerpt":"🚛"}
+{"file":"frontend-depot/src/modules/transport/pages/RapportsPage.jsx","line":88,"category":"config-string","emojis":["💸"],"suggested":["HandCoins"],"excerpt":"💸"}
+{"file":"frontend-depot/src/shared/components/forms/FormModal.jsx","line":3,"category":"other","emojis":["💾"],"suggested":["Save"],"excerpt":"💾"}
+{"file":"frontend-depot/src/modules/transport/forms/TransportClientForm.jsx","line":83,"category":"jsx-attribute","emojis":["✏"],"suggested":["Pencil"],"excerpt":"✏️ Modifier client"}
+{"file":"frontend-depot/src/modules/transport/forms/TransportClientForm.jsx","line":83,"category":"jsx-attribute","emojis":["➕"],"suggested":["Plus"],"excerpt":"➕ Nouveau client"}
+{"file":"backend-depot/src/main.ts","line":81,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ "}
+{"file":"backend-depot/src/main.ts","line":83,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️  DISABLE_SUBSCRIPTION_CHECKS=true — CONTRÔLES ABONNEMENT DÉSACTIVÉS"}
+{"file":"backend-depot/src/main.ts","line":86,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️  Ne JAMAIS déployer en production avec ce flag actif."}
+{"file":"backend-depot/src/main.ts","line":88,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ "}
+{"file":"backend-depot/src/main.ts","line":92,"category":"other","emojis":["🚀"],"suggested":["Rocket"],"excerpt":"🚀 Backend GeStock SaaS stabilisé sur http://localhost:3000"}
+{"file":"backend-depot/src/prisma.service.ts","line":137,"category":"other","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Base de données connectée et Isolation active !"}
+{"file":"backend-depot/src/prisma.service.ts","line":139,"category":"other","emojis":["❌"],"suggested":["XCircle"],"excerpt":"❌ Erreur de connexion database:"}
+{"file":"backend-depot/src/catalogue/catalogue.service.ts","line":18,"category":"other","emojis":["📦"],"suggested":["Package"],"excerpt":"📦"}
+{"file":"backend-depot/src/common/depot-scope.service.ts","line":22,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ Requête sans tenantId détectée - exécution en mode ouvert."}
+{"file":"backend-depot/src/support/support.service.ts","line":97,"category":"config-string","emojis":["📧"],"suggested":["Mail"],"excerpt":"📧 Email de contact"}
+{"file":"backend-depot/src/support/support.service.ts","line":98,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤 Utilisateur"}
+{"file":"backend-depot/src/support/support.service.ts","line":99,"category":"config-string","emojis":["📄"],"suggested":["File"],"excerpt":"📄 Page"}
+{"file":"backend-depot/src/billing/services/subscription-lifecycle.service.ts","line":44,"category":"other","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ DISABLE_SUBSCRIPTION_CHECKS actif — CRON lifecycle ignoré"}
+{"file":"backend-depot/src/modules/boutique/boutique.service.ts","line":769,"category":"other","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":82,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ Stock critique — Action requise"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":83,"category":"config-string","emojis":["🚫"],"suggested":["Ban"],"excerpt":"🚫 Rupture de stock détectée"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":84,"category":"config-string","emojis":["📅"],"suggested":["Calendar"],"excerpt":"📅 Produits proches de l'expiration"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":85,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅ Paiement confirmé"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":86,"category":"config-string","emojis":["❌"],"suggested":["XCircle"],"excerpt":"❌ Paiement échoué"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":90,"category":"config-string","emojis":["📊"],"suggested":["BarChart3"],"excerpt":"📊 Votre rapport journalier GeStock"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":87,"category":"config-string","emojis":["⏰"],"suggested":["AlarmClock"],"excerpt":"⏰ Votre abonnement expire dans 7 jours"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":88,"category":"config-string","emojis":["⚠"],"suggested":["AlertTriangle"],"excerpt":"⚠️ Votre abonnement expire dans 3 jours"}
+{"file":"backend-depot/src/core/notifications/channels/email.channel.ts","line":89,"category":"config-string","emojis":["🚨"],"suggested":["Siren"],"excerpt":"🚨 Dernier jour — Abonnement expire demain"}
+{"file":"frontend-depot/src/modules/pressing/pages/DashboardPressing.jsx","line":99,"category":"config-string","emojis":["🏷"],"suggested":["Tag"],"excerpt":"🏷️"}
+{"file":"frontend-depot/src/modules/pressing/pages/DashboardPressing.jsx","line":100,"category":"config-string","emojis":["✅"],"suggested":["CheckCircle2"],"excerpt":"✅"}
+{"file":"frontend-depot/src/modules/pressing/pages/DashboardPressing.jsx","line":101,"category":"config-string","emojis":["💰"],"suggested":["Coins"],"excerpt":"💰"}
+{"file":"frontend-depot/src/modules/pressing/pages/DashboardPressing.jsx","line":102,"category":"config-string","emojis":["👤"],"suggested":["User"],"excerpt":"👤"}

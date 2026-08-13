@@ -45,7 +45,7 @@ export default function Footer() {
                 <Share2 size={20} />
               </a>
               <a 
-                href="https://discord.gg/GvfSRKuRUp" 
+                href="https://discord.gg/mQqk2kdbKb" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="social-link" 
@@ -160,6 +160,9 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link to="/metier/tontine">Tontine</Link>
+                </li>
+                  <li>
+                  <Link to="/metier/comptabilite">Comptabilité</Link>
                 </li>
               </ul>
             </nav>
