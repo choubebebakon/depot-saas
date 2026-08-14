@@ -16,27 +16,27 @@ export const ROLE_LABELS_BY_METIER: Record<
 > = {
   supermarche: {
     [Role.MAGASINIER]: 'Rayonniste',
-    [Role.CAISSIER]: 'Caissier(ere)',
+    [Role.CAISSIER]: 'Caissier(ère)',
     [Role.COMPTABLE]: 'Comptable',
     [Role.COMMERCIAL]: 'Commercial',
     [Role.PATRON]: 'Patron',
-    [Role.GERANT]: 'Gerant',
+    [Role.GERANT]: 'Gérant',
   },
   boutique: {
     [Role.MAGASINIER]: 'Vendeur',
-    [Role.CAISSIER]: 'Caissier(ere)',
+    [Role.CAISSIER]: 'Caissier(ère)',
     [Role.COMPTABLE]: 'Comptable',
     [Role.COMMERCIAL]: 'Commercial',
     [Role.PATRON]: 'Patron',
-    [Role.GERANT]: 'Gerant',
+    [Role.GERANT]: 'Gérant',
   },
   depot: {
     [Role.MAGASINIER]: 'Magasinier / Livreur',
-    [Role.CAISSIER]: 'Caissier(ere)',
+    [Role.CAISSIER]: 'Caissier(ère)',
     [Role.COMPTABLE]: 'Comptable',
     [Role.COMMERCIAL]: 'Commercial',
     [Role.PATRON]: 'Patron',
-    [Role.GERANT]: 'Gerant',
+    [Role.GERANT]: 'Gérant',
   },
 };
 

@@ -5,5 +5,8 @@
     "@types/express": "^5.0.6",
     "nestjs-pino": "^4.6.1",
     "pino-http": "^11.0.0"
+  },
+  "devDependencies": {
+    "jscodeshift": "^0.15.2"
   }
 }

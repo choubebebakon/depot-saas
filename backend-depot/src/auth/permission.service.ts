@@ -73,7 +73,7 @@ export class PermissionService {
       return {
         canRead: false,
         canWrite: false,
-        libelleRoleAutorise: 'Patron ou Gerant',
+        libelleRoleAutorise: 'Patron ou Gérant',
       };
     }
 
@@ -83,10 +83,10 @@ export class PermissionService {
       return cached.value;
     }
 
-    const permission = await (this.prisma as any).permission.findUnique({
+    const permission = await this.prisma.permission.findUnique({
       where: {
         role_metier_sousModule: {
-          role,
+          role: role as Role,
           metier,
           sousModule,
         },
@@ -102,6 +102,58 @@ export class PermissionService {
 
     this.cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, value });
     return value;
+  }
+
+  /** Carte des permissions pour le frontend (sidebar + pages). */
+  async getPermissionsForUser(
+    role: string,
+    metier: PermissionMetier,
+  ): Promise<{
+    fullAccess: boolean;
+    denySousModules: string[];
+    permissions: Record<string, { canRead: boolean; canWrite: boolean }>;
+    libellePoste: string;
+  }> {
+    const libellePoste = roleLabel(role, metier);
+
+    if (role === Role.PATRON) {
+      return {
+        fullAccess: true,
+        denySousModules: [],
+        permissions: {},
+        libellePoste,
+      };
+    }
+
+    if (role === Role.GERANT) {
+      return {
+        fullAccess: true,
+        denySousModules: ['audit_patron'],
+        permissions: {},
+        libellePoste,
+      };
+    }
+
+    const rows = await this.prisma.permission.findMany({
+      where: { role: role as Role, metier },
+      select: { sousModule: true, canRead: true, canWrite: true },
+    });
+
+    const permissions: Record<string, { canRead: boolean; canWrite: boolean }> =
+      {};
+    for (const row of rows) {
+      permissions[row.sousModule] = {
+        canRead: row.canRead,
+        canWrite: row.canWrite,
+      };
+    }
+
+    return {
+      fullAccess: false,
+      denySousModules: [],
+      permissions,
+      libellePoste,
+    };
   }
 
   async canAccess(
@@ -122,9 +174,9 @@ export class PermissionService {
     sousModule: string,
   ): Promise<string> {
     if (sousModule === 'audit_patron') return roleLabel(Role.PATRON, metier);
-    if (ADMINISTRATION_SUBMODULES.has(sousModule)) return 'Patron ou Gerant';
+    if (ADMINISTRATION_SUBMODULES.has(sousModule)) return 'Patron ou Gérant';
 
-    const rows = await (this.prisma as any).permission.findMany({
+    const rows = await this.prisma.permission.findMany({
       where: {
         metier,
         sousModule,
@@ -135,9 +187,9 @@ export class PermissionService {
     });
 
     const labels = Array.from(
-      new Set(rows.map((row: { role: string }) => roleLabel(row.role, metier))),
+      new Set(rows.map((row) => roleLabel(row.role, metier))),
     );
 
-    return labels.length > 0 ? labels.join(' ou ') : 'Patron ou Gerant';
+    return labels.length > 0 ? labels.join(' ou ') : 'Patron ou Gérant';
   }
 }

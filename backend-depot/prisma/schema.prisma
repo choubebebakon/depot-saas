@@ -877,6 +877,20 @@ model User {
   @@index([depotId])
 }
 
+/// Permissions granulaires (role × métier × sous-module). Deny-by-default :
+/// toute combinaison absente = canRead/canWrite false. PATRON/GERANT/ADMIN
+/// sont gérés en code (PermissionService), pas via cette table.
+model Permission {
+  id         String  @id @default(cuid())
+  role       Role
+  metier     String // "supermarche" | "boutique" | "depot"
+  sousModule String // slug, ex: "stock", "caisse", "rapports"
+  canRead    Boolean @default(false)
+  canWrite   Boolean @default(false)
+
+  @@unique([role, metier, sousModule])
+}
+
 model Depot {
   isArchived            Boolean                 @default(false)
   updatedAt             DateTime                @updatedAt

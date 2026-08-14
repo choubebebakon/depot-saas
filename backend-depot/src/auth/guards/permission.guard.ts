@@ -39,7 +39,7 @@ export class PermissionGuard implements CanActivate {
     const role = user?.role;
 
     if (!role) {
-      throw this.denied('Patron ou Gerant');
+      throw this.denied('Patron ou Gérant');
     }
 
     const metier = await this.permissionService.resolveMetierSlug(
@@ -49,7 +49,7 @@ export class PermissionGuard implements CanActivate {
     );
 
     if (!metier) {
-      throw this.denied('Patron ou Gerant');
+      throw this.denied('Patron ou Gérant');
     }
 
     const result = await this.permissionService.canAccess(
@@ -69,7 +69,7 @@ export class PermissionGuard implements CanActivate {
   private denied(libelleRoleAutorise: string): ForbiddenException {
     return new ForbiddenException({
       error: 'ACCESS_DENIED',
-      message: `Acces refuse - cette partie est reservee a ${libelleRoleAutorise}.`,
+      message: `Accès refusé — cette partie est réservée à ${libelleRoleAutorise}.`,
     });
   }
 }
