@@ -20,7 +20,6 @@ import { DepotsModule } from './depots/depots.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
-import { AuthModule } from './auth/auth.module';
 import { AccessStatusGuard } from './common/guards/access-status.guard';
 import { QuotaDepotGuard } from './common/guards/quota-depot.guard';
 
@@ -158,8 +157,10 @@ import { BillingModule } from './billing/billing.module';
     // 3. Les Guards SaaS s'exécutent
     { provide: APP_GUARD, useClass: AccessStatusGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    // 4. Permissions granulaires (actif seulement si @RequirePermission est posé)
+    { provide: APP_GUARD, useClass: PermissionGuard },
 
-    // 🔥 4. ENREGISTREMENT DE L'INTERCEPTOR GLOBAL SCOPE (ALS)
+    // 🔥 5. ENREGISTREMENT DE L'INTERCEPTOR GLOBAL SCOPE (ALS)
     // Placé dans les providers pour résoudre automatiquement le DepotScopeService.
     // NestJS l'exécutera juste après la validation réussie des Guards.
     {

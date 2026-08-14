@@ -17,6 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { PermissionService } from './permission.service';
 import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 
@@ -24,7 +25,10 @@ import { Throttle } from '@nestjs/throttler';
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly permissionService: PermissionService,
+  ) {}
 
   // Inscription d'un nouveau dépôt (Public)
   @Public()
@@ -103,5 +107,34 @@ export class AuthController {
       metier: tenant?.metier,
       nomEntreprise: tenant?.nomEntreprise ?? tenant?.name,
     };
+  }
+
+  /** Permissions granulaires du user courant pour le métier du tenant. */
+  @UseGuards(JwtAuthGuard)
+  @Get('permissions')
+  async getPermissions(@CurrentUser() user: any) {
+    const tenant = await this.authService.getTenantInfo(user.tenantId);
+    const metier = await this.permissionService.resolveMetierSlug(
+      user.tenantId,
+      undefined,
+      tenant?.metier,
+    );
+
+    if (!metier) {
+      return {
+        fullAccess: false,
+        denySousModules: [],
+        permissions: {},
+        libellePoste: user.role,
+        metier: null,
+      };
+    }
+
+    const result = await this.permissionService.getPermissionsForUser(
+      user.role,
+      metier,
+    );
+
+    return { ...result, metier };
   }
 }
