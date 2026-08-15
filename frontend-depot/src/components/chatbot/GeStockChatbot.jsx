@@ -21,6 +21,11 @@ import {
 } from 'lucide-react';
 import { getAuthToken } from '../../utils/auth'; // FIX #2: Utilisation du helper getAuthToken pour centraliser l'accès aux tokens
 
+// FIX #3: URL absolue vers le backend — un fetch() avec une URL relative
+// ('/api/v1/...') se résout par rapport à l'origine de la page (localhost:5173,
+// le port de Vite) et non vers le backend (localhost:3000), causant un 404.
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+
 const METIER_CONFIG = {
   DEPOT_BOISSONS:   { couleur: '#2563eb', icon: Package, nom: 'Assistant Dépôt' },
   BOUTIQUE:         { couleur: '#0891b2', icon: Store, nom: 'Assistant Boutique' },
@@ -64,6 +69,7 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
       heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
     }]);
     fetchSuggestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metier]);
 
   useEffect(() => {
@@ -72,15 +78,18 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
 
   async function fetchSuggestions() {
     try {
-      const token = getAuthToken(); // FIX #2: Remplacement de access_token par getAuthToken()
-      const res = await fetch('/api/v1/chatbot/suggestions', {
+      const token = getAuthToken();
+      const res = await fetch(`${API_BASE}/chatbot/suggestions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
         setSuggestions(data.suggestions ?? []);
+      } else {
+        console.error('[GeStockChatbot] Échec fetchSuggestions, statut:', res.status);
       }
-    } catch {
+    } catch (err) {
+      console.error('[GeStockChatbot] Erreur réseau fetchSuggestions:', err);
       setSuggestions([
         'Prévoir les ventes du mois',
         'Détecter les anomalies de stock',
@@ -111,8 +120,8 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
     setLoading(true);
 
     try {
-      const token = getAuthToken(); // FIX #2: Remplacement de access_token par getAuthToken()
-      const res = await fetch('/api/v1/chatbot/message', {
+      const token = getAuthToken();
+      const res = await fetch(`${API_BASE}/chatbot/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,6 +129,13 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
         },
         body: JSON.stringify({ message: messageTexte }),
       });
+
+      if (!res.ok) {
+        console.error('[GeStockChatbot] Échec envoyerMessage, statut:', res.status);
+        const errBody = await res.text().catch(() => '');
+        console.error('[GeStockChatbot] Corps réponse erreur:', errBody);
+        throw new Error(`HTTP ${res.status}`);
+      }
 
       const data = await res.json();
 
@@ -135,6 +151,7 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
       }
 
     } catch (err) {
+      console.error('[GeStockChatbot] Erreur envoyerMessage:', err);
       setMessages((prev) => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
