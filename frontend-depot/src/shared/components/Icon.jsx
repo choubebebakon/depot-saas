@@ -58,6 +58,7 @@ const ICON_MAP = {
   Clipboard: LucideIcons.Clipboard,
   BookOpen: LucideIcons.BookOpen,
   FolderOpen: LucideIcons.FolderOpen,
+  FolderKanban: LucideIcons.FolderKanban,
   Library: LucideIcons.Library,
   Receipt: LucideIcons.Receipt,
   
@@ -117,6 +118,7 @@ const ICON_MAP = {
   
   // Other
   ShieldCheck: LucideIcons.ShieldCheck,
+  Shield: LucideIcons.Shield,
   LifeBuoy: LucideIcons.LifeBuoy,
   Menu: LucideIcons.Menu,
   MenuIcon: LucideIcons.Menu,
@@ -138,7 +140,6 @@ const ICON_MAP = {
   LogOut: LucideIcons.LogOut,
   LogIn: LucideIcons.LogIn,
   UserCircle: LucideIcons.UserCircle,
-  Shield: LucideIcons.Shield,
   Lock: LucideIcons.Lock,
   Unlock: LucideIcons.Unlock,
   Info: LucideIcons.Info,

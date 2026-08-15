@@ -9,10 +9,12 @@ import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
 import VenteBoutiqueForm from '../forms/VenteBoutiqueForm';
-
+import Receipt80mm from '../../../components/Receipt80mm';
+import { boutiqueApi } from '../services/boutiqueApi';
+import { Search } from 'lucide-react';
 export default function VentesPage() {
   const { metier: metierParam } = useParams();
-  const { metier: metierAuth } = useAuth();
+  const { metier: metierAuth, tenantId } = useAuth();
   const metier = metierParam || metierAuth || 'boutique';
   const prefix = metier.toLowerCase().replace(/_/g, '-');
 
@@ -21,6 +23,7 @@ export default function VentesPage() {
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [printData, setPrintData] = useState(null);
 
   const [edit, setEdit] = useState(null);
 
@@ -68,13 +71,51 @@ export default function VentesPage() {
     }
   };
 
+  const handlePrint = async (id) => {
+    try {
+      const r = await api.get(`/${prefix}/ventes/${id}`);
+      const vente = r.data || r;
+      
+      let params = {};
+      try {
+        const response = await boutiqueApi.getParametres();
+        params = response.data || {};
+      } catch (e) {}
+      
+      let tenantConfig = {};
+      if (tenantId) {
+        try {
+          const t = await api.get(`/tenants/${tenantId}`);
+          tenantConfig = t.data || {};
+        } catch(e) {}
+      }
+      
+      const config = {
+        nomEntreprise: tenantConfig.nomEntreprise || params?.nom || "BOUTIQUE",
+        adresse: tenantConfig.adresse || params?.adresse || "",
+        telephone: tenantConfig.telephone || params?.telephone || "",
+        messageFin: "Merci de votre visite !",
+        logo: tenantConfig.logo,
+      };
+
+      setPrintData({ vente, config });
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => setPrintData(null), 1000);
+      }, 500);
+    } catch (err) {
+      console.error(err);
+      notifError("Erreur impression");
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-black text-white">Ventes</h1><p className="text-slate-400 text-sm mt-1">{totalItems} vente{totalItems !== 1 ? 's' : ''}</p></div>
         <div className="flex items-center gap-4"><div className="text-right"><p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">CA Total</p><p className="font-black text-xl text-green-400">{totalCA.toLocaleString('fr-FR')} F</p></div>{perm.canCreate && <button onClick={() => { setEditItem(null); setFormOpen(true); }} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-lg shadow-cyan-600/20">+ Nouvelle Vente</button>}</div>
       </div>
-      <div className="mb-6"><input type="text" placeholder="🔍 Produit, client..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72" /></div>
+      <div className="mb-6"><input type="text" placeholder="Produit, client..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72" /></div>
       {loading ? <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>
       : (
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden">
@@ -89,7 +130,7 @@ export default function VentesPage() {
                   <td className="px-5 py-4 text-right text-green-400 font-bold font-mono">{((i.prixUnitaire || 0) * (i.quantite || 0)).toLocaleString('fr-FR')} F</td>
                   <td className="px-5 py-4 text-slate-300">{i.client || ''}</td>
                   <td className="px-5 py-4 text-slate-300 text-sm">{i.createdAt ? new Date(i.createdAt).toLocaleDateString('fr-FR') : ''}</td>
-                  <td className="px-5 py-4 text-center"><div className="flex justify-center gap-1">{perm.canEdit && <button onClick={() => { setEditItem(i); setFormOpen(true); }} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm">✏️ Modifier</button>}{perm.canDelete && <button onClick={() => setConfirmDelete(i)} className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm">🗑️ Supprimer</button>}</div></td>
+                  <td className="px-5 py-4 text-center"><div className="flex justify-center gap-1"><button onClick={() => handlePrint(i.id)} className="text-slate-400 hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm">🖨️ Ticket</button>{perm.canEdit && <button onClick={() => { setEditItem(i); setFormOpen(true); }} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm">✏️ Modifier</button>}{perm.canDelete && <button onClick={() => setConfirmDelete(i)} className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm">🗑️ Supprimer</button>}</div></td>
                 </tr>
               ))}
             </tbody>
@@ -104,6 +145,7 @@ export default function VentesPage() {
       )}
       {formOpen && <VenteBoutiqueForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { success(editItem ? 'Vente modifiée ?' : 'Vente cre ?'); refetch(); }} edit={editItem} />}
       {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} title="Supprimer la vente" message={`tes-vous sr de vouloir suppriméer la vente "${confirmDelete.produit}" ?`} />}
+      <Receipt80mm vente={printData?.vente} config={printData?.config} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { supermarcheApi } from '../services/supermarcheApi';
 import PromotionSupermarcheForm from '../forms/PromotionSupermarcheForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import { Tag, Edit, Trash2 } from 'lucide-react';
 
 function PromoCard({ promo, articles, onEdit, onToggle, onDelete }) {
   const article = articles.find(a => a.id === promo.articleId);
@@ -19,7 +20,7 @@ function PromoCard({ promo, articles, onEdit, onToggle, onDelete }) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${promo.actif && !expire ? 'bg-amber-500/20' : 'bg-slate-700'}`}>
-            🏷️
+            <Tag className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-white font-bold text-base">{promo.nom}</h3>
@@ -27,8 +28,8 @@ function PromoCard({ promo, articles, onEdit, onToggle, onDelete }) {
           </div>
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onEdit(promo)} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm">✏️</button>
-          <button onClick={() => onDelete(promo)} className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 text-sm">🗑️</button>
+          <button onClick={() => onEdit(promo)} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm"><Edit className="w-4 h-4" /></button>
+          <button onClick={() => onDelete(promo)} className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 text-sm"><Trash2 className="w-4 h-4" /></button>
         </div>
       </div>
 
@@ -140,7 +141,7 @@ export default function PromotionsPage() {
         <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : promos.length === 0 ? (
         <div className="text-center py-20">
-          <span className="text-6xl">🏷️</span>
+          <Tag className="w-16 h-16 mx-auto text-slate-500" />
           <p className="text-slate-400 font-semibold mt-4">Aucune promotion créée</p>
         </div>
       ) : (

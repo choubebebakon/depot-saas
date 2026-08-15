@@ -119,7 +119,7 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
   });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier mouvement consigne' : '🔄 Mouvement consigne'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Enregistrer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier mouvement consigne' : 'Mouvement consigne'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Enregistrer'}>
       <div className="mb-4">
         <Controller
           name="clientId"
@@ -184,7 +184,7 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
               type="toggle"
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
-              toggleLabel={estSortie ? '📤 Sortie consigne' : '📥 Retour consigne'}
+              toggleLabel={estSortie ? 'Sortie consigne' : 'Retour consigne'}
             />
           )}
         />
@@ -202,7 +202,7 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
                 field.onChange(checked);
                 if (!checked) setValue('montantRembourse', '');
               }}
-              toggleLabel="💵 Rembourser en cash"
+              toggleLabel="Rembourser en cash"
             />
           )}
         />

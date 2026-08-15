@@ -9,7 +9,7 @@ import api from '../../../api/axios';
 import FormModal from '../../../shared/components/forms/FormModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
-import { Trash2, Plus, Edit3, Eye } from 'lucide-react';
+import { Trash2, Plus, Edit3, Eye, Package, Lock } from 'lucide-react';
 
 const STATUTS_RECEPTION = [
   { id: 'EN_ATTENTE', label: 'En attente', color: 'amber' },
@@ -272,7 +272,7 @@ export default function ReceptionsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : totalItems === 0 ? (
-        <div className="text-center py-20"><span className="text-6xl">📦</span><p className="text-slate-400 font-semibold mt-4">Aucune réception enregistrée</p></div>
+        <div className="text-center py-20"><Package className="w-16 h-16 mx-auto text-slate-500" /><p className="text-slate-400 font-semibold mt-4">Aucune réception enregistrée</p></div>
       ) : (
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden">
           <table className="w-full">
@@ -321,7 +321,7 @@ export default function ReceptionsPage() {
                               {validateMutation.isPending ? 'En cours...' : 'Valider'}
                             </button>
 
-                            {/* 🛠️ Bouton Modifier Direct sans blocage de permission pour les Brouillons */}
+                            {/* Bouton Modifier Direct sans blocage de permission pour les Brouillons */}
                             <button 
                               onClick={() => openEdit(r, false)} 
                               className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer" 
@@ -338,7 +338,7 @@ export default function ReceptionsPage() {
                           </>
                         ) : (
                           <div className="flex items-center gap-1 text-xs text-slate-500 font-medium select-none bg-slate-900/40 px-2 py-1 rounded-md border border-slate-700/30">
-                            <span>🔒 Enregistré</span>
+                            <Lock className="w-4 h-4" /> Enregistré
                           </div>
                         )}
                       </div>

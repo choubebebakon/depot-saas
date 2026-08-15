@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import ArticleBoissonsForm from '../forms/ArticleBoissonsForm';
 import ConditionnementForm from '../forms/ConditionnementForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
+import { Package, Search, ArrowDownToLine, ArrowUpFromLine, RefreshCw } from 'lucide-react';
 
 const STATUS_COLORS = {
   critique: 'bg-red-500/10 text-red-400 border-red-500/30',
@@ -31,6 +33,7 @@ export default function StockArticlesPage() {
   const { metier, user } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { canWrite } = usePermission('stock_articles');
 
   const [filtreFamille, setFiltreFamille] = useState('');
   const [filtreStock, setFiltreStock] = useState('');
@@ -220,18 +223,20 @@ export default function StockArticlesPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">Stock & Articles</h1>
           <p className="text-slate-400 text-sm mt-1">{total} article{total > 1 ? 's' : ''} enregistré{total > 1 ? 's' : ''}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={openCreate} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-            ➕ Nouvel article
-          </button>
-          <button onClick={() => setConditionnementOpen(true)} className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20">
-            📦 Conditionnement
-          </button>
-        </div>
+        {canWrite && (
+          <div className="flex flex-wrap gap-2">
+            <button onClick={openCreate} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+Nouvel article
+            </button>
+            <button onClick={() => setConditionnementOpen(true)} className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20">
+Conditionnement
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <input type="text" placeholder="🔍 Rechercher un article..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+        <input type="text" placeholder="Rechercher un article..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
         <select value={filtreFamille} onChange={e => { setFiltreFamille(e.target.value); setCurrentPage(1); }}
           className="px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none">
@@ -290,12 +295,18 @@ export default function StockArticlesPage() {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => openEdit(a)} title="Modifier" className="p-1.5 hover:bg-orange-500/20 rounded-lg text-slate-400 hover:text-orange-400 transition-all text-xs">✏️ Modifier</button>
-                      <button onClick={() => handleEntreeStock(a)} title="Entrée stock" className="p-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all text-xs">📥 Entrée</button>
-                      <button onClick={() => handleSortieStock(a)} title="Sortie stock" className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all text-xs">📤 Sortie</button>
-                      <button onClick={() => handleTransfert(a)} title="Transférer" className="p-1.5 hover:bg-purple-500/20 rounded-lg text-slate-400 hover:text-purple-400 transition-all text-xs">🔄 Transfert</button>
-                      <button onClick={() => handleHistory(a)} title="Historique" className="p-1.5 hover:bg-cyan-500/20 rounded-lg text-slate-400 hover:text-cyan-400 transition-all text-xs">📋 Hist.</button>
-                      <button onClick={() => setConfirmDelete(a)} title="Archiver" className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">🗑️</button>
+                      {canWrite && (
+                        <>
+                          <button onClick={() => openEdit(a)} title="Modifier" className="p-1.5 hover:bg-orange-500/20 rounded-lg text-slate-400 hover:text-orange-400 transition-all text-xs">Modifier</button>
+                          <button onClick={() => handleEntreeStock(a)} title="Entrée stock" className="p-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all text-xs">Entrée</button>
+                          <button onClick={() => handleSortieStock(a)} title="Sortie stock" className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all text-xs">Sortie</button>
+                          <button onClick={() => handleTransfert(a)} title="Transférer" className="p-1.5 hover:bg-purple-500/20 rounded-lg text-slate-400 hover:text-purple-400 transition-all text-xs">Transfert</button>
+                        </>
+                      )}
+                      <button onClick={() => handleHistory(a)} title="Historique" className="p-1.5 hover:bg-cyan-500/20 rounded-lg text-slate-400 hover:text-cyan-400 transition-all text-xs">Hist.</button>
+                      {canWrite && (
+                        <button onClick={() => setConfirmDelete(a)} title="Archiver" className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">Archiver</button>
+                      )}
                     </div>
                   </td>
                 </tr>

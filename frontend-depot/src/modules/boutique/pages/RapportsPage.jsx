@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { boutiqueApi } from '../services/boutiqueApi';
+import { DollarSign, Receipt, TrendingDown, TrendingUp, BarChart3, FileText, Trophy } from 'lucide-react';
 
 export default function RapportsPage() {
   const [periode, setPeriode] = useState('mois');
@@ -22,17 +23,17 @@ export default function RapportsPage() {
   if (isLoading) return <div className="p-6 flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>;
 
   const cards = stats ? [
-    { icon: '💰', label: 'CA', value: (stats.chiffreAffaires || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-green-400', bg: 'bg-gradient-to-br from-green-500 to-green-600' },
-    { icon: '🧾', label: 'Ventes', value: stats.ventes?.length || 0, unit: '', color: 'text-blue-400', bg: 'bg-gradient-to-br from-blue-500 to-blue-600' },
-    { icon: '�', label: 'Dépenses', value: (stats.totalDepenses || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-red-400', bg: 'bg-gradient-to-br from-red-500 to-red-600' },
-    { icon: '�', label: 'Bénéfice', value: (stats.benefice || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-orange-400', bg: 'bg-gradient-to-br from-orange-500 to-orange-600' },
+    { icon: DollarSign, label: 'CA', value: (stats.chiffreAffaires || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-green-400', bg: 'bg-gradient-to-br from-green-500 to-green-600' },
+    { icon: Receipt, label: 'Ventes', value: stats.ventes?.length || 0, unit: '', color: 'text-blue-400', bg: 'bg-gradient-to-br from-blue-500 to-blue-600' },
+    { icon: TrendingDown, label: 'Dépenses', value: (stats.totalDepenses || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-red-400', bg: 'bg-gradient-to-br from-red-500 to-red-600' },
+    { icon: TrendingUp, label: 'Bénéfice', value: (stats.benefice || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-orange-400', bg: 'bg-gradient-to-br from-orange-500 to-orange-600' },
   ] : [];
 
   return (
     <div className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">📊 Rapports</h1>
+          <h1 className="text-2xl font-black text-white flex items-center gap-2"><BarChart3 className="w-6 h-6" /> Rapports</h1>
           <p className="text-slate-400 text-sm mt-1">Synthèse de la boutique</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -48,14 +49,14 @@ export default function RapportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {cards.map((c, i) => (
           <div key={i} className={`${c.bg} p-5 rounded-2xl`}>
-            <div className="flex items-start justify-between mb-3"><span className="text-2xl">{c.icon}</span><span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{c.label}</span></div>
+            <div className="flex items-start justify-between mb-3"><span className="text-2xl">{c.icon && <c.icon className="w-6 h-6" />}</span><span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{c.label}</span></div>
             <p className={`font-black text-3xl ${c.color}`}>{c.value} <span className="text-base text-slate-500">{c.unit}</span></p>
           </div>
         ))}
       </div>
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5">
-          <h3 className="text-white font-bold text-lg mb-4">🏆 Top Articles</h3>
+          <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Trophy className="w-5 h-5" /> Top Articles</h3>
           {(!stats.topArticles || stats.topArticles.length === 0) ? <p className="text-slate-500 py-6 text-center">Aucune donnée</p>
           : <div className="space-y-3">{stats.topArticles.slice(0, 5).map((p, i) => (
             <div key={i} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl">
@@ -68,7 +69,7 @@ export default function RapportsPage() {
           ))}</div>}
         </div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5">
-          <h3 className="text-white font-bold text-lg mb-4">📝 Dernières Ventes</h3>
+          <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><FileText className="w-5 h-5" /> Dernières Ventes</h3>
           {(!stats.ventes || stats.ventes.length === 0) ? <p className="text-slate-500 py-6 text-center">Aucune donnée</p>
           : <div className="space-y-3">{stats.ventes.slice(0, 5).map((v, i) => (
             <div key={i} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl">

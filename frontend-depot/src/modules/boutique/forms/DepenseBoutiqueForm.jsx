@@ -85,7 +85,7 @@ export default function DepenseBoutiqueForm({ isOpen, onClose, onSuccess, edit }
       isOpen={isOpen}
       onClose={onClose}
       onSubmit={handleSubmit(mutation.mutate)}
-      title={edit ? '✏️ Modifier' : '➕ Nouvelle Dépense'}
+      title={edit ? 'Modifier' : 'Nouvelle Dépense'}
       loading={mutation.isPending}
       size="md"
       submitLabel={edit ? 'Modifier' : 'Créer'}

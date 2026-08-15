@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import ConsigneForm from '../forms/ConsigneForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -8,6 +9,7 @@ import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 export default function ConsignesPage() {
   const { metier } = useAuth();
   const queryClient = useQueryClient();
+  const { canWrite } = usePermission('consignes');
 
   const [selectedClient, setSelectedClient] = useState(null);
   const [search, setSearch] = useState('');
@@ -113,12 +115,14 @@ export default function ConsignesPage() {
                     <h2 className="text-lg font-bold text-white">{selectedClient.nom}</h2>
                     <p className="text-sm text-slate-400">{selectedClient.telephone || 'Aucun téléphone'}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={openForm}
-                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1">
-                      🔄 Nouveau mouvement
-                    </button>
-                  </div>
+                  {canWrite && (
+                    <div className="flex gap-2">
+                      <button onClick={openForm}
+                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1">
+                        🔄 Nouveau mouvement
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {loadingConsignes ? (

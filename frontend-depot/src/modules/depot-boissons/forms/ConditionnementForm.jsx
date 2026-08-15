@@ -91,7 +91,7 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
   });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier conditionnement' : '📦 Nouveau conditionnement'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier conditionnement' : 'Nouveau conditionnement'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
       <Controller
         name="nom"
         control={control}
@@ -139,10 +139,10 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
               onChange={(e) => field.onChange(e.target.value)}
               required
               options={[
-                { value: 'CASIER', label: '📦 Casier' },
-                { value: 'PACK', label: '📦 Pack' },
-                { value: 'PALETTE', label: '📦 Palette' },
-                { value: 'UNITE', label: '🔢 Unité' },
+                { value: 'CASIER', label: 'Casier' },
+                { value: 'PACK', label: 'Pack' },
+                { value: 'PALETTE', label: 'Palette' },
+                { value: 'UNITE', label: 'Unité' },
               ]}
               error={errors.type?.message}
             />

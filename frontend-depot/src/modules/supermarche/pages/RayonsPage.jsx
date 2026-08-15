@@ -5,6 +5,7 @@ import { useSectorQuery } from '../../../hooks/useSectorQuery';
 import { supermarcheApi } from '../services/supermarcheApi';
 import RayonForm from '../forms/RayonForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import { Search } from 'lucide-react';
 
 export default function RayonsPage() {
   const queryClient = useQueryClient();
@@ -68,7 +69,7 @@ export default function RayonsPage() {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="🔍 Rechercher un rayon..."
+          placeholder="Rechercher un rayon..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="bg-slate-800 border border-slate-700 focus:border-amber-500 text-white rounded-xl px-4 py-2 text-sm outline-none w-64"

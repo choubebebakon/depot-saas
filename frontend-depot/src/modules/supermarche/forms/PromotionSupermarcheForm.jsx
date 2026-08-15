@@ -113,7 +113,7 @@ export default function PromotionSupermarcheForm({ isOpen, onClose, onSuccess, e
 
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier promotion' : '🏷️ Nouvelle promotion'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier promotion' : 'Nouvelle promotion'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
       <Controller
         name="articleId"
         control={control}
@@ -135,8 +135,8 @@ export default function PromotionSupermarcheForm({ isOpen, onClose, onSuccess, e
           render={({ field }) => (
             <FormField label="Type" name="type" type="select" value={field.value} onChange={field.onChange} options={[
               { value: 'POURCENTAGE', label: '% Pourcentage' },
-              { value: 'MONTANT_FIXE', label: '💰 Montant fixe' },
-              { value: 'PRIX_FIXE', label: '🏷️ Prix fixe' },
+              { value: 'MONTANT_FIXE', label: 'Montant fixe' },
+              { value: 'PRIX_FIXE', label: 'Prix fixe' },
             ]} />
           )}
         />

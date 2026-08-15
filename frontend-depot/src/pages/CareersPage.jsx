@@ -10,12 +10,12 @@ const jobs = [
 ];
 
 const perks = [
-  { emoji: '💰', title: 'Salaire compétitif', desc: 'Rémunération alignée sur le marché tech camerounais + part variable pour les commerciaux.' },
-  { emoji: '📱', title: 'Équipement fourni', desc: 'Smartphone Android et laptop fournis pour tous les postes terrain et tech.' },
-  { emoji: '🌍', title: 'Impact réel', desc: 'Votre travail aide des milliers de gérants camerounais à gagner leur vie plus facilement.' },
-  { emoji: '🎓', title: 'Formation continue', desc: 'Budget formation annuel et accès aux conférences tech en Afrique.' },
-  { emoji: '🏡', title: 'Télétravail partiel', desc: 'Flexibilité pour les postes tech : 3 jours bureau, 2 jours remote.' },
-  { emoji: '🚀', title: 'Croissance rapide', desc: 'Startup en croissance : vos responsabilités grandissent avec la boîte.' },
+  { title: 'Salaire compétitif', desc: 'Rémunération alignée sur le marché tech camerounais + part variable pour les commerciaux.' },
+  { title: 'Équipement fourni', desc: 'Smartphone Android et laptop fournis pour tous les postes terrain et tech.' },
+  { title: 'Impact réel', desc: 'Votre travail aide des milliers de gérants camerounais à gagner leur vie plus facilement.' },
+  { title: 'Formation continue', desc: 'Budget formation annuel et accès aux conférences tech en Afrique.' },
+  { title: 'Télétravail partiel', desc: 'Flexibilité pour les postes tech : 3 jours bureau, 2 jours remote.' },
+  { title: 'Croissance rapide', desc: 'Startup en croissance : vos responsabilités grandissent avec la boîte.' },
 ];
 
 export default function CareersPage() {
@@ -63,7 +63,6 @@ export default function CareersPage() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:16 }}>
           {perks.map((perk, i) => (
             <div key={i} style={{ display:'flex', gap:16, alignItems:'flex-start', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:18, padding:'20px 22px' }}>
-              <span style={{ fontSize:28, flexShrink:0 }}>{perk.emoji}</span>
               <div>
                 <h3 style={{ fontSize:14, fontWeight:800, marginBottom:6 }}>{perk.title}</h3>
                 <p style={{ fontSize:13, color:'#64748b', lineHeight:1.5, margin:0 }}>{perk.desc}</p>

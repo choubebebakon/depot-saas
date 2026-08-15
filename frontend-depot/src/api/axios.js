@@ -31,6 +31,10 @@ function pickDepotIdFromRequest(config) {
     const depotId = config.params?.depotId;
     return typeof depotId === 'string' && depotId.trim() && depotId !== 'all' ? depotId : null;
   }
+  if (config.data instanceof FormData) {
+    const depotId = config.data.get('depotId');
+    return typeof depotId === 'string' && depotId.trim() && depotId !== 'all' ? depotId : null;
+  }
   const depotId = config.data?.depotId;
   return typeof depotId === 'string' && depotId.trim() && depotId !== 'all' ? depotId : null;
 }
@@ -74,6 +78,16 @@ api.interceptors.request.use((config) => {
     const existingDepotId = config.params?.depotId;
     const finalDepotId = (typeof existingDepotId === 'string' && existingDepotId.trim()) ? existingDepotId : depotId;
     config.params = { ...(config.params || {}), depotId: finalDepotId };
+    return config;
+  }
+
+  // Les FormData (ex: upload de fichiers) ne doivent jamais être spread avec
+  // {...config.data} — ça ne copie pas correctement les entrées internes du
+  // FormData (dont le fichier) et casse silencieusement l'upload.
+  if (config.data instanceof FormData) {
+    if (!config.data.has('depotId')) {
+      config.data.append('depotId', depotId);
+    }
     return config;
   }
 

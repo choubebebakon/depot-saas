@@ -13,7 +13,7 @@ export default function ContactPage() {
         <div style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', padding: 24, borderRadius: 24, textAlign: 'center', marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>Support Rapide via WhatsApp</h2>
           <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: 16 }}>Notre équipe basée à Douala répond généralement en moins de 2 heures.</p>
-          <a href="https://wa.me/237656929905?text=Bonjour%20GeStock%2C%20j%27ai%20besoin%20d%27aide." target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#25d366', color: '#fff', padding: '12px 24px', borderRadius: 12, fontWeight: 800, fontSize: 15, textDecoration: 'none' }}>
+          <a href="https://wa.me/237688002284?text=Bonjour%20GeStock%2C%20j%27ai%20besoin%20d%27aide." target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#25d366', color: '#fff', padding: '12px 24px', borderRadius: 12, fontWeight: 800, fontSize: 15, textDecoration: 'none' }}>
             <span style={{ fontSize: 20 }}>💬</span> Contacter sur WhatsApp
           </a>
         </div>

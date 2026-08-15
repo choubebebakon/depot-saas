@@ -3,12 +3,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from './useNotifications';
+import { Package, CreditCard, Calendar, Hotel, ClipboardList, Truck, Lock, Wrench, Settings, Store, Bot, Bell, Eye, Trash2, CheckCircle2 } from 'lucide-react';
 
 const priorityColors = { CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#3b82f6', LOW: '#6b7280' };
 const categoryIcons = {
-  STOCK: '📦', PAYMENT: '💳', SUBSCRIPTION: '📅', RESERVATION: '🏨',
-  ORDER: '📋', DELIVERY: '🚚', SECURITY: '🔒', APPOINTMENT: '📅',
-  MAINTENANCE: '🔧', SYSTEM: '⚙️', METIER: '🏪', IA: '🤖',
+  STOCK: Package, PAYMENT: CreditCard, SUBSCRIPTION: Calendar, RESERVATION: Hotel,
+  ORDER: ClipboardList, DELIVERY: Truck, SECURITY: Lock, APPOINTMENT: Calendar,
+  MAINTENANCE: Wrench, SYSTEM: Settings, METIER: Store, IA: Bot,
 };
 
 function formatDate(dateStr) {
@@ -101,7 +102,7 @@ export default function NotificationsPage() {
         </div>
         <div style={styles.headerActions}>
           <button onClick={() => markAllAsRead()} style={styles.actionBtn}>
-            ✅ Tout marquer lu
+            Tout marquer lu
           </button>
         </div>
       </div>
@@ -134,7 +135,6 @@ export default function NotificationsPage() {
       <div style={styles.list}>
         {notifications.length === 0 ? (
           <div style={styles.empty}>
-            <span style={{ fontSize: '48px' }}>🔔</span>
             <p style={styles.emptyTitle}>Aucune notification</p>
             <p style={styles.emptySub}>Vous n'avez pas encore de notifications.</p>
           </div>
@@ -149,7 +149,10 @@ export default function NotificationsPage() {
               }}
             >
               <div style={styles.itemIcon}>
-                {categoryIcons[n.category] || '🔔'}
+                {(() => {
+                  const IconComponent = categoryIcons[n.category] || Bell;
+                  return <IconComponent className="w-6 h-6" />;
+                })()}
               </div>
               <div style={styles.itemBody}>
                 <div style={styles.itemTop}>
@@ -173,9 +176,9 @@ export default function NotificationsPage() {
               </div>
               <div style={styles.itemActions}>
                 {!n.isRead && (
-                  <button onClick={() => markAsRead(n.id)} style={styles.iconBtn} title="Marquer lu">👁️</button>
+                  <button onClick={() => markAsRead(n.id)} style={styles.iconBtn} title="Marquer lu"><Eye className="w-4 h-4" /></button>
                 )}
-                <button onClick={() => deleteNotif(n.id)} style={styles.iconBtn} title="Supprimer">🗑️</button>
+                <button onClick={() => deleteNotif(n.id)} style={styles.iconBtn} title="Supprimer"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
           ))

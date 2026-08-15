@@ -85,7 +85,7 @@ export default function ChambreForm({ isOpen, onClose, onSuccess, edit, metier =
   };
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier chambre' : '🛏️ Nouvelle chambre'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier chambre' : 'Nouvelle chambre'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Numéro" name="numero" value={form.numero} onChange={set('numero')} required placeholder="Ex: 101, Suite A" error={errors.numero?.message} />
@@ -94,9 +94,9 @@ export default function ChambreForm({ isOpen, onClose, onSuccess, edit, metier =
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NumberInput label="Étage" name="etage" value={form.etage} onChange={set('etage')} min={0} />
         <FormField label="Statut" name="statut" type="select" value={form.statut} onChange={set('statut')} options={[
-          { value: 'LIBRE', label: '🟢 Libre' }, { value: 'OCCUPEE', label: '🔴 Occupée' },
-          { value: 'RESERVEE', label: '🔵 Réservée' }, { value: 'EN_NETTOYAGE', label: '🧹 En nettoyage' },
-          { value: 'HORS_SERVICE', label: '🔧 Hors service' },
+          { value: 'LIBRE', label: 'Libre' }, { value: 'OCCUPEE', label: 'Occupée' },
+          { value: 'RESERVEE', label: 'Réservée' }, { value: 'EN_NETTOYAGE', label: 'En nettoyage' },
+          { value: 'HORS_SERVICE', label: 'Hors service' },
         ]} />
       </div>
       <FormField label="Notes" name="notes" type="textarea" value={form.notes} onChange={set('notes')} rows={2} placeholder="Ex: Vue mer, côté jardin..." />

@@ -1,32 +1,53 @@
 import { useState, useRef, useEffect } from 'react';
+import {
+  Package,
+  Store,
+  Pill,
+  UtensilsCrossed,
+  Hotel,
+  Hammer,
+  ShoppingCart,
+  Wrench,
+  Building2,
+  Truck,
+  Croissant,
+  Shirt,
+  Scissors,
+  SprayCan,
+  BookOpen,
+  IceCreamCone,
+  Box,
+  Bot,
+} from 'lucide-react';
 import { getAuthToken } from '../../utils/auth'; // FIX #2: Utilisation du helper getAuthToken pour centraliser l'accès aux tokens
 
 const METIER_CONFIG = {
-  DEPOT_BOISSONS:   { couleur: '#2563eb', icon: '\u{1F4E6}', nom: 'Assistant Dépôt' },
-  BOUTIQUE:         { couleur: '#0891b2', icon: '\u{1F3EA}', nom: 'Assistant Boutique' },
-  PHARMACIE:        { couleur: '#059669', icon: '\u{1F48A}', nom: 'Assistant Pharmacie' },
-  RESTAURANT:       { couleur: '#dc2626', icon: '\u{1F37D}', nom: 'Assistant Restaurant' },
-  HOTEL:            { couleur: '#7c3aed', icon: '\u{1F3E8}', nom: 'Assistant Hôtel' },
-  QUINCAILLERIE:    { couleur: '#b45309', icon: '\u{1F6E0}', nom: 'Assistant Quinc.' },
-  SUPERMARCHE:      { couleur: '#0284c7', icon: '\u{1F6D2}', nom: 'Assistant Supermarché' },
-  GARAGE_AUTOMOBILE:{ couleur: '#374151', icon: '\u{1F527}', nom: 'Assistant Garage' },
-  CLINIQUE:         { couleur: '#0e7490', icon: '\u{1F3E5}', nom: 'Assistant Clinique' },
-  TRANSPORT:        { couleur: '#92400e', icon: '\u{1F69A}', nom: 'Assistant Transport' },
-  IMMOBILIER:       { couleur: '#1e40af', icon: '\u{1F3E2}', nom: 'Assistant Immo' },
-  ELEVAGE:          { couleur: '#65a30d', icon: '\u{1F413}', nom: 'Assistant Élevage' },
-  BOULANGERIE:      { couleur: '#d97706', icon: '\u{1F35E}', nom: 'Assistant Boulangerie' },
-  PRESSING:         { couleur: '#7e22ce', icon: '\u{1F454}', nom: 'Assistant Pressing' },
-  SALON_BEAUTE:     { couleur: '#db2777', icon: '\u{1F487}', nom: 'Assistant Salon' },
-  PARFUMERIE:       { couleur: '#9333ea', icon: '\u{1F9F4}', nom: 'Assistant Parfumerie' },
-  LIBRAIRIE:        { couleur: '#1d4ed8', icon: '\u{1F4DA}', nom: 'Assistant Librairie' },
-  GLACIER_SNACK:    { couleur: '#06b6d4', icon: '\u{1F366}', nom: 'Assistant Glacier' },
-  CIMENT_BTP:       { couleur: '#78716c', icon: '\u{1F9F1}', nom: 'Assistant BTP' },
+  DEPOT_BOISSONS:   { couleur: '#2563eb', icon: Package, nom: 'Assistant Dépôt' },
+  BOUTIQUE:         { couleur: '#0891b2', icon: Store, nom: 'Assistant Boutique' },
+  PHARMACIE:        { couleur: '#059669', icon: Pill, nom: 'Assistant Pharmacie' },
+  RESTAURANT:       { couleur: '#dc2626', icon: UtensilsCrossed, nom: 'Assistant Restaurant' },
+  HOTEL:            { couleur: '#7c3aed', icon: Hotel, nom: 'Assistant Hôtel' },
+  QUINCAILLERIE:    { couleur: '#b45309', icon: Hammer, nom: 'Assistant Quinc.' },
+  SUPERMARCHE:      { couleur: '#0284c7', icon: ShoppingCart, nom: 'Assistant Supermarché' },
+  GARAGE_AUTOMOBILE:{ couleur: '#374151', icon: Wrench, nom: 'Assistant Garage' },
+  CLINIQUE:         { couleur: '#0e7490', icon: Building2, nom: 'Assistant Clinique' },
+  TRANSPORT:        { couleur: '#92400e', icon: Truck, nom: 'Assistant Transport' },
+  IMMOBILIER:       { couleur: '#1e40af', icon: Building2, nom: 'Assistant Immo' },
+  ELEVAGE:          { couleur: '#65a30d', icon: '', nom: 'Assistant Élevage' },
+  BOULANGERIE:      { couleur: '#d97706', icon: Croissant, nom: 'Assistant Boulangerie' },
+  PRESSING:         { couleur: '#7e22ce', icon: Shirt, nom: 'Assistant Pressing' },
+  SALON_BEAUTE:     { couleur: '#db2777', icon: Scissors, nom: 'Assistant Salon' },
+  PARFUMERIE:       { couleur: '#9333ea', icon: SprayCan, nom: 'Assistant Parfumerie' },
+  LIBRAIRIE:        { couleur: '#1d4ed8', icon: BookOpen, nom: 'Assistant Librairie' },
+  GLACIER_SNACK:    { couleur: '#06b6d4', icon: IceCreamCone, nom: 'Assistant Glacier' },
+  CIMENT_BTP:       { couleur: '#78716c', icon: Box, nom: 'Assistant BTP' },
 };
 
-const DEFAULT_CONFIG = { couleur: '#2563eb', icon: '\u{1F916}', nom: 'GeStock Assistant' };
+const DEFAULT_CONFIG = { couleur: '#2563eb', icon: Bot, nom: 'GeStock Assistant' };
 
 export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = '' }) {
   const config = METIER_CONFIG[metier] ?? DEFAULT_CONFIG;
+  const Icon = config.icon;
 
   const [ouvert, setOuvert] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -39,7 +60,7 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
     setMessages([{
       id: Date.now(),
       role: 'assistant',
-      texte: `Bonjour ! Je suis votre assistant GeStock ${config.icon}\n\nJe peux vous aider avec :\n\u2022 \uD83D\uDCC8 Prévoir vos ventes (tendances et anticipations)\n\u2022 \uD83D\uDEA8 Détecter les anomalies (écarts et pertes invisibles)\n\u2022 \uD83D\uDEE2 Recommandations de réapprovisionnement\n\u2022 \uD83D\uDCB0 Identifier vos produits les plus rentables\n\u2022 \uD83D\uDCCB Créer automatiquement des rapports\n\u2022 \u26A1 Automatiser les tâches répétitives\n\u2022 \uD83D\uDD25 Anticiper les périodes de forte activité\n\u2022 \uD83C\uDF81 Optimiser vos promotions\n\u2022 \uD83D\uDE80 Découvrir des opportunités de croissance\n\nQue voulez-vous savoir ?`,
+      texte: `Bonjour ! Je suis votre assistant GeStock\n\nJe peux vous aider avec :\n\u2022 \uD83D\uDCC8 Prévoir vos ventes (tendances et anticipations)\n\u2022 \uD83D\uDEA8 Détecter les anomalies (écarts et pertes invisibles)\n\u2022 \uD83D\uDEE2 Recommandations de réapprovisionnement\n\u2022 \uD83D\uDCB0 Identifier vos produits les plus rentables\n\u2022 \uD83D\uDCCB Créer automatiquement des rapports\n\u2022 \u26A1 Automatiser les tâches répétitives\n\u2022 \uD83D\uDD25 Anticiper les périodes de forte activité\n\u2022 \uD83C\uDF81 Optimiser vos promotions\n\u2022 \uD83D\uDE80 Découvrir des opportunités de croissance\n\nQue voulez-vous savoir ?`,
       heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
     }]);
     fetchSuggestions();
@@ -117,7 +138,7 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
       setMessages((prev) => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        texte: '\u26A0\uFE0F Service temporairement indisponible. Réessayez dans un moment.',
+        texte: 'Service temporairement indisponible. Réessayez dans un moment.',
         heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         erreur: true,
       }]);
@@ -157,14 +178,16 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
         }}
         title={config.nom}
       >
-        {ouvert ? '\u2715' : config.icon}
+        {ouvert ? '\u2715' : (typeof Icon === 'string' ? Icon : <Icon className="w-5 h-5" color="#fff" />)}
       </button>
 
       {ouvert && (
         <div style={styles.chatWindow}>
           <div style={{ ...styles.header, background: config.couleur }}>
             <div style={styles.headerLeft}>
-              <span style={styles.headerIcon}>{config.icon}</span>
+              <span style={styles.headerIcon}>
+                {typeof Icon === 'string' ? Icon : <Icon className="w-5 h-5" color="#fff" />}
+              </span>
               <div>
                 <div style={styles.headerTitle}>{config.nom}</div>
                 <div style={styles.headerSub}>{tenantNom}</div>
@@ -184,7 +207,7 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
               >
                 {msg.role === 'assistant' && (
                   <div style={{ ...styles.avatar, background: config.couleur + '20' }}>
-                    {config.icon}
+                    {typeof Icon === 'string' ? Icon : <Icon className="w-5 h-5" color={config.couleur} />}
                   </div>
                 )}
                 <div
@@ -204,7 +227,7 @@ export default function GeStockChatbot({ metier = 'DEPOT_BOISSONS', tenantNom = 
             {loading && (
               <div style={{ ...styles.msgWrapper, justifyContent: 'flex-start' }}>
                 <div style={{ ...styles.avatar, background: config.couleur + '20' }}>
-                  {config.icon}
+                  {typeof Icon === 'string' ? Icon : <Icon className="w-5 h-5" color={config.couleur} />}
                 </div>
                 <div style={{ ...styles.bubble, ...styles.bubbleAssistant }}>
                   <div style={styles.typing}>
@@ -300,7 +323,7 @@ const styles = {
     alignItems: 'center',
     gap: '10px',
   },
-  headerIcon: { fontSize: '22px' },
+  headerIcon: { fontSize: '22px', display: 'flex', alignItems: 'center' },
   headerTitle: { color: '#fff', fontWeight: 700, fontSize: '14px' },
   headerSub: { color: 'rgba(255,255,255,0.7)', fontSize: '11px' },
   headerDot: {

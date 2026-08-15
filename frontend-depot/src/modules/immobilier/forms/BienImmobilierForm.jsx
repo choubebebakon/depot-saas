@@ -78,13 +78,13 @@ export default function BienImmobilierForm({ isOpen, onClose, onSuccess, edit, m
   };
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier bien' : '🏠 Nouveau bien'} loading={loading} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier bien' : 'Nouveau bien'} loading={loading} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} options={[
-        { value: 'APPARTEMENT', label: '🏢 Appartement' }, { value: 'MAISON', label: '🏠 Maison' },
-        { value: 'VILLA', label: '🏡 Villa' }, { value: 'LOCAL_COMMERCIAL', label: '🏪 Local commercial' },
-        { value: 'BUREAU', label: '🏢 Bureau' }, { value: 'ENTREPOT', label: '📦 Entrepôt' },
-        { value: 'TERRAIN', label: '🌳 Terrain' },
+        { value: 'APPARTEMENT', label: 'Appartement' }, { value: 'MAISON', label: 'Maison' },
+        { value: 'VILLA', label: 'Villa' }, { value: 'LOCAL_COMMERCIAL', label: 'Local commercial' },
+        { value: 'BUREAU', label: 'Bureau' }, { value: 'ENTREPOT', label: 'Entrepôt' },
+        { value: 'TERRAIN', label: 'Terrain' },
       ]} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Adresse" name="adresse" value={form.adresse} onChange={set('adresse')} required placeholder="Adresse complète" error={errors.adresse?.message} />

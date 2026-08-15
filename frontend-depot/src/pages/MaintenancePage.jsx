@@ -4,13 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
 
 const TYPES_MAINTENANCE = {
-    VIDANGE: { label: 'Vidange', emoji: '🛢️', couleur: 'blue' },
-    PNEU: { label: 'Pneu', emoji: '⚫', couleur: 'slate' },
-    FREINS: { label: 'Freins', emoji: '🔴', couleur: 'red' },
-    CARBURANT: { label: 'Carburant', emoji: '⛽', couleur: 'yellow' },
-    REPARATION: { label: 'Réparation', emoji: '🛠️', couleur: 'orange' },
-    REVISION: { label: 'Révision', emoji: '🔍', couleur: 'purple' },
-    AUTRE: { label: 'Autre', emoji: '📝', couleur: 'slate' },
+    VIDANGE: { label: 'Vidange', couleur: 'blue' },
+    PNEU: { label: 'Pneu', couleur: 'slate' },
+    FREINS: { label: 'Freins', couleur: 'red' },
+    CARBURANT: { label: 'Carburant', couleur: 'yellow' },
+    REPARATION: { label: 'Réparation', couleur: 'orange' },
+    REVISION: { label: 'Révision', couleur: 'purple' },
+    AUTRE: { label: 'Autre', couleur: 'slate' },
 };
 
 // ── Modal Nouvelle Maintenance ──────────────────────────────
@@ -56,7 +56,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl my-4">
-                <h3 className="text-white font-black text-xl mb-6">🛠️ Nouvelle Maintenance</h3>
+                <h3 className="text-white font-black text-xl mb-6">Nouvelle Maintenance</h3>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,7 +75,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                                 onChange={e => setForm({ ...form, type: e.target.value })}
                                 className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
                                 {Object.entries(TYPES_MAINTENANCE).map(([k, v]) => (
-                                    <option key={k} value={k}>{v.emoji} {v.label}</option>
+                                    <option key={k} value={k}>{v.label}</option>
                                 ))}
                             </select>
                         </div>
@@ -113,7 +113,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                             <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${form.estEffectue ? 'left-7' : 'left-1'}`} />
                         </div>
                         <span className="text-slate-300 text-sm font-semibold">
-                            {form.estEffectue ? '✅ Déjà effectuée' : '📅 Planifier pour plus tard'}
+                            {form.estEffectue ? 'Déjà effectuée' : 'Planifier pour plus tard'}
                         </span>
                     </label>
 
@@ -131,7 +131,7 @@ function ModalMaintenance({ tenantId, tricycles, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl">
-                            {loading ? '...' : '🛠️ Enregistrer'}
+                            {loading ? '...' : 'Enregistrer'}
                         </button>
                     </div>
                 </form>
@@ -178,7 +178,7 @@ function ModalCarburant({ tenantId, tricycles, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">⛽ Plein Carburant</h3>
+                <h3 className="text-white font-black text-xl mb-6">Plein Carburant</h3>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -235,7 +235,7 @@ function ModalCarburant({ tenantId, tricycles, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl">
-                            {loading ? '...' : '⛽ Enregistrer'}
+                            {loading ? '...' : 'Enregistrer'}
                         </button>
                     </div>
                 </form>
@@ -303,12 +303,12 @@ export default function MaintenancePage() {
                     <button onClick={() => setModalCarburant(true)}
                         disabled={tricycles.length === 0}
                         className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all">
-                        ⛽ Carburant
+                        Carburant
                     </button>
                     <button onClick={() => setModalMaintenance(true)}
                         disabled={tricycles.length === 0}
                         className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20">
-                        🛠️ Maintenance
+                        Maintenance
                     </button>
                 </div>
             </div>
@@ -317,14 +317,13 @@ export default function MaintenancePage() {
             {maintenancesEnRetard.length > 0 && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6">
                     <p className="text-red-400 font-black text-sm mb-2">
-                        🚨 {maintenancesEnRetard.length} maintenance(s) en retard !
+                        {maintenancesEnRetard.length} maintenance(s) en retard !
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {maintenancesEnRetard.map(m => {
                             const t = TYPES_MAINTENANCE[m.type];
                             return (
                                 <div key={m.id} className="bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
-                                    <span>{t?.emoji}</span>
                                     <div>
                                         <p className="text-red-400 text-xs font-bold">{m.tricycle?.nom} — {t?.label}</p>
                                         <p className="text-slate-500 text-xs">Prévu le {new Date(m.datePlanifie).toLocaleDateString('fr-FR')}</p>
@@ -377,7 +376,7 @@ export default function MaintenancePage() {
                 <button onClick={() => setTricycleFiltre('')}
                     className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${!tricycleFiltre ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'
                         }`}>
-                    🛺 Tous les tricycles
+                    Tous les tricycles
                 </button>
                 {tricycles.map(t => (
                     <button key={t.id} onClick={() => setTricycleFiltre(t.id)}
@@ -391,9 +390,9 @@ export default function MaintenancePage() {
             {/* Onglets */}
             <div className="flex gap-2 mb-6">
                 {[
-                    ['tableau-bord', '📊 Tableau de bord'],
-                    ['maintenances', `🛠️ Maintenances (${maintenances.length})`],
-                    ['carburant', `⛽ Carburant (${carburants.length})`],
+                    ['tableau-bord', 'Tableau de bord'],
+                    ['maintenances', `Maintenances (${maintenances.length})`],
+                    ['carburant', `Carburant (${carburants.length})`],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
@@ -412,12 +411,12 @@ export default function MaintenancePage() {
                         <div key={tricycle.id} className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <p className="text-white font-black text-lg">🛺 {tricycle.nom}</p>
+                                    <p className="text-white font-black text-lg">{tricycle.nom}</p>
                                     <span className={`text-xs font-bold px-2 py-1 rounded-lg border mt-1 inline-block ${tricycle.estLibre
                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                                             : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
                                         }`}>
-                                        {tricycle.estLibre ? '● Libre' : '⏳ En tournée'}
+                                        {tricycle.estLibre ? 'Libre' : 'En tournée'}
                                     </span>
                                 </div>
                                 {stats.enRetard > 0 && (
@@ -453,7 +452,7 @@ export default function MaintenancePage() {
 
                             {stats.planifiees > 0 && (
                                 <div className={`mt-2 text-xs font-bold ${stats.enRetard > 0 ? 'text-red-400' : 'text-orange-400'}`}>
-                                    📅 {stats.planifiees} maintenance(s) planifiée(s)
+                                    {stats.planifiees} maintenance(s) planifiée(s)
                                     {stats.enRetard > 0 && ` — ${stats.enRetard} en retard !`}
                                 </div>
                             )}
@@ -471,7 +470,6 @@ export default function MaintenancePage() {
                         </div>
                     ) : maintenances.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">🛠️</p>
                             <p>Aucune maintenance enregistrée</p>
                             <button onClick={() => setModalMaintenance(true)}
                                 className="mt-4 text-indigo-400 text-sm font-bold">+ Première maintenance</button>
@@ -497,8 +495,8 @@ export default function MaintenancePage() {
                                         <tr key={m.id} className={`transition-colors ${enRetard ? 'bg-red-500/5 hover:bg-red-500/10' : 'hover:bg-slate-700/30'}`}>
                                             <td className="px-6 py-4 text-white font-bold text-sm">{m.tricycle?.nom}</td>
                                             <td className="px-6 py-4">
-                                                <span className="flex items-center gap-2 text-slate-300 text-sm">
-                                                    <span>{t?.emoji}</span>{t?.label}
+                                                <span className="text-slate-300 text-sm">
+                                                    {t?.label}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-400 text-sm max-w-xs truncate">{m.description}</td>
@@ -512,7 +510,7 @@ export default function MaintenancePage() {
                                                             ? 'bg-red-500/10 border-red-500/30 text-red-400'
                                                             : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
                                                     }`}>
-                                                    {m.statut === 'EFFECTUE' ? '✓ Effectuée' : enRetard ? '🚨 En retard' : '📅 Planifiée'}
+                                                    {m.statut === 'EFFECTUE' ? 'Effectuée' : enRetard ? 'En retard' : 'Planifiée'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-400 text-xs">
@@ -544,7 +542,6 @@ export default function MaintenancePage() {
                 <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                     {carburants.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">⛽</p>
                             <p>Aucun enregistrement carburant</p>
                             <button onClick={() => setModalCarburant(true)}
                                 className="mt-4 text-yellow-400 text-sm font-bold">+ Premier plein</button>

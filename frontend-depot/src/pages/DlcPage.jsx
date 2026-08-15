@@ -6,10 +6,10 @@ import { useDepot } from '../contexts/DepotContext';
 // ── Badge statut DLC ────────────────────────────────────────
 function BadgeDLC({ statut, jours }) {
     const config = {
-        OK: { label: '✅ OK', classes: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' },
-        ATTENTION: { label: '⚠️ Attention', classes: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' },
-        URGENT: { label: '🔥 Urgent', classes: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
-        EXPIRE: { label: '☠️ Expiré', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
+        OK: { label: 'OK', classes: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' },
+        ATTENTION: { label: 'Attention', classes: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' },
+        URGENT: { label: 'Urgent', classes: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
+        EXPIRE: { label: 'Expiré', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
     };
     const c = config[statut] || config.OK;
     return (
@@ -65,7 +65,7 @@ function ModalNouveauLot({ tenantId, depotId, articles, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">📦 Nouveau Lot</h3>
+                <h3 className="text-white font-black text-xl mb-2">Nouveau Lot</h3>
                 <p className="text-slate-400 text-sm mb-6">
                     Enregistre un lot avec sa date de péremption (DLC)
                 </p>
@@ -86,7 +86,7 @@ function ModalNouveauLot({ tenantId, depotId, articles, onSuccess, onClose }) {
                             <option value="">Choisir un article...</option>
                             {articles.map(a => (
                                 <option key={a.id} value={a.id}>
-                                    {a.famille?.emoji} {a.designation} {a.format && `(${a.format})`}
+                                    {a.designation} {a.format && `(${a.format})`}
                                 </option>
                             ))}
                         </select>
@@ -148,7 +148,7 @@ function ModalNouveauLot({ tenantId, depotId, articles, onSuccess, onClose }) {
                         </button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : '📦 Créer le Lot'}
+                            {loading ? '...' : 'Créer le Lot'}
                         </button>
                     </div>
                 </form>
@@ -180,7 +180,7 @@ function ModalModifierDLC({ lot, tenantId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">✏️ Modifier la DLC</h3>
+                <h3 className="text-white font-black text-xl mb-6">Modifier la DLC</h3>
                 <p className="text-slate-400 text-sm mb-4">
                     Lot : <strong className="text-white">
                         {lot.article?.designation} {lot.article?.format}
@@ -271,7 +271,7 @@ export default function DlcPage() {
                 </div>
                 <button onClick={() => setModalNouvel(true)}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20">
-                    📦 Nouveau Lot
+                    Nouveau Lot
                 </button>
             </div>
 
@@ -279,10 +279,10 @@ export default function DlcPage() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 {[
                     { label: 'Total Lots', val: stats.total, color: 'slate' },
-                    { label: '✅ OK', val: stats.ok, color: 'emerald' },
-                    { label: '⚠️ Attention', val: stats.attention, color: 'yellow' },
-                    { label: '🔥 Urgent', val: stats.urgent, color: 'orange' },
-                    { label: '☠️ Expirés', val: stats.expire, color: 'red' },
+                    { label: 'OK', val: stats.ok, color: 'emerald' },
+                    { label: 'Attention', val: stats.attention, color: 'yellow' },
+                    { label: 'Urgent', val: stats.urgent, color: 'orange' },
+                    { label: 'Expirés', val: stats.expire, color: 'red' },
                 ].map((c, i) => (
                     <div key={i} className={`bg-${c.color}-500/10 border border-${c.color}-500/20 rounded-2xl p-4`}>
                         <p className={`text-${c.color}-400 text-xs font-bold uppercase tracking-widest mb-2`}>
@@ -296,7 +296,6 @@ export default function DlcPage() {
             {/* Alerte rouge si expirés */}
             {stats.expire > 0 && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6 flex items-center gap-3">
-                    <span className="text-2xl">☠️</span>
                     <div>
                         <p className="text-red-400 font-black">
                             {stats.expire} lot(s) EXPIRÉ(S) — Retirer immédiatement du stock !
@@ -311,9 +310,9 @@ export default function DlcPage() {
             {/* Onglets */}
             <div className="flex gap-2 mb-6 flex-wrap">
                 {[
-                    ['alertes', `🚨 Alertes (${(stats.attention || 0) + (stats.urgent || 0) + (stats.expire || 0)})`],
-                    ['tous', `📦 Tous les lots (${stats.total || 0})`],
-                    ['expire', `☠️ Expirés (${stats.expire || 0})`],
+                    ['alertes', `Alertes (${(stats.attention || 0) + (stats.urgent || 0) + (stats.expire || 0)})`],
+                    ['tous', `Tous les lots (${stats.total || 0})`],
+                    ['expire', `Expirés (${stats.expire || 0})`],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
@@ -337,7 +336,7 @@ export default function DlcPage() {
                         <button key={f.id} onClick={() => setFiltreFamille(f.id)}
                             className={`px-4 py-1.5 rounded-xl text-xs font-bold border transition-all ${filtreFamille === f.id ? 'bg-slate-600 border-slate-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'
                                 }`}>
-                            {f.emoji} {f.nom}
+                            {f.nom}
                         </button>
                     ))}
                 </div>
@@ -351,9 +350,8 @@ export default function DlcPage() {
                     </div>
                 ) : lotsFiltres.length === 0 ? (
                     <div className="text-center py-16 text-slate-500">
-                        <p className="text-4xl mb-3">📦</p>
                         <p className="font-semibold">
-                            {onglet === 'alertes' ? '✅ Aucune alerte DLC — Tout est frais !' : 'Aucun lot trouvé'}
+                            {onglet === 'alertes' ? 'Aucune alerte DLC — Tout est frais !' : 'Aucun lot trouvé'}
                         </p>
                         <button onClick={() => setModalNouvel(true)}
                             className="mt-4 text-indigo-400 text-sm font-bold">
@@ -385,7 +383,6 @@ export default function DlcPage() {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <span className="text-lg">
-                                                {lot.article?.famille?.emoji || '📦'}
                                             </span>
                                             <div>
                                                 <p className="text-white font-bold text-sm">
@@ -448,7 +445,7 @@ export default function DlcPage() {
                                     <td className="px-6 py-4 text-right">
                                         <button onClick={() => setLotEdit(lot)}
                                             className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-all">
-                                            ✏️ DLC
+                                            DLC
                                         </button>
                                     </td>
                                 </tr>
@@ -460,7 +457,7 @@ export default function DlcPage() {
 
             {/* Info FIFO */}
             <div className="mt-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-sm text-indigo-400">
-                <strong>📋 FIFO Automatique :</strong> Lors des ventes, le système déduit automatiquement
+                <strong>FIFO Automatique :</strong> Lors des ventes, le système déduit automatiquement
                 les lots dont la DLC est la plus proche en premier pour minimiser les pertes.
             </div>
 

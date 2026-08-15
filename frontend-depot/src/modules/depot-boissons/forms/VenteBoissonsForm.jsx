@@ -154,7 +154,7 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
     }
   });
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier vente' : '💰 Nouvelle vente'} loading={mutation.isPending} size="xl" submitIcon="💵" submitLabel="Encaisser">
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier vente' : 'Nouvelle vente'} loading={mutation.isPending} size="xl" submitLabel="Encaisser">
       {errors.panier?.message && (
         <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl mb-4">{errors.panier.message}</div>
       )}
@@ -186,10 +186,10 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
               value={field.value}
               onChange={field.onChange}
               options={[
-                { value: 'CASH', label: '💵 Cash' },
-                { value: 'ORANGE_MONEY', label: '📱 Orange Money' },
-                { value: 'MTN_MOMO', label: '📱 MTN MoMo' },
-                { value: 'MIXTE', label: '🔀 Mixte' },
+                { value: 'CASH', label: 'Cash' },
+                { value: 'ORANGE_MONEY', label: 'Orange Money' },
+                { value: 'MTN_MOMO', label: 'MTN MoMo' },
+                { value: 'MIXTE', label: 'Mixte' },
               ]}
             />
           )}

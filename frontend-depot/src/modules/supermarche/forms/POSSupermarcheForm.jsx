@@ -135,7 +135,7 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
         montantRecu: '',
         panier: [],
       });
-      onSuccess?.();
+      onSuccess?.(mutation.data || data); // The API might return the created vente directly
     },
     onError: (err) => {
       const msg = err.response?.data?.message || err.message || 'Erreur lors de la vente';
@@ -191,7 +191,7 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
           </table>
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-700/50">
             <div className="flex gap-2">
-              <button type="button" onClick={() => setValue('panier', [])} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold rounded-lg">🧹 Vider</button>
+              <button type="button" onClick={() => setValue('panier', [])} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold rounded-lg">Vider</button>
             </div>
             <div className="text-right">
               <p className="text-slate-400 text-xs">Sous-total</p>
@@ -204,7 +204,7 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
       </div>
       <div className="space-y-4">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 space-y-4">
-          <h3 className="text-white font-bold text-sm">💳 Paiement</h3>
+          <h3 className="text-white font-bold text-sm">Paiement</h3>
           <Controller
             name="modePaiement"
             control={control}
@@ -213,7 +213,7 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
                 {['CASH', 'ORANGE_MONEY', 'MTN_MOMO', 'CARTE'].map(m => (
                   <button key={m} type="button" onClick={() => field.onChange(m)}
                     className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${field.value === m ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
-                    {m === 'CASH' ? '💵 Cash' : m === 'ORANGE_MONEY' ? '📱 Orange Money' : m === 'MTN_MOMO' ? '📱 MTN MoMo' : '💳 Carte'}
+                    {m === 'CASH' ? 'Cash' : m === 'ORANGE_MONEY' ? 'Orange Money' : m === 'MTN_MOMO' ? 'MTN MoMo' : 'Carte'}
                   </button>
                 ))}
               </div>
@@ -243,7 +243,7 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
           />
           <button type="button" onClick={handleSubmit((data) => mutation.mutate(data))} disabled={fields.length === 0 || mutation.isPending}
             className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-lg rounded-xl transition-all shadow-lg shadow-emerald-600/20">
-            {mutation.isPending ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : '💰 ENCAISSER'}
+            {mutation.isPending ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : 'ENCAISSER'}
           </button>
         </div>
       </div>

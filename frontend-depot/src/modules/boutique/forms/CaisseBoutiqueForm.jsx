@@ -43,7 +43,7 @@ export default function CaisseBoutiqueForm({ isOpen, onClose, onSuccess, edit, m
 
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouvelle Opération'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier' : 'Nouvelle Opération'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <FormField label="Libellé" name="libelle" value={form.libelle} onChange={set('libelle')} required error={errors.libelle?.message} placeholder="Libellé de l'opération" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../../../hooks/useData';
 import { useAuth } from '../../../contexts/AuthContext';
 import AlertLevel from '../components/AlertLevel';
+import { Coins, FileText, AlarmClock, AlertTriangle, Circle, Pill, User } from 'lucide-react';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -84,7 +85,7 @@ return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black text-white tracking-tight">💊 Tableau de Bord Pharmacie</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-2"><Pill className="w-8 h-8" /> Tableau de Bord Pharmacie</h1>
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-emerald-400 text-xs font-bold">En direct</span>
@@ -97,18 +98,17 @@ return (
         <div className="flex gap-3">
           <button onClick={() => navigate('/pharmacie/caisse')}
             className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
-            🏧 Ouvrir Caisse
+            Ouvrir Caisse
           </button>
           <button onClick={() => navigate('/pharmacie/medicaments')}
             className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">
-            💊 Médicaments
+            Médicaments
           </button>
         </div>
       </div>
 
       {stats?.alertesExpirees > 0 && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3">
-          <span className="text-2xl">🔴</span>
           <div>
             <p className="text-red-400 font-bold text-sm">{stats.alertesExpirees} médicament{stats.alertesExpirees > 1 ? 's' : ''} expiré{stats.alertesExpirees > 1 ? 's' : ''} !</p>
             <p className="text-slate-400 text-xs">Action requise — détruisez ou retournez au fournisseur</p>
@@ -122,13 +122,13 @@ return (
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: '💰', label: 'Ventes Jour', value: `${(stats?.ventesJour || 0).toLocaleString('fr-FR')} F`, color: '#10b981' },
-          { icon: '📝', label: 'Ordonnances', value: stats?.ordonnancesJour || 0, sub: "Aujourd'hui", color: '#3b82f6' },
-          { icon: '⏰', label: 'Alertes DLC', value: (stats?.alertes7j || 0) + (stats?.alertesExpirees || 0), sub: `Dont ${stats?.alertesExpirees || 0} expirée${stats?.alertesExpirees > 1 ? 's' : ''}`, color: '#ef4444' },
-          { icon: '⚠️', label: 'Stock Critique', value: stats?.stockCritique || 0, sub: 'Médicaments', color: '#f59e0b' },
+          { icon: Coins, label: 'Ventes Jour', value: `${(stats?.ventesJour || 0).toLocaleString('fr-FR')} F`, color: '#10b981' },
+          { icon: FileText, label: 'Ordonnances', value: stats?.ordonnancesJour || 0, sub: "Aujourd'hui", color: '#3b82f6' },
+          { icon: AlarmClock, label: 'Alertes DLC', value: (stats?.alertes7j || 0) + (stats?.alertesExpirees || 0), sub: `Dont ${stats?.alertesExpirees || 0} expirée${stats?.alertesExpirees > 1 ? 's' : ''}`, color: '#ef4444' },
+          { icon: AlertTriangle, label: 'Stock Critique', value: stats?.stockCritique || 0, sub: 'Médicaments', color: '#f59e0b' },
         ].map((k, i) => (
           <div key={i} className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 hover:border-emerald-500/30 transition-all">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: k.color + '22' }}>{k.icon}</div>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: k.color + '22' }}>{k.icon && <k.icon className="w-6 h-6" />}</div>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">{k.label}</p>
             <p className="text-white font-black text-2xl leading-none">{k.value}</p>
             {k.sub && <p className="text-slate-500 text-xs mt-1">{k.sub}</p>}
@@ -137,13 +137,13 @@ return (
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <AlertLevel items={stats?.expirees || []} title="🔴 Expirés" icon="🔴" color="#ef4444" />
-        <AlertLevel items={stats?.alertes7j || []} title="🟠 < 7 jours" icon="🟠" color="#f59e0b" />
-        <AlertLevel items={stats?.alertes30j || []} title="🟡 < 30 jours" icon="🟡" color="#eab308" />
+        <AlertLevel items={stats?.expirees || []} title="Expirés" icon={<Circle className="w-5 h-5" fill="#ef4444" />} color="#ef4444" />
+        <AlertLevel items={stats?.alertes7j || []} title="< 7 jours" icon={<Circle className="w-5 h-5" fill="#f59e0b" />} color="#f59e0b" />
+        <AlertLevel items={stats?.alertes30j || []} title="< 30 jours" icon={<Circle className="w-5 h-5" fill="#eab308" />} color="#eab308" />
       </div>
 
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-        <h2 className="text-white font-black text-lg mb-5">🏆 Top Médicaments du Mois</h2>
+        <h2 className="text-white font-black text-lg mb-5">Top Médicaments du Mois</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -172,14 +172,14 @@ return (
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Nouveau Médicament', icon: '💊', path: '/pharmacie/medicaments', color: '#059669' },
-          { label: 'Nouvelle Ordonnance', icon: '📝', path: '/pharmacie/ordonnances', color: '#3b82f6' },
-          { label: 'Alertes DLC', icon: '⏰', path: '/pharmacie/alertes-dlc', color: '#ef4444' },
-          { label: 'Nouveau Patient', icon: '👤', path: '/pharmacie/patients', color: '#8b5cf6' },
+          { label: 'Nouveau Médicament', icon: Pill, path: '/pharmacie/medicaments', color: '#059669' },
+          { label: 'Nouvelle Ordonnance', icon: FileText, path: '/pharmacie/ordonnances', color: '#3b82f6' },
+          { label: 'Alertes DLC', icon: AlarmClock, path: '/pharmacie/alertes-dlc', color: '#ef4444' },
+          { label: 'Nouveau Patient', icon: User, path: '/pharmacie/patients', color: '#8b5cf6' },
         ].map((a, i) => (
           <button key={i} onClick={() => navigate(a.path)}
             className="bg-slate-800/60 border border-slate-700/50 hover:border-slate-600 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all group">
-            <span className="text-3xl group-hover:scale-110 transition-transform">{a.icon}</span>
+            <span className="group-hover:scale-110 transition-transform">{a.icon && <a.icon className="w-8 h-8" />}</span>
             <span className="text-slate-300 text-xs font-bold text-center">{a.label}</span>
           </button>
         ))}

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
@@ -17,6 +18,7 @@ export default function DepensesPage() {
   const { metier } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { canWrite } = usePermission('depenses');
 
   const [showModal, setShowModal] = useState(null);
   const [formData, setFormData] = useState({ montant: '', motif: '', categorie: 'Autre', date: new Date().toISOString().split('T')[0] });
@@ -114,10 +116,12 @@ export default function DepensesPage() {
             {total > 0 ? `${total} dépense${total > 1 ? 's' : ''} · Total: ${totalDepenses.toLocaleString('fr-FR')} FCFA` : 'Aucune dépense'}
           </p>
         </div>
-        <button onClick={() => setShowModal('create')}
-          className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-orange-600/20">
-          ➕ Nouvelle dépense
-        </button>
+        {canWrite && (
+          <button onClick={() => setShowModal('create')}
+            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-orange-600/20">
+            ➕ Nouvelle dépense
+          </button>
+        )}
       </div>
 
       <div className="flex gap-3">
@@ -156,8 +160,10 @@ export default function DepensesPage() {
                   </td>
                   <td className="p-4 text-right text-red-400 font-bold">-{ (Number(d.montant) || 0).toLocaleString('fr-FR') } FCFA</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => setConfirmDelete(d)} title="Supprimer"
-                      className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Supprimer</button>
+                    {canWrite && (
+                      <button onClick={() => setConfirmDelete(d)} title="Supprimer"
+                        className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Supprimer</button>
+                    )}
                   </td>
                 </tr>
               ))}

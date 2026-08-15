@@ -2,7 +2,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Tableau de bord', icon: 'BarChart3', path: '/supermarche/dashboard' },
   { label: 'POS/Caisse',     icon: 'ShoppingCart', path: '/supermarche/pos' },
   { label: 'Stock',          icon: 'Package', path: '/supermarche/stock' },
-  { label: 'Rayons',         icon: '🗂️', path: '/supermarche/rayons' },
+  { label: 'Rayons',         icon: 'FolderKanban', path: '/supermarche/rayons' },
   { label: 'Promotions',     icon: 'Tag', path: '/supermarche/promotions' },
   { label: 'Clients',        icon: 'Users', path: '/supermarche/clients' },
   { label: 'Fournisseurs',   icon: 'Factory', path: '/supermarche/fournisseurs' },

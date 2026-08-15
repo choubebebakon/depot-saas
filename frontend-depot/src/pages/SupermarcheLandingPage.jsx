@@ -676,8 +676,8 @@ const SupermarcheLandingPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
             {[
               { icon: Percent, title: '%', desc: 'Promotion en pourcentage.' },
-              { icon: DollarSign, title: '💰 Montant fixe', desc: 'Réduction d\'un montant défini.' },
-              { icon: Tag, title: '🏷️ Prix fixe', desc: 'Vente à un prix promotionnel.' }
+              { icon: DollarSign, title: 'Montant fixe', desc: 'Réduction d\'un montant défini.' },
+              { icon: Tag, title: 'Prix fixe', desc: 'Vente à un prix promotionnel.' }
             ].map((item, idx) => (
               <div key={idx} style={{
                 background: 'linear-gradient(145deg, rgba(37,60,101,.58), rgba(7,18,38,.70))',
@@ -1011,10 +1011,10 @@ const SupermarcheLandingPage = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
             {[
-              { icon: User, title: '👑 Gérant', desc: 'Vision globale.' },
-              { icon: Package, title: '📦 Magasinier', desc: 'Stocks et réceptions.' },
-              { icon: CreditCard, title: '💳 Caissier', desc: 'Ventes.' },
-              { icon: BarChart3, title: '📊 Comptable', desc: 'Rapports et finances.' }
+              { icon: User, title: 'Gérant', desc: 'Vision globale.' },
+              { icon: Package, title: 'Magasinier', desc: 'Stocks et réceptions.' },
+              { icon: CreditCard, title: 'Caissier', desc: 'Ventes.' },
+              { icon: BarChart3, title: 'Comptable', desc: 'Rapports et finances.' }
             ].map((item, idx) => (
               <div key={idx} style={{
                 background: 'linear-gradient(145deg, rgba(37,60,101,.58), rgba(7,18,38,.70))',
@@ -1069,12 +1069,12 @@ const SupermarcheLandingPage = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
             {[
-              '🍎 Alimentaire',
-              '🧴 Hygiène',
-              '📱 Électronique',
-              '🏠 Bazar',
-              '🥤 Liquide',
-              '🥬 Frais'
+              'Alimentaire',
+              'Hygiène',
+              'Électronique',
+              'Bazar',
+              'Liquide',
+              'Frais'
             ].map((item, idx) => (
               <div key={idx} style={{
                 background: 'linear-gradient(145deg, rgba(37,60,101,.58), rgba(7,18,38,.70))',

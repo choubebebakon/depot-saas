@@ -2,28 +2,12 @@ import React, { useState } from 'react';
 import api from '../api/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import logo from '../assets/logo-neon.png';
+import { Package, ShoppingCart, ShoppingBag } from 'lucide-react';
 
 const METIERS = [
-  { id: 'DEPOT_BOISSONS', nom: 'Dépôt de Boissons', icon: 'Package' },
-  { id: 'BOUTIQUE', nom: 'Boutique', icon: 'ShoppingBag' },
-  { id: 'QUINCAILLERIE', nom: 'Quincaillerie / BTP', icon: 'Wrench' },
-  { id: 'PHARMACIE', nom: 'Pharmacie', icon: 'Pill' },
-  { id: 'RESTAURANT', nom: 'Restaurant', icon: 'Utensils' },
-  { id: 'TELEPHONIE', nom: 'Téléphonie', icon: 'Smartphone' },
-  { id: 'SUPERMARCHE', nom: 'Supermarché', icon: 'ShoppingCart' },
-  { id: 'CIMENT_BTP', nom: 'Ciment / BTP', icon: 'HardHat' },
-  { id: 'PRESSING', nom: 'Pressing', icon: 'Shirt' },
-  { id: 'GARAGE_AUTOMOBILE', nom: 'Garage Automobile', icon: 'Wrench' },
-  { id: 'ELEVAGE', nom: 'Élevage', icon: 'Tractor' },
-  { id: 'SALON_BEAUTE', nom: 'Salon de Coiffure / Beauté', icon: 'Scissors' },
-  { id: 'PARFUMERIE', nom: 'Parfumerie / Cosmétique', icon: 'SprayCan' },
-  { id: 'BOULANGERIE', nom: 'Boulangerie / Pâtisserie', icon: 'Cookie' },
-  { id: 'GLACIER_SNACK', nom: 'Glacier / Snack', icon: 'IceCream' },
-  { id: 'LIBRAIRIE', nom: 'Librairie / Papeterie', icon: 'Library' },
-  { id: 'CLINIQUE', nom: 'Clinique / Médical', icon: 'Hospital' },
-  { id: 'TRANSPORT', nom: 'Transport / Logistique', icon: 'Truck' },
-  { id: 'IMMOBILIER', nom: 'Gestion Immobilière', icon: 'Home' },
-  { id: 'HOTEL', nom: 'Hôtel', icon: 'Hotel' },
+  { id: 'DEPOT_BOISSONS', nom: 'Dépôt de Boissons', icon: Package },
+  { id: 'SUPERMARCHE', nom: 'Supermarché', icon: ShoppingCart },
+  { id: 'BOUTIQUE', nom: 'Boutique', icon: ShoppingBag },
 ];
 
 export default function RegisterPage() {
@@ -239,36 +223,47 @@ export default function RegisterPage() {
               <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
                 Secteur d'activité
               </label>
-              <select
-                required
-                value={formData.metier}
-                onChange={(e) => setFormData({ ...formData, metier: e.target.value })}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(171,202,255,.17)',
-                  borderRadius: '12px',
-                  padding: '0.75rem 1rem',
-                  color: '#fff',
-                  outline: 'none',
-                  transition: 'all 0.3s ease',
-                  appearance: 'none'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'rgba(34,211,238,0.5)';
-                  e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(171,202,255,.17)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              >
+              <div className="grid grid-cols-3 gap-3">
                 {METIERS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.icon} {m.nom}
-                  </option>
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, metier: m.id })}
+                    style={{
+                      padding: '1rem',
+                      borderRadius: '12px',
+                      border: formData.metier === m.id 
+                        ? '2px solid #22d3ee' 
+                        : '1px solid rgba(171,202,255,.17)',
+                      background: formData.metier === m.id 
+                        ? 'rgba(34,211,238,0.15)' 
+                        : 'rgba(255,255,255,0.05)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (formData.metier !== m.id) {
+                        e.target.style.borderColor = 'rgba(34,211,238,0.5)';
+                        e.target.style.background = 'rgba(34,211,238,0.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (formData.metier !== m.id) {
+                        e.target.style.borderColor = 'rgba(171,202,255,.17)';
+                        e.target.style.background = 'rgba(255,255,255,0.05)';
+                      }
+                    }}
+                  >
+                    <m.icon className="w-6 h-6" style={{ color: formData.metier === m.id ? '#22d3ee' : '#94a3b8' }} />
+                    <span className="text-xs font-semibold text-center">{m.nom}</span>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="flex items-start gap-3 py-2">

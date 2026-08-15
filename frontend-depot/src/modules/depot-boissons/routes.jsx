@@ -9,10 +9,13 @@ import NotificationToast from '../../core/notifications/NotificationToast';
 import PendingSaleAlert from '../../components/PendingSaleAlert';
 import GeStockChatbot from '../../components/chatbot/GeStockChatbot';
 import SupportWidget from '../../components/SupportWidget';
+import PermissionGate from '../../shared/permissions/PermissionGate';
 
 const UtilisateursPage = lazy(() => import('../../components/admin/UtilisateursPage'));
 const DepotsPage = lazy(() => import('../../components/admin/DepotsPage'));
 const AbonnementPage = lazy(() => import('../../components/admin/AbonnementPage'));
+const AuditPage = lazy(() => import('../../pages/AuditPage'));
+const ProfilPage = lazy(() => import('../../pages/ProfilPage'));
 
 const DashboardDepot = lazy(() => import('./pages/DashboardDepot'));
 const StockArticlesPage = lazy(() => import('./pages/StockArticlesPage'));
@@ -32,6 +35,14 @@ function Loader() {
     <div className="flex items-center justify-center py-32">
       <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
     </div>
+  );
+}
+
+function gate(sousModule, Page) {
+  return (
+    <PermissionGate sousModule={sousModule}>
+      <Page />
+    </PermissionGate>
   );
 }
 
@@ -154,22 +165,24 @@ export default function DepotBoissonsRoutes() {
       <DepotProvider>
         <Routes>
           <Route element={<DepotLayout />}>
-            <Route path="dashboard" element={<DashboardDepot />} />
-            <Route path="stock" element={<StockArticlesPage />} />
-            <Route path="articles" element={<StockArticlesPage />} />
-            <Route path="consignes" element={<ConsignesPage />} />
-            <Route path="livraisons" element={<LivraisonsPage />} />
-            <Route path="tournees" element={<TourneesPage />} />
-            <Route path="clients" element={<ClientsPage />} />
-            <Route path="fournisseurs" element={<FournisseursPage />} />
-            <Route path="ventes" element={<VentesPage />} />
-            <Route path="caisse" element={<CaissePage />} />
-            <Route path="depenses" element={<DepensesPage />} />
-            <Route path="rapports" element={<RapportsPage />} />
-            <Route path="parametres" element={<ParametresPage />} />
-             <Route path="utilisateurs" element={<UtilisateursPage />} />
-             <Route path="depots"       element={<DepotsPage />} />
-             <Route path="abonnement"   element={<AbonnementPage />} />
+            <Route path="dashboard" element={gate('dashboard', DashboardDepot)} />
+            <Route path="stock" element={gate('stock_articles', StockArticlesPage)} />
+            <Route path="articles" element={gate('stock_articles', StockArticlesPage)} />
+            <Route path="consignes" element={gate('consignes', ConsignesPage)} />
+            <Route path="livraisons" element={gate('livraisons', LivraisonsPage)} />
+            <Route path="tournees" element={gate('tournees', TourneesPage)} />
+            <Route path="clients" element={gate('clients', ClientsPage)} />
+            <Route path="fournisseurs" element={gate('fournisseurs', FournisseursPage)} />
+            <Route path="ventes" element={gate('ventes', VentesPage)} />
+            <Route path="caisse" element={gate('caisse', CaissePage)} />
+            <Route path="depenses" element={gate('depenses', DepensesPage)} />
+            <Route path="rapports" element={gate('rapports', RapportsPage)} />
+            <Route path="parametres" element={gate('parametres', ParametresPage)} />
+             <Route path="utilisateurs" element={gate('utilisateurs', UtilisateursPage)} />
+             <Route path="depots"       element={gate('depots', DepotsPage)} />
+             <Route path="abonnement"   element={<Navigate to="/pricing" replace />} />
+             <Route path="audit-patron" element={gate('audit_patron', AuditPage)} />
+             <Route path="profil"       element={<ProfilPage />} />
              <Route path="*" element={<DashboardRedirect />} />
           </Route>
         </Routes>

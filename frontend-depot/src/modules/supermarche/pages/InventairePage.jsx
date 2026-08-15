@@ -5,6 +5,7 @@ import { useNotif } from '../../../context/NotifContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
 import InventaireForm from '../forms/InventaireForm';
+import { BarChart3, Printer } from 'lucide-react';
 
 export default function InventairePage() {
   const { metier: metierParam } = useParams();
@@ -63,17 +64,17 @@ export default function InventairePage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">📊 Inventaire</h1>
+          <h1 className="text-2xl font-black text-white flex items-center gap-2"><BarChart3 className="w-6 h-6" /> Inventaire</h1>
           <p className="text-slate-400 text-sm mt-1">Date : {dateInventaire} — {produits.length} référence{produits.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setFormOpen(true)}
             className="bg-amber-500 hover:bg-amber-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20">
-            📋 Nouvel Inventaire
+Nouvel Inventaire
           </button>
           <button onClick={() => window.print()}
             className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">
-            🖨️ Imprimer
+Imprimer
           </button>
         </div>
       </div>

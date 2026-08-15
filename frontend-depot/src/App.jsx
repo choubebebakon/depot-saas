@@ -39,6 +39,7 @@ const SupermarcheLandingPage = lazy(() => import('./pages/SupermarcheLandingPage
 const BoutiqueLandingPage = lazy(() => import('./pages/BoutiqueLandingPage'));
 const MetierComingSoonPage = lazy(() => import('./pages/MetierComingSoonPage'));
 const MainLayout = lazy(() => import('./layouts/MainLayout'));
+const NotificationsPage = lazy(() => import('./core/notifications/NotificationsPage'));
 
 // SuperAdmin
 const SuperAdminLayout = lazy(() => import('./layouts/SuperAdminLayout'));
@@ -152,6 +153,18 @@ function AppRoutes() {
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          
+          {/* Route notifications globale */}
+          <Route 
+            path="/notifications" 
+            element={
+              <PrivateRoute>
+                <Suspense fallback={<AppLoader />}>
+                  <NotificationsPage />
+                </Suspense>
+              </PrivateRoute>
+            } 
+          />
           
           {/* Gestion des redirections initiales */}
           <Route path="/dashboard" element={<SectorHomeRedirect />} />

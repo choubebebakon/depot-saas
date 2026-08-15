@@ -1,30 +1,51 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate, NavLink } from "react-router-dom";
+import {
+  User,
+  Building2,
+  Settings,
+  CreditCard,
+  BarChart3,
+  ArrowRight,
+  ArrowLeft,
+  Bell,
+  DoorOpen,
+} from "lucide-react";
 import { getMetierMenus, getMetierConfig } from "../config/metier-dashboard.config";
 import { getSectorPrefix } from "./guards/SectorGuard";
 import { useNotifications } from "../core/notifications/useNotifications";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  normalizeMetierSlug,
+  pathToSousModule,
+  resolvePermission,
+} from "../shared/permissions/matrix";
+import Icon from "../shared/components/Icon";
 
 const ADMIN_MENUS = [
-  { label: "Utilisateurs",  icon: "\uD83D\uDC64", path: "utilisateurs" },
-  { label: "D\u00E9p\u00F4ts",      icon: "\uD83C\uDFE2", path: "depots" },
-  { label: "Param\u00E8tres",    icon: "\u2699\uFE0F", path: "parametres" },
-  { label: "Abonnement",    icon: "\uD83D\uDCB3", path: "abonnement" },
+  { label: "Utilisateurs",  icon: User, path: "utilisateurs" },
+  { label: "D\u00E9p\u00F4ts",      icon: Building2, path: "depots" },
+  { label: "Param\u00E8tres",    icon: Settings, path: "parametres" },
+  { label: "Abonnement",    icon: CreditCard, path: "abonnement" },
 ];
 
 const ADMIN_ROLES = ["PATRON", "GERANT", "ADMIN", "PHARMACIEN"];
+const GRANULAR_METIERS = new Set(["supermarche", "boutique", "depot"]);
 const ABONNEMENT_URL = import.meta.env.VITE_ABONNEMENT_URL || 'https://gestock.app/tarifs';
 
 export default function DynamicSidebar({ user, tenant, onLogout }) {
   const location = useLocation();
   const navigate  = useNavigate();
+  const { permissionsState, libellePoste } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [moduleConfig, setModuleConfig] = useState(null);
 
   const rawMetier = tenant?.metier || user?.metier || localStorage.getItem('gestock_metier');
   const metier     = rawMetier || "DEPOT_BOISSONS";
-  const metierSlug = metier === 'DEPOT_BOISSONS' ? 'depot' : metier.toLowerCase().replace(/_/g, '-');
+  const metierSlug = normalizeMetierSlug(metier) || (metier === 'DEPOT_BOISSONS' ? 'depot' : metier.toLowerCase().replace(/_/g, '-'));
   const prefix     = useMemo(() => getSectorPrefix(metier), [metier]);
+  const useGranular = GRANULAR_METIERS.has(metierSlug);
 
   useEffect(() => {
     async function loadModuleConfig() {
@@ -57,11 +78,39 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
   );
 
   const menus = useMemo(() => {
-    return rawMenus.map(m => ({
+    const mapped = rawMenus.map(m => ({
       ...m,
       path: m.path.startsWith(prefix) ? m.path : prefix + (m.path.startsWith('/') ? '' : '/') + m.path,
     }));
-  }, [rawMenus, prefix]);
+
+    if (!useGranular) return mapped;
+
+    return mapped.filter((item) => {
+      const sousModule = pathToSousModule(item.path, metierSlug);
+      if (!sousModule) return true;
+      const { canRead } = resolvePermission(
+        user?.role,
+        metier,
+        sousModule,
+        permissionsState,
+      );
+      return canRead;
+    });
+  }, [rawMenus, prefix, useGranular, metierSlug, metier, user?.role, permissionsState]);
+
+  const visibleAdminMenus = useMemo(() => {
+    if (!useGranular) return adminMenus;
+    return adminMenus.filter((item) => {
+      const sousModule = pathToSousModule(item.path, metierSlug);
+      const { canRead } = resolvePermission(
+        user?.role,
+        metier,
+        sousModule,
+        permissionsState,
+      );
+      return canRead;
+    });
+  }, [adminMenus, useGranular, metierSlug, metier, user?.role, permissionsState]);
 
   const isAdmin = useMemo(() => ADMIN_ROLES.includes(user?.role), [user?.role]);
   const couleur = useMemo(() => config?.couleur || "#2563eb", [config?.couleur]);
@@ -119,7 +168,9 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
             border: `1px solid ${couleur}40`,
           }}
         >
-          <span style={styles.metierIcon}>{config?.icon || "\uD83D\uDCCA"}</span>
+          <span style={styles.metierIcon}>
+            {config?.icon ? <Icon name={config.icon} size={20} /> : <BarChart3 className="w-5 h-5" color={couleur} />}
+          </span>
           {!collapsed && (
             <span style={{ ...styles.metierLabel, color: couleur }}>
               {config?.label || "Inconnu"}
@@ -132,7 +183,9 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
           style={styles.collapseBtn}
           title={collapsed ? "Agrandir" : "R\u00E9duire"}
         >
-          {collapsed ? "\u2192" : "\u2190"}
+          {collapsed
+            ? <ArrowRight className="w-5 h-5" color="#475569" />
+            : <ArrowLeft className="w-5 h-5" color="#475569" />}
         </button>
       </div>
 
@@ -157,7 +210,7 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
                 color: active ? couleur : "#94a3b8",
               }}
             >
-              <span style={styles.navIcon}>{item.icon}</span>
+              <span style={styles.navIcon}><Icon name={item.icon} size={20} /></span>
               {!collapsed && (
                 <>
                   <span style={styles.navLabel}>{item.label}</span>
@@ -180,7 +233,7 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
         {!collapsed && <div style={styles.divider} />}
 
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent('nav-change', { detail: '/notifications' }))}
+          onClick={() => handleNavClick('/notifications')}
           title={collapsed ? "Notifications" : undefined}
           style={{
             ...styles.navItem,
@@ -189,7 +242,9 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
             borderLeft: location.pathname.startsWith("/notifications") ? `3px solid ${couleur}` : "3px solid transparent",
           }}
         >
-          <span style={styles.navIcon}>{String.fromCodePoint(0x1F514)}</span>
+          <span style={styles.navIcon}>
+            <Bell className="w-5 h-5" />
+          </span>
           {!collapsed && (
             <>
               <span style={styles.navLabel}>Notifications</span>
@@ -213,6 +268,7 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
 
             {ADMIN_MENUS.map((item) => {
               const adminPath = `${prefix}/${item.path}`;
+              const Icon = item.icon;
               return (
                 <NavLink
                   key={item.label}
@@ -220,7 +276,9 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
                   title={collapsed ? item.label : undefined}
                   style={adminLinkStyle}
                 >
-                  <span style={styles.navIcon}>{item.icon}</span>
+                  <span style={styles.navIcon}>
+                    <Icon className="w-5 h-5" />
+                  </span>
                   {!collapsed && (
                     <span style={styles.navLabel}>{item.label}</span>
                   )}
@@ -228,7 +286,7 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
               );
             })}
 
-            {adminMenus.map((item) => {
+            {visibleAdminMenus.map((item) => {
               const adminPath = item.path.startsWith(prefix) ? item.path : prefix + (item.path.startsWith('/') ? '' : '/') + item.path;
               return (
                 <button
@@ -242,7 +300,7 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
                     color: location.pathname === adminPath ? couleur : "#94a3b8",
                   }}
                 >
-                  <span style={styles.navIcon}>{item.icon}</span>
+                  <span style={styles.navIcon}><Icon name={item.icon} size={20} /></span>
                   {!collapsed && (
                     <span style={styles.navLabel}>{item.label}</span>
                   )}
@@ -273,7 +331,9 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
               <span style={styles.profileName}>
                 {user?.nom || "Utilisateur"}
               </span>
-              <span style={styles.profileRole}>{user?.role || "\u2014"}</span>
+              <span style={styles.profileRole}>
+                {libellePoste || user?.role || "\u2014"}
+              </span>
             </div>
           )}
         </button>
@@ -282,22 +342,22 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
           <div style={styles.userMenu}>
             <button
               onClick={() => { navigate(`${prefix}/profil`); setUserMenuOpen(false); }}
-              style={styles.userMenuItem}
+              style={{ ...styles.userMenuItem, display: "flex", alignItems: "center", gap: "8px" }}
             >
-              {"\uD83D\uDC64"} Mon profil
+              <User className="w-4 h-4" /> Mon profil
             </button>
             <button
-              onClick={() => { window.location.href = ABONNEMENT_URL; setUserMenuOpen(false); }}
-              style={styles.userMenuItem}
+              onClick={() => { navigate('/pricing'); setUserMenuOpen(false); }}
+              style={{ ...styles.userMenuItem, display: "flex", alignItems: "center", gap: "8px" }}
             >
-              {"\uD83D\uDCB3"} Abonnement
+              <CreditCard className="w-4 h-4" /> Abonnement
             </button>
             <div style={{ ...styles.divider, margin: "4px 0" }} />
             <button
               onClick={() => { onLogout?.(); setUserMenuOpen(false); }}
-              style={{ ...styles.userMenuItem, color: "#f87171" }}
+              style={{ ...styles.userMenuItem, color: "#f87171", display: "flex", alignItems: "center", gap: "8px" }}
             >
-              {"\uD83D\uDEAA"} D\u00E9connexion
+              <DoorOpen className="w-4 h-4" /> Déconnexion
             </button>
           </div>
         )}
@@ -333,7 +393,7 @@ const styles = {
     gap: "10px",
     overflow: "hidden",
   },
-  metierIcon: { fontSize: "20px", flexShrink: 0 },
+  metierIcon: { fontSize: "20px", flexShrink: 0, display: "flex", alignItems: "center" },
   metierLabel: {
     fontFamily: "'Syne', sans-serif",
     fontWeight: 700,
@@ -354,6 +414,9 @@ const styles = {
     alignSelf: "flex-end",
     transition: "all 0.2s",
     fontFamily: "monospace",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   nav: {
     flex: 1,
@@ -390,7 +453,7 @@ const styles = {
     whiteSpace: "nowrap",
     overflow: "hidden",
   },
-  navIcon: { fontSize: "16px", flexShrink: 0, width: "20px", textAlign: "center" },
+  navIcon: { fontSize: "16px", flexShrink: 0, width: "20px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" },
   navLabel: { flex: 1, overflow: "hidden", textOverflow: "ellipsis" },
   badge: {
     fontSize: "10px",

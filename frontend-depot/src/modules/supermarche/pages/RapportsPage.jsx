@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
+import { BarChart3, Receipt, DollarSign, TrendingUp, Package, Trophy } from 'lucide-react';
 
 const cleanParams = (params) => Object.fromEntries(
   Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
@@ -50,7 +51,7 @@ export default function RapportsPage() {
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">📊 Rapports</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight">Rapports</h1>
           <p className="text-slate-400 text-sm">Période : {periode}</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -64,13 +65,13 @@ export default function RapportsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: '💰', label: 'CA total', value: `${(stats?.caTotal || 0).toLocaleString('fr-FR')} F`, color: '#10b981' },
-          { icon: '🧾', label: 'Transactions', value: stats?.transactions || 0, color: '#3b82f6' },
-          { icon: '💸', label: 'Dépenses', value: `${(stats?.depenses || 0).toLocaleString('fr-FR')} F`, color: '#ef4444' },
-          { icon: '📈', label: 'Marge', value: `${(stats?.marge || 0).toLocaleString('fr-FR')} F`, color: '#f59e0b' },
+          { icon: DollarSign, label: 'CA total', value: `${(stats?.caTotal || 0).toLocaleString('fr-FR')} F`, color: '#10b981' },
+          { icon: Receipt, label: 'Transactions', value: stats?.transactions || 0, color: '#3b82f6' },
+          { icon: DollarSign, label: 'Dépenses', value: `${(stats?.depenses || 0).toLocaleString('fr-FR')} F`, color: '#ef4444' },
+          { icon: TrendingUp, label: 'Marge', value: `${(stats?.marge || 0).toLocaleString('fr-FR')} F`, color: '#f59e0b' },
         ].map((k, i) => (
           <div key={i} className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: k.color + '22' }}>{k.icon}</div>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: k.color + '22' }}>{k.icon && <k.icon className="w-6 h-6" />}</div>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">{k.label}</p>
             <p className="text-white font-black text-2xl leading-none">{k.value}</p>
           </div>
@@ -79,7 +80,7 @@ export default function RapportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="text-white font-black text-sm mb-4">📦 Ventes par rayon</h2>
+          <h2 className="text-white font-black text-sm mb-4 flex items-center gap-2"><Package className="w-4 h-4" /> Ventes par rayon</h2>
           <div className="space-y-3">
             {stats?.rayons?.map((r, i) => (
               <MiniBar key={i} label={r.nom} value={r.montant} max={Math.max(...(stats?.rayons?.map(x => x.montant) || [1]))} color={r.couleur || '#f59e0b'} />
@@ -89,7 +90,7 @@ export default function RapportsPage() {
         </div>
 
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="text-white font-black text-sm mb-4">🏆 Top produits</h2>
+          <h2 className="text-white font-black text-sm mb-4 flex items-center gap-2"><Trophy className="w-4 h-4" /> Top produits</h2>
           <div className="space-y-3">
             {stats?.topProduits?.map((p, i) => (
               <div key={i} className="flex items-center justify-between bg-slate-900/50 rounded-xl px-4 py-3">

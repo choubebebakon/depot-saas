@@ -97,7 +97,7 @@ export default function TricycleForm({ isOpen, onClose, onSuccess, edit, metier 
   });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier tricycle' : '🚚 Nouveau tricycle'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier tricycle' : 'Nouveau tricycle'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
       <div className="space-y-4">
         <Controller
           name="immatriculation"

@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import TourneeForm from '../forms/TourneeForm';
 import ChargementForm from '../forms/ChargementForm';
 import TricycleForm from '../forms/TricycleForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import { Truck, Search } from 'lucide-react';
 
 const STATUT_COLORS = {
   PLANIFIEE: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
@@ -22,6 +24,7 @@ export default function TourneesPage() {
   const { metier } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { canWrite } = usePermission('tournees');
 
   const [selectedTournee, setSelectedTournee] = useState(null);
   const [recap, setRecap] = useState(null);
@@ -132,27 +135,29 @@ export default function TourneesPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">Tournées</h1>
           <p className="text-slate-400 text-sm mt-1">Planification et suivi des tournées tricycle ({total} tournée{total > 1 ? 's' : ''})</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={openTricycleCreate}
-            className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20">
-            🚚 Nouveau tricycle
-          </button>
-          <button onClick={openCreate}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-            ➕ Nouvelle tournée
-          </button>
-        </div>
+        {canWrite && (
+          <div className="flex gap-3">
+            <button onClick={openTricycleCreate}
+              className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20">
+Nouveau tricycle
+            </button>
+            <button onClick={openCreate}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+Nouvelle tournée
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3">
-        <input type="text" placeholder="🔍 Rechercher une tournée..." value={search}
+        <input type="text" placeholder="Rechercher une tournée..." value={search}
           onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
       </div>
 
       {totalItems === 0 ? (
         <div className="p-12 text-center text-slate-500 bg-slate-800/30 rounded-xl border border-slate-700/50">
-          <p className="text-3xl mb-3">🚚</p>
+          <p className="text-3xl mb-3"><Truck className="w-12 h-12 mx-auto text-slate-500" /></p>
           <p className="text-lg font-medium">Aucune tournée planifiée</p>
           <p className="text-sm mt-1">Créez votre première tournée</p>
         </div>
@@ -176,7 +181,7 @@ export default function TourneesPage() {
                 {t.notes && <p className="text-xs text-slate-500 mb-3 italic">{t.notes}</p>}
               </div>
               <div className="flex flex-wrap gap-1.5 mt-4">
-                {t.statut === 'PLANIFIEE' && (
+                {canWrite && t.statut === 'PLANIFIEE' && (
                   <>
                     <button onClick={() => handleDemarrer(t.id)} disabled={demarrerMutation.isPending}
                       className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] transition-all">Démarrer</button>
@@ -184,7 +189,7 @@ export default function TourneesPage() {
                       className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Charger</button>
                   </>
                 )}
-                {t.statut === 'EN_COURS' && (
+                {canWrite && t.statut === 'EN_COURS' && (
                   <button onClick={() => handleCloturer(t.id)} disabled={cloturerMutation.isPending}
                     className="px-3 py-1.5 bg-red-600/80 hover:bg-red-500 text-white font-bold rounded-lg text-[10px] transition-all">Clôturer</button>
                 )}
@@ -192,8 +197,10 @@ export default function TourneesPage() {
                   <button onClick={() => handleVoirRecap(t.id)}
                     className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Récapitulatif</button>
                 )}
-                <button onClick={() => openEdit(t)}
-                  className="px-3 py-1.5 bg-slate-600/80 hover:bg-slate-500 text-white font-bold rounded-lg text-[10px] transition-all">✏️ Modifier</button>
+                {canWrite && (
+                  <button onClick={() => openEdit(t)}
+                    className="px-3 py-1.5 bg-slate-600/80 hover:bg-slate-500 text-white font-bold rounded-lg text-[10px] transition-all">Modifier</button>
+                )}
               </div>
             </div>
           ))}
@@ -203,10 +210,10 @@ export default function TourneesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Précédent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant</button>
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api';
+import { ShoppingCart, Coins, Receipt, AlertTriangle, Tag, Package, Clock, Trophy, DollarSign, BarChart3 } from 'lucide-react';
 
 const cleanParams = (params) => Object.fromEntries(
   Object.entries(params).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
@@ -96,7 +97,7 @@ export default function DashboardSupermarche() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-black text-white tracking-tight">
-              🛒 Tableau de Bord
+              Tableau de Bord
             </h1>
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -110,11 +111,11 @@ export default function DashboardSupermarche() {
         <div className="flex gap-3">
           <button onClick={() => navigate('/supermarche/pos')}
             className="bg-amber-500 hover:bg-amber-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20">
-            🛒 Ouvrir Caisse
+            Ouvrir Caisse
           </button>
           <button onClick={() => navigate('/supermarche/rapports')}
             className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">
-            📊 Rapports
+            Rapports
           </button>
         </div>
       </div>
@@ -128,7 +129,7 @@ export default function DashboardSupermarche() {
               a.color === 'amber' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
               'bg-blue-500/10 border-blue-500/30 text-blue-400'
             }`}>
-              {a.type === 'rupture' ? '⚠️' : a.type === 'promo' ? '🏷️' : '🚚'} {a.msg}
+              {a.msg}
             </div>
           ))}
         </div>
@@ -136,17 +137,17 @@ export default function DashboardSupermarche() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="💰" label="CA Jour" value={`${(stats?.caJour || 0).toLocaleString('fr-FR')} F`} sub={`${stats?.ventesJour || 0} ventes`} color="#10b981" />
-        <StatCard icon="🧾" label="Transactions" value={stats?.ventesJour || 0} sub="Aujourd'hui" color="#3b82f6" />
-        <StatCard icon="⚠️" label="Ruptures Stock" value={stats?.ruptures || 0} sub="Articles en alerte" color="#ef4444" />
-        <StatCard icon="🏷️" label="Promos Actives" value={stats?.promosActives || 0} sub="En cours" color="#8b5cf6" />
+        <StatCard icon={<Coins className="w-6 h-6" />} label="CA Jour" value={`${(stats?.caJour || 0).toLocaleString('fr-FR')} F`} sub={`${stats?.ventesJour || 0} ventes`} color="#10b981" />
+        <StatCard icon={<Receipt className="w-6 h-6" />} label="Transactions" value={stats?.ventesJour || 0} sub="Aujourd'hui" color="#3b82f6" />
+        <StatCard icon={<AlertTriangle className="w-6 h-6" />} label="Ruptures Stock" value={stats?.ruptures || 0} sub="Articles en alerte" color="#ef4444" />
+        <StatCard icon={<Tag className="w-6 h-6" />} label="Promos Actives" value={stats?.promosActives || 0} sub="En cours" color="#8b5cf6" />
       </div>
 
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Ventes par Rayon */}
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="text-white font-black text-lg mb-5">📦 Ventes par Rayon</h2>
+          <h2 className="text-white font-black text-lg mb-5">Ventes par Rayon</h2>
           <div className="space-y-4">
             {ventesByRayon.length === 0 ? (
               <p className="text-slate-500 text-sm text-center py-6">Aucune donnée disponible</p>
@@ -160,7 +161,7 @@ export default function DashboardSupermarche() {
 
         {/* Heures de Pointe */}
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="text-white font-black text-lg mb-5">⏰ Heures de Pointe</h2>
+          <h2 className="text-white font-black text-lg mb-5">Heures de Pointe</h2>
           <div className="flex items-center justify-center h-32 text-slate-500 text-sm">
             Données non disponibles (dette technique)
           </div>
@@ -170,7 +171,7 @@ export default function DashboardSupermarche() {
       {/* Top Produits */}
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-white font-black text-lg">🏆 Top Produits du Jour</h2>
+          <h2 className="text-white font-black text-lg">Top Produits du Jour</h2>
           <button onClick={() => navigate('/supermarche/stock')}
             className="text-amber-400 hover:text-amber-300 text-xs font-bold transition-colors">
             Voir le stock →
@@ -215,14 +216,14 @@ export default function DashboardSupermarche() {
       {/* Actions Rapides */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Nouvelle Réception', icon: '📦', path: '/supermarche/receptions', color: '#3b82f6' },
-          { label: 'Ajouter Promo', icon: '🏷️', path: '/supermarche/promotions', color: '#8b5cf6' },
-          { label: 'Inventaire', icon: '📊', path: '/supermarche/inventaire', color: '#10b981' },
-          { label: 'Ajouter Dépense', icon: '💸', path: '/supermarche/depenses', color: '#ef4444' },
+          { label: 'Nouvelle Réception', icon: Package, path: '/supermarche/receptions', color: '#3b82f6' },
+          { label: 'Ajouter Promo', icon: Tag, path: '/supermarche/promotions', color: '#8b5cf6' },
+          { label: 'Inventaire', icon: BarChart3, path: '/supermarche/inventaire', color: '#10b981' },
+          { label: 'Ajouter Dépense', icon: DollarSign, path: '/supermarche/depenses', color: '#ef4444' },
         ].map((a, i) => (
           <button key={i} onClick={() => navigate(a.path)}
             className="bg-slate-800/60 border border-slate-700/50 hover:border-slate-600 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all group">
-            <span className="text-3xl group-hover:scale-110 transition-transform">{a.icon}</span>
+            <span className="group-hover:scale-110 transition-transform">{a.icon && <a.icon className="w-8 h-8" />}</span>
             <span className="text-slate-300 text-xs font-bold text-center">{a.label}</span>
           </button>
         ))}

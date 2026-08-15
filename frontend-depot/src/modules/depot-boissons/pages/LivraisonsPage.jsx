@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
@@ -12,6 +13,7 @@ export default function LivraisonsPage() {
   const { metier, user } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { canWrite } = usePermission('livraisons');
 
   const [showModal, setShowModal] = useState(null);
   const [formData, setFormData] = useState({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId: '' });
@@ -126,14 +128,16 @@ export default function LivraisonsPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">Livraisons</h1>
           <p className="text-slate-400 text-sm mt-1">Suivi des entrées marchandises ({total} livraison{total > 1 ? 's' : ''})</p>
         </div>
-        <button onClick={() => {
-          const depotId = user?.depotActif?.id || '';
-          setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId });
-          setShowModal('create');
-        }}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
-          ➕ Nouvelle livraison
-        </button>
+        {canWrite && (
+          <button onClick={() => {
+            const depotId = user?.depotActif?.id || '';
+            setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId });
+            setShowModal('create');
+          }}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
+            ➕ Nouvelle livraison
+          </button>
+        )}
       </div>
 
       <div className="flex gap-3">
@@ -182,8 +186,10 @@ export default function LivraisonsPage() {
                   </span>
                 </td>
                 <td className="p-4 text-right">
-                  <button onClick={() => setConfirmDelete(l)} title="Supprimer"
-                    className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Supprimer</button>
+                  {canWrite && (
+                    <button onClick={() => setConfirmDelete(l)} title="Supprimer"
+                      className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Supprimer</button>
+                  )}
                 </td>
               </tr>
             ))}

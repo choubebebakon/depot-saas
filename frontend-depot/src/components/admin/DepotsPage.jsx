@@ -191,7 +191,7 @@ export default function DepotsPage() {
             {/* 🔥 CORRECTION : Utilisation d'un bouton de navigation interne fluide au lieu du lien mort */}
             <button 
               type="button"
-              onClick={() => { setFormOpen(false); navigate('/depot/abonnement'); }}
+              onClick={() => { setFormOpen(false); navigate('/pricing'); }}
               className="w-full text-center bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-4 py-2 rounded-lg text-xs transition-colors">
               🚀 Mettre à niveau mon offre
             </button>

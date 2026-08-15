@@ -82,15 +82,15 @@ export default function EvenementElevageForm({ isOpen, onClose, onSuccess, edit,
   const tauxMortalite = lotCourant && form.type === 'MORTALITE' && form.quantite > 0 ? (form.quantite / lotCourant.nombreInitial * 100) : 0;
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier événement' : '📅 Nouvel événement'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier événement' : 'Nouvel événement'} loading={loading} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Lot" name="lotId" type="select" value={form.lotId} onChange={set('lotId')} options={lots?.map(l => ({ value: l.id, label: `${l.nom} (${l.nombreActuel || l.nombreInitial} têtes)` })) || []} required error={errors.lotId?.message} />
         <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} options={[
-          { value: 'NAISSANCE', label: '🐣 Naissance' }, { value: 'ACHAT', label: '💰 Achat' },
-          { value: 'VENTE', label: '💵 Vente' }, { value: 'MORTALITE', label: '💀 Mortalité' },
-          { value: 'VACCINATION', label: '💉 Vaccination' }, { value: 'TRAITEMENT', label: '🏥 Traitement' },
-          { value: 'PESEE', label: '⚖️ Pesée' },
+          { value: 'NAISSANCE', label: 'Naissance' }, { value: 'ACHAT', label: 'Achat' },
+          { value: 'VENTE', label: 'Vente' }, { value: 'MORTALITE', label: 'Mortalité' },
+          { value: 'VACCINATION', label: 'Vaccination' }, { value: 'TRAITEMENT', label: 'Traitement' },
+          { value: 'PESEE', label: 'Pesée' },
         ]} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -99,7 +99,7 @@ export default function EvenementElevageForm({ isOpen, onClose, onSuccess, edit,
       </div>
       {showPoids && <FormField label="Poids" name="poids" type="number" value={form.poids} onChange={set('poids')} hint="kg" />}
       {showMontant && <FormField label="Montant" name="montant" type="number" value={form.montant} onChange={set('montant')} min={0} unit="FCFA" />}
-      {form.type === 'MORTALITE' && tauxMortalite > 5 && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">⚠️ Taux de mortalité élevé : {tauxMortalite.toFixed(1)}%</div>}
+      {form.type === 'MORTALITE' && tauxMortalite > 5 && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">Taux de mortalité élevé : {tauxMortalite.toFixed(1)}%</div>}
       <FormField label="Notes" name="notes" type="textarea" value={form.notes} onChange={set('notes')} rows={2} />
     </FormModal>
   );

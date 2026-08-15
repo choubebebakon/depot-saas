@@ -6,6 +6,7 @@ import { PERMISSIONS } from '../permissions';
 import ClientBoutiqueForm from '../forms/ClientBoutiqueForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { boutiqueApi } from '../services/boutiqueApi';
+import { Search, Edit, Trash2 } from 'lucide-react';
 
 export default function ClientsPage() {
   const queryClient = useQueryClient();
@@ -67,7 +68,7 @@ export default function ClientsPage() {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="🔍 Nom, email..."
+          placeholder="Nom, téléphone..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"
@@ -110,7 +111,7 @@ export default function ClientsPage() {
                           onClick={() => { setEditItem(i); setFormOpen(true); }}
                           className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm"
                         >
-                          ✏️ Modifier
+                          <Edit className="w-4 h-4" /> Modifier
                         </button>
                       )}
                       {perm.canDelete && (
@@ -118,7 +119,7 @@ export default function ClientsPage() {
                           onClick={() => setConfirmDelete(i)}
                           className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm"
                         >
-                          🗑️ Supprimer
+                          <Trash2 className="w-4 h-4" /> Supprimer
                         </button>
                       )}
                     </div>

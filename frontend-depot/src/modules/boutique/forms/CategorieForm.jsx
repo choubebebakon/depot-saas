@@ -22,7 +22,7 @@ const defaultValues = {
   nom: '',
   description: '',
   couleur: '#6366f1',
-  icone: '🏷️',
+  icone: '',
   ordre: 0,
   actif: true,
 };
@@ -42,7 +42,7 @@ export default function CategorieForm({ isOpen, onClose, onSuccess, edit }) {
         nom: edit.nom || '',
         description: edit.description || '',
         couleur: edit.couleur || '#6366f1',
-        icone: edit.icone || '🏷️',
+        icone: edit.icone || '',
         ordre: edit.ordre ?? 0,
         actif: edit.actif ?? true,
       });
@@ -57,7 +57,7 @@ export default function CategorieForm({ isOpen, onClose, onSuccess, edit }) {
         nom: data.nom,
         description: data.description || null,
         couleur: data.couleur || '#6366f1',
-        icone: data.icone || '🏷️',
+        icone: data.icone || '',
         ordre: Number(data.ordre),
         actif: data.actif ?? true,
       };
@@ -85,7 +85,7 @@ export default function CategorieForm({ isOpen, onClose, onSuccess, edit }) {
       isOpen={isOpen}
       onClose={onClose}
       onSubmit={handleSubmit((data) => mutation.mutate(data))}
-      title={edit ? '✏️ Modifier catégorie' : '🏷️ Nouvelle catégorie'}
+      title={edit ? 'Modifier catégorie' : 'Nouvelle catégorie'}
       loading={mutation.isPending}
       submitLabel={edit ? 'Modifier' : 'Créer'}
     >
@@ -132,7 +132,7 @@ export default function CategorieForm({ isOpen, onClose, onSuccess, edit }) {
                 name="icone"
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
-                placeholder="🏷️"
+                placeholder=""
                 className="w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-800 text-white text-sm"
               />
             </div>

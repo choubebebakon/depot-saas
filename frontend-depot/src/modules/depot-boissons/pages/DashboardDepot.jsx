@@ -19,7 +19,7 @@ function WidgetCard({ widget, value, accentColor }) {
       <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)` }} />
       <div className="p-5">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-2xl">{widget.icon}</span>
+          <span className="text-2xl"><widget.icon size={24} /></span>
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{widget.label}</span>
         </div>
         <p className="text-2xl font-black text-white tracking-tight">
@@ -142,7 +142,7 @@ export default function DashboardDepot() {
       <div className="p-8 text-center">
         <div className="max-w-md mx-auto py-16">
           <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl">📊</span>
+            <BarChart className="w-10 h-10 text-slate-500" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Bienvenue dans votre tableau de bord</h2>
           <p className="text-slate-400 text-sm mb-8">
@@ -174,7 +174,7 @@ export default function DashboardDepot() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20 flex-shrink-0">
-            🥤
+            <Package className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">

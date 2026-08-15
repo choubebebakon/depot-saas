@@ -6,6 +6,7 @@ import { PERMISSIONS } from '../permissions';
 import PromotionBoutiqueForm from '../forms/PromotionBoutiqueForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { boutiqueApi } from '../services/boutiqueApi';
+import { Search, Edit, Trash2, PartyPopper } from 'lucide-react';
 
 export default function PromotionsPage() {
   const queryClient = useQueryClient();
@@ -56,7 +57,7 @@ export default function PromotionsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">🎉 Promotions</h1>
+          <h1 className="text-2xl font-black text-white flex items-center gap-2"><PartyPopper className="w-6 h-6" /> Promotions</h1>
           <p className="text-slate-400 text-sm mt-1">{totalItems} promotion{totalItems !== 1 ? 's' : ''}</p>
         </div>
         {perm.canCreate && (
@@ -71,7 +72,7 @@ export default function PromotionsPage() {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="🔍 Libellé..."
+          placeholder="Libellé..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"
@@ -129,7 +130,7 @@ export default function PromotionsPage() {
                           onClick={() => { setEditItem(i); setFormOpen(true); }}
                           className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm"
                         >
-                          ✏️ Modifier
+                          <Edit className="w-4 h-4" /> Modifier
                         </button>
                       )}
                       {perm.canDelete && (
@@ -137,7 +138,7 @@ export default function PromotionsPage() {
                           onClick={() => setConfirmDelete(i)}
                           className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm"
                         >
-                          🗑️ Supprimer
+                          <Trash2 className="w-4 h-4" /> Supprimer
                         </button>
                       )}
                     </div>

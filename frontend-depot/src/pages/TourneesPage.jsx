@@ -7,9 +7,9 @@ import { useDepot } from '../contexts/DepotContext';
 function BadgeStatut({ statut }) {
     const config = {
         OUVERTE: { label: '● En cours', classes: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' },
-        CLOTURE_COMMERCIALE: { label: '⏳ Attente Magasinier', classes: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
-        VALIDEE: { label: '✅ Validée', classes: 'bg-slate-700 border-slate-600 text-slate-400' },
-        ANNULEE: { label: '✖ Annulée', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
+        CLOTURE_COMMERCIALE: { label: 'Attente Magasinier', classes: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
+        VALIDEE: { label: 'Validée', classes: 'bg-slate-700 border-slate-600 text-slate-400' },
+        ANNULEE: { label: 'Annulée', classes: 'bg-red-500/10 border-red-500/30 text-red-400' },
     };
     const c = config[statut] || config.ANNULEE;
     return (
@@ -393,9 +393,9 @@ function ModalClotureCommerciale({ tournee, tenantId, onSuccess, onClose }) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {[
-                        { key: 'cashRemis', label: '💵 Cash remis (FCFA)' },
-                        { key: 'omRemis', label: '📱 Orange Money remis (FCFA)' },
-                        { key: 'momoRemis', label: '📲 MTN MoMo remis (FCFA)' },
+                        { key: 'cashRemis', label: 'Cash remis (FCFA)' },
+                        { key: 'omRemis', label: 'Orange Money remis (FCFA)' },
+                        { key: 'momoRemis', label: 'MTN MoMo remis (FCFA)' },
                     ].map(f => (
                         <div key={f.key}>
                             <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">{f.label}</label>
@@ -675,7 +675,7 @@ export default function TourneesPage() {
                 {[
                     ['actives', `🟢 En cours (${stats.actives})`],
                     ['attente', `⏳ Attente Magasinier (${stats.attenteMagasinier})`],
-                    ['historique', '📋 Historique'],
+                    ['historique', 'Historique'],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id

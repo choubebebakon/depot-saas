@@ -5,13 +5,14 @@ import { useSectorQuery } from '../../../hooks/useSectorQuery';
 import { boutiqueApi } from '../services/boutiqueApi';
 import CategorieForm from '../forms/CategorieForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import { Flower2, BookOpen, Smartphone, Sparkles, IceCreamCone, Sprout, Tag, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 
 const TYPES_BOUTIQUE = [
-  { key: 'parfumerie', label: 'Parfumerie', icone: '🌸' },
-  { key: 'librairie', label: 'Librairie', icone: '📚' },
-  { key: 'telephonie', label: 'Téléphonie', icone: '📱' },
-  { key: 'salon_beaute', label: 'Salon de beauté', icone: '💅' },
-  { key: 'glacier', label: 'Glacier / Snack', icone: '🍦' },
+  { key: 'parfumerie', label: 'Parfumerie', icone: Flower2 },
+  { key: 'librairie', label: 'Librairie', icone: BookOpen },
+  { key: 'telephonie', label: 'Téléphonie', icone: Smartphone },
+  { key: 'salon_beaute', label: 'Salon de beauté', icone: Sparkles },
+  { key: 'glacier', label: 'Glacier / Snack', icone: IceCreamCone },
 ];
 
 export default function CategoriesPage() {
@@ -86,7 +87,7 @@ export default function CategoriesPage() {
             onClick={() => setSeedOpen(true)}
             className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20"
           >
-            🌱 Initialiser
+            <Sprout className="w-4 h-4" /> Initialiser
           </button>
           <button
             onClick={() => { setEditItem(null); setFormOpen(true); }}
@@ -100,7 +101,7 @@ export default function CategoriesPage() {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="🔍 Rechercher une catégorie..."
+          placeholder="Rechercher une catégorie..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="bg-slate-800 border border-slate-700 focus:border-amber-500 text-white rounded-xl px-4 py-2 text-sm outline-none w-64"
@@ -113,7 +114,7 @@ export default function CategoriesPage() {
         </div>
       ) : filteredCategories.length === 0 ? (
         <div className="text-center py-20">
-          <span className="text-6xl">🏷️</span>
+          <Tag className="w-16 h-16 mx-auto text-slate-500" />
           <p className="text-slate-400 font-semibold mt-4">Aucune catégorie créée</p>
           <p className="text-slate-500 text-sm mt-1">Initialisez les catégories ou créez-en une manuellement</p>
         </div>
@@ -131,14 +132,13 @@ export default function CategoriesPage() {
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-lg mb-3"
                     style={{ backgroundColor: `${c.couleur || '#6366f1'}33` }}
                   >
-                    {c.icone || '🏷️'}
                   </div>
                   <h3 className="text-white font-bold text-base">{c.nom}</h3>
                   <p className="text-slate-500 text-xs mt-1">
                     {c._count?.articles || 0} article{c._count?.articles !== 1 ? 's' : ''}
                   </p>
                   {!c.actif && (
-                    <span className="text-slate-500 text-xs mt-1 block">⚠️ Inactive</span>
+                    <span className="text-slate-500 text-xs mt-1 block flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Inactive</span>
                   )}
                 </div>
                 <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -147,14 +147,14 @@ export default function CategoriesPage() {
                     className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm"
                     title="Modifier"
                   >
-                    ✏️
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setConfirmDelete(c)}
                     className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors text-sm"
                     title="Supprimer"
                   >
-                    🗑️
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -198,7 +198,7 @@ export default function CategoriesPage() {
                   disabled={seedMutation.isPending}
                   className="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl p-4 text-left transition-all disabled:opacity-50"
                 >
-                  <span className="text-2xl block mb-2">{type.icone}</span>
+                  <span className="text-2xl block mb-2">{type.icone && <type.icone className="w-8 h-8" />}</span>
                   <span className="text-white font-semibold text-sm">{type.label}</span>
                 </button>
               ))}

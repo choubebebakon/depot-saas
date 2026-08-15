@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import { venteSchema } from '../schemas/venteSchema';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -223,6 +224,7 @@ export default function CaissePage() {
   const { metier } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { canWrite } = usePermission('caisse');
 
   const [showModal, setShowModal] = useState(null);
   const [confirmFermer, setConfirmFermer] = useState(null);
@@ -364,7 +366,7 @@ export default function CaissePage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {!estOuverte ? (
+          {canWrite && (!estOuverte ? (
             <button 
               onClick={() => setShowModal('ouvrir')} 
               disabled={!currentDepotId || !currentTenantId}
@@ -387,7 +389,7 @@ export default function CaissePage() {
                 🔒 Fermer caisse
               </button>
             </>
-          )}
+          ))}
           <button onClick={handleRapport} disabled={fetchingRapport}
             className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
             {fetchingRapport ? '⌛ Génération...' : '📊 Rapport journalier'}

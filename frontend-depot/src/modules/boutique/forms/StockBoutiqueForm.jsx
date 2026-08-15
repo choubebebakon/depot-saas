@@ -103,7 +103,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
       isOpen={isOpen}
       onClose={onClose}
       onSubmit={handleSubmit(mutation.mutate)}
-      title={edit ? '✏️ Modifier' : '➕ Nouvel Article'}
+      title={edit ? 'Modifier' : 'Nouvel Article'}
       loading={mutation.isPending}
       size="md"
       submitLabel={edit ? 'Modifier' : 'Créer'}
@@ -167,7 +167,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
             >
               <option value="">Sans catégorie</option>
               {categories?.map(c => (
-                <option key={c.id} value={c.id}>{c.icone} {c.nom}</option>
+                <option key={c.id} value={c.id}>{c.nom}</option>
               ))}
             </select>
             {errors.categorieId && <span className="text-red-400 text-xs mt-1">{errors.categorieId.message}</span>}

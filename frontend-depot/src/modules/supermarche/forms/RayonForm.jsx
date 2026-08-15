@@ -74,7 +74,7 @@ export default function RayonForm({ isOpen, onClose, onSuccess, edit }) {
       isOpen={isOpen}
       onClose={onClose}
       onSubmit={handleSubmit((data) => mutation.mutate(data))}
-      title={edit ? '✏️ Modifier rayon' : '🏪 Nouveau rayon'}
+      title={edit ? 'Modifier rayon' : 'Nouveau rayon'}
       loading={mutation.isPending}
       submitLabel={edit ? 'Modifier' : 'Créer'}
     >

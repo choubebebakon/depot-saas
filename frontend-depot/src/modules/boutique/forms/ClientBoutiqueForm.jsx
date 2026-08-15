@@ -44,7 +44,7 @@ export default function ClientBoutiqueForm({ isOpen, onClose, onSuccess, edit, m
 
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? '✏️ Modifier' : '➕ Nouveau Client'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} title={edit ? 'Modifier' : 'Nouveau Client'} loading={loading} size="md" submitLabel={edit ? 'Modifier' : 'Créer'}>
       {errors.general && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.general}</div>}
       <FormField label="Nom" name="nom" value={form.nom} onChange={set('nom')} required error={errors.nom?.message} placeholder="Nom du client" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { boutiqueApi } from '../services/boutiqueApi';
+import { Store, DollarSign, Package, User, AlertTriangle, Banknote, Trophy } from 'lucide-react';
 
 export default function DashboardBoutique() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ export default function DashboardBoutique() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black text-white tracking-tight">🏪 Tableau de Bord</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-2"><Store className="w-8 h-8" /> Tableau de Bord</h1>
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-emerald-400 text-xs font-bold">En direct</span>
@@ -51,19 +52,19 @@ export default function DashboardBoutique() {
           <p className="text-slate-400 text-sm mt-1">{time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => navigate('/boutique/ventes')} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-cyan-600/20">💰 Ventes</button>
-          <button onClick={() => navigate('/boutique/stock')} className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">📦 Stock</button>
+          <button onClick={() => navigate('/boutique/ventes')} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-cyan-600/20">Ventes</button>
+          <button onClick={() => navigate('/boutique/stock')} className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">Stock</button>
         </div>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: '💰', label: 'CA du jour', value: `${(stats?.caJour || 0).toLocaleString('fr-FR')} F`, color: '#10b981' },
-          { icon: '📦', label: 'Ventes du jour', value: stats?.ventesJour || 0, color: '#0891b2' },
-          { icon: '👤', label: 'Clients actifs', value: stats?.clientsActifs || 0, color: '#3b82f6' },
-          { icon: '⚠️', label: 'Ruptures stock', value: stats?.stockCritique || 0, color: '#ef4444' },
+          { icon: DollarSign, label: 'CA du jour', value: `${(stats?.caJour || 0).toLocaleString('fr-FR')} F`, color: '#10b981' },
+          { icon: Package, label: 'Ventes du jour', value: stats?.ventesJour || 0, color: '#0891b2' },
+          { icon: User, label: 'Clients actifs', value: stats?.clientsActifs || 0, color: '#3b82f6' },
+          { icon: AlertTriangle, label: 'Ruptures stock', value: stats?.stockCritique || 0, color: '#ef4444' },
         ].map((k, i) => (
           <div key={i} className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 hover:border-cyan-500/30 transition-all">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: k.color + '22' }}>{k.icon}</div>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: k.color + '22' }}>{k.icon && <k.icon className="w-6 h-6" />}</div>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">{k.label}</p>
             <p className="text-white font-black text-2xl leading-none">{k.value}</p>
           </div>
@@ -71,23 +72,23 @@ export default function DashboardBoutique() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="text-white font-black text-sm mb-4">📦 Produits en stock</h2>
+          <h2 className="text-white font-black text-sm mb-4 flex items-center gap-2"><Package className="w-4 h-4" /> Produits en stock</h2>
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-cyan-600/20 flex items-center justify-center"><span className="text-4xl">📦</span></div>
+            <div className="w-20 h-20 rounded-2xl bg-cyan-600/20 flex items-center justify-center"><Package className="w-10 h-10" /></div>
             <div><p className="text-white font-black text-5xl">{stats?.totalProduits || 0}</p><p className="text-slate-400 text-sm">produits référencés</p></div>
           </div>
         </div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="text-white font-black text-sm mb-4">🏧 Caisse du jour</h2>
+          <h2 className="text-white font-black text-sm mb-4 flex items-center gap-2"><Banknote className="w-4 h-4" /> Caisse du jour</h2>
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-purple-500/20 flex items-center justify-center"><span className="text-4xl">🏧</span></div>
+            <div className="w-20 h-20 rounded-2xl bg-purple-500/20 flex items-center justify-center"><Banknote className="w-10 h-10" /></div>
             <div><p className="text-white font-black text-5xl">{(stats?.caisseJour || 0).toLocaleString('fr-FR')}</p><p className="text-slate-400 text-sm">F CFA</p></div>
           </div>
         </div>
       </div>
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-white font-black text-lg">🏆 Top Produits du Jour</h2>
+          <h2 className="text-white font-black text-lg flex items-center gap-2"><Trophy className="w-5 h-5" /> Top Produits du Jour</h2>
           <button onClick={() => navigate('/boutique/stock')} className="text-cyan-400 hover:text-cyan-300 text-xs font-bold transition-colors">Voir le stock →</button>
         </div>
         <div className="overflow-x-auto">

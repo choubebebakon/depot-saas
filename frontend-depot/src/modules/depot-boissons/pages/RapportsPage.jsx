@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { depotApi } from '../services/depotApi';
+import { Coins, Package, Users, Briefcase, Car, HandCoins } from 'lucide-react';
 
 const RAPPORTS = [
-  { id: 'ventes', label: 'Ventes par période', icon: '💰', description: 'Chiffre d\'affaires, quantité vendue' },
-  { id: 'stock', label: 'État du stock', icon: '📦', description: 'Stock actuel, valeur, rotation' },
-  { id: 'clients_debiteurs', label: 'Clients débiteurs', icon: '👥', description: 'Créances clients' },
-  { id: 'commissions', label: 'Commissions commerciaux', icon: '💼', description: 'Performance commerciale' },
-  { id: 'tournees', label: 'Rapport tournées', icon: '🛺', description: 'Résultats des tournées' },
-  { id: 'depenses', label: 'Dépenses', icon: '💸', description: 'Toutes les dépenses par catégorie' },
+  { id: 'ventes', label: 'Ventes par période', icon: Coins, description: 'Chiffre d\'affaires, quantité vendue' },
+  { id: 'stock', label: 'État du stock', icon: Package, description: 'Stock actuel, valeur, rotation' },
+  { id: 'clients_debiteurs', label: 'Clients débiteurs', icon: Users, description: 'Créances clients' },
+  { id: 'commissions', label: 'Commissions commerciaux', icon: Briefcase, description: 'Performance commerciale' },
+  { id: 'tournees', label: 'Rapport tournées', icon: Car, description: 'Résultats des tournées' },
+  { id: 'depenses', label: 'Dépenses', icon: HandCoins, description: 'Toutes les dépenses par catégorie' },
 ];
 
 export default function RapportsPage() {
@@ -95,7 +96,7 @@ export default function RapportsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-white tracking-tight">📈 Rapports</h1>
+        <h1 className="text-2xl font-black text-white tracking-tight">Rapports</h1>
         <p className="text-slate-400 text-sm mt-1">Générez et exportez des rapports</p>
       </div>
 
@@ -107,7 +108,7 @@ export default function RapportsPage() {
                 ? 'bg-blue-600/20 border-blue-500/50'
                 : 'bg-slate-800/60 border-slate-700/50 hover:bg-slate-700/60'
             }`}>
-            <p className="text-2xl mb-2">{r.icon}</p>
+            <p className="text-2xl mb-2">{r.icon && <r.icon className="w-8 h-8" />}</p>
             <p className="text-white font-bold text-sm">{r.label}</p>
             <p className="text-xs text-slate-500 mt-1">{r.description}</p>
           </button>
@@ -132,14 +133,14 @@ export default function RapportsPage() {
           <div className="flex flex-wrap gap-2">
             <button onClick={handleGenerer} disabled={loading}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm">
-              {loading ? '⏳ Génération...' : '📅 Générer le rapport'}
+              {loading ? 'Génération...' : 'Générer le rapport'}
             </button>
             {data && (
               <>
                 <button onClick={() => handleExport('pdf')}
-                  className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all text-sm">📄 Exporter PDF</button>
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all text-sm">Exporter PDF</button>
                 <button onClick={() => handleExport('xlsx')}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm">📊 Exporter Excel</button>
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm">Exporter Excel</button>
               </>
             )}
           </div>

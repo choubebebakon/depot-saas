@@ -4,6 +4,7 @@ import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
 import { boutiqueApi } from '../services/boutiqueApi';
+import { Search, Printer } from 'lucide-react';
 
 export default function FacturesPage() {
   const notif = useNotif();
@@ -44,7 +45,7 @@ export default function FacturesPage() {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="🔍 N° facture, client..."
+          placeholder="N° facture, client..."
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
           className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"

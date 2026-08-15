@@ -7,6 +7,7 @@ import NotificationBell from '../../core/notifications/NotificationBell';
 import NotificationToast from '../../core/notifications/NotificationToast';
 import GeStockChatbot from '../../components/chatbot/GeStockChatbot';
 import SupportWidget from '../../components/SupportWidget';
+import PermissionGate from '../../shared/permissions/PermissionGate';
 
 const DashboardSupermarche = lazy(() => import('./pages/DashboardSupermarche'));
 const POSCaissePage         = lazy(() => import('./pages/POSCaissePage'));
@@ -23,12 +24,22 @@ const ParametresPage        = lazy(() => import('./pages/ParametresPage'));
 const UtilisateursPage      = lazy(() => import('../../components/admin/UtilisateursPage'));
 const DepotsPage            = lazy(() => import('../../components/admin/DepotsPage'));
 const AbonnementPage        = lazy(() => import('../../components/admin/AbonnementPage'));
+const AuditPage             = lazy(() => import('../../pages/AuditPage'));
+const ProfilPage            = lazy(() => import('../../pages/ProfilPage'));
 
 function Loader() {
   return (
     <div className="flex items-center justify-center py-32">
       <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
     </div>
+  );
+}
+
+function gate(sousModule, Page) {
+  return (
+    <PermissionGate sousModule={sousModule}>
+      <Page />
+    </PermissionGate>
   );
 }
 
@@ -114,21 +125,23 @@ export default function SupermarcheRoutes() {
     <MetierGuard>
       <Routes>
         <Route element={<SupermarcheLayout />}>
-          <Route path="dashboard"    element={<DashboardSupermarche />} />
-          <Route path="pos"          element={<POSCaissePage />} />
-          <Route path="stock"        element={<StockPage />} />
-          <Route path="rayons"       element={<RayonsPage />} />
-          <Route path="promotions"   element={<PromotionsPage />} />
-          <Route path="clients"      element={<ClientsPage />} />
-          <Route path="fournisseurs" element={<FournisseursPage />} />
-          <Route path="receptions"   element={<ReceptionsPage />} />
-          <Route path="inventaire"   element={<InventairePage />} />
-          <Route path="depenses"     element={<DepensesPage />} />
-          <Route path="rapports"     element={<RapportsPage />} />
-          <Route path="parametres"   element={<ParametresPage />} />
-          <Route path="utilisateurs" element={<UtilisateursPage />} />
-          <Route path="depots"       element={<DepotsPage />} />
-          <Route path="abonnement"   element={<AbonnementPage />} />
+          <Route path="dashboard"    element={gate('dashboard', DashboardSupermarche)} />
+          <Route path="pos"          element={gate('pos_caisse', POSCaissePage)} />
+          <Route path="stock"        element={gate('stock', StockPage)} />
+          <Route path="rayons"       element={gate('rayons', RayonsPage)} />
+          <Route path="promotions"   element={gate('promotions', PromotionsPage)} />
+          <Route path="clients"      element={gate('clients', ClientsPage)} />
+          <Route path="fournisseurs" element={gate('fournisseurs', FournisseursPage)} />
+          <Route path="receptions"   element={gate('receptions', ReceptionsPage)} />
+          <Route path="inventaire"   element={gate('inventaire', InventairePage)} />
+          <Route path="depenses"     element={gate('depenses', DepensesPage)} />
+          <Route path="rapports"     element={gate('rapports', RapportsPage)} />
+          <Route path="parametres"   element={gate('parametres', ParametresPage)} />
+          <Route path="utilisateurs" element={gate('utilisateurs', UtilisateursPage)} />
+          <Route path="depots"       element={gate('depots', DepotsPage)} />
+          <Route path="abonnement"   element={<Navigate to="/pricing" replace />} />
+          <Route path="audit-patron" element={gate('audit_patron', AuditPage)} />
+          <Route path="profil"       element={<ProfilPage />} />
           <Route path="*"            element={<DashboardRedirect />} />
         </Route>
       </Routes>

@@ -28,7 +28,15 @@ import {
   Building2,
   Cpu,
   BrainCircuit,
-  Bot
+  Bot,
+  LineChart,
+  Radar,
+  Target,
+  FileBarChart,
+  RefreshCw,
+  Calendar,
+  Tag,
+  Rocket
 } from 'lucide-react';
 import logo from '../assets/logo-neon.png';
 import Footer from '../components/Footer';
@@ -363,11 +371,24 @@ export default function GesTockLandingPage() {
           </a>
 
           <div className="nav-links">
-            {t.nav.map((item, index) => (
-              <button key={item} type="button" onClick={() => scrollTo(['product', 'ai-section', 'metiers', 'pricing', 'testimonials', 'faq'][index])}>
-                {item}
-              </button>
-            ))}
+            {t.nav.map((item, index) => {
+              const navItems = ['product', 'ai-section', 'metiers', 'pricing', 'testimonials', 'faq'];
+              return (
+                <button 
+                  key={item} 
+                  type="button" 
+                  onClick={() => {
+                    if (navItems[index] === 'pricing') {
+                      navigate('/pricing');
+                    } else {
+                      scrollTo(navItems[index]);
+                    }
+                  }}
+                >
+                  {item}
+                </button>
+              );
+            })}
           </div>
 
           <div className="nav-actions">
@@ -386,11 +407,24 @@ export default function GesTockLandingPage() {
 
       {menuOpen && (
         <div className="mobile-nav">
-          {t.nav.map((item, index) => (
-            <button key={item} type="button" onClick={() => scrollTo(['product', 'ai-section', 'metiers', 'pricing', 'testimonials', 'faq'][index])}>
-              {item}
-            </button>
-          ))}
+          {t.nav.map((item, index) => {
+            const navItems = ['product', 'ai-section', 'metiers', 'pricing', 'testimonials', 'faq'];
+            return (
+              <button 
+                key={item} 
+                type="button" 
+                onClick={() => {
+                  if (navItems[index] === 'pricing') {
+                    navigate('/pricing');
+                  } else {
+                    scrollTo(navItems[index]);
+                  }
+                }}
+              >
+                {item}
+              </button>
+            );
+          })}
           <button type="button" onClick={() => navigate('/login')}>{t.login}</button>
           <button className="btn btn-primary" type="button" onClick={() => navigate('/register')}>{t.trial}</button>
         </div>
@@ -531,34 +565,100 @@ export default function GesTockLandingPage() {
             <div className="ai-grid">
               <div className="ai-card" data-reveal>
                 <div className="ai-card-icon">
-                  <TrendingUp size={24} />
+                  <LineChart size={24} />
                 </div>
-                <h3>Prédiction des ruptures de stock</h3>
+                <h3>Prévoir les ventes</h3>
                 <p>
-                  GeStock AI analyse l'historique de vos ventes et la saisonnalité locale pour vous avertir 
-                  avant même que vos produits ne manquent en rayon.
+                  Comprendre la tendance avant que le problème n'arrive pour décider en avance.
+                  Anticipez les fluctuations de demande et ajustez votre stratégie.
                 </p>
               </div>
 
               <div className="ai-card" data-reveal>
                 <div className="ai-card-icon">
-                  <Cpu size={24} />
+                  <Radar size={24} />
                 </div>
-                <h3>Suggestions d'achats optimisées</h3>
+                <h3>Détecter les anomalies</h3>
                 <p>
-                  Ne commandez plus à l'aveugle. L'intelligence artificielle calcule les quantités idéales 
-                  à commander auprès de vos fournisseurs pour maximiser votre trésorerie.
+                  Repérer les écarts et pertes invisibles grâce à la détection intelligente.
+                  Identifiez rapidement les incohérences dans vos données.
                 </p>
               </div>
 
               <div className="ai-card" data-reveal>
                 <div className="ai-card-icon">
-                  <Sparkles size={24} />
+                  <Target size={24} />
                 </div>
-                <h3>Assistant commercial intelligent</h3>
+                <h3>Recommandation des réapprovisionnements</h3>
                 <p>
-                  Posez vos questions en langage naturel à l'application ("Quels sont mes produits les plus rentables ce mois-ci ?") 
-                  et obtenez des rapports instantanés.
+                  Suggérer des actions prioritaires pour éviter rupture et surstocks.
+                  Optimisez vos commandes fournisseurs en temps réel.
+                </p>
+              </div>
+
+              <div className="ai-card" data-reveal>
+                <div className="ai-card-icon">
+                  <FileBarChart size={24} />
+                </div>
+                <h3>Identification des produits rentables</h3>
+                <p>
+                  Mettre en avant les articles qui génèrent réellement les marges.
+                  Concentrez vos efforts sur les produits les plus performants.
+                </p>
+              </div>
+
+              <div className="ai-card" data-reveal>
+                <div className="ai-card-icon">
+                  <FileText size={24} />
+                </div>
+                <h3>Création automatique des rapports</h3>
+                <p>
+                  Récapituler l'essentiel : ce qui s'améliore, ce qui se dégrade, quoi faire en suite.
+                  Recevez des synthèses claires et actionnables.
+                </p>
+              </div>
+
+              <div className="ai-card" data-reveal>
+                <div className="ai-card-icon">
+                  <RefreshCw size={24} />
+                </div>
+                <h3>Automatiser les tâches répétitives</h3>
+                <p>
+                  Libérez votre temps en automatisant les processus manuels.
+                  Réduisez les erreurs et gagnez en efficacité.
+                </p>
+              </div>
+
+              <div className="ai-card" data-reveal>
+                <div className="ai-card-icon">
+                  <Calendar size={24} />
+                </div>
+                <h3>Anticiper les périodes de fortes activités</h3>
+                <p>
+                  Prévoir les pics de demande et ajuster les stocks en conséquence.
+                  Soyez prêt pour les saisons et événements importants.
+                </p>
+              </div>
+
+              <div className="ai-card" data-reveal>
+                <div className="ai-card-icon">
+                  <Tag size={24} />
+                </div>
+                <h3>Optimiser les promotions</h3>
+                <p>
+                  Recevoir des recommandations pour maximiser l'impact des promotions.
+                  Ciblez les bons produits au bon moment.
+                </p>
+              </div>
+
+              <div className="ai-card" data-reveal>
+                <div className="ai-card-icon">
+                  <Rocket size={24} />
+                </div>
+                <h3>Découvrir des opportunités de croissance</h3>
+                <p>
+                  Recevoir des recommandations personnalisées pour développer votre activité.
+                  Identifiez de nouveaux axes de développement.
                 </p>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import FournisseurForm from '../../../shared/forms/FournisseurForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -15,6 +16,7 @@ export default function FournisseursPage() {
   const { metier, user } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { canWrite } = usePermission('fournisseurs');
 
   const [showModal, setShowModal] = useState(null);
   const [selectedFournisseur, setSelectedFournisseur] = useState(null);
@@ -176,10 +178,12 @@ export default function FournisseursPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">Fournisseurs</h1>
           <p className="text-slate-400 text-sm mt-1">{total} fournisseur{total > 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openCreate}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
-          ➕ Nouveau fournisseur
-        </button>
+        {canWrite && (
+          <button onClick={openCreate}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
+            ➕ Nouveau fournisseur
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -200,7 +204,9 @@ export default function FournisseursPage() {
                     <p className="text-xs text-slate-500 mt-0.5">{f.telephone || '-'}</p>
                     {f.email && <p className="text-xs text-slate-500">{f.email}</p>}
                   </div>
-                  <button onClick={() => openEdit(f)} className="text-slate-500 hover:text-white text-xs">✏️ Modifier</button>
+                  {canWrite && (
+                    <button onClick={() => openEdit(f)} className="text-slate-500 hover:text-white text-xs">✏️ Modifier</button>
+                  )}
                 </div>
                 {dette > 0 && (
                   <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 mb-3 text-center">
@@ -210,13 +216,17 @@ export default function FournisseursPage() {
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5 mt-4">
-                <button onClick={() => handleCommander(f)} disabled={commanderMutation.isPending}
-                  className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] transition-all">Commander</button>
-                <button onClick={() => handleReceptionner(f)} disabled={receptionnerMutation.isPending}
-                  className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Réceptionner</button>
-                {dette > 0 && (
-                  <button onClick={() => { setSelectedFournisseur(f); setShowModal('regler'); }}
-                    className="px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 text-white font-bold rounded-lg text-[10px] transition-all">Régler</button>
+                {canWrite && (
+                  <>
+                    <button onClick={() => handleCommander(f)} disabled={commanderMutation.isPending}
+                      className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] transition-all">Commander</button>
+                    <button onClick={() => handleReceptionner(f)} disabled={receptionnerMutation.isPending}
+                      className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Réceptionner</button>
+                    {dette > 0 && (
+                      <button onClick={() => { setSelectedFournisseur(f); setShowModal('regler'); }}
+                        className="px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 text-white font-bold rounded-lg text-[10px] transition-all">Régler</button>
+                    )}
+                  </>
                 )}
                 <button onClick={() => handleVoirCommandes(f)}
                   className="px-3 py-1.5 bg-slate-600/80 hover:bg-slate-500 text-white font-bold rounded-lg text-[10px] transition-all">Commandes</button>

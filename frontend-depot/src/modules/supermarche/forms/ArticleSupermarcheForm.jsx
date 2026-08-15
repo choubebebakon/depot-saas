@@ -120,7 +120,7 @@ export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edi
       isOpen={isOpen}
       onClose={onClose}
       onSubmit={handleSubmit((data) => mutation.mutate(data))}
-      title={edit ? '✏️ Modifier article' : '📦 Nouvel article'}
+      title={edit ? 'Modifier article' : 'Nouvel article'}
       loading={mutation.isPending}
       size="lg"
       submitLabel={edit ? 'Modifier' : 'Créer'}
@@ -247,7 +247,7 @@ export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edi
           )}
         />
         
-        {/* 🔥 TRUC DE SIUX : Le composant BarcodeScanner génère son propre <form>.
+        {/* TRUC DE SIUX : Le composant BarcodeScanner génère son propre <form>.
           Pour casser la relation d'imbrication HTML interdite par React sans casser l'interface,
           on utilise "display: contents" ou un isolement d'événement strict pour couper court aux erreurs.
           On utilise également un formulaire factice local pour neutraliser le comportement du bouton de soumission s'il y en a un.

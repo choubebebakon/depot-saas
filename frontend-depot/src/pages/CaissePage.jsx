@@ -36,7 +36,7 @@ function ModalOuvrirCaisse({ tenantId, depotId, userId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-2">💰 Ouvrir la Caisse</h3>
+                <h3 className="text-white font-black text-xl mb-2">Ouvrir la Caisse</h3>
                 <p className="text-slate-400 text-sm mb-6">Saisissez le fond de départ en FCFA</p>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -61,7 +61,7 @@ function ModalOuvrirCaisse({ tenantId, depotId, userId, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : '✅ Ouvrir'}
+                            {loading ? '...' : 'Ouvrir'}
                         </button>
                     </div>
                 </form>
@@ -105,7 +105,7 @@ function ModalFermerCaisse({ session, soldeTheorique, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">🔒 Clôture de Caisse</h3>
+                <h3 className="text-white font-black text-xl mb-6">Clôture de Caisse</h3>
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
 
                 <div className="bg-slate-800 rounded-xl p-4 mb-5 space-y-2">
@@ -161,7 +161,7 @@ function ModalFermerCaisse({ session, soldeTheorique, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading || fondFinal === ''}
                             className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : '🔒 Clôturer'}
+                            {loading ? '...' : 'Clôturer'}
                         </button>
                     </div>
                 </form>
@@ -209,7 +209,7 @@ function ModalDepense({ tenantId, depotId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">💸 Nouvelle Dépense</h3>
+                <h3 className="text-white font-black text-xl mb-6">Nouvelle Dépense</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Catégorie *</label>
@@ -237,7 +237,7 @@ function ModalDepense({ tenantId, depotId, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={createDepenseMutation.isPending}
                             className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {createDepenseMutation.isPending ? '...' : '💸 Enregistrer'}
+                            {createDepenseMutation.isPending ? '...' : 'Enregistrer'}
                         </button>
                     </div>
                 </form>
@@ -313,17 +313,17 @@ export default function CaissePage() {
                         <>
                             <button onClick={() => setModalDepense(true)}
                                 className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2">
-                                💸 Dépense
+                                Dépense
                             </button>
                             <button onClick={() => setModalFermer(true)}
                                 className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2">
-                                🔒 Clôturer
+                                Clôturer
                             </button>
                         </>
                     ) : (
                         <button onClick={() => setModalOuvrir(true)}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
-                            💰 Ouvrir la Caisse
+                            Ouvrir la Caisse
                         </button>
                     )}
                 </div>
@@ -336,7 +336,7 @@ export default function CaissePage() {
                 }`}>
                 <div className={`w-3 h-3 rounded-full ${resume?.sessionActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
                 <span className={`font-bold text-sm ${resume?.sessionActive ? 'text-emerald-400' : 'text-slate-400'}`}>
-                    {resume?.sessionActive ? '✅ Caisse OUVERTE — Session en cours' : '⏸️ Caisse FERMÉE — Aucune session active'}
+                    {resume?.sessionActive ? 'Caisse OUVERTE — Session en cours' : 'Caisse FERMÉE — Aucune session active'}
                 </span>
             </div>
 
@@ -348,10 +348,10 @@ export default function CaissePage() {
             ) : resume && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     {[
-                        { label: 'Ventes Cash', valeur: resume.ventesCash, couleur: 'emerald', emoji: '💵' },
-                        { label: 'Orange Money', valeur: resume.ventesOM, couleur: 'orange', emoji: '📱' },
-                        { label: 'MTN MoMo', valeur: resume.ventesMoMo, couleur: 'yellow', emoji: '📲' },
-                        { label: 'Dépenses', valeur: resume.depensesTotal, couleur: 'red', emoji: '💸' },
+                        { label: 'Ventes Cash', valeur: resume.ventesCash, couleur: 'emerald' },
+                        { label: 'Orange Money', valeur: resume.ventesOM, couleur: 'orange' },
+                        { label: 'MTN MoMo', valeur: resume.ventesMoMo, couleur: 'yellow' },
+                        { label: 'Dépenses', valeur: resume.depensesTotal, couleur: 'red' },
                     ].map((c, i) => (
                         <div key={i} className={`bg-${c.couleur}-500/10 border border-${c.couleur}-500/20 rounded-2xl p-4`}>
                             <p className={`text-${c.couleur}-400 text-xs font-bold uppercase tracking-widest mb-2`}>{c.label}</p>
@@ -377,7 +377,7 @@ export default function CaissePage() {
 
             {/* Onglets */}
             <div className="flex gap-2 mb-6">
-                {[['resume', '📊 Résumé'], ['depenses', '💸 Dépenses'], ['historique', '📋 Historique']].map(([id, label]) => (
+                {[['resume', 'Résumé'], ['depenses', 'Dépenses'], ['historique', 'Historique']].map(([id, label]) => (
                     <button key={id} onClick={() => setOnglet(id)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${onglet === id
                                 ? 'bg-indigo-600 border-indigo-500 text-white'
@@ -395,7 +395,6 @@ export default function CaissePage() {
                          <div className="flex items-center justify-center h-48 animate-pulse text-slate-500 text-sm">Chargement des dépenses...</div>
                     ) : depenses.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">💸</p>
                             <p className="font-semibold">Aucune dépense aujourd'hui</p>
                             {resume?.sessionActive && (
                                 <button onClick={() => setModalDepense(true)}
@@ -451,7 +450,6 @@ export default function CaissePage() {
                          <div className="flex items-center justify-center h-48 animate-pulse text-slate-500 text-sm">Chargement de l'historique...</div>
                     ) : historique.length === 0 ? (
                         <div className="text-center py-16 text-slate-500">
-                            <p className="text-4xl mb-3">📋</p>
                             <p>Aucune session passée</p>
                         </div>
                     ) : (
@@ -506,7 +504,7 @@ export default function CaissePage() {
             {onglet === 'resume' && resume && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-                        <h3 className="text-white font-bold mb-4">📊 Ventilation des encaissements</h3>
+                        <h3 className="text-white font-bold mb-4">Ventilation des encaissements</h3>
                         <div className="space-y-3">
                             {[
                                 { label: 'Ventes Cash', val: resume.ventesCash, couleur: 'emerald' },
@@ -529,7 +527,7 @@ export default function CaissePage() {
                     </div>
 
                     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-                        <h3 className="text-white font-bold mb-4">🧾 Résumé de la journée</h3>
+                        <h3 className="text-white font-bold mb-4">Résumé de la journée</h3>
                         <div className="space-y-3">
                             <div className="flex justify-between py-2 border-b border-slate-700">
                                 <span className="text-slate-400 text-sm">Nombre de ventes</span>

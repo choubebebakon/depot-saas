@@ -62,7 +62,7 @@ export default function DepenseForm({ isOpen, onClose, onSuccess, edit, metier =
   };
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? '✏️ Modifier la dépense' : '💰 Nouvelle dépense'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Enregistrer'} submitIcon="💰">
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? 'Modifier la dépense' : 'Nouvelle dépense'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Enregistrer'}>
       <FormField label="Libellé" name="libelle" type="text" control={control} error={errors.libelle?.message} />
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Montant (F)" name="montant" type="number" control={control} error={errors.montant?.message} />

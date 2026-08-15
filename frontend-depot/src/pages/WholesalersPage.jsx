@@ -45,7 +45,7 @@ export default function WholesalersPage() {
         <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:24, padding:32, marginBottom:24 }}>
           <h2 style={{ fontSize:22, fontWeight:800, marginBottom:16 }}>Fournisseurs déjà connus de GeStock</h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12 }}>
-            {['🍺 SABC', '🍻 Guinness Cameroun', '🟡 Castel Group', '💧 Supermont', '🍹 Top Boissons', '🧃 Fruiteq'].map(f => (
+            {['SABC', 'Guinness Cameroun', 'Castel Group', 'Supermont', 'Top Boissons', 'Fruiteq'].map(f => (
               <div key={f} style={{ background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.15)', borderRadius:12, padding:'14px 16px', fontSize:14, fontWeight:600, color:'#c7d2fe' }}>{f}</div>
             ))}
           </div>

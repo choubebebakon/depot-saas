@@ -95,7 +95,7 @@ export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier =
   });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier tournée' : '🚚 Nouvelle tournée'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier tournée' : 'Nouvelle tournée'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Controller
           name="tricycleId"

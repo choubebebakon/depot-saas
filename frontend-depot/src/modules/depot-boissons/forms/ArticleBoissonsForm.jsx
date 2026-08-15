@@ -101,7 +101,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
   });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier article' : '🍺 Nouvel article boissons'} loading={mutation.isPending} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier article' : 'Nouvel article boissons'} loading={mutation.isPending} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
       <Controller
         name="designation"
         control={control}

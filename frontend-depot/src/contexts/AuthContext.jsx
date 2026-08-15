@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
+import { roleLabel, normalizeMetierSlug } from '../shared/permissions/matrix';
 
 const AuthContext = createContext(null);
 
@@ -30,26 +31,55 @@ function loadStoredUser() {
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(loadStoredUser);
     const [loading, setLoading] = useState(!!localStorage.getItem('depot_token'));
+    const [permissionsState, setPermissionsState] = useState(null);
+    const [libellePoste, setLibellePoste] = useState(null);
 
-    // 🔥 AJOUT : Fonction pour rafraîchir instantanément les infos de l'utilisateur depuis le serveur
+    const loadPermissions = useCallback(async () => {
+        const token = localStorage.getItem('depot_token');
+        if (!token) {
+            setPermissionsState(null);
+            setLibellePoste(null);
+            return null;
+        }
+        try {
+            const { data } = await api.get('/auth/permissions');
+            setPermissionsState(data);
+            setLibellePoste(data?.libellePoste || null);
+            return data;
+        } catch (error) {
+            console.warn('[AuthContext] Permissions API indisponible, fallback matrice locale', error);
+            setPermissionsState(null);
+            return null;
+        }
+    }, []);
+
     const refreshUser = useCallback(async () => {
         const token = localStorage.getItem('depot_token');
         if (!token) return null;
-        
+
         try {
             const response = await api.get('/auth/me');
             const userData = response.data;
-            
+
             localStorage.setItem('depot_user', JSON.stringify(userData));
             if (userData?.metier) {
                 localStorage.setItem('gestock_metier', userData.metier);
             }
             setUser(userData);
+            await loadPermissions();
             return userData;
         } catch (error) {
             console.error('[AuthContext] Échec du rafraîchissement du profil:', error);
             return null;
         }
+    }, [loadPermissions]);
+
+    const updateUser = useCallback((updatedFields) => {
+        setUser((prev) => {
+            const merged = { ...prev, ...updatedFields };
+            localStorage.setItem('depot_user', JSON.stringify(merged));
+            return merged;
+        });
     }, []);
 
     useEffect(() => {
@@ -57,7 +87,6 @@ export function AuthProvider({ children }) {
             const token = localStorage.getItem('depot_token');
             if (token) {
                 try {
-                    // On utilise le refreshUser ici aussi pour éviter la duplication de code
                     await refreshUser();
                 } catch (error) {
                     console.error('[AuthContext] Session expirée ou invalide au démarrage:', error);
@@ -66,6 +95,8 @@ export function AuthProvider({ children }) {
                     localStorage.removeItem('gestock_metier');
                     delete api.defaults.headers.common.Authorization;
                     setUser(null);
+                    setPermissionsState(null);
+                    setLibellePoste(null);
                 }
             }
             setLoading(false);
@@ -73,6 +104,13 @@ export function AuthProvider({ children }) {
 
         verifyAuth();
     }, [refreshUser]);
+
+    // Libellé de poste local si API absente
+    useEffect(() => {
+        if (libellePoste || !user?.role) return;
+        const slug = normalizeMetierSlug(user.metier || localStorage.getItem('gestock_metier'));
+        if (slug) setLibellePoste(roleLabel(user.role, slug));
+    }, [user, libellePoste]);
 
     const login = async (email, password) => {
         const response = await api.post('/auth/login', { email, password });
@@ -88,6 +126,7 @@ export function AuthProvider({ children }) {
         }
 
         setUser(userData);
+        await loadPermissions();
         return userData;
     };
 
@@ -102,6 +141,8 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('gestock_metier');
             delete api.defaults.headers.common.Authorization;
             setUser(null);
+            setPermissionsState(null);
+            setLibellePoste(null);
             setLoading(false);
         }
     };
@@ -109,12 +150,15 @@ export function AuthProvider({ children }) {
     return (
         <AuthContext.Provider value={{
             user, login, logout, loading,
-            refreshUser, // 👈 On partage la fonction magique ici
+            refreshUser,
+            updateUser,
+            permissionsState,
+            libellePoste,
             tenantId: user?.tenantId || null,
             role: user?.role || null,
             metier: user?.metier || null,
             nomEntreprise: user?.nomEntreprise || null,
-            planType: user?.planType || user?.plan || 'FREE', // 👈 Sécurité pour centraliser le planType
+            planType: user?.planType || user?.plan || 'FREE',
             isAuthenticated: !!user,
         }}>
             {children}

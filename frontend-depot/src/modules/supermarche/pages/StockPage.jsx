@@ -8,6 +8,7 @@ import { PERMISSIONS } from '../permissions';
 import { supermarcheApi } from '../services/supermarcheApi';
 import ArticleSupermarcheForm from '../forms/ArticleSupermarcheForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import { Search, Edit, Trash2 } from 'lucide-react';
 
 const FILTRES_STOCK = [
   { id: '', label: 'Tous' },
@@ -142,7 +143,7 @@ export default function StockPage() {
       <div className="flex flex-wrap gap-3 mb-6">
         <input
           type="text"
-          placeholder="🔍 Rechercher..."
+          placeholder="Rechercher..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="bg-slate-800 border border-slate-700 focus:border-amber-500 text-white rounded-xl px-4 py-2 text-sm outline-none w-64"
@@ -238,7 +239,7 @@ export default function StockPage() {
                               className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm"
                               title="Modifier"
                             >
-                              ✏️ Modifier
+                              <Edit className="w-4 h-4" /> Modifier
                             </button>
                           )}
                           {perm.canDelete && (
@@ -247,7 +248,7 @@ export default function StockPage() {
                               className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors text-sm"
                               title="Supprimer"
                             >
-                              🗑️ Supprimer
+                              <Trash2 className="w-4 h-4" /> Supprimer
                             </button>
                           )}
                         </div>

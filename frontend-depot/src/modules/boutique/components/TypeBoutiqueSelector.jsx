@@ -2,14 +2,15 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useNotif } from '../../../context/NotifContext';
 import { boutiqueApi } from '../services/boutiqueApi';
+import { ShoppingBag, Flower2, BookOpen, Smartphone, Sparkles, IceCreamCone } from 'lucide-react';
 
 const TYPES_BOUTIQUE = [
-  { key: 'generique', label: 'Boutique générique', icone: '🛍️' },
-  { key: 'parfumerie', label: 'Parfumerie', icone: '🌸' },
-  { key: 'librairie', label: 'Librairie', icone: '📚' },
-  { key: 'telephonie', label: 'Téléphonie', icone: '📱' },
-  { key: 'salon_beaute', label: 'Salon de beauté', icone: '💅' },
-  { key: 'glacier', label: 'Glacier / Snack', icone: '🍦' },
+  { key: 'generique', label: 'Boutique générique', icone: ShoppingBag },
+  { key: 'parfumerie', label: 'Parfumerie', icone: Flower2 },
+  { key: 'librairie', label: 'Librairie', icone: BookOpen },
+  { key: 'telephonie', label: 'Téléphonie', icone: Smartphone },
+  { key: 'salon_beaute', label: 'Salon de beauté', icone: Sparkles },
+  { key: 'glacier', label: 'Glacier / Snack', icone: IceCreamCone },
 ];
 
 export default function TypeBoutiqueSelector() {
@@ -66,7 +67,7 @@ export default function TypeBoutiqueSelector() {
               className="bg-slate-800/60 border border-slate-700/50 hover:border-amber-500 hover:bg-slate-800 rounded-2xl p-8 text-left transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
-                {type.icone}
+                {type.icone && <type.icone className="w-12 h-12" />}
               </div>
               <h3 className="text-white font-bold text-xl mb-2">{type.label}</h3>
               <p className="text-slate-500 text-sm">

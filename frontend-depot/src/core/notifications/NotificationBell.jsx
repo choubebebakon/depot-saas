@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from './useNotifications';
+import { Bell } from 'lucide-react';
 
 const priorityColors = {
   CRITICAL: '#ef4444',
@@ -43,7 +44,7 @@ export default function NotificationBell() {
         style={styles.bellBtn}
         aria-label="Notifications"
       >
-        🔔
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
           <span style={{ ...styles.badge, animation: hasCritical ? 'pulse 1s infinite' : 'none' }}>
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -66,7 +67,7 @@ export default function NotificationBell() {
           <div style={styles.list}>
             {recent.length === 0 ? (
               <div style={styles.emptyState}>
-                <span style={{ fontSize: '32px' }}>🔔</span>
+                <Bell className="w-8 h-8" />
                 <p style={styles.emptyText}>Aucune notification</p>
               </div>
             ) : (

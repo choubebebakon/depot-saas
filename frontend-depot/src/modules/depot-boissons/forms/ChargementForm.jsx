@@ -85,7 +85,7 @@ export default function ChargementForm({ isOpen, onClose, onSuccess, edit, metie
   });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? '✏️ Modifier chargement' : '📦 Chargement de tournée'} loading={mutation.isPending} size="lg" submitIcon="💾" submitLabel="Enregistrer le chargement">
+    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier chargement' : 'Chargement de tournée'} loading={mutation.isPending} size="lg" submitLabel="Enregistrer le chargement">
       <div className="space-y-3">
         {fields.map((field, idx) => (
           <div key={field.id} className="p-4 bg-slate-800/60 rounded-xl border border-slate-700/50">
@@ -137,8 +137,8 @@ export default function ChargementForm({ isOpen, onClose, onSuccess, edit, metie
         className="w-full py-2.5 border-2 border-dashed border-slate-600 rounded-xl text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-all mt-3">
         + Ajouter un article
       </button>
-      {errors.lignes?.message && <p className="text-red-400 text-xs mt-2">⚠️ {errors.lignes.message}</p>}
-      {errors.lignes?.root?.message && <p className="text-red-400 text-xs mt-2">⚠️ {errors.lignes.root.message}</p>}
+      {errors.lignes?.message && <p className="text-red-400 text-xs mt-2">{errors.lignes.message}</p>}
+      {errors.lignes?.root?.message && <p className="text-red-400 text-xs mt-2">{errors.lignes.root.message}</p>}
       <div className="p-3 bg-slate-800 rounded-xl text-sm flex justify-between items-center mt-3">
         <span className="text-slate-400">Total valeur chargée</span>
         <span className="text-white font-bold font-mono">{totalValeur.toLocaleString('fr-FR')} FCFA</span>

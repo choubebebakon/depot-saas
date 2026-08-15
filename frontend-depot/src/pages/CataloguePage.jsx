@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
+import { Package, Beer, CupSoda, Droplet, Wine, Milk, Pencil, Plus, Search, AlertTriangle, RefreshCw } from 'lucide-react';
 
 // ── Convertisseur d'unités ──────────────────────────────────
 function convertirUnites(qte, article) {
@@ -34,8 +35,8 @@ function AffichageStock({ qte, article }) {
 
 // ── Modal Nouvelle Famille ──────────────────────────────────
 function ModalFamille({ tenantId, onSuccess, onClose }) {
-    const [form, setForm] = useState({ nom: '', emoji: '📦' });
-    const emojis = ['🍺', '🥤', '💧', '🧃', '🍷', '🥛', '📦'];
+    const [form, setForm] = useState({ nom: '', icon: Package });
+    const icons = [Beer, CupSoda, Droplet, CupSoda, Wine, Milk, Package];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -48,7 +49,7 @@ function ModalFamille({ tenantId, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">📂 Nouvelle Famille</h3>
+                <h3 className="text-white font-black text-xl mb-6">Nouvelle Famille</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom *</label>
@@ -59,12 +60,12 @@ function ModalFamille({ tenantId, onSuccess, onClose }) {
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2 block">Icône</label>
                         <div className="flex gap-2 flex-wrap">
-                            {emojis.map(e => (
-                                <button key={e} type="button"
-                                    onClick={() => setForm({ ...form, emoji: e })}
-                                    className={`text-2xl p-2 rounded-xl border transition-all ${form.emoji === e ? 'border-indigo-500 bg-indigo-500/20' : 'border-slate-700 hover:border-slate-500'
+                            {icons.map((Icon, idx) => (
+                                <button key={idx} type="button"
+                                    onClick={() => setForm({ ...form, icon: Icon })}
+                                    className={`p-2 rounded-xl border transition-all ${form.icon === Icon ? 'border-indigo-500 bg-indigo-500/20' : 'border-slate-700 hover:border-slate-500'
                                         }`}>
-                                    {e}
+                                    <Icon className="w-6 h-6" />
                                 </button>
                             ))}
                         </div>
@@ -94,13 +95,13 @@ function ModalMarque({ tenantId, familles, onSuccess, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-                <h3 className="text-white font-black text-xl mb-6">🏭 Nouvelle Marque</h3>
+                <h3 className="text-white font-black text-xl mb-6">Nouvelle Marque</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Famille *</label>
                         <select required value={form.familleId} onChange={e => setForm({ ...form, familleId: e.target.value })}
                             className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
-                            {familles.map(f => <option key={f.id} value={f.id}>{f.emoji} {f.nom}</option>)}
+                            {familles.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
                         </select>
                     </div>
                     <div>
@@ -173,7 +174,7 @@ function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-xl shadow-2xl my-4">
                 <h3 className="text-white font-black text-xl mb-6">
-                    {estModif ? '✏️ Modifier Article' : '➕ Nouvel Article'}
+                    {estModif ? 'Modifier Article' : 'Nouvel Article'}
                 </h3>
 
                 {erreur && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{erreur}</div>}
@@ -187,7 +188,7 @@ function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
                                 onChange={e => setForm({ ...form, familleId: e.target.value, marqueId: '' })}
                                 className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
                                 <option value="">Sans famille</option>
-                                {familles.map(f => <option key={f.id} value={f.id}>{f.emoji} {f.nom}</option>)}
+                                {familles.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
                             </select>
                         </div>
                         <div>
@@ -275,7 +276,7 @@ function ModalArticle({ tenantId, familles, article, onSuccess, onClose }) {
                             className="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl">Annuler</button>
                         <button type="submit" disabled={loading}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-                            {loading ? '...' : estModif ? '✏️ Modifier' : '➕ Créer'}
+                            {loading ? '...' : estModif ? 'Modifier' : 'Créer'}
                         </button>
                     </div>
                 </form>
@@ -356,16 +357,16 @@ export default function CataloguePage() {
                 <div className="flex gap-3 flex-wrap">
                     <button onClick={() => setModalFamille(true)}
                         className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all">
-                        📂 Famille
+                        Famille
                     </button>
                     <button onClick={() => setModalMarque(true)}
                         disabled={familles.length === 0}
                         className="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all">
-                        🏭 Marque
+                        Marque
                     </button>
                     <button onClick={() => { setArticleEdit(null); setModalArticle(true); }}
                         className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20">
-                        ➕ Nouvel Article
+                        Nouvel Article
                     </button>
                 </div>
             </div>
@@ -400,14 +401,14 @@ export default function CataloguePage() {
                         onClick={() => { setFamilleActive(null); setMarqueActive(null); }}
                         className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${!familleActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                             }`}>
-                        📦 Toutes ({totalArticles})
+                        Toutes ({totalArticles})
                     </button>
                     {familles.map(f => (
                         <button key={f.id}
                             onClick={() => { setFamilleActive(f.id); setMarqueActive(null); }}
                             className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${familleActive === f.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                 }`}>
-                            {f.emoji} {f.nom}
+                            {f.nom}
                             <span className="float-right opacity-60 text-xs">{f._count?.articles || 0}</span>
                         </button>
                     ))}
@@ -435,7 +436,7 @@ export default function CataloguePage() {
 
                     {/* Recherche */}
                     <input value={recherche} onChange={e => setRecherche(e.target.value)}
-                        placeholder="🔍 Rechercher un article..."
+                        placeholder="Rechercher un article..."
                         className="w-full mb-4 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
 
                     {/* Grille articles */}
@@ -445,10 +446,9 @@ export default function CataloguePage() {
                         </div>
                     ) : articlesFiltres.length === 0 ? (
                         <div className="text-center py-16 text-slate-500 bg-slate-800/50 border border-slate-700 rounded-2xl">
-                            <p className="text-4xl mb-3">📦</p>
                             <p className="font-semibold">Aucun article trouvé</p>
                             <button onClick={() => { setArticleEdit(null); setModalArticle(true); }}
-                                className="mt-4 text-indigo-400 text-sm font-bold">➕ Créer un article</button>
+                                className="mt-4 text-indigo-400 text-sm font-bold">Créer un article</button>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -471,7 +471,7 @@ export default function CataloguePage() {
                                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                     {a.famille && (
                                                         <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-lg">
-                                                            {a.famille.emoji} {a.famille.nom}
+                                                            {a.famille.nom}
                                                         </span>
                                                     )}
                                                     {a.marque && (
@@ -485,7 +485,7 @@ export default function CataloguePage() {
                                             </div>
                                             <button onClick={() => { setArticleEdit(a); setModalArticle(true); }}
                                                 className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-white transition-all p-1 ml-2">
-                                                ✏️
+                                                <Pencil className="w-4 h-4" />
                                             </button>
                                         </div>
 
@@ -507,17 +507,15 @@ export default function CataloguePage() {
                                                 : isCritique ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
                                                     : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                             }`}>
-                                            {isRupture ? '⚠️ RUPTURE' : (
-                                                <>
-                                                    📦 <AffichageStock qte={stockTotal} article={a} />
-                                                </>
+                                            {isRupture ? 'RUPTURE' : (
+                                                <AffichageStock qte={stockTotal} article={a} />
                                             )}
                                         </div>
 
                                         {a.estConsigne && (
                                             <div className="mt-2">
                                                 <span className="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-0.5 rounded-lg">
-                                                    🔄 Avec consigne
+                                                    Avec consigne
                                                 </span>
                                             </div>
                                         )}

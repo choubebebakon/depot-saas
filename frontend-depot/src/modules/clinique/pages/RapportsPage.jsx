@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../../hooks/useData';
 import { useAuth } from '../../../contexts/AuthContext';
+import { Stethoscope, ClipboardList, User, RefreshCw, Coins } from 'lucide-react';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME
 if (typeof window !== 'undefined') {
@@ -75,12 +76,12 @@ export default function RapportsPage() {
 ;
 
   const cards = [
-    { label: 'Consultations', value: stats?.consultations || 0, icon: '🩺', color: '#0ea5e9' },
-    { label: 'RDV honorés', value: stats?.rdv || 0, icon: '📋', color: '#10b981' },
-    { label: 'Nouveaux patients', value: stats?.nouveauxPatients || 0, icon: '👤', color: '#8b5cf6' },
-    { label: 'Réadmissions', value: stats?.readmissions || 0, icon: '🔄', color: '#f59e0b' },
-    { label: 'Personnel actif', value: stats?.personnel || 0, icon: '👨‍⚕️', color: '#ec4899' },
-    { label: "Chiffre d'affaires", value: `${(stats?.ca || 0).toLocaleString('fr-FR')} F`, icon: '💰', color: '#3b82f6' },
+    { label: 'Consultations', value: stats?.consultations || 0, icon: Stethoscope, color: '#0ea5e9' },
+    { label: 'RDV honorés', value: stats?.rdv || 0, icon: ClipboardList, color: '#10b981' },
+    { label: 'Nouveaux patients', value: stats?.nouveauxPatients || 0, icon: User, color: '#8b5cf6' },
+    { label: 'Réadmissions', value: stats?.readmissions || 0, icon: RefreshCw, color: '#f59e0b' },
+    { label: 'Personnel actif', value: stats?.personnel || 0, icon: User, color: '#ec4899' },
+    { label: "Chiffre d'affaires", value: `${(stats?.ca || 0).toLocaleString('fr-FR')} F`, icon: Coins, color: '#3b82f6' },
   ];
 
   return (
@@ -89,7 +90,7 @@ export default function RapportsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         {cards.map((k, i) => (
           <div key={i} className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl mb-2" style={{ backgroundColor: k.color + '22' }}>{k.icon}</div>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl mb-2" style={{ backgroundColor: k.color + '22' }}>{k.icon && <k.icon className="w-5 h-5" />}</div>
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{k.label}</p>
             <p className="text-white font-black text-lg leading-none">{k.value}</p>
           </div>

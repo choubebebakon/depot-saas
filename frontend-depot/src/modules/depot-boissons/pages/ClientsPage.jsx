@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
+import { usePermission } from '../../../shared/permissions/usePermission';
 import { depotApi } from '../services/depotApi';
 import ClientForm from '../../../shared/forms/ClientForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -13,6 +14,7 @@ export default function ClientsPage() {
   const { metier } = useAuth();
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { canWrite } = usePermission('clients');
 
   const [showModal, setShowModal] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -105,10 +107,12 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">Clients</h1>
           <p className="text-slate-400 text-sm mt-1">{total} client{total > 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openCreate}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-          ➕ Nouveau client
-        </button>
+        {canWrite && (
+          <button onClick={openCreate}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+            ➕ Nouveau client
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -157,13 +161,15 @@ export default function ClientsPage() {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {soldeCredit > 0 && (
+                      {canWrite && soldeCredit > 0 && (
                         <button onClick={() => { setSelectedClient(c); setShowModal('paiement'); }}
                           title="Paiement dette" className="px-2.5 py-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-xs">💵 Régler</button>
                       )}
                       <button onClick={() => handleVoirHistorique(c)}
                         title="Historique achats" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 transition-all text-xs">📋 Achats</button>
-                      <button onClick={() => openEdit(c)} title="Modifier" className="px-2.5 py-1.5 hover:bg-orange-500/20 rounded-lg text-orange-400 hover:text-orange-300 transition-all text-xs">✏️ Modifier</button>
+                      {canWrite && (
+                        <button onClick={() => openEdit(c)} title="Modifier" className="px-2.5 py-1.5 hover:bg-orange-500/20 rounded-lg text-orange-400 hover:text-orange-300 transition-all text-xs">✏️ Modifier</button>
+                      )}
                     </div>
                   </td>
                 </tr>
