@@ -35,7 +35,6 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // On utilise la création imbriquée pure sans AUCUN ID manuel
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -60,7 +59,7 @@ export class AuthService {
           },
         },
         include: {
-          tenant: true, // On inclut le tenant pour retourner l'info
+          tenant: true,
         },
       });
 
@@ -115,12 +114,10 @@ export class AuthService {
       data: { refreshTokenHash },
     });
 
-    // Clean up old refresh tokens for this user
     await this.prisma.refreshToken.deleteMany({
       where: { userId: user.id },
     });
 
-    // Create new refresh token record with random token to avoid unique constraint violations
     const randomToken = randomBytes(32).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -190,7 +187,6 @@ export class AuthService {
         return null;
       }
 
-      // Check if there's a valid refresh token record
       const validRefreshToken = user.refreshTokens.find(
         (rt) => rt.expiresAt > new Date(),
       );
@@ -227,5 +223,115 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload),
     };
+  }
+
+  // Mise à jour du profil utilisateur
+  async updateProfile(userId: string, updateProfileDto: any) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        nom: updateProfileDto.nom,
+        email: updateProfileDto.email,
+        telephone: updateProfileDto.telephone,
+        adresse: updateProfileDto.adresse,
+      },
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        telephone: true,
+        adresse: true,
+        role: true,
+        tenantId: true,
+        avatar: true,
+        createdAt: true,
+      },
+    });
+
+    return user;
+  }
+
+  // Upload de photo de profil
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    // Le fichier est déjà écrit sur disque par Multer (diskStorage) au moment
+    // où cette méthode est appelée — file.filename correspond au nom réel écrit.
+    const avatarUrl = `/uploads/avatars/${file.filename}`;
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar: avatarUrl },
+      select: { avatar: true },
+    });
+
+    return { avatar: user.avatar };
+  }
+
+  // Changement de mot de passe
+  async changePassword(userId: string, changePasswordDto: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur non trouvé');
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Mot de passe actuel incorrect');
+    }
+
+    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 12);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { message: 'Mot de passe changé avec succès' };
+  }
+
+  // Activation/Désactivation 2FA
+  async toggle2FA(userId: string, enabled: boolean) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFAEnabled: enabled },
+      select: { twoFAEnabled: true },
+    });
+
+    return { twoFAEnabled: user.twoFAEnabled };
+  }
+
+  // Récupérer les préférences utilisateur
+  async getPreferences(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur non trouvé');
+    }
+
+    return user.preferences || {
+      emailNotifications: true,
+      darkMode: true,
+      language: 'fr',
+    };
+  }
+
+  // Mettre à jour les préférences utilisateur
+  async updatePreferences(userId: string, preferencesDto: any) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { preferences: preferencesDto },
+      select: { preferences: true },
+    });
+
+    return user.preferences;
   }
 }

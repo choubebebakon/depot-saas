@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { UsersService } from './users.service';
 
 @Controller(':metier/utilisateurs')
@@ -19,6 +20,7 @@ export class MetierUsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @RequirePermission('utilisateurs', 'write')
   async create(
     @Body()
     body: {
@@ -37,22 +39,26 @@ export class MetierUsersController {
   }
 
   @Get()
+  @RequirePermission('utilisateurs', 'read')
   async findAll(@Req() req: any, @Query('depotId') depotId?: string) {
     // 🔒 On force l'utilisation du tenantId du patron connecté (via le JWT)
     return this.usersService.findAll(req.user.tenantId, depotId);
   }
 
   @Get('commerciaux')
+  @RequirePermission('utilisateurs', 'read')
   async findCommerciaux(@Req() req: any) {
     return this.usersService.findCommerciaux(req.user.tenantId);
   }
 
   @Get(':id')
+  @RequirePermission('utilisateurs', 'read')
   async findOne(@Param('id') id: string, @Req() req: any) {
     return this.usersService.findOne(req.user.tenantId, id);
   }
 
   @Patch(':id/status')
+  @RequirePermission('utilisateurs', 'write')
   async updateStatus(
     @Param('id') id: string,
     @Body() body: { isActive: boolean },
@@ -61,6 +67,7 @@ export class MetierUsersController {
   }
 
   @Patch(':id')
+  @RequirePermission('utilisateurs', 'write')
   async update(
     @Param('id') id: string,
     @Body()
@@ -70,6 +77,7 @@ export class MetierUsersController {
   }
 
   @Delete(':id')
+  @RequirePermission('utilisateurs', 'write')
   async remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

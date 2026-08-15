@@ -856,6 +856,12 @@ model User {
   refreshTokenHash String?
   role             Role
   nom              String?
+  telephone        String?
+  adresse          String?
+  avatar           String?
+  twoFAEnabled     Boolean                 @default(false)
+  twoFASecret      String?
+  preferences      Json?
   tenantId         String
   depotId          String?
   isSuperAdmin     Boolean                 @default(false)

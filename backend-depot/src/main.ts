@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { json, urlencoded } from 'express';
@@ -8,9 +9,12 @@ import cookieParser from 'cookie-parser';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { metierSlugMiddleware } from './common/middleware/metier-slug.middleware';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
 
   app.useLogger(app.get(Logger));
 
@@ -40,6 +44,12 @@ async function bootstrap() {
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204,
+  });
+
+  // Sert le dossier uploads/ statiquement — nécessaire pour que les avatars
+  // uploadés soient accessibles via /uploads/avatars/<fichier>
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
   });
 
   app.use(metierSlugMiddleware);
@@ -77,7 +87,7 @@ async function bootstrap() {
     }),
   );
 
-if (process.env.DISABLE_SUBSCRIPTION_CHECKS === 'true') {
+  if (process.env.DISABLE_SUBSCRIPTION_CHECKS === 'true') {
     console.warn('\n' + '⚠️ '.repeat(20));
     console.warn(
       '⚠️  DISABLE_SUBSCRIPTION_CHECKS=true — CONTRÔLES ABONNEMENT DÉSACTIVÉS',
@@ -88,7 +98,7 @@ if (process.env.DISABLE_SUBSCRIPTION_CHECKS === 'true') {
     console.warn('⚠️ '.repeat(20) + '\n');
   }
 
-await app.listen(3000);
+  await app.listen(3000);
   console.log(`🚀 Backend GeStock SaaS stabilisé sur http://localhost:3000`);
 }
 bootstrap();

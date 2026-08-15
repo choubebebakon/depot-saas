@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -812,5 +812,81 @@ export class VentesService {
       ),
     );
     return { created: created.length, type: typeBoutique };
+  }
+
+  // ── Caisse ───────────────────────────────────────────────
+  async getCaisseStatut(tenantId: string, depotId?: string) {
+    const where: any = { tenantId, estOuverte: true };
+    if (depotId) where.depotId = depotId;
+    const session = await this.prisma.sessionCaisse.findFirst({
+      where,
+      include: { mouvements: { orderBy: { createdAt: 'desc' }, take: 50 } },
+    });
+    const mouvements = session?.mouvements || [];
+    const entreesJour = mouvements
+      .filter((m) => m.type.startsWith('ENCAISSEMENT'))
+      .reduce((s, m) => s + m.montant, 0);
+    const sortiesJour = mouvements
+      .filter((m) => m.type.startsWith('DECAISSEMENT'))
+      .reduce((s, m) => s + m.montant, 0);
+    return {
+      statut: session ? 'OUVERTE' : 'FERMEE',
+      solde: session ? session.fondInitial + entreesJour - sortiesJour : 0,
+      entreesJour,
+      sortiesJour,
+      mouvements,
+    };
+  }
+
+  async ouvrirCaisse(tenantId: string, data: any) {
+    requireString(data.depotId, 'depotId');
+    requireString(data.userId, 'userId');
+    const existing = await this.prisma.sessionCaisse.findFirst({
+      where: { tenantId, depotId: data.depotId, estOuverte: true },
+    });
+    if (existing) throw new ConflictException('Une caisse est deja ouverte');
+    return this.prisma.sessionCaisse.create({
+      data: {
+        fondInitial: parseFloat(data.montantInitial) || 0,
+        depotId: data.depotId,
+        userId: data.userId,
+        tenantId,
+        estOuverte: true,
+      },
+    });
+  }
+
+  async fermerCaisse(tenantId: string, data: any) {
+    return this.prisma.sessionCaisse.updateMany({
+      where: { tenantId, depotId: data.depotId, estOuverte: true },
+      data: {
+        estOuverte: false,
+        dateCloture: new Date(),
+        fondFinal: data.fondFinal,
+        ecart: data.ecart,
+      },
+    });
+  }
+
+  async mouvementCaisse(tenantId: string, data: any) {
+    const session = await this.prisma.sessionCaisse.findFirst({
+      where: { tenantId, depotId: data.depotId, estOuverte: true },
+    });
+    if (!session) throw new BadRequestException('Caisse non ouverte');
+    return this.prisma.mouvementCaisse.create({
+      data: {
+        type:
+          data.typeMouvement === 'ENTREE'
+            ? 'ENCAISSEMENT_VENTE'
+            : 'DECAISSEMENT_DEPENSE',
+        montant: parseFloat(data.montant),
+        motif: data.motif || 'Mouvement',
+        sessionId: session.id,
+      },
+    });
+  }
+
+  async rapportJournalier(tenantId: string, depotId?: string) {
+    return this.getCaisseStatut(tenantId, depotId);
   }
 }

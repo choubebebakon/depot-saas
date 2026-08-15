@@ -3,23 +3,33 @@ import {
   Post,
   Body,
   Get,
+  Put,
   UseGuards,
   Res,
   Req,
   Logger,
   InternalServerErrorException,
+  BadRequestException,
   HttpException,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { PreferencesDto } from './dto/preferences.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { PermissionService } from './permission.service';
 import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('auth')
 export class AuthController {
@@ -42,12 +52,10 @@ export class AuthController {
         error.stack,
       );
 
-      // Rejeter l'erreur proprement vers le client
       if (error instanceof HttpException) {
         throw error;
       }
 
-      // Renvoyer l'erreur spécifique pour que le frontend puisse l'afficher
       throw new InternalServerErrorException({
         message:
           error.message || 'Erreur interne lors de la création du compte',
@@ -63,7 +71,6 @@ export class AuthController {
   async login(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(body.email, body.password);
 
-    // Refresh Token en Cookie httpOnly
     res.cookie('refreshToken', result.refresh_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -81,9 +88,8 @@ export class AuthController {
   @Public()
   @Post('refresh')
   async refresh(@Req() req: any, @Body() body: any) {
-    // FIX #1: Ajout de @Req() req pour pouvoir accéder aux cookies de la requête
-    const refreshToken = req.cookies?.refreshToken || body?.refreshToken; // FIX #1: Extraction du token depuis le cookie httpOnly ou le body
-    return this.authService.refresh(refreshToken); // FIX #1: Appel au service avec le token extrait
+    const refreshToken = req.cookies?.refreshToken || body?.refreshToken;
+    return this.authService.refresh(refreshToken);
   }
 
   // Deconnexion (Protegee)
@@ -136,5 +142,69 @@ export class AuthController {
     );
 
     return { ...result, metier };
+  }
+
+  // Mise à jour du profil utilisateur
+  @UseGuards(JwtAuthGuard)
+  @Put('me')
+  async updateProfile(@CurrentUser() user: any, @Body() updateProfileDto: UpdateProfileDto) {
+    return await this.authService.updateProfile(user.userId, updateProfileDto);
+  }
+
+  // Upload de photo de profil
+  @UseGuards(JwtAuthGuard)
+  @Post('avatar')
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: diskStorage({
+        destination: './uploads/avatars',
+        filename: (req, file, cb) => {
+          const user = (req as any).user;
+          const uniqueSuffix = `${user.userId}-${Date.now()}${extname(file.originalname)}`;
+          cb(null, uniqueSuffix);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
+          return cb(new BadRequestException("Format d'image non supporté (jpg, jpeg, png, webp uniquement)"), false);
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
+  async uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier reçu');
+    }
+    return await this.authService.uploadAvatar(user.userId, file);
+  }
+
+  // Changement de mot de passe
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  async changePassword(@CurrentUser() user: any, @Body() changePasswordDto: ChangePasswordDto) {
+    return await this.authService.changePassword(user.userId, changePasswordDto);
+  }
+
+  // Activation/Désactivation 2FA
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa')
+  async toggle2FA(@CurrentUser() user: any, @Body() body: { enabled: boolean }) {
+    return await this.authService.toggle2FA(user.userId, body.enabled);
+  }
+
+  // Récupérer les préférences utilisateur
+  @UseGuards(JwtAuthGuard)
+  @Get('preferences')
+  async getPreferences(@CurrentUser() user: any) {
+    return await this.authService.getPreferences(user.userId);
+  }
+
+  // Mettre à jour les préférences utilisateur
+  @UseGuards(JwtAuthGuard)
+  @Put('preferences')
+  async updatePreferences(@CurrentUser() user: any, @Body() preferencesDto: PreferencesDto) {
+    return await this.authService.updatePreferences(user.userId, preferencesDto);
   }
 }

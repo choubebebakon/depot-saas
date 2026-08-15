@@ -79,16 +79,16 @@ export class EmailChannel {
 
   private buildSubject(type: NotifType, data: Record<string, unknown>): string {
     const subjects: Partial<Record<NotifType, string>> = {
-      STOCK_CRITIQUE: '⚠️ Stock critique — Action requise',
-      STOCK_RUPTURE: '🚫 Rupture de stock détectée',
-      STOCK_EXPIRATION: "📅 Produits proches de l'expiration",
-      PAYMENT_SUCCESS: '✅ Paiement confirmé',
-      PAYMENT_FAILED: '❌ Paiement échoué',
-      EXPIRY_J7: `⏰ Votre abonnement expire dans 7 jours`,
-      EXPIRY_J3: `⚠️ Votre abonnement expire dans 3 jours`,
-      EXPIRY_J1: `🚨 Dernier jour — Abonnement expire demain`,
-      RAPPORT_JOURNALIER: '📊 Votre rapport journalier GeStock',
-      ALERTE_PREDICTIVE: '🔮 Alerte prédictive GeStock',
+      STOCK_CRITIQUE: 'Stock critique — Action requise',
+      STOCK_RUPTURE: 'Rupture de stock détectée',
+      STOCK_EXPIRATION: "Produits proches de l'expiration",
+      PAYMENT_SUCCESS: 'Paiement confirmé',
+      PAYMENT_FAILED: 'Paiement échoué',
+      EXPIRY_J7: `Votre abonnement expire dans 7 jours`,
+      EXPIRY_J3: `Votre abonnement expire dans 3 jours`,
+      EXPIRY_J1: `Dernier jour — Abonnement expire demain`,
+      RAPPORT_JOURNALIER: 'Votre rapport journalier GeStock',
+      ALERTE_PREDICTIVE: 'Alerte prédictive GeStock',
     };
     return subjects[type] || `Notification GeStock — ${type}`;
   }
