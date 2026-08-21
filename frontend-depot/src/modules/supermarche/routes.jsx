@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { Route, Routes, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import DashboardRedirect from '../../components/DashboardRedirect';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDepot, DepotProvider } from '../../contexts/DepotContext';
 import DynamicSidebar from '../../components/DynamicSidebar';
 import NotificationBell from '../../core/notifications/NotificationBell';
 import NotificationToast from '../../core/notifications/NotificationToast';
@@ -53,6 +54,7 @@ function MetierGuard({ children }) {
 
 function SupermarcheLayout() {
   const { user, logout } = useAuth();
+  const { depots, depotActif, changerDepot } = useDepot();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
