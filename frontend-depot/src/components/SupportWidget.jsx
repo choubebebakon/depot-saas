@@ -65,7 +65,7 @@ export default function SupportWidget() {
 
   return (
     <>
-      {/* Balle flottante (juste sous le chatbot) */}
+      {/* Balle flottante (à gauche du chatbot pour éviter le chevauchement) */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -73,8 +73,8 @@ export default function SupportWidget() {
         title="Support & Aide"
         style={{
           position: 'fixed',
-          bottom: '90px',
-          right: '24px',
+          bottom: '24px',
+          right: '90px',
           width: '56px',
           height: '56px',
           borderRadius: '50%',
@@ -98,7 +98,7 @@ export default function SupportWidget() {
         <div
           style={{
             position: 'fixed',
-            bottom: '156px',
+            bottom: '90px',
             right: '24px',
             width: '360px',
             maxWidth: 'calc(100vw - 32px)',

@@ -64,4 +64,17 @@ export const supermarcheApi = {
   // Codes-barres
   scanCodeBarres: (code) =>
     api.get(`/supermarche/codes-barres/scan/${code}`, getTenantHeaders()),
+
+  // ── Caisse (backend générique /caisse/*) ─────────────────────────────────
+  getSessionCaisseActive: (tenantId, depotId) =>
+    api.get('/caisse/session-active', { params: { tenantId, depotId } }),
+
+  ouvrirCaisse: (data) =>
+    api.post('/caisse/ouvrir', data),
+
+  fermerCaisse: (data) =>
+    api.post('/caisse/fermer', data),
+
+  getResumeCaisse: (tenantId, depotId) =>
+    api.get('/caisse/resume', { params: { tenantId, depotId } }),
 };

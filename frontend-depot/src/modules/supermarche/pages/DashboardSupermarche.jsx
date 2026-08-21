@@ -66,6 +66,7 @@ export default function DashboardSupermarche() {
       return res.data;
     },
     enabled: !!tenantId,
+    refetchInterval: 30_000,
   });
 
   const { data: rayons } = useQuery({
@@ -75,6 +76,7 @@ export default function DashboardSupermarche() {
       return res.data;
     },
     enabled: !!tenantId,
+    refetchInterval: 60_000,
   });
 
   useEffect(() => {

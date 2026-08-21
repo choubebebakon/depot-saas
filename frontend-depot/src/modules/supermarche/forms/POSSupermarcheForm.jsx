@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback, useMemo, memo } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,6 +27,44 @@ const venteSchema = z.object({
   panier: z.array(panierLigneSchema).min(1, 'Ajoutez au moins un article au panier'),
 });
 
+// ── Ligne de panier memoïsée : évite les re-renders globaux ───────────────
+const LignePanier = memo(function LignePanier({ field, idx, control, panierItem, onRemove }) {
+  const ligneSousTotal = useMemo(
+    () => Number(panierItem?.quantite || 0) * Number(panierItem?.prixUnitaire || 0) * (1 - (Number(panierItem?.remise) || 0) / 100),
+    [panierItem?.quantite, panierItem?.prixUnitaire, panierItem?.remise]
+  );
+
+  return (
+    <tr key={field.id} className="hover:bg-slate-700/20">
+      <td className="py-3 text-slate-400 font-mono text-xs">{panierItem?.codeBarres || '—'}</td>
+      <td className="text-white font-medium">{panierItem?.designation}</td>
+      <td className="text-right">
+        <Controller
+          name={`panier.${idx}.quantite`}
+          control={control}
+          render={({ field: f }) => (
+            <input type="number" {...f} min={1} className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" />
+          )}
+        />
+      </td>
+      <td className="text-right text-white font-mono">{Number(panierItem?.prixUnitaire).toLocaleString('fr-FR')}</td>
+      <td className="text-right">
+        <Controller
+          name={`panier.${idx}.remise`}
+          control={control}
+          render={({ field: f }) => (
+            <input type="number" {...f} className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" placeholder="%" />
+          )}
+        />
+      </td>
+      <td className="text-right text-white font-bold font-mono">{ligneSousTotal.toLocaleString('fr-FR')}</td>
+      <td className="text-center">
+        <button type="button" onClick={() => onRemove(idx)} className="text-red-400 hover:text-red-300 text-xs">✕</button>
+      </td>
+    </tr>
+  );
+});
+
 export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, depotId }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
@@ -46,9 +84,11 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
   const { fields, append, remove } = useFieldArray({ control, name: 'panier' });
 
   const modePaiement = watch('modePaiement');
+  // NOTE: on évite watch('panier') au niveau du composant — on lit chaque champ individuellement
   const remiseGlobale = Number(watch('remiseGlobale')) || 0;
   const montantRecu = Number(watch('montantRecu')) || 0;
-  const panier = watch('panier') || [];
+  // watch('panier') uniquement pour les calculs nécessaires (total/monnaie) — stable
+  const panierWatch = watch('panier') || [];
 
   useEffect(() => {
     reset({
@@ -61,29 +101,18 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
     });
   }, [depotId, reset]);
 
-  const fetchClients = async (q) => {
+  // ── Callbacks memoïsés : pas de recréation à chaque render ──────────────
+  const fetchClients = useCallback(async (q) => {
     const r = await supermarcheApi.getClients({ search: q, limit: 8 });
     return r.data?.data || r.data || [];
-  };
+  }, []);
 
-  const fetchArticles = async (q) => {
+  const fetchArticles = useCallback(async (q) => {
     const r = await supermarcheApi.getArticles({ search: q, limit: 8 });
     return r.data?.data || r.data || [];
-  };
+  }, []);
 
-  const handleScan = async (code) => {
-    try {
-      const r = await supermarcheApi.scanCodeBarres(code);
-      const article = r.data?.article;
-      if (article) {
-        ajouterAuPanier(article);
-      }
-    } catch (err) {
-      notif.error('Code-barres non reconnu');
-    }
-  };
-
-  const ajouterAuPanier = (article) => {
+  const ajouterAuPanier = useCallback((article) => {
     const current = getValues('panier') || [];
     const idx = current.findIndex(p => p.articleId === article.id);
     if (idx >= 0) {
@@ -98,12 +127,31 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
         remise: 0,
       });
     }
-  };
+  }, [getValues, setValue, append]);
 
-  const sousTotal = panier.reduce((sum, p) => sum + (p.quantite * p.prixUnitaire * (1 - (p.remise || 0) / 100)), 0);
-  const remiseMontant = sousTotal * (remiseGlobale / 100);
-  const total = sousTotal - remiseMontant;
-  const monnaie = montantRecu - total;
+  const handleScan = useCallback(async (code) => {
+    try {
+      const r = await supermarcheApi.scanCodeBarres(code);
+      const article = r.data?.article;
+      if (article) ajouterAuPanier(article);
+    } catch (err) {
+      notif.error('Code-barres non reconnu');
+    }
+  }, [ajouterAuPanier, notif]);
+
+  const handleRemoveLigne = useCallback((idx) => remove(idx), [remove]);
+  const handleViderPanier = useCallback(() => setValue('panier', []), [setValue]);
+
+  // ── Calculs memoïsés : recalculés seulement si panier/remise changent ───
+  const { sousTotal, remiseMontant, total, monnaie } = useMemo(() => {
+    const st = panierWatch.reduce(
+      (sum, p) => sum + (Number(p.quantite) * Number(p.prixUnitaire) * (1 - (Number(p.remise) || 0) / 100)),
+      0
+    );
+    const rm = st * (remiseGlobale / 100);
+    const t = st - rm;
+    return { sousTotal: st, remiseMontant: rm, total: t, monnaie: montantRecu - t };
+  }, [panierWatch, remiseGlobale, montantRecu]);
 
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -122,7 +170,7 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
       const r = await supermarcheApi.createVente(payload);
       return r.data;
     },
-    onSuccess: () => {
+    onSuccess: (createdVente) => {
       queryClient.invalidateQueries({ queryKey: ['supermarche-ventes'] });
       queryClient.invalidateQueries({ queryKey: ['supermarche-articles'] });
       queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'] });
@@ -135,7 +183,7 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
         montantRecu: '',
         panier: [],
       });
-      onSuccess?.(mutation.data || data); // The API might return the created vente directly
+      onSuccess?.(createdVente);
     },
     onError: (err) => {
       const msg = err.response?.data?.message || err.message || 'Erreur lors de la vente';
@@ -157,41 +205,42 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
         </div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
           <table className="w-full text-sm">
-            <thead><tr className="text-slate-500 text-xs font-bold uppercase tracking-widest"><th className="text-left py-3">Code</th><th className="text-left">Désignation</th><th className="text-right">Qté</th><th className="text-right">Prix</th><th className="text-right">Remise</th><th className="text-right">Total</th><th className="text-center"> </th></tr></thead>
+            <thead>
+              <tr className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                <th className="text-left py-3">Code</th>
+                <th className="text-left">Désignation</th>
+                <th className="text-right">Qté</th>
+                <th className="text-right">Prix</th>
+                <th className="text-right">Remise</th>
+                <th className="text-right">Total</th>
+                <th className="text-center"> </th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-slate-700/30">
               {fields.map((field, idx) => (
-                <tr key={field.id} className="hover:bg-slate-700/20">
-                  <td className="py-3 text-slate-400 font-mono text-xs">{panier[idx]?.codeBarres || '—'}</td>
-                  <td className="text-white font-medium">{panier[idx]?.designation}</td>
-                  <td className="text-right">
-                    <Controller
-                      name={`panier.${idx}.quantite`}
-                      control={control}
-                      render={({ field: f }) => (
-                        <input type="number" {...f} min={1} className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" />
-                      )}
-                    />
-                  </td>
-                  <td className="text-right text-white font-mono">{Number(panier[idx]?.prixUnitaire).toLocaleString('fr-FR')}</td>
-                  <td className="text-right">
-                    <Controller
-                      name={`panier.${idx}.remise`}
-                      control={control}
-                      render={({ field: f }) => (
-                        <input type="number" {...f} className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" placeholder="%" />
-                      )}
-                    />
-                  </td>
-                  <td className="text-right text-white font-bold font-mono">{(Number(panier[idx]?.quantite) * Number(panier[idx]?.prixUnitaire) * (1 - (Number(panier[idx]?.remise) || 0) / 100)).toLocaleString('fr-FR')}</td>
-                  <td className="text-center"><button type="button" onClick={() => remove(idx)} className="text-red-400 hover:text-red-300 text-xs">✕</button></td>
-                </tr>
+                <LignePanier
+                  key={field.id}
+                  field={field}
+                  idx={idx}
+                  control={control}
+                  panierItem={panierWatch[idx]}
+                  onRemove={handleRemoveLigne}
+                />
               ))}
-              {fields.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-slate-500 text-sm">Panier vide — Scannez ou recherchez un article</td></tr>}
+              {fields.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-slate-500 text-sm">
+                    Panier vide — Scannez ou recherchez un article
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-700/50">
             <div className="flex gap-2">
-              <button type="button" onClick={() => setValue('panier', [])} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold rounded-lg">Vider</button>
+              <button type="button" onClick={handleViderPanier} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold rounded-lg">
+                Vider
+              </button>
             </div>
             <div className="text-right">
               <p className="text-slate-400 text-xs">Sous-total</p>
@@ -226,7 +275,9 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
               <input type="number" {...field} placeholder="Montant reçu (FCFA)" className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm" />
             )}
           />
-          {montantRecu >= total && <p className="text-emerald-400 text-sm font-bold">Monnaie : {monnaie.toLocaleString('fr-FR')} FCFA</p>}
+          {montantRecu >= total && total > 0 && (
+            <p className="text-emerald-400 text-sm font-bold">Monnaie : {monnaie.toLocaleString('fr-FR')} FCFA</p>
+          )}
           <Controller
             name="remiseGlobale"
             control={control}
@@ -238,12 +289,26 @@ export default function POSSupermarcheForm({ metier = 'supermarche', onSuccess, 
             name="clientId"
             control={control}
             render={({ field }) => (
-              <AutocompleteInput name="clientId" value={field.value} onChange={field.onChange} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Associer client (fidélité)" onSelect={(c) => field.onChange(c.id)} />
+              <AutocompleteInput
+                name="clientId"
+                value={field.value}
+                onChange={field.onChange}
+                fetchSuggestions={fetchClients}
+                displayKey="nom"
+                placeholder="Associer client (fidélité)"
+                onSelect={(c) => field.onChange(c.id)}
+              />
             )}
           />
-          <button type="button" onClick={handleSubmit((data) => mutation.mutate(data))} disabled={fields.length === 0 || mutation.isPending}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-lg rounded-xl transition-all shadow-lg shadow-emerald-600/20">
-            {mutation.isPending ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : 'ENCAISSER'}
+          <button
+            type="button"
+            onClick={handleSubmit((data) => mutation.mutate(data))}
+            disabled={fields.length === 0 || mutation.isPending}
+            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-lg rounded-xl transition-all shadow-lg shadow-emerald-600/20"
+          >
+            {mutation.isPending
+              ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+              : 'ENCAISSER'}
           </button>
         </div>
       </div>

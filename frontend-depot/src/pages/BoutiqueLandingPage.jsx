@@ -85,6 +85,7 @@ const BoutiqueLandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [selectedType, setSelectedType] = useState(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -240,7 +241,7 @@ const BoutiqueLandingPage = () => {
               🚀 Commencer avec GesTock
               <ArrowRight size={20} />
             </button>
-            <button style={{
+            <button onClick={() => setIsVideoModalOpen(true)} style={{
               padding: '1rem 2rem',
               borderRadius: '14px',
               background: 'rgba(255,255,255,0.05)',
@@ -1222,6 +1223,63 @@ const BoutiqueLandingPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Video Modal */}
+      {isVideoModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.9)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}>
+          <div style={{
+            position: 'relative',
+            maxWidth: '900px',
+            width: '100%',
+            background: '#020617',
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)'
+          }}>
+            <button onClick={() => setIsVideoModalOpen(false)} style={{
+              position: 'absolute',
+              top: '1rem',
+              right: '1rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 10,
+              color: '#fff',
+              transition: 'background 0.3s ease'
+            }}>
+              <X size={24} />
+            </button>
+            <video
+              src="/videos/demo-boutique.mp4"
+              controls
+              autoPlay
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block'
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <Footer />

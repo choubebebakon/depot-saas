@@ -27,6 +27,7 @@ export default function DashboardBoutique() {
       return res.data;
     },
     enabled: !!tenantId,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {

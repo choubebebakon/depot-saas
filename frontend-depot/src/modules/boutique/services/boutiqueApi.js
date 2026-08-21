@@ -1,4 +1,4 @@
-﻿import api from '../../../api/axios';
+import api from '../../../api/axios';
 
 function getTenantHeaders() {
   const tenantId = localStorage.getItem('gestock_tenantId');
@@ -104,6 +104,12 @@ export const boutiqueApi = {
   // Rapports
   getRapports: (params) =>
     api.get('/boutique/rapports', { ...getTenantHeaders(), params: cleanParams(params) }),
+  exportRapport: (format, params) =>
+    api.get('/boutique/rapports/export', {
+      ...getTenantHeaders(),
+      params: cleanParams({ ...params, format }),
+      responseType: 'blob',
+    }),
 
   // ParamÃ¨tres
   getParametres: () =>

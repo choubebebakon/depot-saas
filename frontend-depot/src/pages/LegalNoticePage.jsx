@@ -24,7 +24,7 @@ export default function LegalNoticePage() {
             <div className="info-card">
               <div className="info-item">
                 <span className="info-label">Propriétaire / Représentant légal :</span>
-                <span className="info-value">Albert (Développeur & Fondateur)</span>
+                <span className="info-value">BAKON MABONG Albert Alain (Développeur & Fondateur)</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Contact :</span>
@@ -35,9 +35,9 @@ export default function LegalNoticePage() {
               </div>
               <div className="info-item">
                 <span className="info-label">WhatsApp :</span>
-                <a href="https://wa.me/237656929905" target="_blank" rel="noopener noreferrer" className="info-link">
+                <a href="https://wa.me/237688002284" target="_blank" rel="noopener noreferrer" className="info-link">
                   <Phone size={16} />
-                  +237 656929905
+                  +237 688002284
                 </a>
               </div>
               <div className="info-item">

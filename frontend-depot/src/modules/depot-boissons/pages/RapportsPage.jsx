@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotif } from '../../../context/NotifContext';
 import { depotApi } from '../services/depotApi';
 import { Coins, Package, Users, Briefcase, Car, HandCoins } from 'lucide-react';
 
@@ -14,6 +15,7 @@ const RAPPORTS = [
 
 export default function RapportsPage() {
   const { metier } = useAuth();
+  const notif = useNotif();
 
   const [selectedRapport, setSelectedRapport] = useState(null);
   const [dateDebut, setDateDebut] = useState(() => {
@@ -43,16 +45,26 @@ export default function RapportsPage() {
 
   async function handleExport(format) {
     if (!selectedRapport) return;
+    let url = null;
     try {
       const res = await depotApi.exporterRapport(selectedRapport, format, { dateDebut, dateFin });
-      const url = URL.createObjectURL(res.data);
+      const ext = format === 'pdf' ? 'pdf' : 'xlsx';
+      const mimeType = format === 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const blob = new Blob([res.data], { type: mimeType });
+      url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `rapport-${selectedRapport}.${format}`;
+      a.download = `rapport-${selectedRapport}.${ext}`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      notif.success(`Export ${format.toUpperCase()} téléchargé`);
     } catch (err) {
-      console.error(err);
+      notif.error(err.response?.data?.message || `Erreur lors de l'export ${format.toUpperCase()}`);
+    } finally {
+      if (url) URL.revokeObjectURL(url);
     }
   }
 
