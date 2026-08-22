@@ -14,7 +14,7 @@ const conditionnementSchema = z.object({
   type: z.enum(['CASIER', 'PACK', 'PALETTE', 'UNITE'], { message: 'Le type est requis' }),
   quantiteUnitaire: z.coerce.number().min(1, 'Minimum 1'),
   prixVente: z.coerce.number().positive('Le prix doit être supérieur à 0'),
-  articleId: z.string().uuid('Article invalide').optional(),
+  articleId: z.string().uuid('Article invalide').optional().or(z.literal('')),
 });
 
 export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
