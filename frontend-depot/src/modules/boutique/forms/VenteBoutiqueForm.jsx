@@ -204,25 +204,41 @@ export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depo
                 />
               )}
             />
-            <FormField
-              label="Mode de paiement"
+            <Controller
               name="modePaiement"
               control={control}
-              type="select"
-              options={[
-                { value: 'CASH', label: 'Espèces' },
-                { value: 'ORANGE_MONEY', label: 'Orange Money' },
-                { value: 'MTN_MOMO', label: 'MTN Mobile Money' },
-                { value: 'CARTE', label: 'Carte bancaire' },
-              ]}
+              render={({ field }) => (
+                <FormField
+                  label="Mode de paiement"
+                  name="modePaiement"
+                  type="select"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  options={[
+                    { value: 'CASH', label: 'Espèces' },
+                    { value: 'ORANGE_MONEY', label: 'Orange Money' },
+                    { value: 'MTN_MOMO', label: 'MTN Mobile Money' },
+                    { value: 'CARTE', label: 'Carte bancaire' },
+                  ]}
+                  error={errors.modePaiement?.message}
+                />
+              )}
             />
-            <FormField
-              label="Remise globale (%)"
+            <Controller
               name="remiseGlobale"
-              type="number"
               control={control}
-              min="0"
-              max="100"
+              render={({ field }) => (
+                <FormField
+                  label="Remise globale (%)"
+                  name="remiseGlobale"
+                  type="number"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  min="0"
+                  max="100"
+                  error={errors.remiseGlobale?.message}
+                />
+              )}
             />
           </div>
         </div>
@@ -245,12 +261,20 @@ export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depo
             </div>
             {modePaiement === 'CASH' && (
               <>
-                <FormField
-                  label="Montant reçu"
+                <Controller
                   name="montantRecu"
-                  type="number"
                   control={control}
-                  min="0"
+                  render={({ field }) => (
+                    <FormField
+                      label="Montant reçu"
+                      name="montantRecu"
+                      type="number"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      min="0"
+                      error={errors.montantRecu?.message}
+                    />
+                  )}
                 />
                 {montantRecu > 0 && (
                   <div className="flex justify-between text-green-400 font-bold">

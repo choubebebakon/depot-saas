@@ -108,50 +108,85 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
       size="md"
       submitLabel={edit ? 'Modifier' : 'Créer'}
     >
-      <FormField
-        label="Désignation"
+      <Controller
         name="designation"
         control={control}
-        required
-        error={errors.designation?.message}
-        placeholder="Nom de l'article"
+        render={({ field }) => (
+          <FormField
+            label="Désignation"
+            name="designation"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            required
+            error={errors.designation?.message}
+            placeholder="Nom de l'article"
+          />
+        )}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField
-          label="Prix vente (F CFA)"
+        <Controller
           name="prixVente"
-          type="number"
           control={control}
-          min="0"
-          placeholder="0"
-          error={errors.prixVente?.message}
+          render={({ field }) => (
+            <FormField
+              label="Prix vente (F CFA)"
+              name="prixVente"
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              min="0"
+              placeholder="0"
+              error={errors.prixVente?.message}
+            />
+          )}
         />
-        <FormField
-          label="Prix achat (F CFA)"
+        <Controller
           name="prixAchat"
-          type="number"
           control={control}
-          min="0"
-          placeholder="0"
-          error={errors.prixAchat?.message}
+          render={({ field }) => (
+            <FormField
+              label="Prix achat (F CFA)"
+              name="prixAchat"
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              min="0"
+              placeholder="0"
+              error={errors.prixAchat?.message}
+            />
+          )}
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField
-          label="Seuil critique"
+        <Controller
           name="seuilCritique"
-          type="number"
           control={control}
-          min="0"
-          placeholder="0"
-          error={errors.seuilCritique?.message}
+          render={({ field }) => (
+            <FormField
+              label="Seuil critique"
+              name="seuilCritique"
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              min="0"
+              placeholder="0"
+              error={errors.seuilCritique?.message}
+            />
+          )}
         />
-        <FormField
-          label="Code-barres"
+        <Controller
           name="codeBarres"
           control={control}
-          placeholder="Code-barres"
-          error={errors.codeBarres?.message}
+          render={({ field }) => (
+            <FormField
+              label="Code-barres"
+              name="codeBarres"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              placeholder="Code-barres"
+              error={errors.codeBarres?.message}
+            />
+          )}
         />
       </div>
       <Controller

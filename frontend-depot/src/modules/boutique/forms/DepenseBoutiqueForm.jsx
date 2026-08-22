@@ -90,55 +90,93 @@ export default function DepenseBoutiqueForm({ isOpen, onClose, onSuccess, edit }
       size="md"
       submitLabel={edit ? 'Modifier' : 'Créer'}
     >
-      <FormField
-        label="Libellé"
+      <Controller
         name="libelle"
         control={control}
-        required
-        error={errors.libelle?.message}
-        placeholder="Libellé de la dépense"
+        render={({ field }) => (
+          <FormField
+            label="Libellé"
+            name="libelle"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            required
+            error={errors.libelle?.message}
+            placeholder="Libellé de la dépense"
+          />
+        )}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField
-          label="Montant (F CFA)"
+        <Controller
           name="montant"
-          type="number"
           control={control}
-          required
-          error={errors.montant?.message}
-          min="0"
-          placeholder="0"
+          render={({ field }) => (
+            <FormField
+              label="Montant (F CFA)"
+              name="montant"
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              required
+              error={errors.montant?.message}
+              min="0"
+              placeholder="0"
+            />
+          )}
         />
-        <FormField
-          label="Catégorie"
+        <Controller
           name="categorie"
           control={control}
-          type="select"
-          options={[
-            { value: 'ACHATS', label: 'Achats' },
-            { value: 'LOYER', label: 'Loyer' },
-            { value: 'ELECTRICITE', label: 'Électricité' },
-            { value: 'AUTRE', label: 'Autre' },
-          ]}
+          render={({ field }) => (
+            <FormField
+              label="Catégorie"
+              name="categorie"
+              type="select"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              options={[
+                { value: 'ACHATS', label: 'Achats' },
+                { value: 'LOYER', label: 'Loyer' },
+                { value: 'ELECTRICITE', label: 'Électricité' },
+                { value: 'AUTRE', label: 'Autre' },
+              ]}
+              error={errors.categorie?.message}
+            />
+          )}
         />
       </div>
-      <FormField
-        label="Mode de paiement"
+      <Controller
         name="modePaiement"
         control={control}
-        type="select"
-        options={[
-          { value: 'ESPECES', label: 'Espèces' },
-          { value: 'CARTE', label: 'Carte' },
-          { value: 'CHEQUE', label: 'Chèque' },
-          { value: 'VIREMENT', label: 'Virement' },
-        ]}
+        render={({ field }) => (
+          <FormField
+            label="Mode de paiement"
+            name="modePaiement"
+            type="select"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            options={[
+              { value: 'ESPECES', label: 'Espèces' },
+              { value: 'CARTE', label: 'Carte' },
+              { value: 'CHEQUE', label: 'Chèque' },
+              { value: 'VIREMENT', label: 'Virement' },
+            ]}
+            error={errors.modePaiement?.message}
+          />
+        )}
       />
-      <FormField
-        label="Notes"
+      <Controller
         name="notes"
         control={control}
-        placeholder="Notes optionnelles"
+        render={({ field }) => (
+          <FormField
+            label="Notes"
+            name="notes"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            placeholder="Notes optionnelles"
+            error={errors.notes?.message}
+          />
+        )}
       />
     </FormModal>
   );

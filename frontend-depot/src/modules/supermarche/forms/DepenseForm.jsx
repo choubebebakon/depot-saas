@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -63,19 +63,19 @@ export default function DepenseForm({ isOpen, onClose, onSuccess, edit, metier =
 
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title={edit ? 'Modifier la dépense' : 'Nouvelle dépense'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Enregistrer'}>
-      <FormField label="Libellé" name="libelle" type="text" control={control} error={errors.libelle?.message} />
+      <Controller name="libelle" control={control} render={({ field }) => <FormField label="Libellé" name="libelle" type="text" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.libelle?.message} />} />
       <div className="grid grid-cols-2 gap-4">
-        <FormField label="Montant (F)" name="montant" type="number" control={control} error={errors.montant?.message} />
-        <FormField label="Date" name="date" type="date" control={control} error={errors.date?.message} />
-        <FormField label="Catégorie" name="categorie" type="select" control={control} error={errors.categorie?.message} options={CATEGORIES.map(c => ({ value: c, label: c }))} />
-        <FormField label="Mode de paiement" name="modePaiement" type="select" control={control} error={errors.modePaiement?.message} options={[
+        <Controller name="montant" control={control} render={({ field }) => <FormField label="Montant (F)" name="montant" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.montant?.message} />} />
+        <Controller name="date" control={control} render={({ field }) => <FormField label="Date" name="date" type="date" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.date?.message} />} />
+        <Controller name="categorie" control={control} render={({ field }) => <FormField label="Catégorie" name="categorie" type="select" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.categorie?.message} options={CATEGORIES.map(c => ({ value: c, label: c }))} />} />
+        <Controller name="modePaiement" control={control} render={({ field }) => <FormField label="Mode de paiement" name="modePaiement" type="select" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.modePaiement?.message} options={[
           { value: 'cash', label: 'Cash' },
           { value: 'mobile_money', label: 'Mobile Money' },
           { value: 'cheque', label: 'Chèque' },
           { value: 'virement', label: 'Virement' },
-        ]} />
+        ]} />} />
       </div>
-      <FormField label="Notes" name="notes" type="textarea" control={control} error={errors.notes?.message} rows={2} />
+      <Controller name="notes" control={control} render={({ field }) => <FormField label="Notes" name="notes" type="textarea" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.notes?.message} rows={2} />} />
     </FormModal>
   );
 }
