@@ -758,8 +758,12 @@ export class DepotBoissonsService {
     if (data.plafondCredit !== undefined)
       validData.plafondCredit = parseFloat(data.plafondCredit) || 0;
     if (data.depotId !== undefined) validData.depotId = data.depotId;
-    return this.prisma.client.updateMany({
+    const client = await this.prisma.client.findFirst({
       where: { id, tenantId },
+    });
+    if (!client) throw new NotFoundException('Client introuvable');
+    return this.prisma.client.update({
+      where: { id },
       data: validData,
     });
   }
@@ -768,10 +772,13 @@ export class DepotBoissonsService {
     const montant = parseFloat(data.montant);
     if (!Number.isFinite(montant) || montant <= 0)
       throw new BadRequestException('montant invalide');
-    await this.prisma.client.updateMany({
+    const result = await this.prisma.client.updateMany({
       where: { id: clientId, tenantId },
       data: { soldeCredit: { decrement: montant } },
     });
+    if (result.count === 0) {
+      throw new NotFoundException('Client introuvable');
+    }
     return this.prisma.detteClient.create({
       data: {
         montant,
