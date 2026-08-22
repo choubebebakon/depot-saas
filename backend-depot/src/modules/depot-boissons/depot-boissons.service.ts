@@ -1093,7 +1093,7 @@ export class DepotBoissonsService {
   }
 
   async fermerCaisse(tenantId: string, data: any) {
-    return this.prisma.sessionCaisse.updateMany({
+    const result = await this.prisma.sessionCaisse.updateMany({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
       data: {
         estOuverte: false,
@@ -1102,6 +1102,10 @@ export class DepotBoissonsService {
         ecart: data.ecart,
       },
     });
+    if (result.count === 0) {
+      throw new BadRequestException('Aucune session de caisse ouverte à fermer.');
+    }
+    return result;
   }
 
   async mouvementCaisse(tenantId: string, data: any) {
