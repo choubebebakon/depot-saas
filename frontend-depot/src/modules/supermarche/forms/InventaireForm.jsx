@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,6 +31,7 @@ export default function InventaireForm({ isOpen, onClose, onSuccess, metier = 's
   const notif = useNotif();
   const [loadingData, setLoadingData] = useState(false);
   const [rayons, setRayons] = useState([]);
+  const [depots, setDepots] = useState([]);
 
   const { control, handleSubmit, watch, reset, setValue, register, formState: { errors } } = useForm({
     resolver: zodResolver(inventaireSchema),
@@ -45,8 +46,9 @@ export default function InventaireForm({ isOpen, onClose, onSuccess, metier = 's
   const watchedDepotId = watch('depotId');
   const watchedRayonId = watch('rayonId');
 
-  useState(() => {
+  useEffect(() => {
     api.get(`/${metier}/rayons`).then(r => setRayons(r.data?.data || r.data || [])).catch(() => {});
+    api.get(`/${metier}/depots`).then(r => setDepots(r.data?.data || r.data || [])).catch(() => {});
   }, [metier]);
 
   const prefix = `/${metier}`;
@@ -97,8 +99,9 @@ export default function InventaireForm({ isOpen, onClose, onSuccess, metier = 's
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit(onSubmit)} title="Inventaire" loading={mutation.isPending} size="xl" submitLabel="Valider l'inventaire">
       {errors.depotId && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.depotId.message}</div>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Rayon" name="rayonId" type="select" value={watchedRayonId} onChange={(e) => setValue('rayonId', e.target.value)} options={rayons.map(r => ({ value: r.id, label: r.nom }))} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <FormField label="Dépôt" name="depotId" type="select" value={watchedDepotId} onChange={(e) => setValue('depotId', e.target.value)} options={[{ value: '', label: 'Sélectionnez un dépôt' }, ...depots.map(d => ({ value: d.id, label: d.nom }))]} required />
+        <FormField label="Rayon" name="rayonId" type="select" value={watchedRayonId} onChange={(e) => setValue('rayonId', e.target.value)} options={[{ value: '', label: 'Tous les rayons' }, ...rayons.map(r => ({ value: r.id, label: r.nom }))]} />
         <div className="flex items-end">
           <button type="button" onClick={chargerStock} disabled={loadingData}
             className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold rounded-xl text-sm transition-colors">
