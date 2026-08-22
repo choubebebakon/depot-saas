@@ -35,7 +35,7 @@ Ce fichier liste les correctifs issus d'un audit complet du repo (lecture réell
 
 - [x] **8. Sécuriser `payerDette` et corriger `updateClient` (Dépôt Boissons).** Fichier : `backend-depot/src/modules/depot-boissons/depot-boissons.service.ts`. Dans `payerDette` : vérifier `count === 0` après le `updateMany` sur `client` et lever `NotFoundException` avant de créer l'enregistrement `detteClient`. Dans `updateClient` : remplacer le `updateMany` (qui retourne `{count}` au lieu du client) par un `findFirst` (throw `NotFoundException` si absent) suivi d'un `update()` classique qui renvoie l'objet complet.
 
-- [ ] **9. Enrichir le logging des erreurs Prisma.** Fichier : `backend-depot/src/common/filters/all-exceptions.filter.ts`, méthode `getMessage()`. Pour `Prisma.PrismaClientValidationError`, logger `this.logger.error('PrismaClientValidationError: ' + exception.message)` côté serveur avant de renvoyer le message générique au client (ne pas exposer le détail Prisma au client, seulement dans les logs).
+- [x] **9. Enrichir le logging des erreurs Prisma.** Fichier : `backend-depot/src/common/filters/all-exceptions.filter.ts`, méthode `getMessage()`. Pour `Prisma.PrismaClientValidationError`, logger `this.logger.error('PrismaClientValidationError: ' + exception.message)` côté serveur avant de renvoyer le message générique au client (ne pas exposer le détail Prisma au client, seulement dans les logs).
 
 ### Sécurité multi-tenant
 

@@ -176,6 +176,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (exception instanceof Prisma.PrismaClientValidationError) {
+      this.logger.error('PrismaClientValidationError: ' + exception.message);
       return 'Donnees de requete invalides pour la base de donnees.';
     }
 
