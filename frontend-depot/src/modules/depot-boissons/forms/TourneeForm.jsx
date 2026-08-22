@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import DateTimePicker from '../../../shared/components/forms/DateTimePicker';
@@ -19,6 +20,7 @@ const tourneeSchema = z.object({
 export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier = 'depot', depotId }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { user } = useAuth();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(tourneeSchema),
@@ -33,7 +35,7 @@ export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier =
   const { data: tricycles = [] } = useQuery({
     queryKey: ['tricycles'],
     queryFn: async () => {
-      const r = await api.get('/tournees/tricycles');
+      const r = await api.get('/tournees/tricycles', { params: { tenantId: user?.tenantId } });
       return r.data?.data || r.data || [];
     },
     enabled: isOpen,
@@ -42,7 +44,7 @@ export default function TourneeForm({ isOpen, onClose, onSuccess, edit, metier =
   const { data: commerciaux = [] } = useQuery({
     queryKey: ['commerciaux'],
     queryFn: async () => {
-      const r = await api.get('/users/commerciaux');
+      const r = await api.get('/users/commerciaux', { params: { tenantId: user?.tenantId } });
       return r.data?.data || r.data || [];
     },
     enabled: isOpen,

@@ -43,7 +43,7 @@ export default function TricycleForm({ isOpen, onClose, onSuccess, edit, metier 
   const { data: commerciaux = [] } = useQuery({
     queryKey: ['commerciaux'],
     queryFn: async () => {
-      const r = await api.get('/users/commerciaux');
+      const r = await api.get('/users/commerciaux', { params: { tenantId: user?.tenantId } });
       return r.data?.data || r.data || [];
     },
     enabled: isOpen,

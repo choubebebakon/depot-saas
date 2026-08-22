@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
@@ -34,6 +35,7 @@ const consigneSchema = z.object({
 export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { user } = useAuth();
 
   const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     resolver: zodResolver(consigneSchema),
@@ -54,7 +56,7 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
   const { data: typesConsigne = [] } = useQuery({
     queryKey: ['types-consigne'],
     queryFn: async () => {
-      const r = await api.get('/consignes/types');
+      const r = await api.get('/consignes/types', { params: { tenantId: user?.tenantId } });
       return r.data?.data || r.data || [];
     },
     enabled: isOpen,
