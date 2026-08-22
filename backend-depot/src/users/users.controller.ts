@@ -31,7 +31,7 @@ export class UsersController {
     },
     @Req() req: any,
   ) {
-    const tenantId = body.tenantId || req.user?.tenantId;
+    const tenantId = req.user?.tenantId;
     return this.usersService.create({ ...body, tenantId });
   }
 
@@ -49,7 +49,7 @@ export class UsersController {
     },
     @Req() req: any,
   ) {
-    const tenantId = body.tenantId || req.user?.tenantId;
+    const tenantId = req.user?.tenantId;
     return this.usersService.create({ ...body, tenantId });
   }
 
