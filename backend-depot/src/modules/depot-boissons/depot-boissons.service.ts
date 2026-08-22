@@ -971,44 +971,59 @@ export class DepotBoissonsService {
     );
     if (!Number.isFinite(total) || total <= 0)
       throw new BadRequestException('total vente invalide');
-    const vente = await this.prisma.vente.create({
-      data: {
-        reference: `VNT-${Date.now()}`,
-        total,
-        statut: 'PAYE',
-        modePaiement: data.modePaiement || 'CASH',
-        tenantId,
-        depotId: data.depotId,
-        clientId: data.clientId,
-        createurId: userId,
-        date: new Date(),
-        lignes: {
-          create: data.articles.map((a: any) => ({
-            articleId: a.articleId,
-            quantite: a.quantite,
-            prix: parseFloat(a.prixUnitaire),
-            total: parseFloat(a.prixUnitaire) * a.quantite,
-          })),
-        },
-      },
-    });
-    for (const article of data.articles) {
-      await this.prisma.stock.updateMany({
-        where: { articleId: article.articleId, depotId: data.depotId },
-        data: { quantite: { decrement: article.quantite } },
-      });
-      await this.prisma.mouvementStock.create({
+    return this.prisma.$transaction(async (tx) => {
+      const vente = await tx.vente.create({
         data: {
-          type: 'SORTIE_VENTE',
-          quantite: article.quantite,
-          articleId: article.articleId,
-          depotId: data.depotId,
+          reference: `VNT-${Date.now()}`,
+          total,
+          statut: 'PAYE',
+          modePaiement: data.modePaiement || 'CASH',
           tenantId,
-          motif: `Vente ${vente.reference}`,
+          depotId: data.depotId,
+          clientId: data.clientId,
+          createurId: userId,
+          date: new Date(),
+          lignes: {
+            create: data.articles.map((a: any) => ({
+              articleId: a.articleId,
+              quantite: a.quantite,
+              prix: parseFloat(a.prixUnitaire),
+              total: parseFloat(a.prixUnitaire) * a.quantite,
+            })),
+          },
         },
       });
-    }
-    return vente;
+      for (const article of data.articles) {
+        const articleId = article.articleId;
+        const qte = article.quantite;
+
+        const stock = await tx.stock.findFirst({
+          where: { articleId, depotId: data.depotId },
+        });
+        if (!stock) {
+          throw new BadRequestException(`Stock introuvable pour l'article ${articleId}`);
+        }
+        if (stock.quantite < qte) {
+          throw new BadRequestException(`Stock insuffisant pour l'article ${articleId}`);
+        }
+
+        await tx.stock.updateMany({
+          where: { articleId, depotId: data.depotId },
+          data: { quantite: { decrement: qte } },
+        });
+        await tx.mouvementStock.create({
+          data: {
+            type: 'SORTIE_VENTE',
+            quantite: qte,
+            articleId,
+            depotId: data.depotId,
+            tenantId,
+            motif: `Vente ${vente.reference}`,
+          },
+        });
+      }
+      return vente;
+    });
   }
 
   async annulerVente(tenantId: string, id: string, motif?: string) {

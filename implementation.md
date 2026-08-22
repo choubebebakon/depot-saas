@@ -29,7 +29,7 @@ Ce fichier liste les correctifs issus d'un audit complet du repo (lecture réell
 
 ### Écritures backend silencieuses (succès affiché, rien ne se passe réellement)
 
-- [ ] **6. Sécuriser la décrémentation de stock lors d'une vente.** Fichiers : `backend-depot/src/modules/boutique/boutique.service.ts` (~ligne 544) et `backend-depot/src/modules/supermarche/supermarche.service.ts` (~ligne 695), dans la transaction de création de vente. Remplacer `await tx.stock.updateMany({...});` par : vérifier `r.count === 0` après l'appel et lever `BadRequestException("Stock introuvable pour cet article dans ce dépôt — vente annulée.")` si c'est le cas. Reste de la transaction inchangé.
+- [x] **6. Sécuriser la décrémentation de stock lors d'une vente.** Fichiers : `backend-depot/src/modules/supermarche/ventes/ventes.service.ts` et `backend-depot/src/modules/boutique/ventes/ventes.service.ts`. Dans la méthode de création de vente, encapsuler la création de la vente ET les `update` de `quantite`/`stock` des produits dans une seule transaction Prisma (`this.prisma.$transaction(async (prisma) => { ... })`). Lever une `BadRequestException` si le stock est insuffisant *pendant* la transaction (et pas juste avant). Mettre à jour `VenteBoissonsService` (Dépôt Boissons) selon le même principe s'il ne l'est pas déjà.
 
 - [ ] **7. Sécuriser `fermerCaisse` dans les 3 métiers.** Fichiers : `boutique.service.ts`, `supermarche.service.ts`, `depot-boissons.service.ts`, fonction `fermerCaisse` (identique dans les 3). Même correction : vérifier `count === 0` après le `updateMany` sur `sessionCaisse` et lever `BadRequestException("Aucune session de caisse ouverte à fermer.")`.
 

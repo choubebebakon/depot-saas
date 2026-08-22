@@ -541,9 +541,22 @@ export class VentesService {
 
       // Décrémenter le stock et créer les mouvements
       for (const item of data.panier) {
+        const articleId = item.articleId;
+        const qte = parseInt(item.quantite);
+
+        const stock = await tx.stock.findFirst({
+          where: { articleId, depotId: data.depotId },
+        });
+        if (!stock) {
+          throw new BadRequestException(`Stock introuvable pour l'article ${articleId}`);
+        }
+        if (stock.quantite < qte) {
+          throw new BadRequestException(`Stock insuffisant pour l'article ${articleId}`);
+        }
+
         await tx.stock.updateMany({
-          where: { articleId: item.articleId, depotId: data.depotId },
-          data: { quantite: { decrement: parseInt(item.quantite) } },
+          where: { articleId, depotId: data.depotId },
+          data: { quantite: { decrement: qte } },
         });
         await tx.mouvementStock.create({
           data: {

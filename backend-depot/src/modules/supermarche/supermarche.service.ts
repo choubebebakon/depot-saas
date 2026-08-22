@@ -637,23 +637,7 @@ export class SupermarcheService {
         throw new BadRequestException('Client introuvable ou non autorisé');
     }
 
-    for (const item of data.panier) {
-      const article = await this.prisma.article.findFirst({
-        where: { id: item.articleId, tenantId },
-      });
-      if (!article)
-        throw new BadRequestException(
-          `Article ${item.articleId} introuvable ou non autorisé`,
-        );
-
-      const stock = await this.prisma.stock.findFirst({
-        where: { articleId: item.articleId, depotId: data.depotId },
-      });
-      if (!stock)
-        throw new BadRequestException(
-          `Stock introuvable pour article ${item.articleId} dans le dépôt ${data.depotId}`,
-        );
-    }
+    // Les vérifications de stock sont maintenant faites dans la transaction
 
     let validUserId: string | null = null;
     if (userId) {
@@ -692,9 +676,22 @@ export class SupermarcheService {
         });
 
         for (const item of data.panier) {
+          const articleId = item.articleId;
+          const qte = Number(item.quantite);
+
+          const stock = await tx.stock.findFirst({
+            where: { articleId, depotId: data.depotId },
+          });
+          if (!stock) {
+            throw new BadRequestException(`Stock introuvable pour l'article ${articleId}`);
+          }
+          if (stock.quantite < qte) {
+            throw new BadRequestException(`Stock insuffisant pour l'article ${articleId}`);
+          }
+
           await tx.stock.updateMany({
-            where: { articleId: item.articleId, depotId: data.depotId },
-            data: { quantite: { decrement: Number(item.quantite) } },
+            where: { articleId, depotId: data.depotId },
+            data: { quantite: { decrement: qte } },
           });
 
           await tx.mouvementStock.create({
