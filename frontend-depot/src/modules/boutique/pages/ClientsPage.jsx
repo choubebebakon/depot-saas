@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
-import ClientBoutiqueForm from '../forms/ClientBoutiqueForm';
+import ClientForm from '../../../shared/forms/ClientForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { boutiqueApi } from '../services/boutiqueApi';
 import { Search, Edit, Trash2 } from 'lucide-react';
@@ -84,8 +84,10 @@ export default function ClientsPage() {
             <thead className="bg-slate-900/50">
               <tr className="text-slate-500 text-xs font-bold uppercase tracking-widest">
                 <th className="text-left px-5 py-4">Nom</th>
-                <th className="text-left px-5 py-4">Email</th>
                 <th className="text-left px-5 py-4">Téléphone</th>
+                <th className="text-left px-5 py-4">Adresse</th>
+                <th className="text-left px-5 py-4">Plafond</th>
+                <th className="text-left px-5 py-4">Solde Crédit</th>
                 <th className="text-center px-5 py-4">Actions</th>
               </tr>
             </thead>
@@ -102,8 +104,16 @@ export default function ClientsPage() {
                       <span className="text-white font-semibold text-sm">{i.nom}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-slate-300">{i.email || ''}</td>
-                  <td className="px-5 py-4 text-white">{i.telephone || ''}</td>
+                  <td className="px-5 py-4 text-slate-300">{i.telephone || '-'}</td>
+                  <td className="px-5 py-4 text-slate-300">{i.adresse || '-'}</td>
+                  <td className="px-5 py-4 text-slate-300">{i.plafondCredit ? `${i.plafondCredit.toLocaleString('fr-FR')} F` : '-'}</td>
+                  <td className="px-5 py-4 text-slate-300">
+                    {Number(i.soldeCredit) > 0 ? (
+                      <span className="text-red-400 font-bold">{Number(i.soldeCredit).toLocaleString('fr-FR')} F</span>
+                    ) : (
+                      <span className="text-emerald-400">-</span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 text-center">
                     <div className="flex justify-center gap-1">
                       {perm.canEdit && (
@@ -131,11 +141,15 @@ export default function ClientsPage() {
         </div>
       )}
       {formOpen && (
-        <ClientBoutiqueForm
+        <ClientForm
           isOpen={formOpen}
           onClose={() => setFormOpen(false)}
-          onSuccess={() => { setFormOpen(false); }}
+          onSuccess={() => { 
+            setFormOpen(false); 
+            queryClient.invalidateQueries({ queryKey: ['boutique-clients'] });
+          }}
           edit={editItem}
+          metier="boutique"
         />
       )}
       {confirmDelete && (
