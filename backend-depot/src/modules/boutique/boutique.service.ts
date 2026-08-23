@@ -94,11 +94,43 @@ export class PromotionsService {
   }
 }
 
-// ── CreditClient stub ────────────────────────────────────────────────────────
+// ── CreditClient ───────────────────────────────────────────────────────────────
 
 @Injectable()
 export class CreditClientService {
   constructor(private prisma: PrismaService) {}
+
+  async payerDette(tenantId: string, clientId: string, data: any) {
+    const montant = parseFloat(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0)
+      throw new BadRequestException('montant invalide');
+    
+    const result = await this.prisma.client.updateMany({
+      where: { id: clientId, tenantId },
+      data: { soldeCredit: { decrement: montant } },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('Client introuvable');
+    }
+    
+    return this.prisma.detteClient.create({
+      data: {
+        montant,
+        montantPaye: montant,
+        statut: 'SOLDEE',
+        clientId,
+        tenantId,
+        depotId: data.depotId,
+      },
+    });
+  }
+
+  async getDettesClient(tenantId: string, clientId: string) {
+    return this.prisma.detteClient.findMany({
+      where: { clientId, tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }
 
 // ── Articles ─────────────────────────────────────────────────────────────────

@@ -31,6 +31,7 @@ import {
   FournisseursService,
   DepensesService,
   VentesService,
+  CreditClientService,
 } from './boutique.service';
 import { StockQueryDto } from './dto/stock-query.dto';
 
@@ -46,6 +47,7 @@ export class BoutiqueController {
     private fournisseursService: FournisseursService,
     private depensesService: DepensesService,
     private ventesService: VentesService,
+    private creditClientService: CreditClientService,
   ) {}
 
   // ── Helper ────────────────────────────────────────────────────────────────
@@ -218,6 +220,27 @@ export class BoutiqueController {
   @HttpCode(HttpStatus.OK)
   async deleteClient(@Param('id') id: string, @Req() req: any) {
     return this.clientsService.delete(id, this.getTenantId(req));
+  }
+
+  // ── Crédit Client ─────────────────────────────────────────────────────────────
+
+  @Post('clients/:id/payer-dette')
+  @RequirePermission('clients', 'write')
+  async payerDette(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.creditClientService.payerDette(this.getTenantId(req), id, {
+      ...data,
+      depotId: data.depotId || this.getDepotId(req),
+    });
+  }
+
+  @Get('clients/:id/dettes')
+  @RequirePermission('clients', 'read')
+  async getDettesClient(@Param('id') id: string, @Req() req: any) {
+    return this.creditClientService.getDettesClient(this.getTenantId(req), id);
   }
 
   // ── Fournisseurs ──────────────────────────────────────────────────────────
