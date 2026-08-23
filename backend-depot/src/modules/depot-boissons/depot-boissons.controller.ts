@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Post,
   Get,
@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
   Param,
+  BadRequestException,
 } from '@nestjs/common';
 import { DepotBoissonsService } from './depot-boissons.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -23,18 +24,25 @@ import { RequirePermission } from '../../auth/decorators/require-permission.deco
 export class DepotBoissonsController {
   constructor(private service: DepotBoissonsService) {}
 
-  // ── Dashboard ─────────────────────────────────────────────
+  private getTenantId(req: any): string {
+    if (!req.user?.tenantId) {
+      throw new BadRequestException('AccÃ¨s refusÃ© : tenantId manquant dans le token.');
+    }
+    return req.user.tenantId;
+  }
+
+  // â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('dashboard')
   @RequirePermission('dashboard', 'read')
   async getDashboard(@Req() req: any, @Query('depotId') depotId?: string) {
-    return this.service.getDashboardStats(req.user.tenantId, depotId);
+    return this.service.getDashboardStats(this.getTenantId(req), depotId);
   }
 
-  // ── Articles ─────────────────────────────────────────────
+  // â”€â”€ Articles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('articles')
   @RequirePermission('stock_articles', 'read')
   async getArticles(@Req() req: any, @Query() query: any) {
-    return this.service.getArticles(req.user.tenantId, {
+    return this.service.getArticles(this.getTenantId(req), {
       ...query,
       depotId: req.headers['x-depot-id'],
     });
@@ -43,13 +51,13 @@ export class DepotBoissonsController {
   @Get('articles/:id')
   @RequirePermission('stock_articles', 'read')
   async getArticle(@Req() req: any, @Param('id') id: string) {
-    return this.service.getArticle(req.user.tenantId, id);
+    return this.service.getArticle(this.getTenantId(req), id);
   }
 
   @Post('articles')
   @RequirePermission('stock_articles', 'write')
   async createArticle(@Req() req: any, @Body() data: any) {
-    return this.service.createArticle(req.user.tenantId, data);
+    return this.service.createArticle(this.getTenantId(req), data);
   }
 
   @Patch('articles/:id')
@@ -59,25 +67,25 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.updateArticle(req.user.tenantId, id, data);
+    return this.service.updateArticle(this.getTenantId(req), id, data);
   }
 
   @Delete('articles/:id')
   @RequirePermission('stock_articles', 'write')
   async archiveArticle(@Req() req: any, @Param('id') id: string) {
-    return this.service.archiveArticle(req.user.tenantId, id);
+    return this.service.archiveArticle(this.getTenantId(req), id);
   }
 
   @Get('articles/:id/stock-history')
   @RequirePermission('stock_articles', 'read')
   async getStockHistory(@Req() req: any, @Param('id') id: string) {
-    return this.service.getStockHistory(req.user.tenantId, id);
+    return this.service.getStockHistory(this.getTenantId(req), id);
   }
 
   @Post('stock/entree')
   @RequirePermission('stock_articles', 'write')
   async entreStock(@Req() req: any, @Body() data: any) {
-    return this.service.entreStock(req.user.tenantId, {
+    return this.service.entreStock(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -86,7 +94,7 @@ export class DepotBoissonsController {
   @Post('stock/sortie')
   @RequirePermission('stock_articles', 'write')
   async sortieStock(@Req() req: any, @Body() data: any) {
-    return this.service.sortieStock(req.user.tenantId, {
+    return this.service.sortieStock(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -95,23 +103,23 @@ export class DepotBoissonsController {
   @Post('stock/transfert')
   @RequirePermission('stock_articles', 'write')
   async transfertStock(@Req() req: any, @Body() data: any) {
-    return this.service.transfertStock(req.user.tenantId, {
+    return this.service.transfertStock(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
   }
 
-  // ── Conditionnements ─────────────────────────────────────
+  // â”€â”€ Conditionnements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('conditionnements')
   @RequirePermission('stock_articles', 'read')
   async getConditionnements(@Req() req: any) {
-    return this.service.getConditionnements(req.user.tenantId);
+    return this.service.getConditionnements(this.getTenantId(req));
   }
 
   @Post('conditionnements')
   @RequirePermission('stock_articles', 'write')
   async createConditionnement(@Req() req: any, @Body() data: any) {
-    return this.service.createConditionnement(req.user.tenantId, data);
+    return this.service.createConditionnement(this.getTenantId(req), data);
   }
 
   @Patch('conditionnements/:id')
@@ -121,29 +129,29 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.updateConditionnement(req.user.tenantId, id, data);
+    return this.service.updateConditionnement(this.getTenantId(req), id, data);
   }
 
   @Delete('conditionnements/:id')
   @RequirePermission('stock_articles', 'write')
   async deleteConditionnement(@Req() req: any, @Param('id') id: string) {
-    return this.service.deleteConditionnement(req.user.tenantId, id);
+    return this.service.deleteConditionnement(this.getTenantId(req), id);
   }
 
-  // ── Consignes ────────────────────────────────────────────
+  // â”€â”€ Consignes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('consignes/client/:clientId')
   @RequirePermission('consignes', 'read')
   async getConsignesClient(
     @Req() req: any,
     @Param('clientId') clientId: string,
   ) {
-    return this.service.getConsignesClient(req.user.tenantId, clientId);
+    return this.service.getConsignesClient(this.getTenantId(req), clientId);
   }
 
   @Post('consignes/sortie')
   @RequirePermission('consignes', 'write')
   async sortirConsigne(@Req() req: any, @Body() data: any) {
-    return this.service.sortirConsigne(req.user.tenantId, {
+    return this.service.sortirConsigne(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -152,7 +160,7 @@ export class DepotBoissonsController {
   @Post('consignes/retour')
   @RequirePermission('consignes', 'write')
   async retourConsigne(@Req() req: any, @Body() data: any) {
-    return this.service.retourConsigne(req.user.tenantId, {
+    return this.service.retourConsigne(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -161,7 +169,7 @@ export class DepotBoissonsController {
   @Post('consignes/remboursement')
   @RequirePermission('consignes', 'write')
   async rembourserConsigne(@Req() req: any, @Body() data: any) {
-    return this.service.rembourserConsigne(req.user.tenantId, {
+    return this.service.rembourserConsigne(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -173,14 +181,14 @@ export class DepotBoissonsController {
     @Req() req: any,
     @Param('clientId') clientId: string,
   ) {
-    return this.service.historiqueConsignes(req.user.tenantId, clientId);
+    return this.service.historiqueConsignes(this.getTenantId(req), clientId);
   }
 
-  // ── Livraisons ───────────────────────────────────────────
+  // â”€â”€ Livraisons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('livraisons')
   @RequirePermission('livraisons', 'read')
   async getLivraisons(@Req() req: any, @Query() query: any) {
-    return this.service.getLivraisons(req.user.tenantId, {
+    return this.service.getLivraisons(this.getTenantId(req), {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
     });
@@ -189,7 +197,7 @@ export class DepotBoissonsController {
   @Post('livraisons')
   @RequirePermission('livraisons', 'write')
   async createLivraison(@Req() req: any, @Body() data: any) {
-    return this.service.createLivraison(req.user.tenantId, {
+    return this.service.createLivraison(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -198,14 +206,14 @@ export class DepotBoissonsController {
   @Delete('livraisons/:id')
   @RequirePermission('livraisons', 'write')
   async deleteLivraison(@Req() req: any, @Param('id') id: string) {
-    return this.service.deleteLivraison(req.user.tenantId, id);
+    return this.service.deleteLivraison(this.getTenantId(req), id);
   }
 
-  // ── Tournées ─────────────────────────────────────────────
+  // â”€â”€ TournÃ©es â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('tournees')
   @RequirePermission('tournees', 'read')
   async getTournees(@Req() req: any, @Query() query: any) {
-    return this.service.getTournees(req.user.tenantId, {
+    return this.service.getTournees(this.getTenantId(req), {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
     });
@@ -214,7 +222,7 @@ export class DepotBoissonsController {
   @Post('tournees')
   @RequirePermission('tournees', 'write')
   async createTournee(@Req() req: any, @Body() data: any) {
-    return this.service.createTournee(req.user.tenantId, {
+    return this.service.createTournee(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -223,7 +231,7 @@ export class DepotBoissonsController {
   @Post('tournees/:id/demarrer')
   @RequirePermission('tournees', 'write')
   async demarrerTournee(@Req() req: any, @Param('id') id: string) {
-    return this.service.demarrerTournee(req.user.tenantId, id);
+    return this.service.demarrerTournee(this.getTenantId(req), id);
   }
 
   @Post('tournees/:id/cloturer')
@@ -233,7 +241,7 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.cloturerTournee(req.user.tenantId, id, data);
+    return this.service.cloturerTournee(this.getTenantId(req), id, data);
   }
 
   @Post('tournees/:id/charger')
@@ -243,20 +251,20 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.chargerArticlesTournee(req.user.tenantId, id, data);
+    return this.service.chargerArticlesTournee(this.getTenantId(req), id, data);
   }
 
   @Get('tournees/:id/recap')
   @RequirePermission('tournees', 'read')
   async getRecapTournee(@Req() req: any, @Param('id') id: string) {
-    return this.service.getRecapTournee(req.user.tenantId, id);
+    return this.service.getRecapTournee(this.getTenantId(req), id);
   }
 
-  // ── Clients ──────────────────────────────────────────────
+  // â”€â”€ Clients â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('clients')
   @RequirePermission('clients', 'read')
   async getClients(@Req() req: any, @Query() query: any) {
-    return this.service.getClients(req.user.tenantId, {
+    return this.service.getClients(this.getTenantId(req), {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
     });
@@ -265,13 +273,13 @@ export class DepotBoissonsController {
   @Get('clients/:id')
   @RequirePermission('clients', 'read')
   async getClient(@Req() req: any, @Param('id') id: string) {
-    return this.service.getClient(req.user.tenantId, id);
+    return this.service.getClient(this.getTenantId(req), id);
   }
 
   @Post('clients')
   @RequirePermission('clients', 'write')
   async createClient(@Req() req: any, @Body() data: any) {
-    return this.service.createClient(req.user.tenantId, {
+    return this.service.createClient(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -284,7 +292,7 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.updateClient(req.user.tenantId, id, data);
+    return this.service.updateClient(this.getTenantId(req), id, data);
   }
 
   @Post('clients/:id/payer-dette')
@@ -294,7 +302,7 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.payerDette(req.user.tenantId, id, {
+    return this.service.payerDette(this.getTenantId(req), id, {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -307,14 +315,14 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Query() query: any,
   ) {
-    return this.service.historiqueAchats(req.user.tenantId, id, query);
+    return this.service.historiqueAchats(this.getTenantId(req), id, query);
   }
 
-  // ── Fournisseurs ─────────────────────────────────────────
+  // â”€â”€ Fournisseurs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('fournisseurs')
   @RequirePermission('fournisseurs', 'read')
   async getFournisseurs(@Req() req: any, @Query() query: any) {
-    return this.service.getFournisseurs(req.user.tenantId, {
+    return this.service.getFournisseurs(this.getTenantId(req), {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
     });
@@ -323,13 +331,13 @@ export class DepotBoissonsController {
   @Get('fournisseurs/:id')
   @RequirePermission('fournisseurs', 'read')
   async getFournisseur(@Req() req: any, @Param('id') id: string) {
-    return this.service.getFournisseur(req.user.tenantId, id);
+    return this.service.getFournisseur(this.getTenantId(req), id);
   }
 
   @Post('fournisseurs')
   @RequirePermission('fournisseurs', 'write')
   async createFournisseur(@Req() req: any, @Body() data: any) {
-    return this.service.createFournisseur(req.user.tenantId, {
+    return this.service.createFournisseur(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -342,13 +350,13 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.updateFournisseur(req.user.tenantId, id, data);
+    return this.service.updateFournisseur(this.getTenantId(req), id, data);
   }
 
   @Post('fournisseurs/commande')
   @RequirePermission('fournisseurs', 'write')
   async passerCommandeFournisseur(@Req() req: any, @Body() data: any) {
-    return this.service.passerCommandeFournisseur(req.user.tenantId, {
+    return this.service.passerCommandeFournisseur(this.getTenantId(req), {
       ...data,
       userId: req.user.userId,
       depotId: data.depotId || req.headers['x-depot-id'],
@@ -362,7 +370,7 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.receptionnerLivraison(req.user.tenantId, id, {
+    return this.service.receptionnerLivraison(this.getTenantId(req), id, {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -375,20 +383,20 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.reglerDetteFournisseur(req.user.tenantId, id, data);
+    return this.service.reglerDetteFournisseur(this.getTenantId(req), id, data);
   }
 
   @Get('fournisseurs/:id/historique-commandes')
   @RequirePermission('fournisseurs', 'read')
   async historiqueCommandes(@Req() req: any, @Param('id') id: string) {
-    return this.service.historiqueCommandes(req.user.tenantId, id);
+    return this.service.historiqueCommandes(this.getTenantId(req), id);
   }
 
-  // ── Ventes ───────────────────────────────────────────────
+  // â”€â”€ Ventes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('ventes')
   @RequirePermission('ventes', 'read')
   async getVentes(@Req() req: any, @Query() query: any) {
-    return this.service.getVentes(req.user.tenantId, {
+    return this.service.getVentes(this.getTenantId(req), {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
     });
@@ -397,14 +405,14 @@ export class DepotBoissonsController {
   @Get('ventes/:id')
   @RequirePermission('ventes', 'read')
   async getVente(@Req() req: any, @Param('id') id: string) {
-    return this.service.getVente(req.user.tenantId, id);
+    return this.service.getVente(this.getTenantId(req), id);
   }
 
   @Post('ventes')
   @RequirePermission('ventes', 'write')
   async createVente(@Req() req: any, @Body() data: any) {
     return this.service.createVente(
-      req.user.tenantId,
+      this.getTenantId(req),
       { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
       req.user.userId,
     );
@@ -417,21 +425,21 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body('motif') motif?: string,
   ) {
-    return this.service.annulerVente(req.user.tenantId, id, motif);
+    return this.service.annulerVente(this.getTenantId(req), id, motif);
   }
 
   @Get('ventes/:id/ticket')
   @RequirePermission('ventes', 'read')
   async imprimerTicket(@Req() req: any, @Param('id') id: string) {
-    return this.service.imprimerTicket(req.user.tenantId, id);
+    return this.service.imprimerTicket(this.getTenantId(req), id);
   }
 
-  // ── Caisse ───────────────────────────────────────────────
+  // â”€â”€ Caisse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('caisse/statut')
   @RequirePermission('caisse', 'read')
   async getCaisseStatut(@Req() req: any, @Query('depotId') depotId?: string) {
     return this.service.getCaisseStatut(
-      req.user.tenantId,
+      this.getTenantId(req),
       depotId || req.headers['x-depot-id'],
     );
   }
@@ -439,7 +447,7 @@ export class DepotBoissonsController {
   @Post('caisse/ouvrir')
   @RequirePermission('caisse', 'write')
   async ouvrirCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.ouvrirCaisse(req.user.tenantId, {
+    return this.service.ouvrirCaisse(this.getTenantId(req), {
       ...data,
       userId: req.user.userId,
       depotId: data.depotId || req.headers['x-depot-id'],
@@ -449,7 +457,7 @@ export class DepotBoissonsController {
   @Post('caisse/fermer')
   @RequirePermission('caisse', 'write')
   async fermerCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.fermerCaisse(req.user.tenantId, {
+    return this.service.fermerCaisse(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -458,7 +466,7 @@ export class DepotBoissonsController {
   @Post('caisse/mouvement')
   @RequirePermission('caisse', 'write')
   async mouvementCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.mouvementCaisse(req.user.tenantId, {
+    return this.service.mouvementCaisse(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -468,16 +476,16 @@ export class DepotBoissonsController {
   @RequirePermission('caisse', 'read')
   async rapportJournalier(@Req() req: any, @Query('depotId') depotId?: string) {
     return this.service.rapportJournalier(
-      req.user.tenantId,
+      this.getTenantId(req),
       depotId || req.headers['x-depot-id'],
     );
   }
 
-  // ── Dépenses ─────────────────────────────────────────────
+  // â”€â”€ DÃ©penses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('depenses')
   @RequirePermission('depenses', 'read')
   async getDepenses(@Req() req: any, @Query() query: any) {
-    return this.service.getDepenses(req.user.tenantId, {
+    return this.service.getDepenses(this.getTenantId(req), {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
     });
@@ -486,7 +494,7 @@ export class DepotBoissonsController {
   @Post('depenses')
   @RequirePermission('depenses', 'write')
   async createDepense(@Req() req: any, @Body() data: any) {
-    return this.service.createDepense(req.user.tenantId, {
+    return this.service.createDepense(this.getTenantId(req), {
       ...data,
       depotId: data.depotId || req.headers['x-depot-id'],
     });
@@ -495,10 +503,10 @@ export class DepotBoissonsController {
   @Delete('depenses/:id')
   @RequirePermission('depenses', 'write')
   async deleteDepense(@Req() req: any, @Param('id') id: string) {
-    return this.service.deleteDepense(req.user.tenantId, id);
+    return this.service.deleteDepense(this.getTenantId(req), id);
   }
 
-  // ── Rapports ─────────────────────────────────────────────
+  // â”€â”€ Rapports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('rapports/:type')
   @RequirePermission('rapports', 'read')
   async getRapport(
@@ -506,7 +514,7 @@ export class DepotBoissonsController {
     @Param('type') type: string,
     @Query() query: any,
   ) {
-    return this.service.getRapport(req.user.tenantId, type, {
+    return this.service.getRapport(this.getTenantId(req), type, {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
     });
@@ -520,10 +528,12 @@ export class DepotBoissonsController {
     @Query() query: any,
   ) {
     return this.service.exporterRapport(
-      req.user.tenantId,
+      this.getTenantId(req),
       type,
       query.format || 'json',
       { ...query, depotId: query.depotId || req.headers['x-depot-id'] },
     );
   }
 }
+
+

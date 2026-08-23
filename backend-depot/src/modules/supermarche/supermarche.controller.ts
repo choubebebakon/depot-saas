@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Body,
+  Logger,
   Query,
   UseGuards,
   Req,
@@ -45,6 +46,8 @@ import { RequirePermission } from '../../auth/decorators/require-permission.deco
 @Metier(MetierType.SUPERMARCHE)
 @UseGuards(JwtAuthGuard, MetierGuard)
 export class SupermarcheController {
+  private readonly logger = new Logger(SupermarcheController.name);
+
   constructor(private service: SupermarcheService) {}
 
   // ── Rayons ────────────────────────────────────────────────────────────────
@@ -448,9 +451,23 @@ export class SupermarcheController {
 
   @Post('reset-data')
   @RequirePermission('parametres', 'write')
-  async resetData(@Req() req: any) {
+  async resetData(@Req() req: any, @Body() body: any) {
     this.checkTenantId(req);
-    return this.service.resetData(req.user.tenantId);
+    if (body?.confirmation !== 'SUPPRIMER') {
+      throw new BadRequestException(
+        'Confirmation invalide. Saisissez SUPPRIMER pour continuer.',
+      );
+    }
+
+    this.logger.warn(
+      `Reset data supermarche demande: tenantId=${req.user.tenantId}, userId=${req.user.userId ?? req.user.id ?? 'unknown'}, timestamp=${new Date().toISOString()}`,
+    );
+
+    return this.service.resetData(
+      req.user.tenantId,
+      req.user.userId ?? req.user.id,
+      body.confirmation,
+    );
   }
 
   // --- Stubs Phase 4 ---

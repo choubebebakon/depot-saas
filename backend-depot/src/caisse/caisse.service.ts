@@ -49,8 +49,8 @@ export class CaisseService {
   }
 
   async fermerSession(dto: FermerCaisseDto) {
-    const session = await this.prisma.sessionCaisse.findUnique({
-      where: { id: dto.sessionId },
+    const session = await this.prisma.sessionCaisse.findFirst({
+      where: { id: dto.sessionId, tenantId: dto.tenantId },
       include: { mouvements: true },
     });
 

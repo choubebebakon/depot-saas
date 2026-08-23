@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { IsOptional, IsInt, Min, IsString } from 'class-validator';
@@ -189,6 +190,8 @@ export class InventaireDto {
 
 @Injectable()
 export class SupermarcheService {
+  private readonly logger = new Logger(SupermarcheService.name);
+
   constructor(private prisma: PrismaService) {}
 
   // ── Rayons ──────────────────────────────────────────────────────────────────
@@ -1115,7 +1118,17 @@ export class SupermarcheService {
 
   // ── Reset Data ──────────────────────────────────────────────────────────────
 
-  async resetData(tenantId: string) {
+  async resetData(tenantId: string, userId: string, confirmation: string) {
+    if (confirmation !== 'SUPPRIMER') {
+      throw new BadRequestException(
+        'Confirmation invalide. Saisissez SUPPRIMER pour continuer.',
+      );
+    }
+
+    this.logger.warn(
+      `Reset data supermarche execute: tenantId=${tenantId}, userId=${userId ?? 'unknown'}, timestamp=${new Date().toISOString()}`,
+    );
+
     await this.prisma.$transaction([
       this.prisma.promotion.deleteMany({ where: { tenantId } }),
       this.prisma.depense.deleteMany({ where: { tenantId } }),

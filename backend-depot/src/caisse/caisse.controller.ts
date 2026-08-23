@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CaisseService } from './caisse.service';
@@ -13,54 +21,70 @@ import {
 export class CaisseController {
   constructor(private readonly caisseService: CaisseService) {}
 
+  private getTenantId(req: any): string {
+    if (!req.user?.tenantId) {
+      throw new BadRequestException('Accès refusé : tenantId manquant dans le token.');
+    }
+    return req.user.tenantId;
+  }
+
   @Post('ouvrir')
-  ouvrirSession(@Body() dto: OuvrirCaisseDto) {
-    return this.caisseService.ouvrirSession(dto);
+  ouvrirSession(@Req() req: any, @Body() dto: OuvrirCaisseDto) {
+    return this.caisseService.ouvrirSession({
+      ...dto,
+      tenantId: this.getTenantId(req),
+    });
   }
 
   @Post('fermer')
-  fermerSession(@Body() dto: FermerCaisseDto) {
-    return this.caisseService.fermerSession(dto);
+  fermerSession(@Req() req: any, @Body() dto: FermerCaisseDto) {
+    return this.caisseService.fermerSession({
+      ...dto,
+      tenantId: this.getTenantId(req),
+    });
   }
 
   @Get('session-active')
   getSessionActive(
-    @Query('tenantId') tenantId: string,
+    @Req() req: any,
     @Query('depotId') depotId: string,
   ) {
-    return this.caisseService.getSessionActive(tenantId, depotId);
+    return this.caisseService.getSessionActive(this.getTenantId(req), depotId);
   }
 
   @Get('historique')
   getHistorique(
-    @Query('tenantId') tenantId: string,
+    @Req() req: any,
     @Query('depotId') depotId: string,
   ) {
-    return this.caisseService.getHistorique(tenantId, depotId);
+    return this.caisseService.getHistorique(this.getTenantId(req), depotId);
   }
 
   @Get('resume')
   getResume(
-    @Query('tenantId') tenantId: string,
+    @Req() req: any,
     @Query('depotId') depotId: string,
   ) {
-    return this.caisseService.getResume(tenantId, depotId);
+    return this.caisseService.getResume(this.getTenantId(req), depotId);
   }
 
   @Post('depenses')
-  createDepense(@Body() dto: CreateDepenseDto) {
-    return this.caisseService.createDepense(dto);
+  createDepense(@Req() req: any, @Body() dto: CreateDepenseDto) {
+    return this.caisseService.createDepense({
+      ...dto,
+      tenantId: this.getTenantId(req),
+    });
   }
 
   @Get('depenses')
   getDepenses(
-    @Query('tenantId') tenantId: string,
+    @Req() req: any,
     @Query('depotId') depotId: string,
     @Query('dateDebut') dateDebut?: string,
     @Query('dateFin') dateFin?: string,
   ) {
     return this.caisseService.getDepenses(
-      tenantId,
+      this.getTenantId(req),
       depotId,
       dateDebut,
       dateFin,

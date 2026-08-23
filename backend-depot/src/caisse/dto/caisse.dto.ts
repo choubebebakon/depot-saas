@@ -19,6 +19,9 @@ export class FermerCaisseDto {
   @IsString()
   sessionId: string;
 
+  @IsString()
+  tenantId: string;
+
   @IsNumber()
   @Min(0)
   fondFinal: number;
