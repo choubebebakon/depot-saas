@@ -1,7 +1,6 @@
 export const SIDEBAR_MENUS = [
   { label: 'Tableau de bord', icon: 'BarChart3', path: '/depot/dashboard' },
   { label: 'Stock',           icon: 'Package', path: '/depot/stock' },
-  { label: 'Articles',        icon: 'Package', path: '/depot/articles' },
   { label: 'Consignes',       icon: 'RefreshCw', path: '/depot/consignes' },
   { label: 'Livraisons',      icon: 'Truck', path: '/depot/livraisons' },
   { label: 'Tournées',        icon: 'Car', path: '/depot/tournees' },
