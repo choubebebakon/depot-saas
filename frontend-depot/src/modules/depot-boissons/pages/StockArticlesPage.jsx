@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import ArticleBoissonsForm from '../forms/ArticleBoissonsForm';
 import ConditionnementForm from '../forms/ConditionnementForm';
@@ -104,7 +104,7 @@ export default function StockArticlesPage() {
       setSelectedArticle(null);
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Erreur lors de l\'entrée de stock');
+      notif.error(err.response?.data?.message || 'Erreur lors de l\'entrÃ©e de stock');
     }
   });
 
@@ -320,7 +320,7 @@ Conditionnement
         <div className="flex items-center justify-center gap-2">
           <button disabled={currentPage <= 1} onClick={prevPage} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
-          <button disabled={currentPage >= totalPages} onClick={nextPage} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
+          <button disabled={currentPage >= totalPages} onClick={nextPage} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant â–¶</button>
         </div>
       )}
 
@@ -329,7 +329,7 @@ Conditionnement
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={archiveMutation.isPending}
         title="Archiver l'article" message={`Archiver ${confirmDelete?.designation} ? Cette action est irréversible.`} />
 
-      {/* Modal Entrée Stock */}
+      {/* Modal EntrÃ©e Stock */}
       <FormModal
         isOpen={activeStockAction === 'entree'}
         onClose={() => { setActiveStockAction(null); setSelectedArticle(null); }}
@@ -479,3 +479,4 @@ Conditionnement
     </div>
   );
 }
+

@@ -167,7 +167,6 @@ export default function DepotBoissonsRoutes() {
           <Route element={<DepotLayout />}>
             <Route path="dashboard" element={gate('dashboard', DashboardDepot)} />
             <Route path="stock" element={gate('stock_articles', StockArticlesPage)} />
-            <Route path="articles" element={gate('stock_articles', StockArticlesPage)} />
             <Route path="consignes" element={gate('consignes', ConsignesPage)} />
             <Route path="livraisons" element={gate('livraisons', LivraisonsPage)} />
             <Route path="tournees" element={gate('tournees', TourneesPage)} />
