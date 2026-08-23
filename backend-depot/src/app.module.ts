@@ -66,7 +66,7 @@ import { SupermarcheModule } from './modules/supermarche/supermarche.module';
 // import { TransportModule } from './modules/transport/transport.module';
 // import { ImmobilierModule } from './modules/immobilier/immobilier.module';
 // import { GarageModule } from './modules/garage/garage.module';
-// import { ChatbotModule } from './modules/chatbot/chatbot.module';
+import { ChatbotModule } from './modules/chatbot/chatbot.module';
 // import { HotellerieModule } from './modules/hotellerie/hotellerie.module';
 import { NotificationsModule } from './core/notifications/notifications.module';
 import { ExportsModule } from './exports/exports.module';
@@ -136,7 +136,7 @@ import { BillingModule } from './billing/billing.module';
     // ImmobilierModule,
     // HotellerieModule,
     // GarageModule,
-    // ChatbotModule,
+    ChatbotModule,
     OnboardingModule,
     EmailModule,
     NotificationsModule,
