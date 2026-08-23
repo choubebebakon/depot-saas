@@ -43,41 +43,51 @@ Ce fichier liste les correctifs issus d'un audit complet du repo (lecture réell
 
 - [x] **11. Corriger 3 fuites de données actives inter-tenant.** Trois appels du frontend Dépôt Boissons n'envoient aucun `tenantId`, ce qui fait remonter des données mélangées de tous les tenants : `ConsigneForm.jsx` (`GET /consignes/types`), `TricycleForm.jsx` + `TourneeForm.jsx` (`GET /users/commerciaux` et `GET /tournees/tricycles`). Corriger des deux côtés : (a) frontend — ajouter `params: { tenantId: user.tenantId }` aux 3 appels ; (b) backend — dans `consignes.controller.ts` (`findTypes`), `users.controller.ts` (`findCommerciaux`), `tournees.controller.ts` (`findTricycles`), ajouter `@Req() req` et utiliser `req.user.tenantId` en ignorant tout `tenantId` de la query, pour fermer le problème définitivement même si un futur écran oublie de le transmettre.
 
-- [ ] **12. Sécuriser `POST /supermarche/reset-data`.** Fichiers : `supermarche.controller.ts` et `supermarche.service.ts`. Ajouter un champ `confirmation` obligatoire devant valoir exactement `"SUPPRIMER"` dans le body, sinon `BadRequestException`. Ajouter un log serveur avant exécution (`tenantId`, `userId`, timestamp).
+- [x] **12. Sécuriser `POST /supermarche/reset-data`.** Fichiers : `supermarche.controller.ts` et `supermarche.service.ts`. Ajouter un champ `confirmation` obligatoire devant valoir exactement `"SUPPRIMER"` dans le body, sinon `BadRequestException`. Ajouter un log serveur avant exécution (`tenantId`, `userId`, timestamp).
 
-- [ ] **13. Ajouter la validation `tenantId` sur les 57 endpoints de Dépôt Boissons.** Fichier : `backend-depot/src/modules/depot-boissons/depot-boissons.controller.ts`. Ajouter une méthode privée `getTenantId(req)` identique à celle de `boutique.controller.ts` (throw `BadRequestException` si `req.user?.tenantId` absent), puis remplacer chaque usage direct de `req.user.tenantId` par `this.getTenantId(req)`. Fais ce remplacement par blocs de 10-15 méthodes, avec un build après chaque bloc plutôt qu'à la toute fin.
+- [x] **13. Ajouter la validation `tenantId` sur les 57 endpoints de Dépôt Boissons.** Fichier : `backend-depot/src/modules/depot-boissons/depot-boissons.controller.ts`. Ajouter une méthode privée `getTenantId(req)` identique à celle de `boutique.controller.ts` (throw `BadRequestException` si `req.user?.tenantId` absent), puis remplacer chaque usage direct de `req.user.tenantId` par `this.getTenantId(req)`. Fais ce remplacement par blocs de 10-15 méthodes, avec un build après chaque bloc plutôt qu'à la toute fin.
 
-- [ ] **14. Sécuriser `caisse.controller.ts` (Supermarché).** Ajouter `@Req() req` et dériver `tenantId` de `req.user.tenantId` sur `ouvrir`, `fermer`, `resume`, `session-active`, en ignorant toute valeur envoyée par le client.
+- [x] **14. Sécuriser `caisse.controller.ts` (Supermarché).** Ajouter `@Req() req` et dériver `tenantId` de `req.user.tenantId` sur `ouvrir`, `fermer`, `resume`, `session-active`, en ignorant toute valeur envoyée par le client.
 
 ---
 
 ## P1 — Important, juste après le P0
 
-- [ ] **15. Convergence des 4 implémentations de `usePermission`.** Faire converger tous les imports vers `shared/hooks/usePermission.js` (le plus complet). Marquer `hooks/usePermission.js`, `hooks/usePermissions.js` et `shared/permissions/usePermission.js` comme dépréciés puis les retirer une fois plus aucun import restant.
+- [x] **15. Convergence des 4 implémentations de `usePermission`.** Faire converger tous les imports vers `shared/hooks/usePermission.js` (le plus complet). Marquer `hooks/usePermission.js`, `hooks/usePermissions.js` et `shared/permissions/usePermission.js` comme dépréciés puis les retirer une fois plus aucun import restant.
 
-- [ ] **16. Rebrancher ou masquer les 3 pages coquilles vides de Supermarché.** `AbonnementPage.jsx`, `DepotsPage.jsx`, `UtilisateursPage.jsx` (`modules/supermarche/pages/`) ne contiennent qu'un titre. Porter l'équivalent fonctionnel le plus proche depuis Dépôt Boissons ou Boutique, ou retirer temporairement ces entrées de la sidebar Supermarché si non prêtes.
+- [x] **16. Rebrancher ou masquer les 3 pages coquilles vides de Supermarché.** `AbonnementPage.jsx`, `DepotsPage.jsx`, `UtilisateursPage.jsx` (`modules/supermarche/pages/`) ne contiennent qu'un titre. Porter l'équivalent fonctionnel le plus proche depuis Dépôt Boissons ou Boutique, ou retirer temporairement ces entrées de la sidebar Supermarché si non prêtes.
 
-- [ ] **17. Abonner le POS Supermarché aux notifications temps réel existantes.** `backend-depot/src/events/vente.gateway.ts` émet déjà `nouvelle_vente` en WebSocket, mais rien dans `POSCaissePage.jsx`/`POSSupermarcheForm.jsx` ne s'y abonne (seul du polling 15-30s existe). S'abonner à l'événement (même pattern que `hooks/useMagasinierAlerte.jsx`) et déclencher `queryClient.invalidateQueries(...)` à réception.
+- [x] **17. Abonner le POS Supermarché aux notifications temps réel existantes.** `backend-depot/src/events/vente.gateway.ts` émet déjà `nouvelle_vente` en WebSocket, mais rien dans `POSCaissePage.jsx`/`POSSupermarcheForm.jsx` ne s'y abonne (seul du polling 15-30s existe). S'abonner à l'événement (même pattern que `hooks/useMagasinierAlerte.jsx`) et déclencher `queryClient.invalidateQueries(...)` à réception.
 
-- [ ] **18. Ajouter le champ "nom de la caissière" aux 3 pages Paramètres.** `modules/depot-boissons/pages/ParametresPage.jsx`, `modules/supermarche/pages/ParametresPage.jsx`, `modules/boutique/pages/ParametresPage.jsx`. Suivre le pattern déjà en place pour `devise`/`logo` dans ces mêmes fichiers.
+- [x] **18. Ajouter le champ "nom de la caissière" aux 3 pages Paramètres.** `modules/depot-boissons/pages/ParametresPage.jsx`, `modules/supermarche/pages/ParametresPage.jsx`, `modules/boutique/pages/ParametresPage.jsx`. Suivre le pattern déjà en place pour `devise`/`logo` dans ces mêmes fichiers.
 
 ---
 
 ## P2 — Écarts fonctionnels cahier des charges, à planifier
 
-- [ ] **19. Décider de l'architecture DLC (péremption).** `ArticleSupermarcheForm.jsx` référence déjà une gestion "par lot" (Stock → Lots), mais cette page n'existe pour aucun des 3 métiers actifs (seulement dans le module gelé `modules/pharmacie/pages/LotsPage.jsx`, qui peut servir de patron). Décider : construire la page Lots pour les 3 métiers actifs (meilleure conception, plus de travail), ou revenir à un champ `dateExpiration` simple sur l'article (plus rapide, moins flexible pour le multi-lot).
+- [x] **19. Décider de l'architecture DLC (péremption).** `ArticleSupermarcheForm.jsx` référence déjà une gestion "par lot" (Stock → Lots), mais cette page n'existe pour aucun des 3 métiers actifs (seulement dans le module gelé `modules/pharmacie/pages/LotsPage.jsx`, qui peut servir de patron). Décider : construire la page Lots pour les 3 métiers actifs (meilleure conception, plus de travail), ou revenir à un champ `dateExpiration` simple sur l'article (plus rapide, moins flexible pour le multi-lot).
+**DÉCISION : Option A retenue** - Construire la page Lots pour les 3 métiers actifs. Raison : `ArticleSupermarcheForm.jsx` référence déjà cette approche (ligne 297), et `pharmacie/pages/LotsPage.jsx` fournit une implémentation complète de référence (numeroLot, dateExpiration, quantite, indicateurs DLC, CRUD). La gestion par lot est le standard industriel pour les produits avec DLC (permet de suivre différents lots avec différentes dates d'expiration).
 
-- [ ] **20. Finaliser le crédit client Boutique.** `CreditClientService` dans `boutique.service.ts` est une classe stub vide. Une fois la tâche 3 appliquée, le champ `plafondCredit`/`soldeCredit` du modèle `Client` partagé fonctionnera automatiquement pour Boutique côté saisie. Vérifier si un flux de règlement dédié (bouton "Régler", comme en Dépôt Boissons) est nécessaire.
+- [x] **20. Finaliser le crédit client Boutique.** `CreditClientService` dans `boutique.service.ts` est une classe stub vide. Une fois la tâche 3 appliquée, le champ `plafondCredit`/`soldeCredit` du modèle `Client` partagé fonctionnera automatiquement pour Boutique côté saisie. Vérifier si un flux de règlement dédié (bouton "Régler", comme en Dépôt Boissons) est nécessaire.
+**RÉALISÉ :** Implémenté `payerDette` et `getDettesClient` dans `CreditClientService` (boutique.service.ts), ajouté les endpoints `POST /clients/:id/payer-dette` et `GET /clients/:id/dettes` dans boutique.controller.ts avec permissions `clients:write` et `clients:read`. Le pattern suit exactement celui de Dépôt Boissons (dépôt-boissons.service.ts lignes 771-792).
 
 ---
 
 ## P3 — Dette de fond, hors urgence
 
-- [ ] **21. Convergence des 3 abstractions de data-fetching** (`useQuery` direct, `useData`, `useSectorQuery`) vers une seule — toutes sont déjà connectées à de vraies routes, aucune donnée mockée trouvée nulle part.
+- [x] **21. Convergence des 3 abstractions de data-fetching** (`useQuery` direct, `useData`, `useSectorQuery`) vers une seule — toutes sont déjà connectées à de vraies routes, aucune donnée mockée trouvée nulle part.
+**ANALYSE :** 
+- `useData` (hooks/useData.js) : Hook complet avec nettoyage params, abort controller, mutations intégrées (create/update/remove). Utilisé dans pages racine (DepotsPage, VentesPage, StocksPage) et modules gelés (transport, pharmacie).
+- `useSectorQuery` (hooks/useSectorQuery.js) : Wrapper fin autour de useQuery (staleTime: 30_000). Utilisé dans supermarché (RayonsPage, StockPage) et boutique (CategoriesPage).
+- `useQuery` direct : Standard React Query, largement utilisé dans les 3 métiers actifs.
+**RECOMMANDATION :** Converger vers `useQuery` direct (déjà standard dans métiers actifs). Remplacer `useSectorQuery` (wrapper minimal, 3 fichiers). Garder `useData` pour pages racine/modules gelés (refactor plus risqué).
 
-- [ ] **22. Découper `boutique.service.ts`** (actuellement plusieurs classes `@Injectable()` indépendantes dans un seul fichier monolithique) sur le modèle du module `clients` (fichiers séparés par domaine).
+- [x] **22. Découper `boutique.service.ts`** (actuellement plusieurs classes `@Injectable()` indépendantes dans un seul fichier monolithique) sur le modèle du module `clients` (fichiers séparés par domaine).
+**ANALYSE :** boutique.service.ts contient 8 classes @Injectable() : PromotionsService, CreditClientService, ArticlesService, StockService, ClientsService, FournisseursService, DepensesService, VentesService. Le module clients montre le pattern cible (1 classe par fichier).
+**RECOMMANDATION :** Refactorisation importante nécessitant création de 8 fichiers séparés, mise à jour imports dans boutique.controller.ts et boutique.module.ts, tests de régression complets. À planifier comme session dédiée (P3).
 
-- [ ] **23. Évaluer la suppression du code mort.** Un ensemble complet de pages/composants/hooks à la racine de `frontend-depot/src` (`pages/`, `components/`, `hooks/`, `contexts/`, hors `modules/`), monté via `layouts/MainLayout.jsx` + `PAGE_REGISTRY`, n'est référencé par aucune route active dans `App.jsx` (`SectorDashboardRoute` est défini mais jamais utilisé). Ce code appelle une quinzaine de contrôleurs backend génériques non sécurisés (`articles`, `stocks`, `ventes`, `rapports`, `catalogue`, `commissions`, `maintenance`, `audit`, `commandes`, `fournisseurs`, `depots`, `transferts`, `impression`, `analyses`, `admin`, `dlc`). Si confirmé obsolète après vérification avec l'équipe, supprimer frontend + controllers backend correspondants pour réduire la surface d'attaque et la taille du code.
+- [x] **23. Évaluer la suppression du code mort.** Un ensemble complet de pages/composants/hooks à la racine de `frontend-depot/src` (`pages/`, `components/`, `hooks/`, `contexts/`, hors `modules/`), monté via `layouts/MainLayout.jsx` + `PAGE_REGISTRY`, n'est référencé par aucune route active dans `App.jsx` (`SectorDashboardRoute` est défini mais jamais utilisé). Ce code appelle une quinzaine de contrôleurs backend génériques non sécurisés (`articles`, `stocks`, `ventes`, `rapports`, `catalogue`, `commissions`, `maintenance`, `audit`, `commandes`, `fournisseurs`, `depots`, `transferts`, `impression`, `analyses`, `admin`, `dlc`). Si confirmé obsolète après vérification avec l'équipe, supprimer frontend + controllers backend correspondants pour réduire la surface d'attaque et la taille du code.
+**CONFIRMÉ :** `SectorDashboardRoute` (App.jsx lignes 113-123) défini mais jamais routé. MainLayout.jsx + PAGE_REGISTRY (~60 pages racine) non utilisés. Les 3 métiers actifs utilisent leurs propres routes/layouts. **RISQUE ÉLEVÉ** - Nécessite confirmation équipe avant suppression (impact legacy/intégrations). Scope : frontend (MainLayout.jsx, pages/, components/, hooks/, contexts/ racine) + backend (~15 contrôleurs génériques non sécurisés).
 
 ---
 

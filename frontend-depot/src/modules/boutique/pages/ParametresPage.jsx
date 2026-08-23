@@ -16,6 +16,7 @@ const parametresSchema = z.object({
   adresse: z.string().optional(),
   devise: z.enum(['FCFA', 'EUR', 'USD']),
   tva: z.coerce.number().min(0).optional(),
+  nomCaissiere: z.string().optional(),
 });
 
 export default function ParametresPage() {
@@ -33,6 +34,7 @@ export default function ParametresPage() {
       adresse: '',
       devise: 'FCFA',
       tva: '',
+      nomCaissiere: '',
     }
   });
 
@@ -62,6 +64,7 @@ export default function ParametresPage() {
         adresse: tenant?.adresse || parametres.adresse || '',
         devise: parametres.devise || 'FCFA',
         tva: parametres.tva || '',
+        nomCaissiere: parametres.nomCaissiere || '',
       });
     }
     if (tenant?.logo) {
@@ -166,6 +169,10 @@ export default function ParametresPage() {
             <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">TVA (%)</label>
             <input type="number" {...control.register('tva')} className={inputClass} placeholder="18" />
             {errors.tva && <p className="text-red-400 text-xs mt-1">{errors.tva.message}</p>}
+          </div>
+          <div className="md:w-1/2">
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom de la caissière</label>
+            <input {...control.register('nomCaissiere')} className={inputClass} placeholder="Nom de la caissière" />
           </div>
         </div>
         

@@ -43,6 +43,7 @@ export default function ParametresPage() {
   const [caisse, setCaisse] = useState({
     alerteStockFaible: 5,
     autoImpression: false,
+    nomCaissiere: '',
   });
   const [notif, setNotif] = useState(null);
   const [logoBase64, setLogoBase64] = useState(null);
@@ -222,6 +223,7 @@ export default function ParametresPage() {
       </Section>
 
       <Section title="Gestion de la Caisse" icon={<ShoppingCart className="w-5 h-5" />}>
+        <Field label="Nom de la caissière"><input value={caisse.nomCaissiere} onChange={e => setCaisse({...caisse, nomCaissiere: e.target.value})} className={inputClass} /></Field>
         <Field label="Seuil d'alerte stock faible"><input type="number" value={caisse.alerteStockFaible} onChange={e => setCaisse({...caisse, alerteStockFaible: parseInt(e.target.value)})} className={inputClass} /></Field>
         <label className="flex items-center gap-3 mt-4 cursor-pointer">
           <input type="checkbox" checked={caisse.autoImpression} onChange={e => setCaisse({...caisse, autoImpression: e.target.checked})} className="w-5 h-5 accent-blue-500" />
