@@ -1,10 +1,10 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import api from '../../../api'; // Ajuste le chemin si besoin pour atteindre ton dossier api
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import VenteBoissonsForm from '../forms/VenteBoissonsForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -39,7 +39,7 @@ export default function VentesPage() {
   // ---------------------------------------------------------------------
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   const { data, isLoading } = useQuery({
@@ -71,7 +71,7 @@ export default function VentesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-ventes'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Vente annulée avec succès');
+      notif.success('Vente annulÃ©e avec succÃ¨s');
       setConfirmDelete(null);
     },
     onError: (err) => {
@@ -95,7 +95,7 @@ const handlePrint = async (id) => {
         const response = await api.get('/depot/parametres');
         params = response.data || {};
       } catch (e) {
-        console.warn("Utilisation des paramètres locaux...");
+        console.warn("Utilisation des paramÃ¨tres locaux...");
       }
       
       let tenantConfig = {};
@@ -105,10 +105,10 @@ const handlePrint = async (id) => {
       } catch(e) {}
       
       const config = {
-        nomEntreprise: tenantConfig.nomEntreprise || params?.infos?.nomEntreprise || localStorage.getItem('depot_nom') || "MON DÉPÔT",
+        nomEntreprise: tenantConfig.nomEntreprise || params?.infos?.nomEntreprise || localStorage.getItem('depot_nom') || "MON DÃ‰PÃ”T",
         adresse: tenantConfig.adresse || params?.infos?.adresse || localStorage.getItem('depot_adresse') || "Douala",
         telephone: tenantConfig.telephone || params?.infos?.telephone || localStorage.getItem('depot_telephone') || "",
-        messageFin: params?.ticket?.messageFin || localStorage.getItem('msg_fin') || "À bientôt !",
+        messageFin: params?.ticket?.messageFin || localStorage.getItem('msg_fin') || "Ã€ bientÃ´t !",
         logo: tenantConfig.logo,
       };
 
@@ -141,7 +141,7 @@ Nouvelle vente
       {totalItems === 0 ? (
         <div className="p-12 text-center text-slate-500 bg-slate-800/30 rounded-xl border border-slate-700/50">
           <p className="text-3xl mb-3"><DollarSign className="w-12 h-12 mx-auto text-slate-500" /></p>
-          <p className="text-lg font-medium">Aucune vente enregistrée</p>
+          <p className="text-lg font-medium">Aucune vente enregistrÃ©e</p>
           <p className="text-sm mt-1">Cliquez sur "Nouvelle vente" pour commencer</p>
         </div>
       ) : (
@@ -164,7 +164,7 @@ Nouvelle vente
                   <td className="p-4 text-white">{new Date(v.date).toLocaleDateString('fr-FR')}</td>
                   <td className="p-4 text-slate-400">{v.client?.nom || 'Comptoir'}</td>
                   
-                  {/* Colonne Articles avec calcul de la quantité réelle et Tooltip au survol */}
+                  {/* Colonne Articles avec calcul de la quantitÃ© rÃ©elle et Tooltip au survol */}
                    <td className="p-4 text-right text-white font-medium">
                     {(() => {
                       const totalMontant = parseInt(v.total || 0);
@@ -174,7 +174,7 @@ Nouvelle vente
                         return Math.round(totalMontant / v.nbArticles);
                       }
                       
-                      // Sinon, si nbArticles est une vraie quantité (ex: 6), on l'affiche
+                      // Sinon, si nbArticles est une vraie quantitÃ© (ex: 6), on l'affiche
                       if (v.nbArticles && v.nbArticles < 100) {
                         return v.nbArticles;
                       }
@@ -202,7 +202,7 @@ Nouvelle vente
                         title="Imprimer ticket" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all text-xs">Ticket</button>
                       {canWrite && (v.statut !== 'ANNULEE' && v.statut !== 'ANNULE') && (
                         <button onClick={() => setConfirmDelete(v)} title="Annuler"
-                          className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Annuler</button>
+                          className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">âœ• Annuler</button>
                       )}
                     </div>
                   </td>
@@ -216,7 +216,7 @@ Nouvelle vente
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Précédent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">PrÃ©cÃ©dent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
             className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant</button>
@@ -237,7 +237,7 @@ Nouvelle vente
         onCancel={() => setConfirmDelete(null)} 
         loading={annulerVenteMutation.isPending}
         title="Annuler la vente" 
-        message={`Annuler la vente de ${parseInt(confirmDelete?.total || 0).toLocaleString('fr-FR')} FCFA ? Cette action est irréversible.`} 
+        message={`Annuler la vente de ${parseInt(confirmDelete?.total || 0).toLocaleString('fr-FR')} FCFA ? Cette action est irrÃ©versible.`} 
       />
 
       <Receipt80mm vente={printData?.vente} config={printData?.config} />

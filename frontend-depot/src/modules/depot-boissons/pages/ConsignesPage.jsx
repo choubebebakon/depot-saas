@@ -1,7 +1,7 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import ConsigneForm from '../forms/ConsigneForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -17,7 +17,7 @@ export default function ConsignesPage() {
   const [editItem, setEditItem] = useState(null);
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   // Fetch clients
@@ -74,14 +74,14 @@ export default function ConsignesPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
-          <input type="text" placeholder="🔍 Rechercher un client..." value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder="ðŸ” Rechercher un client..." value={search} onChange={e => setSearch(e.target.value)}
             className="w-full px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
 
           <div className="space-y-2 max-h-[500px] overflow-y-auto">
             {filteredClients.length === 0 ? (
               <div className="p-6 text-center text-slate-500">
-                <p className="text-lg mb-1">👥 Aucun client</p>
-                <p className="text-sm">Ajoutez des clients pour gérer les consignes</p>
+                <p className="text-lg mb-1">ðŸ‘¥ Aucun client</p>
+                <p className="text-sm">Ajoutez des clients pour gÃ©rer les consignes</p>
               </div>
             ) : filteredClients.map(c => (
               <button key={c.id} onClick={() => setSelectedClient(c)}
@@ -93,7 +93,7 @@ export default function ConsignesPage() {
                 <p className="font-bold text-sm">{c.nom}</p>
                 <p className="text-xs text-slate-500 mt-0.5">{c.telephone || '-'}</p>
                 {c.soldeConsigne > 0 && (
-                  <p className="text-xs font-bold text-amber-400 mt-1">💰 {parseInt(c.soldeConsigne).toLocaleString('fr-FR')} FCFA</p>
+                  <p className="text-xs font-bold text-amber-400 mt-1">ðŸ’° {parseInt(c.soldeConsigne).toLocaleString('fr-FR')} FCFA</p>
                 )}
               </button>
             ))}
@@ -103,9 +103,9 @@ export default function ConsignesPage() {
         <div className="lg:col-span-2">
           {!selectedClient ? (
             <div className="p-12 text-center text-slate-500 bg-slate-800/30 rounded-xl border border-slate-700/50">
-              <p className="text-3xl mb-3">🔄</p>
-              <p className="text-lg font-medium">Sélectionnez un client</p>
-              <p className="text-sm mt-1">Pour voir et gérer son portefeuille de consignes</p>
+              <p className="text-3xl mb-3">ðŸ”„</p>
+              <p className="text-lg font-medium">SÃ©lectionnez un client</p>
+              <p className="text-sm mt-1">Pour voir et gÃ©rer son portefeuille de consignes</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -113,13 +113,13 @@ export default function ConsignesPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-lg font-bold text-white">{selectedClient.nom}</h2>
-                    <p className="text-sm text-slate-400">{selectedClient.telephone || 'Aucun téléphone'}</p>
+                    <p className="text-sm text-slate-400">{selectedClient.telephone || 'Aucun tÃ©lÃ©phone'}</p>
                   </div>
                   {canWrite && (
                     <div className="flex gap-2">
                       <button onClick={openForm}
                         className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1">
-                        🔄 Nouveau mouvement
+                        ðŸ”„ Nouveau mouvement
                       </button>
                     </div>
                   )}
@@ -161,7 +161,7 @@ export default function ConsignesPage() {
                     {consignes.historique.slice(0, 20).map((h, i) => (
                       <div key={i} className="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <span>{h.estSortie ? '📤' : '📥'}</span>
+                          <span>{h.estSortie ? 'ðŸ“¤' : 'ðŸ“¥'}</span>
                           <div>
                             <p className="text-sm text-white font-medium">{h.typeConsigne?.type || h.typeConsigneId || 'Mouvement'}</p>
                             <p className="text-xs text-slate-500">{new Date(h.createdAt || h.date).toLocaleDateString('fr-FR')}</p>
@@ -182,7 +182,8 @@ export default function ConsignesPage() {
 
       <ConsigneForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={handleFormSuccess} edit={editItem} metier="depot-boissons" />
       <ConfirmModal isOpen={false} onConfirm={() => {}} onCancel={() => {}}
-        title="Supprimer" message={`Supprimer ce mouvement ? Cette action est irréversible.`} />
+        title="Supprimer" message={`Supprimer ce mouvement ? Cette action est irrÃ©versible.`} />
     </div>
   );
 }
+

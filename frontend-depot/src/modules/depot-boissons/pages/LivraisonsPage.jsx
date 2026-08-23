@@ -1,9 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
@@ -21,7 +21,7 @@ export default function LivraisonsPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   // Fetch deliveries
@@ -73,12 +73,12 @@ export default function LivraisonsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-livraisons'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Nouvelle livraison créée');
+      notif.success('Nouvelle livraison crÃ©Ã©e');
       setShowModal(null);
       setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId: '' });
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Erreur lors de la création');
+      notif.error(err.response?.data?.message || 'Erreur lors de la crÃ©ation');
     }
   });
 
@@ -87,7 +87,7 @@ export default function LivraisonsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-livraisons'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Livraison supprimée');
+      notif.success('Livraison supprimÃ©e');
       setConfirmDelete(null);
     },
     onError: (err) => {
@@ -97,11 +97,11 @@ export default function LivraisonsPage() {
 
   const handleCreate = () => {
     if (!formData.fournisseurId) {
-      notif.warning('Veuillez sélectionner un fournisseur');
+      notif.warning('Veuillez sÃ©lectionner un fournisseur');
       return;
     }
     if (!formData.depotId) {
-      notif.warning('Veuillez sélectionner un dépôt');
+      notif.warning('Veuillez sÃ©lectionner un dÃ©pÃ´t');
       return;
     }
     createMutation.mutate(formData);
@@ -126,7 +126,7 @@ export default function LivraisonsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight">Livraisons</h1>
-          <p className="text-slate-400 text-sm mt-1">Suivi des entrées marchandises ({total} livraison{total > 1 ? 's' : ''})</p>
+          <p className="text-slate-400 text-sm mt-1">Suivi des entrÃ©es marchandises ({total} livraison{total > 1 ? 's' : ''})</p>
         </div>
         {canWrite && (
           <button onClick={() => {
@@ -135,7 +135,7 @@ export default function LivraisonsPage() {
             setShowModal('create');
           }}
             className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
-            ➕ Nouvelle livraison
+            âž• Nouvelle livraison
           </button>
         )}
       </div>
@@ -146,8 +146,8 @@ export default function LivraisonsPage() {
           <option value="">Tous statuts</option>
           <option value="EN_ATTENTE">En attente</option>
           <option value="EN_COURS">En cours</option>
-          <option value="RECUE">Reçue</option>
-          <option value="ANNULEE">Annulée</option>
+          <option value="RECUE">ReÃ§ue</option>
+          <option value="ANNULEE">AnnulÃ©e</option>
         </select>
       </div>
 
@@ -167,7 +167,7 @@ export default function LivraisonsPage() {
               <tr>
                 <td colSpan="5" className="p-12 text-center text-slate-500">
                   <p className="text-lg mb-2">Aucune livraison</p>
-                  <p className="text-sm">Créez votre première livraison</p>
+                  <p className="text-sm">CrÃ©ez votre premiÃ¨re livraison</p>
                 </td>
               </tr>
             ) : paginated.map(l => (
@@ -188,7 +188,7 @@ export default function LivraisonsPage() {
                 <td className="p-4 text-right">
                   {canWrite && (
                     <button onClick={() => setConfirmDelete(l)} title="Supprimer"
-                      className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Supprimer</button>
+                      className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">âœ• Supprimer</button>
                   )}
                 </td>
               </tr>
@@ -200,10 +200,10 @@ export default function LivraisonsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">â—€ PrÃ©cÃ©dent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant â–¶</button>
         </div>
       )}
 
@@ -214,15 +214,15 @@ export default function LivraisonsPage() {
             <div className="space-y-4">
               <select value={formData.depotId} onChange={e => setFormData({...formData, depotId: e.target.value})}
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500">
-                <option value="">Sélectionner un dépôt</option>
+                <option value="">SÃ©lectionner un dÃ©pÃ´t</option>
                 {depotsData.map(d => <option key={d.id} value={d.id}>{d.nom}</option>)}
               </select>
               <select value={formData.fournisseurId} onChange={e => setFormData({...formData, fournisseurId: e.target.value})}
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500">
-                <option value="">Sélectionner un fournisseur</option>
+                <option value="">SÃ©lectionner un fournisseur</option>
                 {providersData.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
               </select>
-              <textarea placeholder="Articles livrés (un par ligne)" value={formData.articles}
+              <textarea placeholder="Articles livrÃ©s (un par ligne)" value={formData.articles}
                 onChange={e => setFormData({...formData, articles: e.target.value})}
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm min-h-[100px] focus:outline-none focus:border-amber-500" />
               <input type="date" value={formData.dateLivraison} onChange={e => setFormData({...formData, dateLivraison: e.target.value})}
@@ -235,7 +235,7 @@ export default function LivraisonsPage() {
                 className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
               <button onClick={handleCreate} disabled={createMutation.isPending}
                 className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm">
-                {createMutation.isPending ? 'Création...' : 'Créer la livraison'}
+                {createMutation.isPending ? 'CrÃ©ation...' : 'CrÃ©er la livraison'}
               </button>
             </div>
           </div>
@@ -243,7 +243,8 @@ export default function LivraisonsPage() {
       )}
 
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleteMutation.isPending}
-        title="Supprimer la livraison" message={`Supprimer la livraison du ${confirmDelete?.dateLivraison ? new Date(confirmDelete.dateLivraison).toLocaleDateString('fr-FR') : '...'} ? Cette action est irréversible.`} />
+        title="Supprimer la livraison" message={`Supprimer la livraison du ${confirmDelete?.dateLivraison ? new Date(confirmDelete.dateLivraison).toLocaleDateString('fr-FR') : '...'} ? Cette action est irrÃ©versible.`} />
     </div>
   );
 }
+

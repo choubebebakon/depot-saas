@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingCart, Package, MapPin, Users, Settings, LogOut, PlusCircle, Printer, BarChart3, Warehouse, CreditCard, Tag, AlertTriangle, Box, ClipboardList, Users2, FileText, Activity, ShieldCheck, Wrench, ArrowRightLeft, Target, Receipt, Truck, Building2, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
-import { usePermissions } from '../hooks/usePermissions';
+import { usePermissions } from '../shared/hooks/usePermission';
 import { filterByRole, ROLES } from '../utils/rbac';
 import { getMetierMenus, getMetierConfig } from '../config/metier-dashboard.config';
 
@@ -73,9 +73,9 @@ const ICON_SIZE = 20;
 function AccessDeniedCard() {
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-8 text-center">
-      <h2 className="text-xl font-black text-white">Accès limité</h2>
+      <h2 className="text-xl font-black text-white">AccÃ¨s limitÃ©</h2>
       <p className="mt-2 text-sm text-amber-200">
-        Votre rôle ne permet pas d'ouvrir cette section.
+        Votre rÃ´le ne permet pas d'ouvrir cette section.
       </p>
     </div>
   );
@@ -84,9 +84,9 @@ function AccessDeniedCard() {
 const ALL_ROLES = [ROLES.PATRON, ROLES.GERANT, ROLES.CAISSIER, ROLES.MAGASINIER, ROLES.COMMERCIAL, ROLES.COMPTABLE];
 
 const ADMIN_NAV = [
-  { id: '/settings', label: 'Paramètres', icon: 'Settings', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/settings', label: 'ParamÃ¨tres', icon: 'Settings', roles: [ROLES.PATRON, ROLES.GERANT] },
   { id: '/personnel', label: 'Utilisateurs', icon: 'Users', roles: [ROLES.PATRON, ROLES.GERANT] },
-  { id: '/depots', label: 'Dépôts', icon: 'Building2', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/depots', label: 'DÃ©pÃ´ts', icon: 'Building2', roles: [ROLES.PATRON, ROLES.GERANT] },
   { id: '/audit', label: 'Audit Patron', icon: 'ShieldCheck', roles: [ROLES.PATRON] },
   { id: '/analyses', label: 'Analyses BI', icon: 'BarChart3', roles: [ROLES.PATRON, ROLES.GERANT] },
   { id: '/support', label: 'Support & Aide', icon: 'LifeBuoy', roles: ALL_ROLES },
@@ -234,7 +234,7 @@ export default function MainLayout() {
     }
     return PAGE_REGISTRY[activePageId] || (
       <div className="flex items-center justify-center h-full text-slate-500">
-        <p className="text-lg font-semibold">Module en cours de développement</p>
+        <p className="text-lg font-semibold">Module en cours de dÃ©veloppement</p>
       </div>
     );
   };
@@ -271,7 +271,7 @@ export default function MainLayout() {
             <NotificationBell />
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">Dépôt Actif</span>
+                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">DÃ©pÃ´t Actif</span>
                 <span className="text-indigo-400 font-bold text-sm leading-none mt-1">{depotActif?.nom || 'Global'}</span>
               </div>
               <div className="relative group">
@@ -283,10 +283,10 @@ export default function MainLayout() {
                   }}
                   className="appearance-none bg-slate-800 border border-slate-700 hover:border-indigo-500/50 text-white text-xs font-bold rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer shadow-lg shadow-black/20"
                 >
-                  {depots.length === 0 && <option value="">Aucun dépôt disponible</option>}
+                  {depots.length === 0 && <option value="">Aucun dÃ©pÃ´t disponible</option>}
                   {depots.map((s) => (
                     <option key={s.id} value={s.id}>
-                      📍 {s.nom}
+                      ðŸ“ {s.nom}
                     </option>
                   ))}
                 </select>
@@ -314,7 +314,7 @@ export default function MainLayout() {
               <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
                 <Warehouse size={14} className="text-indigo-400" />
                 <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                  {depots.length} Dépôts Utilisés
+                  {depots.length} DÃ©pÃ´ts UtilisÃ©s
                 </span>
               </div>
 
@@ -322,7 +322,7 @@ export default function MainLayout() {
                 <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 animate-pulse">
                   <AlertTriangle size={14} className="text-amber-500" />
                   <span className="text-[11px] font-black text-amber-500 uppercase tracking-wider">
-                    Période de grâce active - Renouvelez bientôt
+                    PÃ©riode de grÃ¢ce active - Renouvelez bientÃ´t
                   </span>
                 </div>
               )}
@@ -332,7 +332,7 @@ export default function MainLayout() {
              onClick={() => navigate('/pricing')}
              className="text-[10px] font-black text-indigo-400 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors"
            >
-             Gérer l'abonnement <ArrowRightLeft size={12} />
+             GÃ©rer l'abonnement <ArrowRightLeft size={12} />
            </button>
         </div>
 
@@ -365,15 +365,15 @@ export default function MainLayout() {
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m11 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="text-white text-2xl font-black mb-4 uppercase tracking-tight">Accès Verrouillé</h2>
+            <h2 className="text-white text-2xl font-black mb-4 uppercase tracking-tight">AccÃ¨s VerrouillÃ©</h2>
             <p className="text-slate-400 mb-8 leading-relaxed">
-              Votre période d'essai ou votre abonnement a expiré. Veuillez contacter l'administrateur pour régulariser votre situation.
+              Votre pÃ©riode d'essai ou votre abonnement a expirÃ©. Veuillez contacter l'administrateur pour rÃ©gulariser votre situation.
             </p>
             <button
                onClick={handleLogout}
                className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-red-500/20 uppercase tracking-widest text-sm"
             >
-               Se déconnecter
+               Se dÃ©connecter
             </button>
           </div>
         </div>
@@ -381,3 +381,4 @@ export default function MainLayout() {
     </div>
   );
 }
+

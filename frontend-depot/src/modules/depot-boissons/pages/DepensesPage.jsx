@@ -1,15 +1,15 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
 const CATEGORIES_DEPENSES = [
-  'Carburant', 'Réparation', 'Achat marchandise', 'Transport', 'Fourniture',
-  'Eau/Électricité', 'Loyer', 'Salaire', 'Marketing', 'Autre'
+  'Carburant', 'RÃ©paration', 'Achat marchandise', 'Transport', 'Fourniture',
+  'Eau/Ã‰lectricitÃ©', 'Loyer', 'Salaire', 'Marketing', 'Autre'
 ];
 
 const LIMIT = 100;
@@ -26,7 +26,7 @@ export default function DepensesPage() {
   const [search, setSearch] = useState('');
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   // Fetch expenses
@@ -63,12 +63,12 @@ export default function DepensesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-depenses'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Nouvelle dépense enregistrée');
+      notif.success('Nouvelle dÃ©pense enregistrÃ©e');
       setShowModal(null);
       setFormData({ montant: '', motif: '', categorie: 'Autre', date: new Date().toISOString().split('T')[0] });
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Erreur lors de la création');
+      notif.error(err.response?.data?.message || 'Erreur lors de la crÃ©ation');
     }
   });
 
@@ -77,7 +77,7 @@ export default function DepensesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-depenses'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Dépense supprimée');
+      notif.success('DÃ©pense supprimÃ©e');
       setConfirmDelete(null);
     },
     onError: (err) => {
@@ -111,30 +111,30 @@ export default function DepensesPage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Dépenses</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">DÃ©penses</h1>
           <p className="text-slate-400 text-sm mt-1">
-            {total > 0 ? `${total} dépense${total > 1 ? 's' : ''} · Total: ${totalDepenses.toLocaleString('fr-FR')} FCFA` : 'Aucune dépense'}
+            {total > 0 ? `${total} dÃ©pense${total > 1 ? 's' : ''} Â· Total: ${totalDepenses.toLocaleString('fr-FR')} FCFA` : 'Aucune dÃ©pense'}
           </p>
         </div>
         {canWrite && (
           <button onClick={() => setShowModal('create')}
             className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-orange-600/20">
-            ➕ Nouvelle dépense
+            âž• Nouvelle dÃ©pense
           </button>
         )}
       </div>
 
       <div className="flex gap-3">
-        <input type="text" placeholder="🔍 Rechercher une dépense..." value={search}
+        <input type="text" placeholder="ðŸ” Rechercher une dÃ©pense..." value={search}
           onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
       </div>
 
       {totalItems === 0 ? (
         <div className="p-12 text-center text-slate-500 bg-slate-800/30 rounded-xl border border-slate-700/50">
-          <p className="text-3xl mb-3">💸</p>
-          <p className="text-lg font-medium">Aucune dépense enregistrée</p>
-          <p className="text-sm mt-1">Cliquez sur "Nouvelle dépense" pour commencer</p>
+          <p className="text-3xl mb-3">ðŸ’¸</p>
+          <p className="text-lg font-medium">Aucune dÃ©pense enregistrÃ©e</p>
+          <p className="text-sm mt-1">Cliquez sur "Nouvelle dÃ©pense" pour commencer</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-700/50">
@@ -143,7 +143,7 @@ export default function DepensesPage() {
               <tr className="bg-slate-800/80 text-slate-400 text-xs uppercase tracking-wider">
                 <th className="text-left p-4 font-semibold">Date</th>
                 <th className="text-left p-4 font-semibold">Motif</th>
-                <th className="text-center p-4 font-semibold">Catégorie</th>
+                <th className="text-center p-4 font-semibold">CatÃ©gorie</th>
                 <th className="text-right p-4 font-semibold">Montant</th>
                 <th className="text-right p-4 font-semibold">Actions</th>
               </tr>
@@ -162,7 +162,7 @@ export default function DepensesPage() {
                   <td className="p-4 text-right">
                     {canWrite && (
                       <button onClick={() => setConfirmDelete(d)} title="Supprimer"
-                        className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">✕ Supprimer</button>
+                        className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">âœ• Supprimer</button>
                     )}
                   </td>
                 </tr>
@@ -175,17 +175,17 @@ export default function DepensesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">â—€ PrÃ©cÃ©dent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant â–¶</button>
         </div>
       )}
 
       {showModal === 'create' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-lg font-black text-white mb-4">Nouvelle dépense</h2>
+            <h2 className="text-lg font-black text-white mb-4">Nouvelle dÃ©pense</h2>
             <div className="space-y-4">
               <input type="number" placeholder="Montant (FCFA) *" value={formData.montant}
                 onChange={e => setFormData({...formData, montant: e.target.value})}
@@ -212,7 +212,8 @@ export default function DepensesPage() {
       )}
 
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleteMutation.isPending}
-        title="Supprimer la dépense" message={`Supprimer la dépense de ${(parseInt(confirmDelete?.montant || 0)).toLocaleString('fr-FR')} FCFA ? Cette action est irréversible.`} />
+        title="Supprimer la dÃ©pense" message={`Supprimer la dÃ©pense de ${(parseInt(confirmDelete?.montant || 0)).toLocaleString('fr-FR')} FCFA ? Cette action est irrÃ©versible.`} />
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { io } from 'socket.io-client';
 import { useDepot } from '../../../contexts/DepotContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
@@ -150,6 +151,40 @@ export default function POSCaissePage() {
   const [printData, setPrintData] = useState(null);
   const [rapportData, setRapportData] = useState(null);
   const [fetchingRapport, setFetchingRapport] = useState(false);
+
+  useEffect(() => {
+    if (!tenantId) return undefined;
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const socket = io(apiUrl);
+
+    const joinAlerts = () => {
+      socket.emit('join_alerts', { tenantId, role: 'MAGASINIER' });
+    };
+
+    const refreshPOSData = () => {
+      queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-session'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-resume'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-ventes'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-articles'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'], exact: false });
+    };
+
+    socket.on('connect', joinAlerts);
+    socket.on('nouvelle_vente', refreshPOSData);
+    socket.on('vente_prise_en_charge', refreshPOSData);
+
+    if (socket.connected) {
+      joinAlerts();
+    }
+
+    return () => {
+      socket.off('connect', joinAlerts);
+      socket.off('nouvelle_vente', refreshPOSData);
+      socket.off('vente_prise_en_charge', refreshPOSData);
+      socket.disconnect();
+    };
+  }, [tenantId, queryClient]);
 
   // ── Query : session active ──────────────────────────────────
   const { data: session, isLoading, error: sessionError } = useQuery({

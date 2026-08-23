@@ -1,9 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import FournisseurForm from '../../../shared/forms/FournisseurForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -29,7 +29,7 @@ export default function FournisseursPage() {
   const [receptionData, setReceptionData] = useState({ articles: '' });
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   // Fetch providers via useQuery
@@ -65,7 +65,7 @@ export default function FournisseursPage() {
       queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs'] });
       queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs-commandes'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Commande envoyée avec succès');
+      notif.success('Commande envoyÃ©e avec succÃ¨s');
       setShowModal(null);
       setCommandeData({ articles: '' });
       setSelectedFournisseur(null);
@@ -82,13 +82,13 @@ export default function FournisseursPage() {
       queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs'] });
       queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs-commandes'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Livraison réceptionnée avec succès');
+      notif.success('Livraison rÃ©ceptionnÃ©e avec succÃ¨s');
       setShowModal(null);
       setReceptionData({ articles: '' });
       setSelectedFournisseur(null);
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Erreur lors de la réception');
+      notif.error(err.response?.data?.message || 'Erreur lors de la rÃ©ception');
     }
   });
 
@@ -98,13 +98,13 @@ export default function FournisseursPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-fournisseurs'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Règlement enregistré avec succès');
+      notif.success('RÃ¨glement enregistrÃ© avec succÃ¨s');
       setShowModal(null);
       setDetteData({ montant: '' });
       setSelectedFournisseur(null);
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Erreur lors du règlement');
+      notif.error(err.response?.data?.message || 'Erreur lors du rÃ¨glement');
     }
   });
 
@@ -121,7 +121,7 @@ export default function FournisseursPage() {
   const handleCommanderSubmit = (data) => {
     const depotId = user?.depotActif?.id;
     if (!depotId) {
-      notif.error('Dépôt actif non trouvé');
+      notif.error('DÃ©pÃ´t actif non trouvÃ©');
       return;
     }
     commanderMutation.mutate({
@@ -135,7 +135,7 @@ export default function FournisseursPage() {
   const handleReceptionnerSubmit = (data) => {
     const depotId = user?.depotActif?.id;
     if (!depotId) {
-      notif.error('Dépôt actif non trouvé');
+      notif.error('DÃ©pÃ´t actif non trouvÃ©');
       return;
     }
     receptionnerMutation.mutate({
@@ -181,7 +181,7 @@ export default function FournisseursPage() {
         {canWrite && (
           <button onClick={openCreate}
             className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">
-            ➕ Nouveau fournisseur
+            âž• Nouveau fournisseur
           </button>
         )}
       </div>
@@ -189,7 +189,7 @@ export default function FournisseursPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {totalItems === 0 ? (
           <div className="col-span-full p-12 text-center text-slate-500 bg-slate-800/30 rounded-xl border border-slate-700/50">
-            <p className="text-3xl mb-3">🤝</p>
+            <p className="text-3xl mb-3">ðŸ¤</p>
             <p className="text-lg font-medium">Aucun fournisseur</p>
             <p className="text-sm mt-1">Ajoutez votre premier fournisseur</p>
           </div>
@@ -205,7 +205,7 @@ export default function FournisseursPage() {
                     {f.email && <p className="text-xs text-slate-500">{f.email}</p>}
                   </div>
                   {canWrite && (
-                    <button onClick={() => openEdit(f)} className="text-slate-500 hover:text-white text-xs">✏️ Modifier</button>
+                    <button onClick={() => openEdit(f)} className="text-slate-500 hover:text-white text-xs">âœï¸ Modifier</button>
                   )}
                 </div>
                 {dette > 0 && (
@@ -221,10 +221,10 @@ export default function FournisseursPage() {
                     <button onClick={() => handleCommander(f)} disabled={commanderMutation.isPending}
                       className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] transition-all">Commander</button>
                     <button onClick={() => handleReceptionner(f)} disabled={receptionnerMutation.isPending}
-                      className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Réceptionner</button>
+                      className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">RÃ©ceptionner</button>
                     {dette > 0 && (
                       <button onClick={() => { setSelectedFournisseur(f); setShowModal('regler'); }}
-                        className="px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 text-white font-bold rounded-lg text-[10px] transition-all">Régler</button>
+                        className="px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 text-white font-bold rounded-lg text-[10px] transition-all">RÃ©gler</button>
                     )}
                   </>
                 )}
@@ -239,10 +239,10 @@ export default function FournisseursPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">â—€ PrÃ©cÃ©dent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant â–¶</button>
         </div>
       )}
 
@@ -251,7 +251,7 @@ export default function FournisseursPage() {
         isOpen={showModal === 'commander'}
         onClose={() => { setShowModal(null); setCommandeData({ articles: '' }); setSelectedFournisseur(null); }}
         onSubmit={handleCommanderSubmit}
-        title="📦 Commander au fournisseur"
+        title="ðŸ“¦ Commander au fournisseur"
         loading={commanderMutation.isPending}
         size="sm"
         submitLabel="Envoyer commande"
@@ -259,15 +259,15 @@ export default function FournisseursPage() {
         <div className="space-y-4">
           <div className="bg-slate-800/50 rounded-lg p-3">
             <p className="text-slate-400 text-sm">Fournisseur: <span className="text-white font-semibold">{selectedFournisseur?.nom}</span></p>
-            <p className="text-slate-400 text-sm">Dépôt ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non défini"}</span></p>
+            <p className="text-slate-400 text-sm">DÃ©pÃ´t ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non dÃ©fini"}</span></p>
           </div>
           {!user?.depotActif?.id && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
-              ⚠️ Dépôt actif non trouvé. Veuillez sélectionner un dépôt actif.
+              âš ï¸ DÃ©pÃ´t actif non trouvÃ©. Veuillez sÃ©lectionner un dÃ©pÃ´t actif.
             </div>
           )}
           <FormField
-            label="Articles à commander"
+            label="Articles Ã  commander"
             name="articles"
             required
             placeholder="Liste des articles (ex: 10x Bouteille 1L, 5x Casier)"
@@ -275,31 +275,31 @@ export default function FournisseursPage() {
         </div>
       </FormModal>
 
-      {/* Modal Réceptionner */}
+      {/* Modal RÃ©ceptionner */}
       <FormModal
         isOpen={showModal === 'receptionner'}
         onClose={() => { setShowModal(null); setReceptionData({ articles: '' }); setSelectedFournisseur(null); }}
         onSubmit={handleReceptionnerSubmit}
-        title="📥 Réceptionner livraison"
+        title="ðŸ“¥ RÃ©ceptionner livraison"
         loading={receptionnerMutation.isPending}
         size="sm"
-        submitLabel="Réceptionner"
+        submitLabel="RÃ©ceptionner"
       >
         <div className="space-y-4">
           <div className="bg-slate-800/50 rounded-lg p-3">
             <p className="text-slate-400 text-sm">Fournisseur: <span className="text-white font-semibold">{selectedFournisseur?.nom}</span></p>
-            <p className="text-slate-400 text-sm">Dépôt ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non défini"}</span></p>
+            <p className="text-slate-400 text-sm">DÃ©pÃ´t ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non dÃ©fini"}</span></p>
           </div>
           {!user?.depotActif?.id && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
-              ⚠️ Dépôt actif non trouvé. Veuillez sélectionner un dépôt actif.
+              âš ï¸ DÃ©pÃ´t actif non trouvÃ©. Veuillez sÃ©lectionner un dÃ©pÃ´t actif.
             </div>
           )}
           <FormField
-            label="Articles reçus"
+            label="Articles reÃ§us"
             name="articles"
             required
-            placeholder="Liste des articles reçus (ex: 10x Bouteille 1L, 5x Casier)"
+            placeholder="Liste des articles reÃ§us (ex: 10x Bouteille 1L, 5x Casier)"
           />
         </div>
       </FormModal>
@@ -309,10 +309,10 @@ export default function FournisseursPage() {
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-white">Historique commandes - {selectedFournisseur.nom}</h2>
-              <button onClick={() => { setSelectedFournisseur(null); setCommandes([]); }} className="text-slate-500 hover:text-white">✕</button>
+              <button onClick={() => { setSelectedFournisseur(null); setCommandes([]); }} className="text-slate-500 hover:text-white">âœ•</button>
             </div>
             {commandes.length === 0 ? (
-              <p className="text-slate-500 text-center py-6">Aucune commande passée</p>
+              <p className="text-slate-500 text-center py-6">Aucune commande passÃ©e</p>
             ) : (
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {commandes.map((c, i) => (
@@ -335,9 +335,9 @@ export default function FournisseursPage() {
       {showModal === 'regler' && selectedFournisseur && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-lg font-black text-white mb-2">Règlement fournisseur</h2>
+            <h2 className="text-lg font-black text-white mb-2">RÃ¨glement fournisseur</h2>
             <p className="text-sm text-slate-400 mb-4">{selectedFournisseur.nom} - Dette: {Number(selectedFournisseur.dette || 0).toLocaleString('fr-FR')} FCFA</p>
-            <input type="number" placeholder="Montant à régler" value={detteData.montant}
+            <input type="number" placeholder="Montant Ã  rÃ©gler" value={detteData.montant}
               onChange={e => setDetteData({ montant: e.target.value })}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
             <div className="flex gap-3 mt-6">
@@ -345,7 +345,7 @@ export default function FournisseursPage() {
                 className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-sm">Annuler</button>
               <button onClick={() => handleReglerDette(selectedFournisseur.id)} disabled={reglerDetteMutation.isPending}
                 className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm">
-                {reglerDetteMutation.isPending ? 'Enregistrement...' : 'Régler'}
+                {reglerDetteMutation.isPending ? 'Enregistrement...' : 'RÃ©gler'}
               </button>
             </div>
           </div>
@@ -354,7 +354,8 @@ export default function FournisseursPage() {
 
       <FournisseurForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={() => setConfirmDelete(null)} onCancel={() => setConfirmDelete(null)}
-        title="Supprimer" message={`Supprimer ce fournisseur ? Cette action est irréversible.`} />
+        title="Supprimer" message={`Supprimer ce fournisseur ? Cette action est irrÃ©versible.`} />
     </div>
   );
 }
+

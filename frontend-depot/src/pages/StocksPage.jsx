@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
 import { useDataContext } from '../context/DataContext';
 import { useData } from '../hooks/useData';
-import { usePermission } from '../hooks/usePermission';
+import { usePermission } from '../shared/hooks/usePermission';
 import { useNotif } from '../context/NotifContext';
 import api from '../api/axios';
 import AjustementStockModal from '../components/AjustementStockModal';
@@ -32,7 +32,7 @@ function ErrorCard({ message, onRetry }) {
       <p className="text-slate-400 text-sm mb-4">{message}</p>
       {onRetry && (
         <button onClick={onRetry} className="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded-xl transition-all text-sm">
-          <RefreshCw size={16} className="inline mr-2" />Réessayer
+          <RefreshCw size={16} className="inline mr-2" />RÃ©essayer
         </button>
       )}
     </div>
@@ -77,9 +77,9 @@ const StocksPage = () => {
         await api.post('/stocks/ajuster', { ...payload, tenantId });
         await refetchStocks();
         setModalAjustement({ isOpen: false, article: null });
-        success('Stock ajusté avec succès');
+        success('Stock ajustÃ© avec succÃ¨s');
       } catch (err) {
-        notifyError(err.response?.data?.message || 'Erreur lors de l\'ajustement', 'Échec');
+        notifyError(err.response?.data?.message || 'Erreur lors de l\'ajustement', 'Ã‰chec');
       }
     },
   };
@@ -99,9 +99,9 @@ const StocksPage = () => {
   }, [stocks, recherche]);
 
   const statsCards = useMemo(() => [
-    { label: 'Articles', val: statsStocks.totalArticles ?? (loadingStats ? '...' : '—'), icon: Package, color: 'indigo' },
-    { label: 'En Rupture', val: statsStocks.enRupture ?? (loadingStats ? '...' : '—'), icon: AlertTriangle, color: 'red' },
-    { label: 'Sous le Seuil', val: statsStocks.critiques ?? (loadingStats ? '...' : '—'), icon: TrendingDown, color: 'orange' },
+    { label: 'Articles', val: statsStocks.totalArticles ?? (loadingStats ? '...' : 'â€”'), icon: Package, color: 'indigo' },
+    { label: 'En Rupture', val: statsStocks.enRupture ?? (loadingStats ? '...' : 'â€”'), icon: AlertTriangle, color: 'red' },
+    { label: 'Sous le Seuil', val: statsStocks.critiques ?? (loadingStats ? '...' : 'â€”'), icon: TrendingDown, color: 'orange' },
     { label: 'Valeur Totale', val: loadingStats ? '...' : `${(statsStocks.valeurStock || 0).toLocaleString()} XAF`, icon: TrendingUp, color: 'emerald' },
   ], [statsStocks, loadingStats]);
 
@@ -111,7 +111,7 @@ const StocksPage = () => {
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight">Gestion des Stocks</h1>
           <p className="text-slate-500 text-sm mt-1">
-            Dépôt : <span className="text-indigo-400 font-bold">{depotActif?.nom || 'Global'}</span>
+            DÃ©pÃ´t : <span className="text-indigo-400 font-bold">{depotActif?.nom || 'Global'}</span>
             {rayons.length > 0 && (
               <span className="ml-4 text-slate-600">| {rayons.length} rayon(s)</span>
             )}
@@ -156,7 +156,7 @@ const StocksPage = () => {
                 <thead className="bg-slate-900/50 border-b border-slate-700">
                   <tr className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
                     <th className="px-6 py-5">Article</th>
-                    <th className="px-6 py-5">Quantité Actuelle</th>
+                    <th className="px-6 py-5">QuantitÃ© Actuelle</th>
                     <th className="px-6 py-5">Seuil Critique</th>
                     <th className="px-6 py-5">Statut</th>
                     <th className="px-6 py-5 text-right">Actions</th>
@@ -173,7 +173,7 @@ const StocksPage = () => {
                   ) : stocksFiltres.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
-                        Aucun article trouvé
+                        Aucun article trouvÃ©
                       </td>
                     </tr>
                   ) : stocksFiltres.map(s => {
@@ -189,7 +189,7 @@ const StocksPage = () => {
                         </td>
                         <td className="px-6 py-5">
                           <div className={`text-lg font-black ${isRupture ? 'text-red-500' : isCritique ? 'text-orange-500' : 'text-white'}`}>
-                            {s.quantite} <span className="text-[10px] font-normal text-slate-500">Unités</span>
+                            {s.quantite} <span className="text-[10px] font-normal text-slate-500">UnitÃ©s</span>
                           </div>
                         </td>
                         <td className="px-6 py-5">
@@ -229,7 +229,7 @@ const StocksPage = () => {
           <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl flex items-center gap-3">
             <Info className="text-indigo-400" size={20} />
             <p className="text-xs text-indigo-300">
-              L'historique d'audit affiche les 200 derniers mouvements pour le dépôt <span className="font-bold underline">{depotActif?.nom || 'Global'}</span>.
+              L'historique d'audit affiche les 200 derniers mouvements pour le dÃ©pÃ´t <span className="font-bold underline">{depotActif?.nom || 'Global'}</span>.
             </p>
           </div>
 
@@ -239,7 +239,7 @@ const StocksPage = () => {
                 {[1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-800 rounded-3xl" />)}
               </div>
             ) : mouvements.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">Aucun mouvement enregistré</div>
+              <div className="text-center py-12 text-slate-500">Aucun mouvement enregistrÃ©</div>
             ) : mouvements.map(mv => (
               <div key={mv.id} className="bg-slate-800 border border-slate-700 p-5 rounded-3xl flex items-center justify-between hover:border-indigo-500/50 transition-all">
                 <div className="flex items-center gap-4">
@@ -286,3 +286,4 @@ const StocksPage = () => {
 };
 
 export default StocksPage;
+

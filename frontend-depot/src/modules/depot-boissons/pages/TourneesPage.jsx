@@ -1,9 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import TourneeForm from '../forms/TourneeForm';
 import ChargementForm from '../forms/ChargementForm';
@@ -38,7 +38,7 @@ export default function TourneesPage() {
   const [search, setSearch] = useState('');
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   // Fetch tournees via useQuery
@@ -76,10 +76,10 @@ export default function TourneesPage() {
     mutationFn: (id) => depotApi.demarrerTournee(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-tournees'] });
-      notif.success('Tournée démarrée');
+      notif.success('TournÃ©e dÃ©marrÃ©e');
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Erreur lors du démarrage');
+      notif.error(err.response?.data?.message || 'Erreur lors du dÃ©marrage');
     }
   });
 
@@ -88,10 +88,10 @@ export default function TourneesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-tournees'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Tournée clôturée avec succès');
+      notif.success('TournÃ©e clÃ´turÃ©e avec succÃ¨s');
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Erreur lors de la clôture');
+      notif.error(err.response?.data?.message || 'Erreur lors de la clÃ´ture');
     }
   });
 
@@ -100,7 +100,7 @@ export default function TourneesPage() {
   };
 
   const handleCloturer = (id) => {
-    const montant = prompt('Montant total des ventes de la tournée :');
+    const montant = prompt('Montant total des ventes de la tournÃ©e :');
     if (!montant || isNaN(montant)) return;
     cloturerMutation.mutate({ id, montant: parseInt(montant) });
   };
@@ -116,7 +116,7 @@ export default function TourneesPage() {
       setRecap(res.data);
       setSelectedTournee(id);
     } catch (err) {
-      notif.error('Erreur de chargement du récapitulatif');
+      notif.error('Erreur de chargement du rÃ©capitulatif');
     }
   };
 
@@ -132,8 +132,8 @@ export default function TourneesPage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Tournées</h1>
-          <p className="text-slate-400 text-sm mt-1">Planification et suivi des tournées tricycle ({total} tournée{total > 1 ? 's' : ''})</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">TournÃ©es</h1>
+          <p className="text-slate-400 text-sm mt-1">Planification et suivi des tournÃ©es tricycle ({total} tournÃ©e{total > 1 ? 's' : ''})</p>
         </div>
         {canWrite && (
           <div className="flex gap-3">
@@ -143,14 +143,14 @@ Nouveau tricycle
             </button>
             <button onClick={openCreate}
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-Nouvelle tournée
+Nouvelle tournÃ©e
             </button>
           </div>
         )}
       </div>
 
       <div className="flex gap-3">
-        <input type="text" placeholder="Rechercher une tournée..." value={search}
+        <input type="text" placeholder="Rechercher une tournÃ©e..." value={search}
           onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
       </div>
@@ -158,8 +158,8 @@ Nouvelle tournée
       {totalItems === 0 ? (
         <div className="p-12 text-center text-slate-500 bg-slate-800/30 rounded-xl border border-slate-700/50">
           <p className="text-3xl mb-3"><Truck className="w-12 h-12 mx-auto text-slate-500" /></p>
-          <p className="text-lg font-medium">Aucune tournée planifiée</p>
-          <p className="text-sm mt-1">Créez votre première tournée</p>
+          <p className="text-lg font-medium">Aucune tournÃ©e planifiÃ©e</p>
+          <p className="text-sm mt-1">CrÃ©ez votre premiÃ¨re tournÃ©e</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -184,18 +184,18 @@ Nouvelle tournée
                 {canWrite && t.statut === 'PLANIFIEE' && (
                   <>
                     <button onClick={() => handleDemarrer(t.id)} disabled={demarrerMutation.isPending}
-                      className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] transition-all">Démarrer</button>
+                      className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] transition-all">DÃ©marrer</button>
                     <button onClick={() => handleCharger(t.id)}
                       className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Charger</button>
                   </>
                 )}
                 {canWrite && t.statut === 'EN_COURS' && (
                   <button onClick={() => handleCloturer(t.id)} disabled={cloturerMutation.isPending}
-                    className="px-3 py-1.5 bg-red-600/80 hover:bg-red-500 text-white font-bold rounded-lg text-[10px] transition-all">Clôturer</button>
+                    className="px-3 py-1.5 bg-red-600/80 hover:bg-red-500 text-white font-bold rounded-lg text-[10px] transition-all">ClÃ´turer</button>
                 )}
                 {(t.statut === 'TERMINEE' || t.statut === 'CLOTURE_COMMERCIALE') && (
                   <button onClick={() => handleVoirRecap(t.id)}
-                    className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">Récapitulatif</button>
+                    className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] transition-all">RÃ©capitulatif</button>
                 )}
                 {canWrite && (
                   <button onClick={() => openEdit(t)}
@@ -210,7 +210,7 @@ Nouvelle tournée
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Précédent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">PrÃ©cÃ©dent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
             className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant</button>
@@ -220,10 +220,10 @@ Nouvelle tournée
       {recap && selectedTournee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setRecap(null); setSelectedTournee(null); }}>
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-black text-white mb-4">Récapitulatif tournée</h2>
+            <h2 className="text-lg font-black text-white mb-4">RÃ©capitulatif tournÃ©e</h2>
             <div className="space-y-3">
               <div className="flex justify-between p-3 bg-slate-800 rounded-xl">
-                <span className="text-slate-400">Articles chargés</span>
+                <span className="text-slate-400">Articles chargÃ©s</span>
                 <span className="text-white font-bold">{recap.articlesCharges || 0}</span>
               </div>
               <div className="flex justify-between p-3 bg-slate-800 rounded-xl">
@@ -249,7 +249,8 @@ Nouvelle tournée
       <ChargementForm isOpen={chargementOpen} onClose={() => { setChargementOpen(false); setChargementTourneeId(null); }} metier="depot-boissons" tourneeId={chargementTourneeId} />
       <TricycleForm isOpen={tricycleFormOpen} onClose={() => setTricycleFormOpen(false)} edit={tricycleEditItem} metier="depot-boissons" />
       <ConfirmModal isOpen={false} onConfirm={() => {}} onCancel={() => {}}
-        title="Supprimer" message={`Supprimer cette tournée ? Cette action est irréversible.`} />
+        title="Supprimer" message={`Supprimer cette tournÃ©e ? Cette action est irrÃ©versible.`} />
     </div>
   );
 }
+

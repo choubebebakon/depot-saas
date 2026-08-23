@@ -1,9 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import ClientForm from '../../../shared/forms/ClientForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -27,7 +27,7 @@ export default function ClientsPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   // Fetch clients via useQuery
@@ -63,7 +63,7 @@ export default function ClientsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-clients'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Paiement enregistré avec succès');
+      notif.success('Paiement enregistrÃ© avec succÃ¨s');
       setShowModal(null);
       setSelectedClient(null);
       setPaiementData({ montant: '', modePaiement: 'CASH' });
@@ -110,19 +110,19 @@ export default function ClientsPage() {
         {canWrite && (
           <button onClick={openCreate}
             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-            ➕ Nouveau client
+            âž• Nouveau client
           </button>
         )}
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <input type="text" placeholder="🔍 Rechercher un client..." value={search}
+        <input type="text" placeholder="ðŸ” Rechercher un client..." value={search}
           onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
         <select value={filtreDebiteur} onChange={e => { setFiltreDebiteur(e.target.value); setCurrentPage(1); }}
           className="px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none">
           <option value="">Tous les clients</option>
-          <option value="true">Clients débiteurs</option>
+          <option value="true">Clients dÃ©biteurs</option>
         </select>
       </div>
 
@@ -131,9 +131,9 @@ export default function ClientsPage() {
           <thead>
             <tr className="bg-slate-800/80 text-slate-400 text-xs uppercase tracking-wider">
               <th className="text-left p-4 font-semibold">Nom</th>
-              <th className="text-left p-4 font-semibold">Téléphone</th>
+              <th className="text-left p-4 font-semibold">TÃ©lÃ©phone</th>
               <th className="text-left p-4 font-semibold">Adresse</th>
-              <th className="text-right p-4 font-semibold">Crédit / Dette</th>
+              <th className="text-right p-4 font-semibold">CrÃ©dit / Dette</th>
               <th className="text-right p-4 font-semibold">Actions</th>
             </tr>
           </thead>
@@ -163,12 +163,12 @@ export default function ClientsPage() {
                     <div className="flex items-center justify-end gap-1">
                       {canWrite && soldeCredit > 0 && (
                         <button onClick={() => { setSelectedClient(c); setShowModal('paiement'); }}
-                          title="Paiement dette" className="px-2.5 py-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-xs">💵 Régler</button>
+                          title="Paiement dette" className="px-2.5 py-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-xs">ðŸ’µ RÃ©gler</button>
                       )}
                       <button onClick={() => handleVoirHistorique(c)}
-                        title="Historique achats" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 transition-all text-xs">📋 Achats</button>
+                        title="Historique achats" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 transition-all text-xs">ðŸ“‹ Achats</button>
                       {canWrite && (
-                        <button onClick={() => openEdit(c)} title="Modifier" className="px-2.5 py-1.5 hover:bg-orange-500/20 rounded-lg text-orange-400 hover:text-orange-300 transition-all text-xs">✏️ Modifier</button>
+                        <button onClick={() => openEdit(c)} title="Modifier" className="px-2.5 py-1.5 hover:bg-orange-500/20 rounded-lg text-orange-400 hover:text-orange-300 transition-all text-xs">âœï¸ Modifier</button>
                       )}
                     </div>
                   </td>
@@ -182,10 +182,10 @@ export default function ClientsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">◀ Précédent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">â—€ PrÃ©cÃ©dent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant ▶</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant â–¶</button>
         </div>
       )}
 
@@ -194,10 +194,10 @@ export default function ClientsPage() {
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-white">Historique - {selectedClient.nom}</h2>
-              <button onClick={() => setSelectedClient(null)} className="text-slate-500 hover:text-white transition-all">✕</button>
+              <button onClick={() => setSelectedClient(null)} className="text-slate-500 hover:text-white transition-all">âœ•</button>
             </div>
             {historique.length === 0 ? (
-              <p className="text-slate-500 text-center py-6">Aucun achat enregistré</p>
+              <p className="text-slate-500 text-center py-6">Aucun achat enregistrÃ©</p>
             ) : (
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {historique.map((h, i) => (
@@ -221,7 +221,7 @@ export default function ClientsPage() {
             <h2 className="text-lg font-black text-white mb-2">Paiement dette</h2>
             <p className="text-sm text-slate-400 mb-4">Client: {selectedClient.nom} - Dette: {Number(selectedClient.soldeCredit || 0).toLocaleString('fr-FR')} FCFA</p>
             <div className="space-y-4">
-              <input type="number" placeholder="Montant à payer" value={paiementData.montant}
+              <input type="number" placeholder="Montant Ã  payer" value={paiementData.montant}
                 onChange={e => setPaiementData({...paiementData, montant: e.target.value})}
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
               <select value={paiementData.modePaiement} onChange={e => setPaiementData({...paiementData, modePaiement: e.target.value})}
@@ -245,7 +245,8 @@ export default function ClientsPage() {
 
       <ClientForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={() => setConfirmDelete(null)} onCancel={() => setConfirmDelete(null)}
-        title="Supprimer" message={`Supprimer ce client ? Cette action est irréversible.`} />
+        title="Supprimer" message={`Supprimer ce client ? Cette action est irrÃ©versible.`} />
     </div>
   );
 }
+

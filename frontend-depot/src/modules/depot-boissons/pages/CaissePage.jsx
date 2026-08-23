@@ -1,15 +1,15 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/permissions/usePermission';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import { venteSchema } from '../schemas/venteSchema';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
-// Components de Modales indépendants pour une meilleure organisation
+// Components de Modales indÃ©pendants pour une meilleure organisation
 
 function OuvrirCaisseModal({ isOpen, onClose, onOpen }) {
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -19,16 +19,16 @@ function OuvrirCaisseModal({ isOpen, onClose, onOpen }) {
   return isOpen ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <form onSubmit={handleSubmit(onOpen)} className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <h2 className="text-lg font-black text-white mb-4">🔓 Ouverture de caisse</h2>
+        <h2 className="text-lg font-black text-white mb-4">ðŸ”“ Ouverture de caisse</h2>
         <div className="space-y-4">
           <div>
             <input
               type="number"
               placeholder="Montant initial (FCFA) *"
-              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit être positif' } })}
+              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit Ãªtre positif' } })}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
             />
-            {errors.montant && <p className="text-red-400 text-xs mt-1">⚠️ {errors.montant.message}</p>}
+            {errors.montant && <p className="text-red-400 text-xs mt-1">âš ï¸ {errors.montant.message}</p>}
           </div>
           <div>
             <input
@@ -65,14 +65,14 @@ function VenteCaisseModal({ isOpen, onClose, onSubmit }) {
 
   const { fields, append, remove } = useFieldArray({ control, name: "retoursConsigne" });
 
-  // Normalisation des données pour parer au problème de ".map is not a function"
+  // Normalisation des donnÃ©es pour parer au problÃ¨me de ".map is not a function"
   const clientsList = Array.isArray(clients) ? clients : (clients?.data || []);
   const consignesList = Array.isArray(consignes) ? consignes : (consignes?.data || []);
 
   return isOpen ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-black text-white mb-4">💰 Saisir une vente</h2>
+        <h2 className="text-lg font-black text-white mb-4">ðŸ’° Saisir une vente</h2>
         <div className="space-y-4">
           <div>
             <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Client</label>
@@ -89,10 +89,10 @@ function VenteCaisseModal({ isOpen, onClose, onSubmit }) {
             <input
               type="number"
               placeholder="Montant total (FCFA) *"
-              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit être positif' } })}
+              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit Ãªtre positif' } })}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
             />
-            {errors.montant && <p className="text-red-400 text-xs mt-1">⚠️ {errors.montant.message}</p>}
+            {errors.montant && <p className="text-red-400 text-xs mt-1">âš ï¸ {errors.montant.message}</p>}
           </div>
 
           <div>
@@ -101,13 +101,13 @@ function VenteCaisseModal({ isOpen, onClose, onSubmit }) {
               {...register('motif', { required: 'Description requis' })}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
             />
-            {errors.motif && <p className="text-red-400 text-xs mt-1">⚠️ {errors.motif.message}</p>}
+            {errors.motif && <p className="text-red-400 text-xs mt-1">âš ï¸ {errors.motif.message}</p>}
           </div>
 
           {/* SECTION RETOUR CONSIGNE */}
           <div className="pt-4 border-t border-slate-800">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Retours de vides (Consignes)</h3>
+              <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider">ðŸ“¦ Retours de vides (Consignes)</h3>
               <button
                 type="button"
                 onClick={() => append({ typeConsigneId: '', quantite: 1 })}
@@ -125,7 +125,7 @@ function VenteCaisseModal({ isOpen, onClose, onSubmit }) {
                       {...register(`retoursConsigne.${index}.typeConsigneId`)}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:outline-none"
                     >
-                      <option value="">Sélectionner le format...</option>
+                      <option value="">SÃ©lectionner le format...</option>
                       {consignesList.map(c => (
                         <option key={c.id} value={c.id}>{c.nom} ({c.valeurConsigne} FCFA)</option>
                       ))}
@@ -137,7 +137,7 @@ function VenteCaisseModal({ isOpen, onClose, onSubmit }) {
                   <div className="w-24">
                     <input
                       type="number"
-                      placeholder="Qté"
+                      placeholder="QtÃ©"
                       {...register(`retoursConsigne.${index}.quantite`)}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:outline-none"
                     />
@@ -150,13 +150,13 @@ function VenteCaisseModal({ isOpen, onClose, onSubmit }) {
                     onClick={() => remove(index)}
                     className="p-2 text-slate-500 hover:text-red-400 transition-colors"
                   >
-                    ✕
+                    âœ•
                   </button>
                 </div>
               ))}
               {fields.length === 0 && (
                 <p className="text-center py-4 text-slate-600 text-xs italic border border-dashed border-slate-800 rounded-xl">
-                  Aucun retour de bouteilles enregistré pour cette vente.
+                  Aucun retour de bouteilles enregistrÃ© pour cette vente.
                 </p>
               )}
             </div>
@@ -187,18 +187,18 @@ function MouvementCaisseModal({ isOpen, onClose, onSubmit }) {
         <div className="space-y-4">
           <div className="flex gap-3">
             <button type="button" onClick={() => setValue('typeMouvement', 'ENTREE')}
-              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${typeMouvement === 'ENTREE' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}>📥 Entrée</button>
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${typeMouvement === 'ENTREE' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}>ðŸ“¥ EntrÃ©e</button>
             <button type="button" onClick={() => setValue('typeMouvement', 'SORTIE')}
-              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${typeMouvement === 'SORTIE' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400'}`}>📤 Sortie</button>
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${typeMouvement === 'SORTIE' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400'}`}>ðŸ“¤ Sortie</button>
           </div>
           <div>
             <input
               type="number"
               placeholder="Montant (FCFA) *"
-              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit être positif' } })}
+              {...register('montant', { required: 'Montant requis', min: { value: 0, message: 'Le montant doit Ãªtre positif' } })}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
             />
-            {errors.montant && <p className="text-red-400 text-xs mt-1">⚠️ {errors.montant.message}</p>}
+            {errors.montant && <p className="text-red-400 text-xs mt-1">âš ï¸ {errors.montant.message}</p>}
           </div>
           <div>
             <input
@@ -206,7 +206,7 @@ function MouvementCaisseModal({ isOpen, onClose, onSubmit }) {
               {...register('motif', { required: 'Motif requis' })}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
             />
-            {errors.motif && <p className="text-red-400 text-xs mt-1">⚠️ {errors.motif.message}</p>}
+            {errors.motif && <p className="text-red-400 text-xs mt-1">âš ï¸ {errors.motif.message}</p>}
           </div>
         </div>
         <div className="flex gap-3 mt-6">
@@ -231,7 +231,7 @@ export default function CaissePage() {
   const [rapportData, setRapportData] = useState(null);
   const [fetchingRapport, setFetchingRapport] = useState(false);
 
-  // --- LOGIQUE MAILLÉE COMPORTANT LE DESÉRIALISATION DE DEPOT_USER ---
+  // --- LOGIQUE MAILLÃ‰E COMPORTANT LE DESÃ‰RIALISATION DE DEPOT_USER ---
   const userString = localStorage.getItem('depot_user');
   let currentDepotId = null;
   let currentTenantId = null;
@@ -259,7 +259,7 @@ export default function CaissePage() {
 
   const ouvrirMutation = useMutation({
     mutationFn: (data) => {
-      if (!currentDepotId || !currentTenantId) throw new Error("Impossible d'ouvrir la caisse: ID du dépôt ou du tenant absent de la session.");
+      if (!currentDepotId || !currentTenantId) throw new Error("Impossible d'ouvrir la caisse: ID du dÃ©pÃ´t ou du tenant absent de la session.");
       return depotApi.ouvrirCaisse({ 
         montantInitial: parseInt(data.montant), 
         motif: data.motif, 
@@ -269,7 +269,7 @@ export default function CaissePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
-      notif.success('Caisse ouverte avec succès');
+      notif.success('Caisse ouverte avec succÃ¨s');
       setShowModal(null);
     },
     onError: (err) => {
@@ -283,7 +283,7 @@ export default function CaissePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
-      notif.success('Vente et consignes enregistrées');
+      notif.success('Vente et consignes enregistrÃ©es');
       setShowModal(null);
     },
     onError: (err) => notif.error(err.response?.data?.message || 'Erreur lors de la vente')
@@ -293,7 +293,7 @@ export default function CaissePage() {
     mutationFn: () => depotApi.fermerCaisse({}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
-      notif.success('Caisse fermée avec succès');
+      notif.success('Caisse fermÃ©e avec succÃ¨s');
       setConfirmFermer(null);
     },
     onError: (err) => {
@@ -306,12 +306,12 @@ export default function CaissePage() {
     montant: parseInt(data.montant),
     motif: data.motif,
     typeMouvement: data.typeMouvement,
-    depotId: currentDepotId,   // ✨ Ajouté ici pour l'envoyer au backend
-    tenantId: currentTenantId  // ✨ Ajouté ici pour l'envoyer au backend
+    depotId: currentDepotId,   // âœ¨ AjoutÃ© ici pour l'envoyer au backend
+    tenantId: currentTenantId  // âœ¨ AjoutÃ© ici pour l'envoyer au backend
   }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
-    notif.success('Mouvement enregistré avec succès');
+    notif.success('Mouvement enregistrÃ© avec succÃ¨s');
     setShowModal(null);
   },
   onError: (err) => {
@@ -320,7 +320,7 @@ export default function CaissePage() {
 });
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
   }
 
   async function handleRapport() {
@@ -330,7 +330,7 @@ export default function CaissePage() {
       setRapportData(res.data);
       setShowModal('rapport');
     } catch (err) {
-      notif.error(err.response?.data?.message || 'Erreur lors de la génération du rapport');
+      notif.error(err.response?.data?.message || 'Erreur lors de la gÃ©nÃ©ration du rapport');
     } finally {
       setFetchingRapport(false);
     }
@@ -360,9 +360,9 @@ export default function CaissePage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">🏧 Caisse</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">ðŸ§ Caisse</h1>
           <p className="text-slate-400 text-sm mt-1">
-            {estOuverte ? '🟢 Caisse ouverte' : '🔴 Caisse fermée'}
+            {estOuverte ? 'ðŸŸ¢ Caisse ouverte' : 'ðŸ”´ Caisse fermÃ©e'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -372,27 +372,27 @@ export default function CaissePage() {
               disabled={!currentDepotId || !currentTenantId}
               className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20"
             >
-              🔓 Ouvrir caisse
+              ðŸ”“ Ouvrir caisse
             </button>
           ) : (
             <>
               <button onClick={() => setShowModal('vente')}
                 className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
-                💰 Saisir vente
+                ðŸ’° Saisir vente
               </button>
               <button onClick={() => setShowModal('mouvement')}
                 className="px-4 py-2.5 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
-                ➕ Mouvement
+                âž• Mouvement
               </button>
               <button onClick={() => setConfirmFermer(true)}
                 className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
-                🔒 Fermer caisse
+                ðŸ”’ Fermer caisse
               </button>
             </>
           ))}
           <button onClick={handleRapport} disabled={fetchingRapport}
             className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2">
-            {fetchingRapport ? '⌛ Génération...' : '📊 Rapport journalier'}
+            {fetchingRapport ? 'âŒ› GÃ©nÃ©ration...' : 'ðŸ“Š Rapport journalier'}
           </button>
         </div>
       </div>
@@ -404,7 +404,7 @@ export default function CaissePage() {
             <p className="text-2xl font-black text-white mt-1">{(caisse.solde || 0).toLocaleString('fr-FR')} FCFA</p>
           </div>
           <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Entrées du jour</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wider">EntrÃ©es du jour</p>
             <p className="text-2xl font-black text-emerald-400 mt-1">+{(caisse.entreesJour || 0).toLocaleString('fr-FR')} FCFA</p>
           </div>
           <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5">
@@ -423,7 +423,7 @@ export default function CaissePage() {
             {mouvements.map((m, i) => (
               <div key={i} className="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <span>{m.typeMouvement === 'ENTREE' ? '📥' : '📤'}</span>
+                  <span>{m.typeMouvement === 'ENTREE' ? 'ðŸ“¥' : 'ðŸ“¤'}</span>
                   <div>
                     <p className="text-sm text-white font-medium">{m.motif || 'Mouvement'}</p>
                     <p className="text-xs text-slate-500">{new Date(m.date).toLocaleString('fr-FR')}</p>
@@ -459,7 +459,7 @@ export default function CaissePage() {
       {showModal === 'rapport' && rapportData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-black text-white mb-4">📊 Rapport journalier</h2>
+            <h2 className="text-lg font-black text-white mb-4">ðŸ“Š Rapport journalier</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
@@ -473,7 +473,7 @@ export default function CaissePage() {
                   <p className="text-lg font-black text-white mt-1">{(rapportData.solde || 0).toLocaleString('fr-FR')} FCFA</p>
                 </div>
                 <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
-                  <p className="text-xs text-slate-400 uppercase tracking-wider">Entrées du jour</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">EntrÃ©es du jour</p>
                   <p className="text-lg font-black text-emerald-400 mt-1">+{(rapportData.entreesJour || 0).toLocaleString('fr-FR')} FCFA</p>
                 </div>
                 <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
@@ -491,7 +491,7 @@ export default function CaissePage() {
       )}
 
       <ConfirmModal isOpen={!!confirmFermer} onConfirm={() => fermerMutation.mutate()} onCancel={() => setConfirmFermer(null)} loading={fermerMutation.isPending}
-        title="Fermer la caisse" message="Fermer la caisse ? Un rapport journalier sera généré et les ventes ne pourront plus être enregistrées pour aujourd'hui." />
+        title="Fermer la caisse" message="Fermer la caisse ? Un rapport journalier sera gÃ©nÃ©rÃ© et les ventes ne pourront plus Ãªtre enregistrÃ©es pour aujourd'hui." />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
 
 const articleSchema = z.object({
   designation: z.string().min(2, 'La désignation doit contenir au moins 2 caractères'),
+  famille: z.string().optional(),
   prixVente: z.coerce.number().positive('Le prix de vente doit être supérieur à 0'),
   prixAchat: z.coerce.number().min(0, 'Le prix d\'achat ne peut pas être négatif').optional().or(z.literal('')),
   seuilCritique: z.coerce.number().min(0, 'Le seuil critique ne peut pas être négatif'),
@@ -30,6 +31,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
     resolver: zodResolver(articleSchema),
     defaultValues: {
       designation: '',
+      famille: '',
       prixVente: '',
       prixAchat: '',
       seuilCritique: 0,
@@ -46,6 +48,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
     if (edit) {
       reset({
         designation: edit.designation || edit.nom || '',
+        famille: edit.famille || '',
         prixVente: edit.prixVente || '',
         prixAchat: edit.prixAchat || '',
         seuilCritique: edit.seuilCritique || 0,
@@ -59,6 +62,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
     } else {
       reset({
         designation: '',
+        famille: '',
         prixVente: '',
         prixAchat: '',
         seuilCritique: 0,
@@ -114,6 +118,21 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
             required
             error={errors.designation?.message}
             placeholder="Ex: Bière 33cl"
+          />
+        )}
+      />
+
+      <Controller
+        name="famille"
+        control={control}
+        render={({ field }) => (
+          <FormField
+            label="Famille"
+            name="famille"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            error={errors.famille?.message}
+            placeholder="Ex: Bières, Eaux, Jus"
           />
         )}
       />
