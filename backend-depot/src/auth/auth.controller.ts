@@ -11,7 +11,6 @@ import {
   InternalServerErrorException,
   BadRequestException,
   HttpException,
-  HttpStatus,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -75,7 +74,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 jours
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
     return {
@@ -84,7 +83,6 @@ export class AuthController {
     };
   }
 
-  // Renouvellement du token (Public car utilise le cookie de refresh)
   @Public()
   @Post('refresh')
   async refresh(@Req() req: any, @Body() body: any) {
@@ -92,7 +90,6 @@ export class AuthController {
     return this.authService.refresh(refreshToken);
   }
 
-  // Deconnexion (Protegee)
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
@@ -103,16 +100,11 @@ export class AuthController {
     return { message: 'Deconnexion reussie' };
   }
 
-  // Profil connecté (Protégé)
+  // Profil connecté : rechargé depuis PostgreSQL pour conserver les modifications après F5.
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@CurrentUser() user: any) {
-    const tenant = await this.authService.getTenantInfo(user.tenantId);
-    return {
-      ...user,
-      metier: tenant?.metier,
-      nomEntreprise: tenant?.nomEntreprise ?? tenant?.name,
-    };
+    return this.authService.getCurrentUserProfile(user.userId);
   }
 
   /** Permissions granulaires du user courant pour le métier du tenant. */
@@ -144,14 +136,12 @@ export class AuthController {
     return { ...result, metier };
   }
 
-  // Mise à jour du profil utilisateur
   @UseGuards(JwtAuthGuard)
   @Put('me')
   async updateProfile(@CurrentUser() user: any, @Body() updateProfileDto: UpdateProfileDto) {
     return await this.authService.updateProfile(user.userId, updateProfileDto);
   }
 
-  // Upload de photo de profil
   @UseGuards(JwtAuthGuard)
   @Post('avatar')
   @UseInterceptors(
@@ -170,7 +160,7 @@ export class AuthController {
         }
         cb(null, true);
       },
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+      limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
   async uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
@@ -180,28 +170,24 @@ export class AuthController {
     return await this.authService.uploadAvatar(user.userId, file);
   }
 
-  // Changement de mot de passe
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(@CurrentUser() user: any, @Body() changePasswordDto: ChangePasswordDto) {
     return await this.authService.changePassword(user.userId, changePasswordDto);
   }
 
-  // Activation/Désactivation 2FA
   @UseGuards(JwtAuthGuard)
   @Post('2fa')
   async toggle2FA(@CurrentUser() user: any, @Body() body: { enabled: boolean }) {
     return await this.authService.toggle2FA(user.userId, body.enabled);
   }
 
-  // Récupérer les préférences utilisateur
   @UseGuards(JwtAuthGuard)
   @Get('preferences')
   async getPreferences(@CurrentUser() user: any) {
     return await this.authService.getPreferences(user.userId);
   }
 
-  // Mettre à jour les préférences utilisateur
   @UseGuards(JwtAuthGuard)
   @Put('preferences')
   async updatePreferences(@CurrentUser() user: any, @Body() preferencesDto: PreferencesDto) {
