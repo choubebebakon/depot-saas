@@ -73,6 +73,7 @@ import { ExportsModule } from './exports/exports.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { SupportModule } from './support/support.module';
 import { BillingModule } from './billing/billing.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -144,6 +145,7 @@ import { BillingModule } from './billing/billing.module';
     InvoicesModule,
     SupportModule,
     BillingModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [
