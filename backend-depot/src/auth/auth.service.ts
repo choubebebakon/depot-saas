@@ -26,9 +26,7 @@ export class AuthService {
       throw new BadRequestException('Acceptation des CGU obligatoire');
     }
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new BadRequestException('Un compte avec cet email existe déjà.');
     }
@@ -58,16 +56,12 @@ export class AuthService {
             },
           },
         },
-        include: {
-          tenant: true,
-        },
+        include: { tenant: true },
       });
 
-      this.emailService
-        .sendWelcomeEmail(user.email, nomEntreprise)
-        .catch((err) => {
-          console.error('Erreur envoi email bienvenue:', err.message);
-        });
+      this.emailService.sendWelcomeEmail(user.email, nomEntreprise).catch((err) => {
+        console.error('Erreur envoi email bienvenue:', err.message);
+      });
 
       return {
         message: 'Compte créé avec succès',
@@ -89,9 +83,7 @@ export class AuthService {
     }
 
     if (!user.tenant.estActif) {
-      throw new UnauthorizedException(
-        'Compte suspendu. Contactez votre administrateur.',
-      );
+      throw new UnauthorizedException('Compte suspendu. Contactez votre administrateur.');
     }
 
     const payload = {
@@ -109,24 +101,14 @@ export class AuthService {
     });
 
     const refreshTokenHash = await argon2.hash(refresh_token);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshTokenHash },
-    });
-
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId: user.id },
-    });
+    await this.prisma.user.update({ where: { id: user.id }, data: { refreshTokenHash } });
+    await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
 
     const randomToken = randomBytes(32).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     await this.prisma.refreshToken.create({
-      data: {
-        token: randomToken,
-        userId: user.id,
-        expiresAt,
-      },
+      data: { token: randomToken, userId: user.id, expiresAt },
     });
 
     return {
@@ -158,14 +140,65 @@ export class AuthService {
     });
   }
 
-  async logout(userId: string) {
-    await this.prisma.user.update({
+  // Source de vérité du profil : la base de données, jamais le contenu du JWT.
+  async getCurrentUserProfile(userId: string) {
+    const currentUser = await this.prisma.user.findUnique({
       where: { id: userId },
-      data: { refreshTokenHash: null },
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        telephone: true,
+        adresse: true,
+        avatar: true,
+        role: true,
+        tenantId: true,
+        depotId: true,
+        createdAt: true,
+        twoFAEnabled: true,
+        preferences: true,
+        isSuperAdmin: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            nomEntreprise: true,
+            metier: true,
+            statutAbonnement: true,
+            planType: true,
+          },
+        },
+      },
     });
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId },
-    });
+
+    if (!currentUser) {
+      throw new UnauthorizedException('Utilisateur non trouvé');
+    }
+
+    return {
+      id: currentUser.id,
+      email: currentUser.email,
+      nom: currentUser.nom,
+      telephone: currentUser.telephone,
+      adresse: currentUser.adresse,
+      avatar: currentUser.avatar,
+      role: currentUser.role,
+      tenantId: currentUser.tenantId,
+      depotId: currentUser.depotId,
+      createdAt: currentUser.createdAt,
+      twoFAEnabled: currentUser.twoFAEnabled,
+      preferences: currentUser.preferences,
+      isSuperAdmin: currentUser.isSuperAdmin,
+      metier: currentUser.tenant?.metier ?? null,
+      nomEntreprise: currentUser.tenant?.nomEntreprise ?? currentUser.tenant?.name ?? null,
+      statutAbonnement: currentUser.tenant?.statutAbonnement ?? null,
+      planType: currentUser.tenant?.planType ?? null,
+    };
+  }
+
+  async logout(userId: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { refreshTokenHash: null } });
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
   }
 
   async validateRefreshTokenFromCookie(token: string) {
@@ -173,27 +206,13 @@ export class AuthService {
       const payload = this.jwtService.verify(token, {
         secret: process.env.JWT_REFRESH_SECRET || 'refresh_secret_secure_2026',
       });
-
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
         include: { refreshTokens: true },
       });
-
-      if (
-        !user ||
-        !user.refreshTokenHash ||
-        !(await argon2.verify(user.refreshTokenHash, token))
-      ) {
-        return null;
-      }
-
-      const validRefreshToken = user.refreshTokens.find(
-        (rt) => rt.expiresAt > new Date(),
-      );
-      if (!validRefreshToken) {
-        return null;
-      }
-
+      if (!user || !user.refreshTokenHash || !(await argon2.verify(user.refreshTokenHash, token))) return null;
+      const validRefreshToken = user.refreshTokens.find((rt) => rt.expiresAt > new Date());
+      if (!validRefreshToken) return null;
       return user;
     } catch {
       return null;
@@ -201,17 +220,9 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    if (!refreshToken) {
-      throw new UnauthorizedException('Token de renouvellement manquant');
-    }
-
+    if (!refreshToken) throw new UnauthorizedException('Token de renouvellement manquant');
     const user = await this.validateRefreshTokenFromCookie(refreshToken);
-    if (!user) {
-      throw new UnauthorizedException(
-        'Token de renouvellement invalide ou expire',
-      );
-    }
-
+    if (!user) throw new UnauthorizedException('Token de renouvellement invalide ou expire');
     const payload = {
       sub: user.id,
       email: user.email,
@@ -219,15 +230,11 @@ export class AuthService {
       tenantId: user.tenantId,
       depotId: user.depotId ?? undefined,
     };
-
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    return { access_token: this.jwtService.sign(payload) };
   }
 
-  // Mise à jour du profil utilisateur
   async updateProfile(userId: string, updateProfileDto: any) {
-    const user = await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id: userId },
       data: {
         nom: updateProfileDto.nom,
@@ -247,91 +254,41 @@ export class AuthService {
         createdAt: true,
       },
     });
-
-    return user;
   }
 
-  // Upload de photo de profil
   async uploadAvatar(userId: string, file: Express.Multer.File) {
-    // Le fichier est déjà écrit sur disque par Multer (diskStorage) au moment
-    // où cette méthode est appelée — file.filename correspond au nom réel écrit.
     const avatarUrl = `/uploads/avatars/${file.filename}`;
-
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { avatar: avatarUrl },
       select: { avatar: true },
     });
-
     return { avatar: user.avatar };
   }
 
-  // Changement de mot de passe
   async changePassword(userId: string, changePasswordDto: any) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Utilisateur non trouvé');
-    }
-
-    const isCurrentPasswordValid = await bcrypt.compare(
-      changePasswordDto.currentPassword,
-      user.password,
-    );
-
-    if (!isCurrentPasswordValid) {
-      throw new BadRequestException('Mot de passe actuel incorrect');
-    }
-
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('Utilisateur non trouvé');
+    const isCurrentPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password);
+    if (!isCurrentPasswordValid) throw new BadRequestException('Mot de passe actuel incorrect');
     const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 12);
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
-
+    await this.prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } });
     return { message: 'Mot de passe changé avec succès' };
   }
 
-  // Activation/Désactivation 2FA
   async toggle2FA(userId: string, enabled: boolean) {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { twoFAEnabled: enabled },
-      select: { twoFAEnabled: true },
-    });
-
+    const user = await this.prisma.user.update({ where: { id: userId }, data: { twoFAEnabled: enabled }, select: { twoFAEnabled: true } });
     return { twoFAEnabled: user.twoFAEnabled };
   }
 
-  // Récupérer les préférences utilisateur
   async getPreferences(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { preferences: true },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Utilisateur non trouvé');
-    }
-
-    return user.preferences || {
-      emailNotifications: true,
-      darkMode: true,
-      language: 'fr',
-    };
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { preferences: true } });
+    if (!user) throw new UnauthorizedException('Utilisateur non trouvé');
+    return user.preferences || { emailNotifications: true, darkMode: true, language: 'fr' };
   }
 
-  // Mettre à jour les préférences utilisateur
   async updatePreferences(userId: string, preferencesDto: any) {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { preferences: preferencesDto },
-      select: { preferences: true },
-    });
-
+    const user = await this.prisma.user.update({ where: { id: userId }, data: { preferences: preferencesDto }, select: { preferences: true } });
     return user.preferences;
   }
 }
