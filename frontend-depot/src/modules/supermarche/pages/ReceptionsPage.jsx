@@ -21,10 +21,10 @@ const STATUTS_RECEPTION = [
 
 function StatutBadge({ statut }) {
   const s = STATUTS_RECEPTION.find(x => x.id === statut) || { id: 'UNKNOWN', label: statut || 'Inconnu', color: 'gray' };
-  const colors = { 
-    amber: 'bg-amber-500/20 text-amber-400', 
-    emerald: 'bg-emerald-500/20 text-emerald-400', 
-    blue: 'bg-blue-500/20 text-blue-400', 
+  const colors = {
+    amber: 'bg-amber-500/20 text-amber-400',
+    emerald: 'bg-emerald-500/20 text-emerald-400',
+    blue: 'bg-blue-500/20 text-blue-400',
     red: 'bg-red-500/20 text-red-400',
     gray: 'bg-gray-500/20 text-gray-400'
   };
@@ -35,18 +35,17 @@ export default function ReceptionsPage() {
   const { metier: metierParam } = useParams();
   const { metier: metierAuth, tenantId } = useAuth();
   const { depotId } = useDepot();
-  const metier = metierParam || metierAuth || 'supermarche';
-  const prefix = metier.toLowerCase().replace(/_/g, '-');
+  const metier = (metierParam || metierAuth || 'supermarche').toLowerCase().replace(/_/g, '-');
+  const isSupermarche = metier === 'supermarche';
   const queryClient = useQueryClient();
 
   const [formOpen, setFormOpen] = useState(false);
   const [isViewOnly, setIsViewOnly] = useState(false);
-  const [form, setForm] = useState({ 
-    fournisseurId: '', 
-    dateReception: new Date().toISOString().slice(0, 10), 
-    numBordereau: '', 
-    notes: '', 
-    depotId: depotId || '' 
+  const [form, setForm] = useState({
+    fournisseurId: '',
+    dateReception: new Date().toISOString().slice(0, 10),
+    numBordereau: '',
+    notes: ''
   });
 
   const { success, error: notifError } = useNotif();
@@ -62,93 +61,104 @@ export default function ReceptionsPage() {
   const setF = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
 
   useEffect(() => {
-    if (tenantId) {
-      api.get(`/${prefix}/fournisseurs`).then(r => setFournisseurs(r.data?.data || r.data || [])).catch(() => {});
-      api.get(`/${prefix}/articles`).then(r => setArticles(r.data?.data || r.data || [])).catch(() => {});
-    }
-  }, [prefix, tenantId]);
+    if (!tenantId || !depotId || !isSupermarche) return;
 
-  // Récupération principale
+    const params = { depotId };
+    Promise.all([
+      api.get('/supermarche/fournisseurs', { params }),
+      api.get('/supermarche/articles', { params }),
+    ]).then(([fournisseursRes, articlesRes]) => {
+      setFournisseurs(fournisseursRes.data?.data || fournisseursRes.data || []);
+      setArticles(articlesRes.data?.data || articlesRes.data || []);
+    }).catch((error) => {
+      console.error('Erreur chargement réception:', error);
+      notifError('Impossible de charger les fournisseurs et articles.', 'Échec');
+    });
+  }, [tenantId, depotId, isSupermarche, notifError]);
+
   const { data: receptionsData = [], isLoading: loading } = useQuery({
-    queryKey: ['supermarche-receptions', tenantId, prefix],
+    queryKey: ['supermarche-receptions', tenantId, depotId],
     queryFn: async () => {
-      const res = await api.get(`/${prefix}/receptions`);
+      const res = await api.get('/supermarche/receptions', { params: { depotId } });
       return res.data;
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && !!depotId && isSupermarche,
   });
-  
-  const receptions = Array.isArray(receptionsData?.data) ? receptionsData.data : (Array.isArray(receptionsData) ? receptionsData : []);
 
-  // Mutation : Validation
+  const receptions = Array.isArray(receptionsData?.data)
+    ? receptionsData.data
+    : (Array.isArray(receptionsData) ? receptionsData : []);
+
   const validateMutation = useMutation({
-    mutationFn: async (id) => {
-      const res = await api.patch(`/${prefix}/receptions/${id}`, { statut: 'VALIDEE' });
+    mutationFn: async (reception) => {
+      if (!reception?.id || !depotId) throw new Error('Réception ou dépôt invalide');
+      if (reception.depotId && String(reception.depotId) !== String(depotId)) {
+        throw new Error('Cette réception appartient à un autre dépôt');
+      }
+      const res = await api.patch(`/supermarche/receptions/${reception.id}`, {
+        statut: 'VALIDEE',
+        depotId,
+      });
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['supermarche-receptions'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['supermarche-articles'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['supermarche-stock'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-receptions'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-inventaire'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'] });
       success('Réception validée avec succès et stock mis à jour');
     },
-    onError: () => {
-      notifError('Erreur lors de la validation', 'Échec');
-    }
+    onError: (error) => notifError(error.response?.data?.message || error.message || 'Erreur lors de la validation', 'Échec'),
   });
 
-  // Mutation : Suppression
   const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const res = await api.delete(`/${prefix}/receptions/${id}`);
+    mutationFn: async (reception) => {
+      if (!reception?.id || !depotId) throw new Error('Réception ou dépôt invalide');
+      if (reception.depotId && String(reception.depotId) !== String(depotId)) {
+        throw new Error('Cette réception appartient à un autre dépôt');
+      }
+      const res = await api.delete(`/supermarche/receptions/${reception.id}`, { params: { depotId } });
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['supermarche-receptions'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-receptions'] });
       success('Brouillon de réception supprimé avec succès');
     },
-    onError: () => {
-      notifError('Impossible de supprimer ce brouillon.', 'Échec');
-    }
+    onError: (error) => notifError(error.response?.data?.message || error.message || 'Impossible de supprimer ce brouillon.', 'Échec'),
   });
 
-  // Filtrage et Pagination
-  const filtres = (receptions || []).filter(item =>
+  const filtres = receptions.filter(item =>
     !search || JSON.stringify(item).toLowerCase().includes(search.toLowerCase())
   );
 
-  const {
-    currentPage,
-    goToPage,
-    totalPages,
-    totalItems,
-    paginatedData: paginated,
-  } = usePagination(filtres, 10);
+  const { currentPage, goToPage, totalPages, totalItems, paginatedData: paginated } = usePagination(filtres, 10);
 
-  // Soumission
   const handleSubmit = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
     if (isViewOnly) return;
-    
-    const currentDepotId = depotId || form.depotId;
-    if (!currentDepotId) {
-      notifError('Veuillez sélectionner un dépôt de stockage.', 'Erreur');
-      return;
+    if (!depotId) return notifError('Aucun dépôt actif sélectionné.', 'Erreur');
+    if (!isSupermarche) return notifError('Cette page appartient au métier Supermarché.', 'Accès refusé');
+    if (!form.fournisseurId) return notifError('Veuillez sélectionner un fournisseur.', 'Formulaire incomplet');
+    if (!form.dateReception) return notifError('Veuillez renseigner la date de réception.', 'Formulaire incomplet');
+    if (!form.numBordereau.trim()) return notifError('Le N° de bon de commande / bordereau est requis.', 'Formulaire incomplet');
+
+    const lignesValides = lignes.filter(l => l.articleId && Number(l.qte) > 0 && Number(l.prixUnitaire) >= 0);
+    if (lignesValides.length === 0) {
+      return notifError('Veuillez ajouter au moins un article avec une quantité et un prix valides.', 'Formulaire incomplet');
     }
 
-    const lignesValides = lignes.filter(l => l.articleId !== '' && Number(l.qte) > 0);
-    if (lignesValides.length === 0) {
-      notifError('Veuillez ajouter au moins un article avec une quantité valide.', 'Formulaire incomplet');
-      return;
-    }
+    if (!editItem && !perm.canCreate) return notifError('Vous n’avez pas la permission de créer une réception.', 'Accès refusé');
+    if (editItem && !perm.canEdit) return notifError('Vous n’avez pas la permission de modifier une réception.', 'Accès refusé');
 
     setFormLoading(true);
     try {
       const payload = {
         fournisseurId: form.fournisseurId,
-        numBordereau: form.numBordereau,
-        notes: form.notes,
-        depotId: currentDepotId,
+        dateReception: form.dateReception,
+        numBordereau: form.numBordereau.trim(),
+        notes: form.notes.trim(),
+        depotId,
         lignes: lignesValides.map(l => ({
           articleId: l.articleId,
           quantiteLivree: Number(l.qte),
@@ -157,54 +167,65 @@ export default function ReceptionsPage() {
       };
 
       if (editItem) {
-        await api.patch(`/${prefix}/receptions/${editItem.id}`, payload);
+        if (editItem.depotId && String(editItem.depotId) !== String(depotId)) {
+          throw new Error('Impossible de modifier une réception d’un autre dépôt.');
+        }
+        await api.patch(`/supermarche/receptions/${editItem.id}`, payload);
         success('Réception modifiée avec succès');
       } else {
-        await api.post(`/${prefix}/receptions`, payload);
+        await api.post('/supermarche/receptions', payload);
         success('Réception créée avec succès');
       }
-      
+
       setFormOpen(false);
       setEditItem(null);
-      queryClient.invalidateQueries({ queryKey: ['supermarche-receptions'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-receptions'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'] });
     } catch (error) {
       console.error('Erreur soumission réception:', error);
-      notifError("Impossible d'enregistrer les données.", 'Échec');
+      notifError(error.response?.data?.message || error.message || "Impossible d'enregistrer les données.", 'Échec');
     } finally {
       setFormLoading(false);
     }
   };
 
-  const openCreate = () => { 
+  const openCreate = () => {
+    if (!depotId) return notifError('Aucun dépôt actif sélectionné.', 'Erreur');
+    if (!perm.canCreate) return notifError('Vous n’avez pas la permission de créer une réception.', 'Accès refusé');
     setEditItem(null);
     setIsViewOnly(false);
-    setForm({ 
-      fournisseurId: '', 
-      dateReception: new Date().toISOString().slice(0, 10), 
-      numBordereau: '', 
-      notes: '', 
-      depotId: depotId || '' 
-    }); 
-    setLignes([{ articleId: '', qte: 1, prixUnitaire: 0 }]); 
-    setFormOpen(true); 
+    setForm({
+      fournisseurId: '',
+      dateReception: new Date().toISOString().slice(0, 10),
+      numBordereau: '',
+      notes: ''
+    });
+    setLignes([{ articleId: '', qte: 1, prixUnitaire: 0 }]);
+    setFormOpen(true);
   };
 
   const openEdit = (reception, viewOnly = false) => {
+    if (!reception?.id) return;
+    if (reception.depotId && String(reception.depotId) !== String(depotId)) {
+      return notifError('Cette réception appartient à un autre dépôt.', 'Accès refusé');
+    }
+    if (!viewOnly && !perm.canEdit) return notifError('Vous n’avez pas la permission de modifier une réception.', 'Accès refusé');
+
     setEditItem(reception);
     setIsViewOnly(viewOnly);
     setForm({
       fournisseurId: reception.fournisseurId || '',
-      dateReception: reception.createdAt ? reception.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      dateReception: reception.dateReception ? reception.dateReception.slice(0, 10) : (reception.createdAt ? reception.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10)),
       numBordereau: reception.numBordereau || '',
-      notes: reception.notes || '',
-      depotId: reception.depotId || depotId || ''
+      notes: reception.notes || ''
     });
-    
-    if (reception.lignes && reception.lignes.length > 0) {
+
+    if (reception.lignes?.length) {
       setLignes(reception.lignes.map(l => ({
-        articleId: l.articleId,
-        qte: l.quantiteLivree || l.quantite || 1,
-        prixUnitaire: l.prixAchatUnitaire || l.prixUnitaire || 0
+        articleId: l.articleId || '',
+        qte: l.quantiteLivree ?? l.quantite ?? 1,
+        prixUnitaire: l.prixAchatUnitaire ?? l.prixUnitaire ?? 0
       })));
     } else {
       setLignes([{ articleId: '', qte: 1, prixUnitaire: 0 }]);
@@ -212,225 +233,71 @@ export default function ReceptionsPage() {
     setFormOpen(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (reception) => {
+    if (!perm.canDelete) return notifError('Vous n’avez pas la permission de supprimer une réception.', 'Accès refusé');
+    if (!reception?.id) return;
+    if (reception.statut !== 'EN_ATTENTE' && reception.statut !== 'EN_COURS') {
+      return notifError('Seuls les brouillons de réception peuvent être supprimés.', 'Action refusée');
+    }
+    if (reception.depotId && String(reception.depotId) !== String(depotId)) {
+      return notifError('Cette réception appartient à un autre dépôt.', 'Accès refusé');
+    }
     if (window.confirm('Êtes-vous sûr de vouloir supprimer définitivement ce brouillon de réception ?')) {
-      deleteMutation.mutate(id);
+      deleteMutation.mutate(reception);
     }
   };
 
   const addLigne = () => {
     if (isViewOnly) return;
-    setLignes([...lignes, { articleId: '', qte: 1, prixUnitaire: 0 }]);
+    setLignes(prev => [...prev, { articleId: '', qte: 1, prixUnitaire: 0 }]);
   };
-  
+
   const removeLigne = (i) => {
-    if (isViewOnly) return;
-    if (lignes.length > 1) {
-      setLignes(lignes.filter((_, idx) => idx !== i));
-    }
+    if (isViewOnly || lignes.length <= 1) return;
+    setLignes(prev => prev.filter((_, idx) => idx !== i));
   };
 
   const updateLigne = (i, field, value) => {
     if (isViewOnly) return;
-    const copy = [...lignes];
-    copy[i] = { ...copy[i], [field]: value };
-    
-    if (field === 'articleId') {
-      const art = articles.find(x => x.id === value);
-      if (art) copy[i].prixUnitaire = art.prixAchat || 0;
-    }
-    setLignes(copy);
+    setLignes(prev => {
+      const copy = [...prev];
+      copy[i] = { ...copy[i], [field]: value };
+      if (field === 'articleId') {
+        const art = articles.find(x => x.id === value);
+        if (art) copy[i].prixUnitaire = art.prixAchat ?? art.prixAchatUnitaire ?? 0;
+      }
+      return copy;
+    });
   };
 
   const total = lignes.reduce((s, l) => s + (Number(l.qte) || 0) * (Number(l.prixUnitaire) || 0), 0);
 
+  if (!isSupermarche) return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+  if (!depotId) return <div className="p-8 text-center text-amber-400 font-semibold">Sélectionnez un dépôt actif pour consulter les réceptions.</div>;
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-black text-white">Réceptions</h1>
-          <p className="text-slate-400 text-sm mt-1">{totalItems} réception{totalItems !== 1 ? 's' : ''}</p>
-        </div>
-        {perm.canCreate && (
-          <button onClick={openCreate}
-            className="bg-amber-500 hover:bg-amber-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20 cursor-pointer">
-            + Nouvelle Réception
-          </button>
-        )}
+        <div><h1 className="text-2xl font-black text-white">Réceptions</h1><p className="text-slate-400 text-sm mt-1">{totalItems} réception{totalItems !== 1 ? 's' : ''}</p></div>
+        {perm.canCreate && <button onClick={openCreate} className="bg-amber-500 hover:bg-amber-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20 cursor-pointer"><Plus size={16} className="inline mr-1" />Nouvelle Réception</button>}
       </div>
 
-      <div className="mb-4">
-        <input 
-          type="text" 
-          placeholder="Rechercher une réception (Fournisseur, BC...)" 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md bg-slate-800/60 border border-slate-700/50 text-white text-sm rounded-xl px-4 py-2.5 outline-none focus:border-amber-500"
-        />
-      </div>
+      <div className="mb-4"><input type="text" placeholder="Rechercher une réception (Fournisseur, BC...)" value={search} onChange={e => { setSearch(e.target.value); goToPage(1); }} className="w-full max-w-md bg-slate-800/60 border border-slate-700/50 text-white text-sm rounded-xl px-4 py-2.5 outline-none focus:border-amber-500" /></div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
-      ) : totalItems === 0 ? (
-        <div className="text-center py-20"><Package className="w-16 h-16 mx-auto text-slate-500" /><p className="text-slate-400 font-semibold mt-4">Aucune réception enregistrée</p></div>
-      ) : (
-        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-900/50">
-              <tr className="text-slate-500 text-xs font-bold uppercase tracking-widest">
-                <th className="text-left px-5 py-4">Date</th>
-                <th className="text-left px-5 py-4">Fournisseur</th>
-                <th className="text-left px-5 py-4">N° BC</th>
-                <th className="text-right px-5 py-4">Montant</th>
-                <th className="text-center px-5 py-4">Statut</th>
-                <th className="text-center px-5 py-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/50">
-              {paginated.map(r => {
-                const f = fournisseurs.find(x => x.id === r.fournisseurId);
-                const isEditable = r.statut === 'EN_ATTENTE' || r.statut === 'EN_COURS';
+      {loading ? <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div> : totalItems === 0 ? <div className="text-center py-20"><Package className="w-16 h-16 mx-auto text-slate-500" /><p className="text-slate-400 font-semibold mt-4">Aucune réception enregistrée</p></div> : <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden"><table className="w-full"><thead className="bg-slate-900/50"><tr className="text-slate-500 text-xs font-bold uppercase tracking-widest"><th className="text-left px-5 py-4">Date</th><th className="text-left px-5 py-4">Fournisseur</th><th className="text-left px-5 py-4">N° BC</th><th className="text-right px-5 py-4">Montant</th><th className="text-center px-5 py-4">Statut</th><th className="text-center px-5 py-4">Actions</th></tr></thead><tbody className="divide-y divide-slate-700/50">{paginated.map(r => { const f = fournisseurs.find(x => x.id === r.fournisseurId); const isEditable = r.statut === 'EN_ATTENTE' || r.statut === 'EN_COURS'; return <tr key={r.id} className="hover:bg-slate-700/20 transition-colors"><td className="px-5 py-4 text-slate-300 text-sm">{r.dateReception ? new Date(r.dateReception).toLocaleDateString('fr-FR') : (r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '')}</td><td className="px-5 py-4 text-white font-semibold text-sm">{f?.nom || 'Fournisseur inconnu'}</td><td className="px-5 py-4 text-slate-400 text-sm">{r.numBordereau || 'N/A'}</td><td className="px-5 py-4 text-right text-amber-400 font-bold text-sm">{Number(r.montant || 0).toLocaleString('fr-FR')} F</td><td className="px-5 py-4 text-center"><StatutBadge statut={r.statut} /></td><td className="px-5 py-4"><div className="flex items-center justify-center gap-3"><button onClick={() => openEdit(r, true)} className="text-slate-400 hover:text-white transition-colors cursor-pointer" title="Consulter les articles"><Eye size={16} /></button>{isEditable ? <>{perm.canEdit && <button onClick={() => openEdit(r, false)} className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer" title="Modifier"><Edit3 size={16} /></button>}{perm.canDelete && <button onClick={() => handleDelete(r)} className="text-red-400 hover:text-red-300 transition-colors cursor-pointer" title="Supprimer"><Trash2 size={16} /></button>}{perm.canEdit && <button onClick={() => validateMutation.mutate(r)} disabled={validateMutation.isPending} className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-3 py-1 rounded-lg text-xs transition-all cursor-pointer">{validateMutation.isPending ? 'En cours...' : 'Valider'}</button>}</> : <div className="flex items-center gap-1 text-xs text-slate-500 font-medium select-none bg-slate-900/40 px-2 py-1 rounded-md border border-slate-700/30"><Lock className="w-4 h-4" /> Enregistré</div>}</div></td></tr>; })}</tbody></table></div>}
 
-                return (
-                  <tr key={r.id} className="hover:bg-slate-700/20 transition-colors">
-                    <td className="px-5 py-4 text-slate-300 text-sm">{r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : ''}</td>
-                    <td className="px-5 py-4 text-white font-semibold text-sm">{f?.nom || 'Fournisseur inconnu'}</td>
-                    <td className="px-5 py-4 text-slate-400 text-sm">{r.numBordereau || 'N/A'}</td>
-                    <td className="px-5 py-4 text-right text-amber-400 font-bold text-sm">
-                      {(r.montant || 0).toLocaleString('fr-FR')} F
-                    </td>
-                    <td className="px-5 py-4 text-center"><StatutBadge statut={r.statut} /></td>
-                    
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <button 
-                          onClick={() => openEdit(r, true)} 
-                          className="text-slate-400 hover:text-white transition-colors cursor-pointer" 
-                          title="Consulter les articles"
-                        >
-                          <Eye size={16} />
-                        </button>
+      {totalPages > 1 && <div className="flex items-center justify-center gap-2 mt-5"><button disabled={currentPage <= 1} onClick={() => goToPage(currentPage - 1)} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40">◀ Précédent</button><span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span><button disabled={currentPage >= totalPages} onClick={() => goToPage(currentPage + 1)} className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40">Suivant ▶</button></div>}
 
-                        {isEditable ? (
-                          <>
-                            <button
-                              onClick={() => validateMutation.mutate(r.id)}
-                              disabled={validateMutation.isPending}
-                              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-3 py-1 rounded-lg text-xs transition-all cursor-pointer"
-                            >
-                              {validateMutation.isPending ? 'En cours...' : 'Valider'}
-                            </button>
-
-                            {/* Bouton Modifier Direct sans blocage de permission pour les Brouillons */}
-                            <button 
-                              onClick={() => openEdit(r, false)} 
-                              className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer" 
-                              title="Modifier"
-                            >
-                              <Edit3 size={16} />
-                            </button>
-
-                            {perm.canDelete && (
-                              <button onClick={() => handleDelete(r.id)} className="text-red-400 hover:text-red-300 transition-colors cursor-pointer" title="Supprimer">
-                                <Trash2 size={16} />
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-1 text-xs text-slate-500 font-medium select-none bg-slate-900/40 px-2 py-1 rounded-md border border-slate-700/30">
-                            <Lock className="w-4 h-4" /> Enregistré
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* MODAL DU FORMULAIRE */}
-      <FormModal 
-        isOpen={formOpen} 
-        onClose={() => setFormOpen(false)} 
-        onSubmit={handleSubmit} 
-        title={isViewOnly ? "Détails de la réception" : editItem ? "Modifier la réception" : "Nouvelle réception"} 
-        loading={formLoading} 
-        size="lg" 
-        submitLabel={isViewOnly ? null : "Enregistrer la réception"}
-      >
+      <FormModal isOpen={formOpen} onClose={() => { if (!formLoading) setFormOpen(false); }} onSubmit={handleSubmit} title={isViewOnly ? 'Détails de la réception' : editItem ? 'Modifier la réception' : 'Nouvelle réception'} loading={formLoading} size="lg" submitLabel={isViewOnly ? null : 'Enregistrer la réception'}>
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Fournisseur *</label>
-            <select required disabled={isViewOnly} value={form.fournisseurId} onChange={setF('fournisseurId')}
-              className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500">
-              <option value=""> Choisir </option>
-              {fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Date de réception *</label>
-            <input required disabled={isViewOnly} type="date" value={form.dateReception} onChange={setF('dateReception')}
-              className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-4 py-3 text-sm outline-none" />
-          </div>
-          <div>
-            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">N° Bon de commande / Bordereau *</label>
-            <input required disabled={isViewOnly} value={form.numBordereau} onChange={setF('numBordereau')} placeholder="Ex: BC-2026-XXXX"
-              className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-4 py-3 text-sm outline-none" />
-          </div>
-          <div>
-            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Notes / Observations</label>
-            <input disabled={isViewOnly} value={form.notes} onChange={setF('notes')} placeholder="Renseignements complémentaires..."
-              className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-4 py-3 text-sm outline-none" />
-          </div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Fournisseur *</label><select required disabled={isViewOnly || formLoading} value={form.fournisseurId} onChange={setF('fournisseurId')} className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500"><option value="">Choisir</option>{fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}</select></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Date de réception *</label><input required disabled={isViewOnly || formLoading} type="date" value={form.dateReception} onChange={setF('dateReception')} className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-4 py-3 text-sm outline-none" /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">N° Bon de commande / Bordereau *</label><input required disabled={isViewOnly || formLoading} value={form.numBordereau} onChange={setF('numBordereau')} placeholder="Ex: BC-2026-XXXX" className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-4 py-3 text-sm outline-none" /></div>
+          <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Notes / Observations</label><input disabled={isViewOnly || formLoading} value={form.notes} onChange={setF('notes')} placeholder="Renseignements complémentaires..." className="w-full bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-4 py-3 text-sm outline-none" /></div>
         </div>
 
-        <div className="border-t border-slate-700/60 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest">Articles reçus</label>
-            {!isViewOnly && (
-              <button type="button" onClick={addLigne} className="flex items-center gap-1 text-amber-400 hover:text-amber-300 text-xs font-bold transition-colors">
-                <Plus size={14} /> Ajouter une ligne
-              </button>
-            )}
-          </div>
-          
-          <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1 style-scrollbar">
-            {lignes.map((l, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center bg-slate-900/30 p-1.5 rounded-xl border border-slate-800/40">
-                <select required disabled={isViewOnly} value={l.articleId} onChange={e => updateLigne(i, 'articleId', e.target.value)}
-                  className="col-span-6 bg-slate-800 border border-slate-600 disabled:opacity-60 text-white rounded-xl px-3 py-2.5 text-xs outline-none focus:border-amber-500">
-                  <option value=""> Sélectionner l'article... </option>
-                  {articles.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.designation} {p.codeBarres ? `(${p.codeBarres})` : ''}
-                    </option>
-                  ))}
-                </select>
-                
-                <input type="number" min="1" required disabled={isViewOnly} value={l.qte} onChange={e => updateLigne(i, 'qte', e.target.value)}
-                  placeholder="Qté"
-                  className="col-span-2 bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-3 py-2.5 text-xs outline-none text-center" />
-                
-                <input type="number" min="0" required disabled={isViewOnly} value={l.prixUnitaire} onChange={e => updateLigne(i, 'prixUnitaire', e.target.value)}
-                  placeholder="Prix unitaire"
-                  className="col-span-3 bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-3 py-2.5 text-xs outline-none text-right" />
-                
-                <button type="button" onClick={() => removeLigne(i)} disabled={lignes.length === 1 || isViewOnly}
-                  className="col-span-1 text-red-400 hover:text-red-300 disabled:opacity-20 flex justify-center transition-colors">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 pt-3 border-t border-slate-800 flex justify-end items-center gap-2">
-            <span className="text-slate-400 text-sm font-medium">Montant total de la commande :</span>
-            <span className="text-amber-500 font-black text-xl">{total.toLocaleString('fr-FR')} F</span>
-          </div>
-        </div>
+        <div className="px-4 py-3 mb-4 bg-slate-900/50 border border-slate-700/50 rounded-xl text-slate-400 text-sm">Dépôt actif : <span className="text-white font-bold">{depotId}</span></div>
+        <div className="border-t border-slate-700/60 pt-4"><div className="flex items-center justify-between mb-3"><label className="text-slate-400 text-xs font-bold uppercase tracking-widest">Articles reçus</label>{!isViewOnly && <button type="button" onClick={addLigne} className="flex items-center gap-1 text-amber-400 hover:text-amber-300 text-xs font-bold transition-colors"><Plus size={14} /> Ajouter une ligne</button>}</div><div className="space-y-2 max-h-[250px] overflow-y-auto pr-1 style-scrollbar">{lignes.map((l, i) => <div key={`${l.articleId || 'new'}-${i}`} className="grid grid-cols-12 gap-2 items-center bg-slate-900/30 p-1.5 rounded-xl border border-slate-800/40"><select required disabled={isViewOnly || formLoading} value={l.articleId} onChange={e => updateLigne(i, 'articleId', e.target.value)} className="col-span-6 bg-slate-800 border border-slate-600 disabled:opacity-60 text-white rounded-xl px-3 py-2.5 text-xs outline-none focus:border-amber-500"><option value="">Sélectionner l'article...</option>{articles.map(p => <option key={p.id} value={p.id}>{p.designation} {p.codeBarres ? `(${p.codeBarres})` : ''}</option>)}</select><input type="number" min="1" step="1" required disabled={isViewOnly || formLoading} value={l.qte} onChange={e => updateLigne(i, 'qte', e.target.value)} placeholder="Qté" className="col-span-2 bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-3 py-2.5 text-xs outline-none text-center" /><input type="number" min="0" step="0.01" required disabled={isViewOnly || formLoading} value={l.prixUnitaire} onChange={e => updateLigne(i, 'prixUnitaire', e.target.value)} placeholder="Prix unitaire" className="col-span-3 bg-slate-800 border border-slate-600 disabled:opacity-60 focus:border-amber-500 text-white rounded-xl px-3 py-2.5 text-xs outline-none text-right" /><button type="button" onClick={() => removeLigne(i)} disabled={lignes.length === 1 || isViewOnly || formLoading} className="col-span-1 text-red-400 hover:text-red-300 disabled:opacity-20 flex justify-center transition-colors"><Trash2 size={14} /></button></div>)}</div><div className="mt-4 pt-3 border-t border-slate-800 flex justify-end items-center gap-2"><span className="text-slate-400 text-sm font-medium">Montant total de la commande :</span><span className="text-amber-500 font-black text-xl">{total.toLocaleString('fr-FR')} F</span></div></div>
       </FormModal>
     </div>
   );
