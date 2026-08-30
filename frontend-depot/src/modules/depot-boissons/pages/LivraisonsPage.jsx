@@ -29,7 +29,7 @@ export default function LivraisonsPage() {
       const res = await depotApi.getLivraisons({ page: 1, limit: LIMIT, statut: filtreStatut || undefined });
       return res.data?.data ?? res.data ?? [];
     },
-    enabled: metier === 'DEPOT_BOISSONS' && !!depotId,
+    enabled: metier === 'DEPOT_BOISSONS' && Boolean(depotId),
   });
 
   const { data: providersData = [] } = useQuery({
@@ -38,14 +38,14 @@ export default function LivraisonsPage() {
       const res = await depotApi.getFournisseurs({ limit: 100 });
       return res.data?.data ?? res.data ?? [];
     },
-    enabled: showModal && !!depotId,
+    enabled: showModal && Boolean(depotId),
   });
 
   const livraisons = Array.isArray(deliveriesData) ? deliveriesData : (deliveriesData?.data ?? []);
   const { currentPage, setCurrentPage, nextPage, prevPage, totalPages, totalItems, paginatedData: paginated } = usePagination(livraisons, 10);
 
   const createMutation = useMutation({
-    mutationFn: (data) => depotApi.createLivraison({ ...data, depotId }),
+    mutationFn: (data) => depotApi.createLivraison(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-livraisons', depotId] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
