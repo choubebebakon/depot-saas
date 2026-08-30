@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, IsOptional, IsString, IsNotEmpty, Min } from 'class-validator';
+import { IsBoolean, IsDateString, IsInt, IsNumber, IsOptional, IsString, IsNotEmpty, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateArticleDto {
@@ -46,9 +46,15 @@ export class CreateArticleDto {
   margeBouteille?: number;
 
   @IsOptional()
+  @IsBoolean()
   estConsigne?: boolean;
 
   @IsOptional()
   @IsString()
   photoUrl?: string;
+
+  /** Date et heure de péremption de l'article, transmises en ISO 8601. */
+  @IsOptional()
+  @IsDateString()
+  datePeremption?: string;
 }
