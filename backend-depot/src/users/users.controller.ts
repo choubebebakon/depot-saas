@@ -12,6 +12,7 @@ import {
 import { RoleUser } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UsersService } from './users.service';
+import { buildAuditActor } from '../audit/audit-actor.util';
 
 @Controller('users')
 @Roles(RoleUser.PATRON, RoleUser.GERANT)
@@ -32,7 +33,7 @@ export class UsersController {
     @Req() req: any,
   ) {
     const tenantId = req.user?.tenantId;
-    return this.usersService.create({ ...body, tenantId });
+    return this.usersService.create({ ...body, tenantId }, buildAuditActor(req));
   }
 
   // Création d'un employé (alias de POST / avec rôle imposé)
@@ -50,7 +51,7 @@ export class UsersController {
     @Req() req: any,
   ) {
     const tenantId = req.user?.tenantId;
-    return this.usersService.create({ ...body, tenantId });
+    return this.usersService.create({ ...body, tenantId }, buildAuditActor(req));
   }
 
   @Get()
@@ -78,7 +79,12 @@ export class UsersController {
     @Body() body: { isActive: boolean },
     @Req() req: any,
   ) {
-    return this.usersService.updateStatus(id, body.isActive, req.user);
+    return this.usersService.updateStatus(
+      id,
+      body.isActive,
+      req.user.tenantId,
+      buildAuditActor(req),
+    );
   }
 
   // Mise à jour d'un utilisateur (rôle, nom, dépôt)
@@ -88,12 +94,17 @@ export class UsersController {
     @Body() body: { nom?: string; role?: RoleUser; depotId?: string },
     @Req() req: any,
   ) {
-    return this.usersService.update(id, body, req.user);
+    return this.usersService.update(
+      id,
+      body,
+      req.user.tenantId,
+      buildAuditActor(req),
+    );
   }
 
   // Suppression d'un utilisateur
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: any) {
-    return this.usersService.remove(id, req.user);
+    return this.usersService.remove(id, req.user.tenantId, buildAuditActor(req));
   }
 }

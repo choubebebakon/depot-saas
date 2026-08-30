@@ -5,6 +5,13 @@ export interface ScopeContext {
   tenantId: string | null;
   depotId: string | null;
   role: string | null;
+  // Ajoutés pour alimenter automatiquement le Journal Audit (requestId
+  // pour corréler plusieurs lignes issues d'une même requête HTTP,
+  // metier dérivé du préfixe d'URL) sans devoir modifier chaque appel
+  // logEvent() des services métier — même mécanisme de fallback que
+  // tenantId/depotId ci-dessous.
+  requestId?: string | null;
+  metier?: string | null;
 }
 
 @Injectable()
@@ -37,6 +44,8 @@ export class DepotScopeService {
         tenantId: 'PUBLIC',
         depotId: null,
         role: 'GUEST',
+        requestId: null,
+        metier: null,
       }
     );
   }
@@ -53,5 +62,19 @@ export class DepotScopeService {
    */
   getDepotId(): string | null {
     return this.getScope().depotId;
+  }
+
+  /**
+   * Retourne l'identifiant de requête courant (pour corrélation d'audit).
+   */
+  getRequestId(): string | null {
+    return this.getScope().requestId ?? null;
+  }
+
+  /**
+   * Retourne le métier courant, dérivé du préfixe d'URL.
+   */
+  getMetier(): string | null {
+    return this.getScope().metier ?? null;
   }
 }

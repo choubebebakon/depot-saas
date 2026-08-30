@@ -1,17 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { RoleUser } from '@prisma/client';
+import { RoleUser, AuditSeverite } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions.constants';
-
-interface ActorContext {
-  userId?: string;
-  email?: string;
-  role?: string;
-  tenantId?: string;
-  depotId?: string | null;
-}
+import { AuditActor } from '../audit/audit-actor.util';
 
 @Injectable()
 export class UsersService {
@@ -21,16 +14,19 @@ export class UsersService {
   ) {}
 
   // Création d'un user avec mot de passe hashé automatiquement
-  async create(data: {
-    email: string;
-    password: string;
-    role: RoleUser;
-    tenantId: string;
-    nom?: string;
-    depotId?: string;
-  }) {
+  async create(
+    data: {
+      email: string;
+      password: string;
+      role: RoleUser;
+      tenantId: string;
+      nom?: string;
+      depotId?: string;
+    },
+    actor?: AuditActor,
+  ) {
     const hashedPassword = await bcrypt.hash(data.password, 12);
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         email: data.email,
         password: hashedPassword,
@@ -40,18 +36,44 @@ export class UsersService {
         depotId: data.depotId ?? null,
       },
     });
+
+    if (actor && data.tenantId) {
+      await this.auditService
+        .logEvent({
+          tenantId: data.tenantId,
+          depotId: data.depotId ?? actor.depotId ?? null,
+          actorUserId: actor.userId,
+          actorEmail: actor.email,
+          actorRole: actor.role,
+          action: AUDIT_ACTIONS.UTILISATEUR_CREE,
+          severite: AuditSeverite.ATTENTION,
+          targetType: 'User',
+          targetId: user.id,
+          reference: user.email,
+          description: `Utilisateur ${user.email} créé (rôle ${user.role})`,
+          valeurApres: { email: user.email, role: user.role, depotId: user.depotId },
+          ipAddress: actor.ip,
+          userAgent: actor.userAgent,
+        })
+        .catch((err) => console.error('[Audit] Échec log UTILISATEUR_CREE:', err));
+    }
+
+    return user;
   }
 
   // Alias pour la création d'employés depuis la page Équipe
-  async createEmployee(data: {
-    email: string;
-    password: string;
-    role: RoleUser;
-    tenantId: string;
-    nom?: string;
-    depotId?: string;
-  }) {
-    return this.create(data);
+  async createEmployee(
+    data: {
+      email: string;
+      password: string;
+      role: RoleUser;
+      tenantId: string;
+      nom?: string;
+      depotId?: string;
+    },
+    actor?: AuditActor,
+  ) {
+    return this.create(data, actor);
   }
 
   async findAll(tenantId: string, depotId?: string) {
@@ -118,15 +140,30 @@ export class UsersService {
   }
 
   // Activation ou désactivation d'un utilisateur
-  async updateStatus(id: string, isActive: boolean, actor?: ActorContext) {
-    const avant = await this.prisma.user.findUnique({
-      where: { id },
-      select: { isActive: true },
+  async updateStatus(
+    id: string,
+    isActive: boolean,
+    tenantId: string,
+    actor?: AuditActor,
+  ) {
+    // SÉCURITÉ : `where: { id }` seul (sans tenantId) permettait à un
+    // GERANT de désactiver un utilisateur de N'IMPORTE QUEL AUTRE TENANT
+    // en devinant/énumérant un UUID — même faille que celle corrigée sur
+    // create(), jamais traitée ici.
+    const avant = await this.prisma.user.findFirst({
+      where: { id, tenantId },
+      select: { isActive: true, email: true },
     });
+    if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
-    const user = await this.prisma.user.update({
-      where: { id },
+    const result = await this.prisma.user.updateMany({
+      where: { id, tenantId },
       data: { isActive },
+    });
+    if (result.count === 0) throw new NotFoundException('Utilisateur introuvable');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -134,23 +171,30 @@ export class UsersService {
         nom: true,
         isActive: true,
         tenantId: true,
+        depotId: true,
       },
     });
 
-    if (actor?.tenantId) {
-      await this.auditService.logEvent({
-        tenantId: actor.tenantId,
-        depotId: actor.depotId ?? null,
-        actorUserId: actor.userId ?? null,
-        actorEmail: actor.email ?? null,
-        actorRole: actor.role ?? null,
-        action: AUDIT_ACTIONS.UTILISATEUR_DESACTIVE,
-        targetType: 'User',
-        targetId: user.id,
-        description: `Statut de ${user.email} : ${avant?.isActive} → ${user.isActive}`,
-        valeurAvant: avant,
-        valeurApres: { isActive: user.isActive },
-      });
+    if (actor) {
+      await this.auditService
+        .logEvent({
+          tenantId,
+          depotId: user?.depotId ?? actor.depotId ?? null,
+          actorUserId: actor.userId,
+          actorEmail: actor.email,
+          actorRole: actor.role,
+          action: AUDIT_ACTIONS.UTILISATEUR_DESACTIVE,
+          severite: AuditSeverite.ATTENTION,
+          targetType: 'User',
+          targetId: id,
+          reference: avant.email,
+          description: `Statut de ${avant.email} : ${avant.isActive} → ${isActive}`,
+          valeurAvant: { isActive: avant.isActive },
+          valeurApres: { isActive },
+          ipAddress: actor.ip,
+          userAgent: actor.userAgent,
+        })
+        .catch((err) => console.error('[Audit] Échec log UTILISATEUR_DESACTIVE:', err));
     }
 
     return user;
@@ -160,16 +204,23 @@ export class UsersService {
   async update(
     id: string,
     data: { nom?: string; role?: any; depotId?: string },
-    actor?: ActorContext,
+    tenantId: string,
+    actor?: AuditActor,
   ) {
-    const avant = await this.prisma.user.findUnique({
-      where: { id },
-      select: { nom: true, role: true, depotId: true },
+    const avant = await this.prisma.user.findFirst({
+      where: { id, tenantId },
+      select: { nom: true, role: true, depotId: true, email: true },
     });
+    if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
-    const user = await this.prisma.user.update({
-      where: { id },
+    const result = await this.prisma.user.updateMany({
+      where: { id, tenantId },
       data,
+    });
+    if (result.count === 0) throw new NotFoundException('Utilisateur introuvable');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -181,48 +232,60 @@ export class UsersService {
       },
     });
 
-    if (actor?.tenantId) {
-      await this.auditService.logEvent({
-        tenantId: actor.tenantId,
-        depotId: actor.depotId ?? null,
-        actorUserId: actor.userId ?? null,
-        actorEmail: actor.email ?? null,
-        actorRole: actor.role ?? null,
-        action: AUDIT_ACTIONS.UTILISATEUR_MODIFIE,
-        targetType: 'User',
-        targetId: user.id,
-        description: `Utilisateur ${user.email} modifié`,
-        valeurAvant: avant,
-        valeurApres: data,
-      });
+    if (actor) {
+      await this.auditService
+        .logEvent({
+          tenantId,
+          depotId: user?.depotId ?? actor.depotId ?? null,
+          actorUserId: actor.userId,
+          actorEmail: actor.email,
+          actorRole: actor.role,
+          action: AUDIT_ACTIONS.UTILISATEUR_MODIFIE,
+          severite: AuditSeverite.INFO,
+          targetType: 'User',
+          targetId: id,
+          reference: avant.email,
+          description: `Utilisateur ${avant.email} modifié`,
+          valeurAvant: avant,
+          valeurApres: data,
+          ipAddress: actor.ip,
+          userAgent: actor.userAgent,
+        })
+        .catch((err) => console.error('[Audit] Échec log UTILISATEUR_MODIFIE:', err));
     }
 
     return user;
   }
 
   // Suppression d'un utilisateur
-  async remove(id: string, actor?: ActorContext) {
-    const avant = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true, email: true, role: true, nom: true, tenantId: true },
+  async remove(id: string, tenantId: string, actor?: AuditActor) {
+    const avant = await this.prisma.user.findFirst({
+      where: { id, tenantId },
+      select: { id: true, email: true, role: true, nom: true, depotId: true },
     });
+    if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
     const user = await this.prisma.user.delete({ where: { id } });
 
-    if (actor?.tenantId && avant) {
-      await this.auditService.logEvent({
-        tenantId: actor.tenantId,
-        depotId: actor.depotId ?? null,
-        actorUserId: actor.userId ?? null,
-        actorEmail: actor.email ?? null,
-        actorRole: actor.role ?? null,
-        action: AUDIT_ACTIONS.SUPPRESSION_UTILISATEUR,
-        severite: 'ATTENTION',
-        targetType: 'User',
-        targetId: id,
-        description: `Suppression de l'utilisateur ${avant.email}`,
-        valeurAvant: avant,
-      });
+    if (actor) {
+      await this.auditService
+        .logEvent({
+          tenantId,
+          depotId: avant.depotId ?? actor.depotId ?? null,
+          actorUserId: actor.userId,
+          actorEmail: actor.email,
+          actorRole: actor.role,
+          action: AUDIT_ACTIONS.SUPPRESSION_UTILISATEUR,
+          severite: AuditSeverite.CRITIQUE,
+          targetType: 'User',
+          targetId: id,
+          reference: avant.email,
+          description: `Suppression de l'utilisateur ${avant.email} (rôle ${avant.role})`,
+          valeurAvant: avant,
+          ipAddress: actor.ip,
+          userAgent: actor.userAgent,
+        })
+        .catch((err) => console.error('[Audit] Échec log SUPPRESSION_UTILISATEUR:', err));
     }
 
     return user;

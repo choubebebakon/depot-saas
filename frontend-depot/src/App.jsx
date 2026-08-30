@@ -45,6 +45,8 @@ const NotificationsPage = lazy(() => import('./core/notifications/NotificationsP
 const SuperAdminLayout = lazy(() => import('./layouts/SuperAdminLayout'));
 const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
 const SuperAdminSupport = lazy(() => import('./pages/superadmin/SuperAdminSupport'));
+const SuperAdminUsers = lazy(() => import('./pages/superadmin/SuperAdminUsers'));
+const SuperAdminAnalytics = lazy(() => import('./pages/superadmin/SuperAdminAnalytics'));
 
 // Importation des routes par métier
 const DepotBoissonsRoutes = lazy(() => import('./modules/depot-boissons/routes'));
@@ -504,8 +506,8 @@ function AppRoutes() {
           >
             <Route path="dashboard" element={<SuperAdminDashboard />} />
             <Route path="support" element={<SuperAdminSupport />} />
-            <Route path="users" element={<div className="p-6 text-white">Gestion des utilisateurs (à venir)</div>} />
-            <Route path="analytics" element={<div className="p-6 text-white">Analytics avancés (à venir)</div>} />
+            <Route path="users" element={<SuperAdminUsers />} />
+            <Route path="analytics" element={<SuperAdminAnalytics />} />
           </Route>
 
           {/* Route par défaut globale si l'URL ne correspond à rien */}

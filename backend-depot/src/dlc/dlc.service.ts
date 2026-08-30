@@ -144,4 +144,8 @@ export class DlcService {
       include: { article: true, depot: true },
     });
   }
+
+  async deleteLot(id: string, tenantId: string) {
+    return this.prisma.lotStock.deleteMany({ where: { id, tenantId } });
+  }
 }

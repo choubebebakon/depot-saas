@@ -160,6 +160,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      this.logger.error(
+        `PrismaClientKnownRequestError: code=${exception.code}, meta=${JSON.stringify(exception.meta)}, message=${exception.message}`,
+      );
+
       if (exception.code === 'P2002') {
         return 'Une ressource avec cette valeur existe deja.';
       }

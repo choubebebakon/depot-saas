@@ -17,6 +17,7 @@ import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { buildAuditActor } from '../../audit/audit-actor.util';
 
 @Controller('depot-boissons')
 @Metier(MetierType.DEPOT_BOISSONS)
@@ -85,28 +86,31 @@ export class DepotBoissonsController {
   @Post('stock/entree')
   @RequirePermission('stock_articles', 'write')
   async entreStock(@Req() req: any, @Body() data: any) {
-    return this.service.entreStock(this.getTenantId(req), {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.entreStock(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   @Post('stock/sortie')
   @RequirePermission('stock_articles', 'write')
   async sortieStock(@Req() req: any, @Body() data: any) {
-    return this.service.sortieStock(this.getTenantId(req), {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.sortieStock(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   @Post('stock/transfert')
   @RequirePermission('stock_articles', 'write')
   async transfertStock(@Req() req: any, @Body() data: any) {
-    return this.service.transfertStock(this.getTenantId(req), {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.transfertStock(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   // â”€â”€ Conditionnements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -302,10 +306,12 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.payerDette(this.getTenantId(req), id, {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.payerDette(
+      this.getTenantId(req),
+      id,
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   @Get('clients/:id/historique-achats')
@@ -370,10 +376,12 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.receptionnerLivraison(this.getTenantId(req), id, {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.receptionnerLivraison(
+      this.getTenantId(req),
+      id,
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   @Post('fournisseurs/:id/regler-dette')
@@ -383,7 +391,12 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body() data: any,
   ) {
-    return this.service.reglerDetteFournisseur(this.getTenantId(req), id, data);
+    return this.service.reglerDetteFournisseur(
+      this.getTenantId(req),
+      id,
+      data,
+      buildAuditActor(req),
+    );
   }
 
   @Get('fournisseurs/:id/historique-commandes')
@@ -414,7 +427,7 @@ export class DepotBoissonsController {
     return this.service.createVente(
       this.getTenantId(req),
       { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
-      req.user.userId,
+      buildAuditActor(req),
     );
   }
 
@@ -425,7 +438,12 @@ export class DepotBoissonsController {
     @Param('id') id: string,
     @Body('motif') motif?: string,
   ) {
-    return this.service.annulerVente(this.getTenantId(req), id, motif);
+    return this.service.annulerVente(
+      this.getTenantId(req),
+      id,
+      motif,
+      buildAuditActor(req),
+    );
   }
 
   @Get('ventes/:id/ticket')
@@ -447,29 +465,36 @@ export class DepotBoissonsController {
   @Post('caisse/ouvrir')
   @RequirePermission('caisse', 'write')
   async ouvrirCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.ouvrirCaisse(this.getTenantId(req), {
-      ...data,
-      userId: req.user.userId,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    const actor = buildAuditActor(req);
+    return this.service.ouvrirCaisse(
+      this.getTenantId(req),
+      {
+        ...data,
+        userId: data.userId || req.user.userId,
+        depotId: data.depotId || req.headers['x-depot-id'],
+      },
+      actor,
+    );
   }
 
   @Post('caisse/fermer')
   @RequirePermission('caisse', 'write')
   async fermerCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.fermerCaisse(this.getTenantId(req), {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.fermerCaisse(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   @Post('caisse/mouvement')
   @RequirePermission('caisse', 'write')
   async mouvementCaisse(@Req() req: any, @Body() data: any) {
-    return this.service.mouvementCaisse(this.getTenantId(req), {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.mouvementCaisse(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   @Get('caisse/rapport-journalier')
@@ -494,10 +519,11 @@ export class DepotBoissonsController {
   @Post('depenses')
   @RequirePermission('depenses', 'write')
   async createDepense(@Req() req: any, @Body() data: any) {
-    return this.service.createDepense(this.getTenantId(req), {
-      ...data,
-      depotId: data.depotId || req.headers['x-depot-id'],
-    });
+    return this.service.createDepense(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
   }
 
   @Delete('depenses/:id')
@@ -535,5 +561,3 @@ export class DepotBoissonsController {
     );
   }
 }
-
-

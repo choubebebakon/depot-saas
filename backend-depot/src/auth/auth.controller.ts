@@ -68,8 +68,15 @@ export class AuthController {
   @Public()
   @Throttle({ default: { limit: 10, ttl: 300000 } })
   @Post('login')
-  async login(@Body() body: any, @Res({ passthrough: true }) res: Response) {
-    const result = await this.authService.login(body.email, body.password);
+  async login(
+    @Body() body: any,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.login(body.email, body.password, {
+      ip: req.ip ?? null,
+      userAgent: req.headers?.['user-agent'] ?? null,
+    });
 
     res.cookie('refreshToken', result.refresh_token, {
       httpOnly: true,
@@ -97,7 +104,10 @@ export class AuthController {
   @Post('logout')
   async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     if (req.user) {
-      await this.authService.logout(req.user.userId);
+      await this.authService.logout(req.user.userId, {
+        ip: req.ip ?? null,
+        userAgent: req.headers?.['user-agent'] ?? null,
+      });
     }
     res.clearCookie('refreshToken');
     return { message: 'Deconnexion reussie' };
@@ -183,8 +193,15 @@ export class AuthController {
   // Changement de mot de passe
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
-  async changePassword(@CurrentUser() user: any, @Body() changePasswordDto: ChangePasswordDto) {
-    return await this.authService.changePassword(user.userId, changePasswordDto);
+  async changePassword(
+    @CurrentUser() user: any,
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() req: any,
+  ) {
+    return await this.authService.changePassword(user.userId, changePasswordDto, {
+      ip: req.ip ?? null,
+      userAgent: req.headers?.['user-agent'] ?? null,
+    });
   }
 
   // Activation/Désactivation 2FA

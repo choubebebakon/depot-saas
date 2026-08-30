@@ -4,15 +4,18 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../../../context/NotifContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
+import BarcodeScanner from '../../../shared/components/forms/BarcodeScanner';
 import { boutiqueApi } from '../services/boutiqueApi';
 
 const articleSchema = z.object({
   designation: z.string().min(2, 'La désignation doit contenir au moins 2 caractères'),
   prixVente: z.coerce.number().positive('Le prix de vente doit être supérieur à 0'),
   prixAchat: z.coerce.number().min(0, 'Le prix d\'achat ne peut pas être négatif').optional().or(z.literal('')),
+  prixGros: z.coerce.number().min(0, 'Le prix de gros ne peut pas être négatif').optional().or(z.literal('')),
   seuilCritique: z.coerce.number().min(0, 'Le seuil critique ne peut pas être négatif'),
   codeBarres: z.string().optional(),
   unite: z.string().default('PIECE'),
@@ -26,6 +29,7 @@ const defaultValues = {
   designation: '',
   prixVente: '',
   prixAchat: '',
+  prixGros: '',
   seuilCritique: 0,
   codeBarres: '',
   unite: 'PIECE',
@@ -36,6 +40,8 @@ const defaultValues = {
 };
 
 export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) {
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
   const queryClient = useQueryClient();
   const notif = useNotif();
 
@@ -59,6 +65,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
         designation: edit.designation || edit.nom || '',
         prixVente: edit.prixVente ?? '',
         prixAchat: edit.prixAchat ?? '',
+        prixGros: edit.prixGros ?? '',
         seuilCritique: edit.seuilCritique ?? 0,
         codeBarres: edit.codeBarres || '',
         unite: edit.unite || 'PIECE',
@@ -77,8 +84,10 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
       const payload = {
         ...data,
         prixAchat: data.prixAchat === '' ? undefined : Number(data.prixAchat),
+        prixGros: data.prixGros === '' ? undefined : Number(data.prixGros),
         seuilCritique: Number(data.seuilCritique),
         codeBarres: data.codeBarres || undefined,
+        depotId,
       };
 
       if (edit) {
@@ -105,7 +114,7 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
       onSubmit={handleSubmit(mutation.mutate)}
       title={edit ? 'Modifier' : 'Nouvel Article'}
       loading={mutation.isPending}
-      size="md"
+      size="lg"
       submitLabel={edit ? 'Modifier' : 'Créer'}
     >
       <Controller
@@ -123,19 +132,19 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
           />
         )}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
         <Controller
           name="prixVente"
           control={control}
           render={({ field }) => (
             <FormField
-              label="Prix vente (F CFA)"
+              label="Prix vente"
               name="prixVente"
               type="number"
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
               min="0"
-              placeholder="0"
+              unit="FCFA"
               error={errors.prixVente?.message}
             />
           )}
@@ -145,19 +154,110 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
           control={control}
           render={({ field }) => (
             <FormField
-              label="Prix achat (F CFA)"
+              label="Prix achat"
               name="prixAchat"
               type="number"
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
               min="0"
-              placeholder="0"
+              unit="FCFA"
               error={errors.prixAchat?.message}
             />
           )}
         />
+        <Controller
+          name="prixGros"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Prix de gros"
+              name="prixGros"
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              min="0"
+              unit="FCFA"
+              hint="Optionnel"
+              error={errors.prixGros?.message}
+            />
+          )}
+        />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        <Controller
+          name="unite"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Unité"
+              name="unite"
+              type="select"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              options={[
+                { value: 'PIECE', label: 'Pièce' },
+                { value: 'KG', label: 'kg' },
+                { value: 'LITRE', label: 'Litre' },
+                { value: 'M2', label: 'm²' },
+              ]}
+            />
+          )}
+        />
+        <Controller
+          name="categorieId"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Catégorie"
+              name="categorieId"
+              type="select"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              options={categories?.map(c => ({ value: c.id, label: c.nom })) || []}
+            />
+          )}
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-4 mt-4">
+        <Controller
+          name="codeBarres"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Code-barres"
+              name="codeBarres"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              placeholder="Saisir le code-barres"
+              hint="Saisie manuelle ou scan direct"
+              error={errors.codeBarres?.message}
+            />
+          )}
+        />
+        
+        <div 
+          className="p-4 bg-slate-900/40 rounded-xl border border-slate-700/40 isolation-auto"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault(); 
+              e.stopPropagation();
+            }
+          }}
+        >
+          <p className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">
+            Option alternative : Scanner / Douchette externe
+          </p>
+          <div className="contents">
+            <BarcodeScanner
+              onScan={(code) => setValue('codeBarres', code, { shouldValidate: true })}
+              placeholder="Cliquez ici puis flashez l'article"
+              mode="both"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <Controller
           name="seuilCritique"
           control={control}
@@ -169,46 +269,14 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
               min="0"
-              placeholder="0"
               error={errors.seuilCritique?.message}
             />
           )}
         />
-        <Controller
-          name="codeBarres"
-          control={control}
-          render={({ field }) => (
-            <FormField
-              label="Code-barres"
-              name="codeBarres"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              placeholder="Code-barres"
-              error={errors.codeBarres?.message}
-            />
-          )}
-        />
+        <div className="text-xs text-slate-500 flex items-end pb-2">
+          La date de péremption se gère désormais par lot, dans Stock → Lots.
+        </div>
       </div>
-      <Controller
-        name="categorieId"
-        control={control}
-        render={({ field }) => (
-          <div>
-            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Catégorie</label>
-            <select
-              {...field}
-              disabled={mutation.isPending}
-              className="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
-            >
-              <option value="">Sans catégorie</option>
-              {categories?.map(c => (
-                <option key={c.id} value={c.id}>{c.nom}</option>
-              ))}
-            </select>
-            {errors.categorieId && <span className="text-red-400 text-xs mt-1">{errors.categorieId.message}</span>}
-          </div>
-        )}
-      />
       <div className="mt-4">
         <PhotoUpload
           label="Photo de l'article"

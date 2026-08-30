@@ -9,7 +9,14 @@ import { EmailService } from '../common/email/email.service';
 import * as bcrypt from 'bcrypt';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
-import { Role, StatutAbonnement } from '@prisma/client';
+import { Role, StatutAbonnement, AuditSeverite } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
+import { AUDIT_ACTIONS } from '../audit/audit-actions.constants';
+
+interface RequestMeta {
+  ip?: string | null;
+  userAgent?: string | null;
+}
 
 @Injectable()
 export class AuthService {
@@ -17,6 +24,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private readonly auditService: AuditService,
   ) {}
 
   async register(dto: any) {
@@ -78,17 +86,59 @@ export class AuthService {
     });
   }
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string, meta?: RequestMeta) {
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: { tenant: true },
     });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      // Limite assumée : si l'email n'existe pas du tout, on ne peut pas
+      // journaliser (JournalAudit.tenantId est obligatoire — pas de tenant
+      // à qui rattacher la tentative). On journalise uniquement l'échec
+      // quand le compte existe (email correct, mot de passe incorrect) :
+      // c'est le cas où le tenant est connu ET où le signal est le plus
+      // utile pour le Patron (tentative de piratage d'un compte réel).
+      if (user) {
+        await this.auditService
+          .logEvent({
+            tenantId: user.tenantId,
+            depotId: user.depotId ?? null,
+            actorUserId: user.id,
+            actorEmail: user.email,
+            actorRole: user.role,
+            action: AUDIT_ACTIONS.ECHEC_CONNEXION,
+            severite: AuditSeverite.ATTENTION,
+            targetType: 'User',
+            targetId: user.id,
+            reference: user.email,
+            description: `Échec de connexion pour ${user.email} — mot de passe incorrect`,
+            ipAddress: meta?.ip ?? null,
+            userAgent: meta?.userAgent ?? null,
+          })
+          .catch((err) => console.error('[Audit] Échec log ECHEC_CONNEXION:', err));
+      }
       throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
 
     if (!user.tenant.estActif) {
+      await this.auditService
+        .logEvent({
+          tenantId: user.tenantId,
+          depotId: user.depotId ?? null,
+          actorUserId: user.id,
+          actorEmail: user.email,
+          actorRole: user.role,
+          action: AUDIT_ACTIONS.ECHEC_CONNEXION,
+          severite: AuditSeverite.ATTENTION,
+          targetType: 'User',
+          targetId: user.id,
+          reference: user.email,
+          description: `Échec de connexion pour ${user.email} — compte suspendu`,
+          ipAddress: meta?.ip ?? null,
+          userAgent: meta?.userAgent ?? null,
+        })
+        .catch((err) => console.error('[Audit] Échec log ECHEC_CONNEXION:', err));
       throw new UnauthorizedException(
         'Compte suspendu. Contactez votre administrateur.',
       );
@@ -129,6 +179,24 @@ export class AuthService {
       },
     });
 
+    await this.auditService
+      .logEvent({
+        tenantId: user.tenantId,
+        depotId: user.depotId ?? null,
+        actorUserId: user.id,
+        actorEmail: user.email,
+        actorRole: user.role,
+        action: AUDIT_ACTIONS.CONNEXION,
+        severite: AuditSeverite.INFO,
+        targetType: 'User',
+        targetId: user.id,
+        reference: user.email,
+        description: `Connexion de ${user.email}`,
+        ipAddress: meta?.ip ?? null,
+        userAgent: meta?.userAgent ?? null,
+      })
+      .catch((err) => console.error('[Audit] Échec log CONNEXION:', err));
+
     return {
       access_token,
       refresh_token,
@@ -158,7 +226,9 @@ export class AuthService {
     });
   }
 
-  async logout(userId: string) {
+  async logout(userId: string, meta?: RequestMeta) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshTokenHash: null },
@@ -166,6 +236,26 @@ export class AuthService {
     await this.prisma.refreshToken.deleteMany({
       where: { userId },
     });
+
+    if (user) {
+      await this.auditService
+        .logEvent({
+          tenantId: user.tenantId,
+          depotId: user.depotId ?? null,
+          actorUserId: user.id,
+          actorEmail: user.email,
+          actorRole: user.role,
+          action: AUDIT_ACTIONS.DECONNEXION,
+          severite: AuditSeverite.INFO,
+          targetType: 'User',
+          targetId: user.id,
+          reference: user.email,
+          description: `Déconnexion de ${user.email}`,
+          ipAddress: meta?.ip ?? null,
+          userAgent: meta?.userAgent ?? null,
+        })
+        .catch((err) => console.error('[Audit] Échec log DECONNEXION:', err));
+    }
   }
 
   async validateRefreshTokenFromCookie(token: string) {
@@ -267,7 +357,7 @@ export class AuthService {
   }
 
   // Changement de mot de passe
-  async changePassword(userId: string, changePasswordDto: any) {
+  async changePassword(userId: string, changePasswordDto: any, meta?: RequestMeta) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -282,6 +372,23 @@ export class AuthService {
     );
 
     if (!isCurrentPasswordValid) {
+      await this.auditService
+        .logEvent({
+          tenantId: user.tenantId,
+          depotId: user.depotId ?? null,
+          actorUserId: user.id,
+          actorEmail: user.email,
+          actorRole: user.role,
+          action: AUDIT_ACTIONS.ECHEC_CONNEXION,
+          severite: AuditSeverite.ATTENTION,
+          targetType: 'User',
+          targetId: user.id,
+          reference: user.email,
+          description: `Échec de changement de mot de passe pour ${user.email} — mot de passe actuel incorrect`,
+          ipAddress: meta?.ip ?? null,
+          userAgent: meta?.userAgent ?? null,
+        })
+        .catch((err) => console.error('[Audit] Échec log échec changement mdp:', err));
       throw new BadRequestException('Mot de passe actuel incorrect');
     }
 
@@ -291,6 +398,24 @@ export class AuthService {
       where: { id: userId },
       data: { password: hashedPassword },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId: user.tenantId,
+        depotId: user.depotId ?? null,
+        actorUserId: user.id,
+        actorEmail: user.email,
+        actorRole: user.role,
+        action: AUDIT_ACTIONS.CHANGEMENT_MOT_DE_PASSE,
+        severite: AuditSeverite.ATTENTION,
+        targetType: 'User',
+        targetId: user.id,
+        reference: user.email,
+        description: `Mot de passe changé pour ${user.email}`,
+        ipAddress: meta?.ip ?? null,
+        userAgent: meta?.userAgent ?? null,
+      })
+      .catch((err) => console.error('[Audit] Échec log CHANGEMENT_MOT_DE_PASSE:', err));
 
     return { message: 'Mot de passe changé avec succès' };
   }

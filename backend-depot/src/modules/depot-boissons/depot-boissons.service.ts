@@ -4,12 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditSeverite, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
-import { Prisma } from '@prisma/client';
+import { AuditService } from '../../audit/audit.service';
+import { AUDIT_ACTIONS } from '../../audit/audit-actions.constants';
+import { AuditActor } from '../../audit/audit-actor.util';
 
 @Injectable()
 export class DepotBoissonsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   private toPositiveInt(value: unknown, fallback: number) {
     const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -297,7 +303,7 @@ export class DepotBoissonsService {
         format: data.format || '',
         prixVente: parseFloat(data.prix) || 0,
         seuilCritique: parseInt(data.seuil) || 10,
-        familleId: data.famille || undefined,
+        familleId: data.familleId || undefined,
         photoUrl: data.photoUrl || undefined,
         tenantId,
       },
@@ -320,76 +326,208 @@ export class DepotBoissonsService {
     });
   }
 
-  async entreStock(tenantId: string, data: any) {
+  async entreStock(tenantId: string, data: any, actor: AuditActor) {
     const { articleId, quantite, depotId } = data;
     this.requireString(articleId, 'articleId');
     this.requireString(depotId, 'depotId');
     const qty = this.toPositiveInt(quantite, 0);
     if (!qty)
       throw new BadRequestException('quantite doit etre superieure a 0');
+
+    const avant = await this.prisma.stock.findFirst({ where: { articleId, depotId } });
     await this.prisma.stock.upsert({
       where: { articleId_depotId: { articleId, depotId } },
       update: { quantite: { increment: qty } },
       create: { articleId, depotId, quantite: qty },
     });
-    return this.prisma.mouvementStock.create({
+    const motif = data.motif || 'Entrée manuelle';
+    const mouvement = await this.prisma.mouvementStock.create({
       data: {
         type: 'ENTREE',
         quantite: qty,
         articleId,
         depotId,
         tenantId,
-        motif: data.motif || 'Entrée manuelle',
+        motif,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.ENTREE_STOCK,
+        severite: AuditSeverite.INFO,
+        targetType: 'MouvementStock',
+        targetId: mouvement.id,
+        description: `Entrée de stock de ${qty} unité(s) — motif : ${motif}`,
+        valeurAvant: { quantite: avant?.quantite ?? 0 },
+        valeurApres: { quantite: (avant?.quantite ?? 0) + qty },
+        motif,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log ENTREE_STOCK:', err));
+
+    return mouvement;
   }
 
-  async sortieStock(tenantId: string, data: any) {
+  async sortieStock(tenantId: string, data: any, actor: AuditActor) {
     const { articleId, quantite, depotId } = data;
     this.requireString(articleId, 'articleId');
     this.requireString(depotId, 'depotId');
     const qty = this.toPositiveInt(quantite, 0);
     if (!qty)
       throw new BadRequestException('quantite doit etre superieure a 0');
+
+    const avant = await this.prisma.stock.findFirst({ where: { articleId, depotId } });
     const updated = await this.prisma.stock.updateMany({
       where: { articleId, depotId, quantite: { gte: qty } },
       data: { quantite: { decrement: qty } },
     });
     if (!updated.count) throw new BadRequestException('Stock insuffisant');
-    return this.prisma.mouvementStock.create({
+    const motif = data.motif || 'Sortie manuelle';
+    const mouvement = await this.prisma.mouvementStock.create({
       data: {
         type: 'SORTIE',
         quantite: qty,
         articleId,
         depotId,
         tenantId,
-        motif: data.motif || 'Sortie manuelle',
+        motif,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.SORTIE_STOCK,
+        severite: AuditSeverite.INFO,
+        targetType: 'MouvementStock',
+        targetId: mouvement.id,
+        description: `Sortie de stock de ${qty} unité(s) — motif : ${motif}`,
+        valeurAvant: { quantite: avant?.quantite ?? 0 },
+        valeurApres: { quantite: (avant?.quantite ?? 0) - qty },
+        motif,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log SORTIE_STOCK:', err));
+
+    return mouvement;
   }
 
-  async transfertStock(tenantId: string, data: any) {
-    const transfert = await this.prisma.transfertStock.create({
-      data: {
-        reference: `TRF-${Date.now()}`,
-        sourceDepotId: data.sourceDepotId || data.depotId,
-        destDepotId: data.depotDestination,
-        motif: data.motif,
-        tenantId,
-        lignes: {
-          create: {
-            articleId: data.articleId,
-            quantite: parseInt(data.quantite),
+  async transfertStock(tenantId: string, data: any, actor: AuditActor) {
+    const articleId = data.articleId;
+    const sourceDepotId = data.sourceDepotId || data.depotId;
+    const destDepotId = data.depotDestination;
+    this.requireString(articleId, 'articleId');
+    this.requireString(sourceDepotId, 'sourceDepotId');
+    this.requireString(destDepotId, 'depotDestination');
+    const qty = this.toPositiveInt(data.quantite, 0);
+    if (!qty)
+      throw new BadRequestException('quantite doit etre superieure a 0');
+    if (sourceDepotId === destDepotId) {
+      throw new BadRequestException(
+        'Le dépôt source et le dépôt destination doivent être différents',
+      );
+    }
+
+    const transfert = await this.prisma.$transaction(async (tx) => {
+      const t = await tx.transfertStock.create({
+        data: {
+          reference: `TRF-${Date.now()}`,
+          statut: 'TERMINE',
+          sourceDepotId,
+          destDepotId,
+          motif: data.motif,
+          tenantId,
+          lignes: {
+            create: { articleId, quantite: qty },
           },
         },
-      },
+      });
+
+      const decremente = await tx.stock.updateMany({
+        where: { articleId, depotId: sourceDepotId, quantite: { gte: qty } },
+        data: { quantite: { decrement: qty } },
+      });
+      if (decremente.count === 0) {
+        throw new BadRequestException('Stock insuffisant dans le dépôt source');
+      }
+      await tx.mouvementStock.create({
+        data: {
+          type: 'TRANSFERT_SORTIE',
+          quantite: qty,
+          articleId,
+          depotId: sourceDepotId,
+          tenantId,
+          motif: data.motif || `Transfert ${t.reference} vers ${destDepotId}`,
+        },
+      });
+
+      // AVANT CE CORRECTIF : le stock ne réapparaissait JAMAIS dans le
+      // dépôt de destination. transfertStock() créait le TransfertStock
+      // puis appelait uniquement sortieStock() côté source — l'incrément
+      // côté destination était totalement absent. La marchandise
+      // "disparaissait" du système à chaque transfert entre dépôts.
+      await tx.stock.upsert({
+        where: { articleId_depotId: { articleId, depotId: destDepotId } },
+        update: { quantite: { increment: qty } },
+        create: { articleId, depotId: destDepotId, quantite: qty },
+      });
+      await tx.mouvementStock.create({
+        data: {
+          type: 'TRANSFERT_ENTREE',
+          quantite: qty,
+          articleId,
+          depotId: destDepotId,
+          tenantId,
+          motif: data.motif || `Transfert ${t.reference} depuis ${sourceDepotId}`,
+        },
+      });
+
+      return t;
     });
-    await this.sortieStock(tenantId, {
-      articleId: data.articleId,
-      quantite: parseInt(data.quantite),
-      depotId: data.depotId,
-      motif: `Transfert vers ${data.depotDestination}`,
-    });
+
+    // Le flux actuel est synchrone en un seul appel (création + double
+    // mouvement immédiats) — il n'existe aucune étape distincte de
+    // "réception/validation du transfert" côté dépôt destinataire dans le
+    // code actuel. TRANSFERT_VALIDE/TRANSFERT_ANNULE restent donc inutilisés
+    // tant que ce flux en 2 étapes n'est pas construit (hors périmètre ici).
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: sourceDepotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.TRANSFERT_CREE,
+        severite: AuditSeverite.INFO,
+        targetType: 'TransfertStock',
+        targetId: transfert.id,
+        reference: transfert.reference,
+        description: `Transfert ${transfert.reference} de ${qty} unité(s) — dépôt ${sourceDepotId} → ${destDepotId} (terminé immédiatement)`,
+        valeurApres: {
+          articleId,
+          quantite: qty,
+          sourceDepotId,
+          destDepotId,
+          statut: 'TERMINE',
+        },
+        motif: data.motif,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log TRANSFERT_CREE:', err));
+
     return transfert;
   }
 
@@ -768,10 +906,12 @@ export class DepotBoissonsService {
     });
   }
 
-  async payerDette(tenantId: string, clientId: string, data: any) {
+  async payerDette(tenantId: string, clientId: string, data: any, actor: AuditActor) {
     const montant = parseFloat(data.montant);
     if (!Number.isFinite(montant) || montant <= 0)
       throw new BadRequestException('montant invalide');
+    const client = await this.prisma.client.findFirst({ where: { id: clientId, tenantId } });
+    if (!client) throw new NotFoundException('Client introuvable');
     const result = await this.prisma.client.updateMany({
       where: { id: clientId, tenantId },
       data: { soldeCredit: { decrement: montant } },
@@ -779,7 +919,7 @@ export class DepotBoissonsService {
     if (result.count === 0) {
       throw new NotFoundException('Client introuvable');
     }
-    return this.prisma.detteClient.create({
+    const dette = await this.prisma.detteClient.create({
       data: {
         montant,
         montantPaye: montant,
@@ -789,6 +929,29 @@ export class DepotBoissonsService {
         depotId: data.depotId,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.DETTE_CLIENT_REGLEE,
+        severite: AuditSeverite.INFO,
+        targetType: 'Client',
+        targetId: clientId,
+        reference: client.nom,
+        description: `Dette réglée par le client "${client.nom}" (${montant} FCFA)`,
+        valeurAvant: { soldeCredit: client.soldeCredit },
+        valeurApres: { soldeCredit: client.soldeCredit - montant },
+        montant,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log DETTE_CLIENT_REGLEE:', err));
+
+    return dette;
   }
 
   async historiqueAchats(tenantId: string, clientId: string, query: any) {
@@ -862,8 +1025,9 @@ export class DepotBoissonsService {
     });
   }
 
-  async receptionnerLivraison(tenantId: string, id: string, data: any) {
-    return this.prisma.receptionFournisseur.create({
+  async receptionnerLivraison(tenantId: string, id: string, data: any, actor: AuditActor) {
+    const fournisseur = await this.prisma.fournisseur.findFirst({ where: { id, tenantId } });
+    const reception = await this.prisma.receptionFournisseur.create({
       data: {
         reference: `REC-${Date.now()}`,
         statut: 'VALIDEE',
@@ -872,18 +1036,75 @@ export class DepotBoissonsService {
         tenantId,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.RECEPTION_VALIDEE,
+        severite: AuditSeverite.INFO,
+        targetType: 'ReceptionFournisseur',
+        targetId: reception.id,
+        reference: reception.reference,
+        description: `Réception ${reception.reference} validée${fournisseur ? ` — fournisseur "${fournisseur.nom}"` : ''}`,
+        valeurApres: { statut: 'VALIDEE', fournisseurId: id },
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log RECEPTION_VALIDEE:', err));
+
+    return reception;
   }
 
   async reglerDetteFournisseur(
     tenantId: string,
     fournisseurId: string,
     data: any,
+    actor: AuditActor,
   ) {
     const montant = parseFloat(data.montant);
-    await this.prisma.fournisseur.updateMany({
+    if (!Number.isFinite(montant) || montant <= 0)
+      throw new BadRequestException('montant invalide');
+    const fournisseur = await this.prisma.fournisseur.findFirst({
+      where: { id: fournisseurId, tenantId },
+    });
+    if (!fournisseur) throw new NotFoundException('Fournisseur introuvable');
+
+    const result = await this.prisma.fournisseur.updateMany({
       where: { id: fournisseurId, tenantId },
       data: { solde: { decrement: montant } },
     });
+    if (result.count === 0) {
+      // Auparavant ce cas passait silencieusement (ni erreur, ni confirmation
+      // que le solde a vraiment été débité) — même défaut que celui déjà
+      // corrigé ailleurs sur les fermetures de caisse.
+      throw new NotFoundException('Fournisseur introuvable');
+    }
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId ?? actor.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.DETTE_FOURNISSEUR_REGLEE,
+        severite: AuditSeverite.INFO,
+        targetType: 'Fournisseur',
+        targetId: fournisseurId,
+        reference: fournisseur.nom,
+        description: `Dette réglée auprès du fournisseur "${fournisseur.nom}" (${montant} FCFA)`,
+        valeurAvant: { solde: fournisseur.solde },
+        valeurApres: { solde: (fournisseur.solde || 0) - montant },
+        montant: -montant,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log DETTE_FOURNISSEUR_REGLEE:', err));
+
     return { success: true };
   }
 
@@ -967,7 +1188,7 @@ export class DepotBoissonsService {
     });
   }
 
-  async createVente(tenantId: string, data: any, userId?: string) {
+  async createVente(tenantId: string, data: any, actor: AuditActor) {
     this.requireString(data.depotId, 'depotId');
     if (!Array.isArray(data.articles) || data.articles.length === 0) {
       throw new BadRequestException('articles est requis');
@@ -978,8 +1199,9 @@ export class DepotBoissonsService {
     );
     if (!Number.isFinite(total) || total <= 0)
       throw new BadRequestException('total vente invalide');
-    return this.prisma.$transaction(async (tx) => {
-      const vente = await tx.vente.create({
+
+    const vente = await this.prisma.$transaction(async (tx) => {
+      const v = await tx.vente.create({
         data: {
           reference: `VNT-${Date.now()}`,
           total,
@@ -988,7 +1210,7 @@ export class DepotBoissonsService {
           tenantId,
           depotId: data.depotId,
           clientId: data.clientId,
-          createurId: userId,
+          createurId: actor.userId,
           date: new Date(),
           lignes: {
             create: data.articles.map((a: any) => ({
@@ -1014,10 +1236,15 @@ export class DepotBoissonsService {
           throw new BadRequestException(`Stock insuffisant pour l'article ${articleId}`);
         }
 
-        await tx.stock.updateMany({
-          where: { articleId, depotId: data.depotId },
+        const decremente = await tx.stock.updateMany({
+          where: { articleId, depotId: data.depotId, quantite: { gte: qte } },
           data: { quantite: { decrement: qte } },
         });
+        if (decremente.count === 0) {
+          throw new ConflictException(
+            `Stock modifié entre-temps pour l'article ${articleId}, veuillez réessayer`,
+          );
+        }
         await tx.mouvementStock.create({
           data: {
             type: 'SORTIE_VENTE',
@@ -1025,30 +1252,86 @@ export class DepotBoissonsService {
             articleId,
             depotId: data.depotId,
             tenantId,
-            motif: `Vente ${vente.reference}`,
+            motif: `Vente ${v.reference}`,
           },
         });
       }
-      return vente;
+      return v;
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.VENTE_CREEE,
+        severite: AuditSeverite.INFO,
+        targetType: 'Vente',
+        targetId: vente.id,
+        reference: vente.reference,
+        description: `Vente ${vente.reference} créée (${data.articles.length} article(s), ${vente.total} FCFA)`,
+        valeurApres: {
+          total: vente.total,
+          modePaiement: vente.modePaiement,
+          nbArticles: data.articles.length,
+        },
+        montant: vente.total,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log VENTE_CREEE:', err));
+
+    return vente;
   }
 
-  async annulerVente(tenantId: string, id: string, motif?: string) {
+  async annulerVente(tenantId: string, id: string, motif: string | undefined, actor: AuditActor) {
     const vente = await this.prisma.vente.findFirst({
       where: { id, tenantId },
       include: { lignes: true },
     });
     if (!vente) throw new NotFoundException('Vente introuvable');
-    await this.prisma.vente.update({
-      where: { id },
-      data: { statut: 'ANNULE', motifAnnulation: motif },
-    });
-    for (const ligne of vente.lignes) {
-      await this.prisma.stock.updateMany({
-        where: { articleId: ligne.articleId, depotId: vente.depotId },
-        data: { quantite: { increment: ligne.quantite } },
+    if (vente.statut === 'ANNULE')
+      throw new BadRequestException('Cette vente est déjà annulée');
+
+    const motifFinal = motif || 'Annulation manuelle';
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.vente.update({
+        where: { id },
+        data: { statut: 'ANNULE', motifAnnulation: motifFinal },
       });
-    }
+      for (const ligne of vente.lignes) {
+        await tx.stock.updateMany({
+          where: { articleId: ligne.articleId, depotId: vente.depotId },
+          data: { quantite: { increment: ligne.quantite } },
+        });
+      }
+    });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: vente.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.VENTE_ANNULEE,
+        severite: AuditSeverite.CRITIQUE,
+        targetType: 'Vente',
+        targetId: vente.id,
+        reference: vente.reference,
+        description: `Vente ${vente.reference} annulée (${vente.total} FCFA) — motif : ${motifFinal}`,
+        valeurAvant: { statut: vente.statut, total: vente.total },
+        valeurApres: { statut: 'ANNULE', motif: motifFinal },
+        motif: motifFinal,
+        montant: -vente.total,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log VENTE_ANNULEE:', err));
+
     return { success: true };
   }
 
@@ -1081,14 +1364,14 @@ export class DepotBoissonsService {
     };
   }
 
-  async ouvrirCaisse(tenantId: string, data: any) {
+  async ouvrirCaisse(tenantId: string, data: any, actor: AuditActor) {
     this.requireString(data.depotId, 'depotId');
     this.requireString(data.userId, 'userId');
     const existing = await this.prisma.sessionCaisse.findFirst({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
     });
     if (existing) throw new ConflictException('Une caisse est deja ouverte');
-    return this.prisma.sessionCaisse.create({
+    const session = await this.prisma.sessionCaisse.create({
       data: {
         fondInitial: parseFloat(data.montantInitial) || 0,
         depotId: data.depotId,
@@ -1097,9 +1380,37 @@ export class DepotBoissonsService {
         estOuverte: true,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.CAISSE_OUVERTE,
+        severite: AuditSeverite.INFO,
+        targetType: 'SessionCaisse',
+        targetId: session.id,
+        description: `Caisse ouverte avec un fond initial de ${session.fondInitial} FCFA`,
+        valeurApres: { fondInitial: session.fondInitial },
+        montant: session.fondInitial,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log CAISSE_OUVERTE:', err));
+
+    return session;
   }
 
-  async fermerCaisse(tenantId: string, data: any) {
+  async fermerCaisse(tenantId: string, data: any, actor: AuditActor) {
+    const session = await this.prisma.sessionCaisse.findFirst({
+      where: { tenantId, depotId: data.depotId, estOuverte: true },
+    });
+    if (!session) {
+      throw new BadRequestException('Aucune session de caisse ouverte à fermer.');
+    }
+
     const result = await this.prisma.sessionCaisse.updateMany({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
       data: {
@@ -1112,25 +1423,76 @@ export class DepotBoissonsService {
     if (result.count === 0) {
       throw new BadRequestException('Aucune session de caisse ouverte à fermer.');
     }
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.CAISSE_FERMEE,
+        severite: data.ecart ? AuditSeverite.ATTENTION : AuditSeverite.INFO,
+        targetType: 'SessionCaisse',
+        targetId: session.id,
+        description: `Caisse fermée — fond final ${data.fondFinal ?? 0} FCFA${
+          data.ecart ? `, écart de ${data.ecart} FCFA` : ''
+        }`,
+        valeurAvant: { fondInitial: session.fondInitial, estOuverte: true },
+        valeurApres: {
+          fondFinal: data.fondFinal ?? null,
+          ecart: data.ecart ?? null,
+          estOuverte: false,
+        },
+        montant: data.ecart ?? null,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log CAISSE_FERMEE:', err));
+
     return result;
   }
 
-  async mouvementCaisse(tenantId: string, data: any) {
+  async mouvementCaisse(tenantId: string, data: any, actor: AuditActor) {
     const session = await this.prisma.sessionCaisse.findFirst({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
     });
     if (!session) throw new BadRequestException('Caisse non ouverte');
-    return this.prisma.mouvementCaisse.create({
+
+    const montant = parseFloat(data.montant);
+    const estEntree = data.typeMouvement === 'ENTREE';
+    const motif = data.motif || 'Mouvement';
+
+    const mouvement = await this.prisma.mouvementCaisse.create({
       data: {
-        type:
-          data.typeMouvement === 'ENTREE'
-            ? 'ENCAISSEMENT_VENTE'
-            : 'DECAISSEMENT_DEPENSE',
-        montant: parseFloat(data.montant),
-        motif: data.motif || 'Mouvement',
+        type: estEntree ? 'ENCAISSEMENT_VENTE' : 'DECAISSEMENT_DEPENSE',
+        montant,
+        motif,
         sessionId: session.id,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: estEntree ? AUDIT_ACTIONS.ENTREE_CAISSE : AUDIT_ACTIONS.SORTIE_CAISSE,
+        severite: AuditSeverite.INFO,
+        targetType: 'MouvementCaisse',
+        targetId: mouvement.id,
+        description: `${estEntree ? 'Entrée' : 'Sortie'} de caisse de ${montant} FCFA — motif : ${motif}`,
+        valeurApres: { montant, motif },
+        motif,
+        montant: estEntree ? montant : -montant,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log mouvement caisse:', err));
+
+    return mouvement;
   }
 
   async rapportJournalier(tenantId: string, depotId?: string) {
@@ -1158,11 +1520,11 @@ export class DepotBoissonsService {
     return { data, total, page, limit };
   }
 
-  async createDepense(tenantId: string, data: any) {
+  async createDepense(tenantId: string, data: any, actor: AuditActor) {
     const montant = Number.parseFloat(data.montant);
     if (!Number.isFinite(montant) || montant <= 0)
       throw new BadRequestException('montant invalide');
-    return this.prisma.depense.create({
+    const depense = await this.prisma.depense.create({
       data: {
         categorie: data.categorie || 'Autre',
         montant,
@@ -1172,6 +1534,28 @@ export class DepotBoissonsService {
         createdAt: data.date ? new Date(data.date) : new Date(),
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.DEPENSE_ENREGISTREE,
+        severite: AuditSeverite.INFO,
+        targetType: 'Depense',
+        targetId: depense.id,
+        description: `Dépense enregistrée : ${data.motif || 'sans libellé'} (${montant} FCFA)`,
+        valeurApres: { montant, categorie: depense.categorie, motif: data.motif },
+        motif: data.motif,
+        montant: -montant,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log DEPENSE_ENREGISTREE:', err));
+
+    return depense;
   }
 
   async deleteDepense(tenantId: string, id: string) {

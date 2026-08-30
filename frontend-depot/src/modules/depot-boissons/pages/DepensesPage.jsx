@@ -1,9 +1,10 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
+import { useDepot } from '../../../contexts/DepotContext';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
@@ -19,6 +20,8 @@ export default function DepensesPage() {
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('depenses');
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
 
   const [showModal, setShowModal] = useState(null);
   const [formData, setFormData] = useState({ montant: '', motif: '', categorie: 'Autre', date: new Date().toISOString().split('T')[0] });
@@ -27,6 +30,10 @@ export default function DepensesPage() {
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
+  }
+
+  if (!depotId) {
+    return <div className="p-6 text-center text-red-400 font-bold">DÃ©pÃ´t non sÃ©lectionnÃ©</div>;
   }
 
   // Fetch expenses
@@ -90,7 +97,7 @@ export default function DepensesPage() {
       notif.warning('Veuillez saisir un montant valide');
       return;
     }
-    createMutation.mutate(formData);
+    createMutation.mutate({ ...formData, depotId });
   };
 
   const handleDelete = () => {

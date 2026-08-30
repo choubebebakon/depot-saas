@@ -278,7 +278,6 @@ export default function StockPage() {
                   if (pNum > totalPages) return null;
                   return (
                     <button
-                       Goldman
                       key={pNum}
                       onClick={() => goToPage(pNum)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${

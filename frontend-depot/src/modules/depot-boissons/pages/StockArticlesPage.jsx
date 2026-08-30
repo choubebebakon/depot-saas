@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
@@ -31,6 +32,8 @@ const LIMIT = 100; // Increase backend limit so client-side pagination has full 
 
 export default function StockArticlesPage() {
   const { metier, user } = useAuth();
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('stock_articles');
@@ -171,27 +174,17 @@ export default function StockArticlesPage() {
   const handleStockActionSubmit = (data) => {
     console.log("Article sélectionné:", selectedArticle);
     
-    let depotId = selectedArticle?.depotId;
-    
-    // Fallback: try to get depotId from other sources if not available
-    if (!depotId) {
-      console.warn("depotId non trouvé dans selectedArticle, recherche dans le contexte...");
-      // Try to get from user context if available
-      if (user?.depotActif?.id) {
-        depotId = user.depotActif.id;
-        console.log("depotId récupéré depuis user.depotActif:", depotId);
-      }
-    }
+    let finalDepotId = selectedArticle?.depotId || depotId;
     
     // Prevent submission if depotId is still not found
-    if (!depotId) {
+    if (!finalDepotId) {
       notif.error("Impossible de déterminer le dépôt. Veuillez sélectionner un dépôt actif.");
       return;
     }
     
     const payload = {
       articleId: selectedArticle.id,
-      depotId: depotId,
+      depotId: finalDepotId,
       ...data,
     };
 

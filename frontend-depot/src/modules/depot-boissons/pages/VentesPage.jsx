@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import api from '../../../api'; // Ajuste le chemin si besoin pour atteindre ton dossier api
 import { useAuth } from '../../../contexts/AuthContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
@@ -14,29 +15,16 @@ import { DollarSign } from 'lucide-react';
 const LIMIT = 100;
 
 export default function VentesPage() {
-  const { metier } = useAuth();
+  const { metier, tenantId } = useAuth();
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('ventes');
-  const { tenantId } = useAuth(); 
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [printData, setPrintData] = useState(null);
-
-  // --- EXTRACTION LOGIQUE DU DEPOT_USER (Comme sur la page Caisse) ---
-  const userString = localStorage.getItem('depot_user');
-  let currentDepotId = null;
-
-  if (userString) {
-    try {
-      const userData = JSON.parse(userString);
-      currentDepotId = userData.depotId || userData.depot_id;
-    } catch (e) {
-      console.error("Erreur lors de l'analyse du JSON depot_user dans VentesPage", e);
-    }
-  }
-  // ---------------------------------------------------------------------
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;

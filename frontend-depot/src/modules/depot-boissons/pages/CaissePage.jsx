@@ -3,6 +3,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
@@ -221,7 +222,9 @@ function MouvementCaisseModal({ isOpen, onClose, onSubmit }) {
 }
 
 export default function CaissePage() {
-  const { metier } = useAuth();
+  const { metier, tenantId } = useAuth();
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('caisse');
@@ -230,22 +233,6 @@ export default function CaissePage() {
   const [confirmFermer, setConfirmFermer] = useState(null);
   const [rapportData, setRapportData] = useState(null);
   const [fetchingRapport, setFetchingRapport] = useState(false);
-
-  // --- LOGIQUE MAILLÃ‰E COMPORTANT LE DESÃ‰RIALISATION DE DEPOT_USER ---
-  const userString = localStorage.getItem('depot_user');
-  let currentDepotId = null;
-  let currentTenantId = null;
-
-  if (userString) {
-    try {
-      const userData = JSON.parse(userString);
-      currentDepotId = userData.depotId || userData.depot_id;
-      currentTenantId = userData.tenantId || userData.tenant_id;
-    } catch (e) {
-      console.error("Erreur lors de l'analyse du JSON depot_user", e);
-    }
-  }
-  // ------------------------------------------------------------------
 
   const { data: caisse, isLoading, error: queryError } = useQuery({
     queryKey: ['depot-caisse-statut'],
@@ -259,12 +246,12 @@ export default function CaissePage() {
 
   const ouvrirMutation = useMutation({
     mutationFn: (data) => {
-      if (!currentDepotId || !currentTenantId) throw new Error("Impossible d'ouvrir la caisse: ID du dÃ©pÃ´t ou du tenant absent de la session.");
+      if (!depotId || !tenantId) throw new Error("Impossible d'ouvrir la caisse: ID du dÃ©pÃ´t ou du tenant absent de la session.");
       return depotApi.ouvrirCaisse({ 
         montantInitial: parseInt(data.montant), 
         motif: data.motif, 
-        depotId: currentDepotId, 
-        tenantId: currentTenantId 
+        depotId, 
+        tenantId 
       });
     },
     onSuccess: () => {
@@ -279,7 +266,7 @@ export default function CaissePage() {
 
   const venteMutation = useMutation({
     mutationFn: (data) => {
-      return depotApi.createVente({ ...data, depotId: currentDepotId, tenantId: currentTenantId });
+      return depotApi.createVente({ ...data, depotId, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
@@ -306,8 +293,8 @@ export default function CaissePage() {
     montant: parseInt(data.montant),
     motif: data.motif,
     typeMouvement: data.typeMouvement,
-    depotId: currentDepotId,   // âœ¨ AjoutÃ© ici pour l'envoyer au backend
-    tenantId: currentTenantId  // âœ¨ AjoutÃ© ici pour l'envoyer au backend
+    depotId,
+    tenantId
   }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut'] });
@@ -318,6 +305,17 @@ export default function CaissePage() {
     notif.error(err.response?.data?.message || 'Erreur lors du mouvement');
   }
 });
+
+  if (!depotId) {
+    return <div className="p-6 flex items-center justify-center min-h-64">
+      <div className="text-center space-y-3">
+        <p className="text-white font-bold text-lg">DÃ©pÃ´t non sÃ©lectionnÃ©</p>
+        <p className="text-slate-400 text-sm">
+          SÃ©lectionnez un dÃ©pÃ´t actif depuis le menu principal pour accÃ©der Ã  la caisse.
+        </p>
+      </div>
+    </div>;
+  }
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
@@ -369,7 +367,7 @@ export default function CaissePage() {
           {canWrite && (!estOuverte ? (
             <button 
               onClick={() => setShowModal('ouvrir')} 
-              disabled={!currentDepotId || !currentTenantId}
+              disabled={!depotId || !tenantId}
               className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20"
             >
               ðŸ”“ Ouvrir caisse

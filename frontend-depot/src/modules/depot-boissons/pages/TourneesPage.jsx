@@ -1,9 +1,10 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
+import { useDepot } from '../../../contexts/DepotContext';
 import { depotApi } from '../services/depotApi';
 import TourneeForm from '../forms/TourneeForm';
 import ChargementForm from '../forms/ChargementForm';
@@ -25,6 +26,8 @@ export default function TourneesPage() {
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('tournees');
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
 
   const [selectedTournee, setSelectedTournee] = useState(null);
   const [recap, setRecap] = useState(null);
@@ -39,6 +42,10 @@ export default function TourneesPage() {
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
+  }
+
+  if (!depotId) {
+    return <div className="p-6 text-center text-red-400 font-bold">DÃ©pÃ´t non sÃ©lectionnÃ©</div>;
   }
 
   // Fetch tournees via useQuery
@@ -245,9 +252,9 @@ Nouvelle tournÃ©e
         </div>
       )}
 
-      <TourneeForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" />
-      <ChargementForm isOpen={chargementOpen} onClose={() => { setChargementOpen(false); setChargementTourneeId(null); }} metier="depot-boissons" tourneeId={chargementTourneeId} />
-      <TricycleForm isOpen={tricycleFormOpen} onClose={() => setTricycleFormOpen(false)} edit={tricycleEditItem} metier="depot-boissons" />
+      <TourneeForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" depotId={depotId} />
+      <ChargementForm isOpen={chargementOpen} onClose={() => { setChargementOpen(false); setChargementTourneeId(null); }} metier="depot-boissons" tourneeId={chargementTourneeId} depotId={depotId} />
+      <TricycleForm isOpen={tricycleFormOpen} onClose={() => setTricycleFormOpen(false)} edit={tricycleEditItem} metier="depot-boissons" depotId={depotId} />
       <ConfirmModal isOpen={false} onConfirm={() => {}} onCancel={() => {}}
         title="Supprimer" message={`Supprimer cette tournÃ©e ? Cette action est irrÃ©versible.`} />
     </div>

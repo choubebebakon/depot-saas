@@ -1,7 +1,8 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
+import { useDepot } from '../../../contexts/DepotContext';
 import { depotApi } from '../services/depotApi';
 import ConsigneForm from '../forms/ConsigneForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
@@ -10,6 +11,8 @@ export default function ConsignesPage() {
   const { metier } = useAuth();
   const queryClient = useQueryClient();
   const { canWrite } = usePermission('consignes');
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
 
   const [selectedClient, setSelectedClient] = useState(null);
   const [search, setSearch] = useState('');
@@ -18,6 +21,10 @@ export default function ConsignesPage() {
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
+  }
+
+  if (!depotId) {
+    return <div className="p-6 text-center text-red-400 font-bold">DÃ©pÃ´t non sÃ©lectionnÃ©</div>;
   }
 
   // Fetch clients
@@ -180,7 +187,7 @@ export default function ConsignesPage() {
         </div>
       </div>
 
-      <ConsigneForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={handleFormSuccess} edit={editItem} metier="depot-boissons" />
+      <ConsigneForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={handleFormSuccess} edit={editItem} metier="depot-boissons" depotId={depotId} />
       <ConfirmModal isOpen={false} onConfirm={() => {}} onCancel={() => {}}
         title="Supprimer" message={`Supprimer ce mouvement ? Cette action est irrÃ©versible.`} />
     </div>

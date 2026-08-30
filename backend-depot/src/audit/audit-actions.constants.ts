@@ -40,6 +40,22 @@ export const AUDIT_ACTIONS = {
   DEPENSE_ENREGISTREE: 'DEPENSE_ENREGISTREE',
   CAISSE_OUVERTE: 'CAISSE_OUVERTE',
   CAISSE_FERMEE: 'CAISSE_FERMEE',
+  ENTREE_CAISSE: 'ENTREE_CAISSE',
+  SORTIE_CAISSE: 'SORTIE_CAISSE',
+
+  // Fournisseurs / clients — finance
+  DETTE_FOURNISSEUR_REGLEE: 'DETTE_FOURNISSEUR_REGLEE',
+  DETTE_CLIENT_REGLEE: 'DETTE_CLIENT_REGLEE',
+
+  // Inventaires (comptage physique périodique — distinct d'un ajustement
+  // ponctuel unitaire : couvre plusieurs articles en une seule opération)
+  INVENTAIRE_REALISE: 'INVENTAIRE_REALISE',
+
+  // Authentification / sécurité du compte
+  CONNEXION: 'CONNEXION',
+  DECONNEXION: 'DECONNEXION',
+  ECHEC_CONNEXION: 'ECHEC_CONNEXION',
+  CHANGEMENT_MOT_DE_PASSE: 'CHANGEMENT_MOT_DE_PASSE',
 } as const;
 
 export type AuditActionKey = keyof typeof AUDIT_ACTIONS;

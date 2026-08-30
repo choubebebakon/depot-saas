@@ -7,6 +7,7 @@ import {
   Request,
   Param,
   Put,
+  Delete,
 } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { StocksService } from './stocks.service';
@@ -118,5 +119,77 @@ export class StocksController {
     @Body() dto: UpdateStockDto,
   ) {
     return this.stocksService.update(tenantId, id, dto);
+  }
+
+  // === GESTION DES LOTS ===
+
+  @Get('lots')
+  @Roles(...ACCESS_LEVELS.GERANT)
+  async getLots(
+    @Query('tenantId') tenantId: string,
+    @Query('articleId') articleId: string,
+    @Query('depotId') depotId: string,
+  ) {
+    return this.stocksService.getLots(tenantId, articleId, depotId);
+  }
+
+  @Get('lots/:id')
+  @Roles(...ACCESS_LEVELS.GERANT)
+  async getLotById(
+    @Param('id') lotId: string,
+    @Query('tenantId') tenantId: string,
+  ) {
+    return this.stocksService.getLotById(tenantId, lotId);
+  }
+
+  @Post('lots')
+  @Roles(...ACCESS_LEVELS.GERANT)
+  async createLot(
+    @Request() req: any,
+    @Body()
+    data: {
+      articleId: string;
+      depotId: string;
+      tenantId: string;
+      quantite: number;
+      dlc?: Date;
+      numeroLot?: string;
+    },
+  ) {
+    return this.stocksService.createLot({ ...data, actor: req.user });
+  }
+
+  @Put('lots/:id')
+  @Roles(...ACCESS_LEVELS.GERANT)
+  async updateLot(
+    @Param('id') lotId: string,
+    @Query('tenantId') tenantId: string,
+    @Body()
+    data: {
+      quantite?: number;
+      dlc?: Date;
+      numeroLot?: string;
+    },
+  ) {
+    return this.stocksService.updateLot(tenantId, lotId, data);
+  }
+
+  @Delete('lots/:id')
+  @Roles(...ACCESS_LEVELS.GERANT)
+  async deleteLot(
+    @Param('id') lotId: string,
+    @Query('tenantId') tenantId: string,
+  ) {
+    return this.stocksService.deleteLot(tenantId, lotId);
+  }
+
+  @Get('lots/alertes-dlc')
+  @Roles(...ACCESS_LEVELS.GERANT)
+  async getDLCAlertes(
+    @Query('tenantId') tenantId: string,
+    @Query('depotId') depotId: string,
+    @Query('jours') jours?: string,
+  ) {
+    return this.stocksService.getDLCAlertes(tenantId, depotId, jours ? parseInt(jours) : 30);
   }
 }

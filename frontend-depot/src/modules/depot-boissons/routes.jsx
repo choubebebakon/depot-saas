@@ -29,6 +29,8 @@ const CaissePage = lazy(() => import('./pages/CaissePage'));
 const RapportsPage = lazy(() => import('./pages/RapportsPage'));
 const DepensesPage = lazy(() => import('./pages/DepensesPage'));
 const ParametresPage = lazy(() => import('./pages/ParametresPage'));
+const LotsPage = lazy(() => import('../../shared/pages/LotsPage'));
+
 
 function Loader() {
   return (
@@ -177,7 +179,8 @@ export default function DepotBoissonsRoutes() {
             <Route path="depenses" element={gate('depenses', DepensesPage)} />
             <Route path="rapports" element={gate('rapports', RapportsPage)} />
             <Route path="parametres" element={gate('parametres', ParametresPage)} />
-             <Route path="utilisateurs" element={gate('utilisateurs', UtilisateursPage)} />
+            <Route path="lots" element={gate('stock', () => <LotsPage metier="depot" />)} />
+            <Route path="utilisateurs" element={gate('utilisateurs', UtilisateursPage)} />
              <Route path="depots"       element={gate('depots', DepotsPage)} />
              <Route path="abonnement"   element={<Navigate to="/pricing" replace />} />
              <Route path="audit-patron" element={gate('audit_patron', AuditPage)} />

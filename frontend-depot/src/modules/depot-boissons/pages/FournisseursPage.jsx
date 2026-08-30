@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
@@ -14,6 +15,8 @@ const LIMIT = 100;
 
 export default function FournisseursPage() {
   const { metier, user } = useAuth();
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('fournisseurs');
@@ -119,7 +122,6 @@ export default function FournisseursPage() {
   };
 
   const handleCommanderSubmit = (data) => {
-    const depotId = user?.depotActif?.id;
     if (!depotId) {
       notif.error('DÃ©pÃ´t actif non trouvÃ©');
       return;
@@ -133,7 +135,6 @@ export default function FournisseursPage() {
   };
 
   const handleReceptionnerSubmit = (data) => {
-    const depotId = user?.depotActif?.id;
     if (!depotId) {
       notif.error('DÃ©pÃ´t actif non trouvÃ©');
       return;
@@ -259,9 +260,9 @@ export default function FournisseursPage() {
         <div className="space-y-4">
           <div className="bg-slate-800/50 rounded-lg p-3">
             <p className="text-slate-400 text-sm">Fournisseur: <span className="text-white font-semibold">{selectedFournisseur?.nom}</span></p>
-            <p className="text-slate-400 text-sm">DÃ©pÃ´t ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non dÃ©fini"}</span></p>
+            <p className="text-slate-400 text-sm">DÃ©pÃ´t ID: <span className={depotId ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{depotId || "Non dÃ©fini"}</span></p>
           </div>
-          {!user?.depotActif?.id && (
+          {!depotId && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
               âš ï¸ DÃ©pÃ´t actif non trouvÃ©. Veuillez sÃ©lectionner un dÃ©pÃ´t actif.
             </div>
@@ -288,9 +289,9 @@ export default function FournisseursPage() {
         <div className="space-y-4">
           <div className="bg-slate-800/50 rounded-lg p-3">
             <p className="text-slate-400 text-sm">Fournisseur: <span className="text-white font-semibold">{selectedFournisseur?.nom}</span></p>
-            <p className="text-slate-400 text-sm">DÃ©pÃ´t ID: <span className={user?.depotActif?.id ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{user?.depotActif?.id || "Non dÃ©fini"}</span></p>
+            <p className="text-slate-400 text-sm">DÃ©pÃ´t ID: <span className={depotId ? "text-cyan-400 font-bold" : "text-red-400 font-bold"}>{depotId || "Non dÃ©fini"}</span></p>
           </div>
-          {!user?.depotActif?.id && (
+          {!depotId && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg p-3 text-sm">
               âš ï¸ DÃ©pÃ´t actif non trouvÃ©. Veuillez sÃ©lectionner un dÃ©pÃ´t actif.
             </div>

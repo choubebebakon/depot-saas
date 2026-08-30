@@ -5,7 +5,11 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
+import { AuditSeverite } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
+import { AuditService } from '../../audit/audit.service';
+import { AUDIT_ACTIONS } from '../../audit/audit-actions.constants';
+import { AuditActor } from '../../audit/audit-actor.util';
 import { IsOptional, IsInt, Min, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -192,7 +196,10 @@ export class InventaireDto {
 export class SupermarcheService {
   private readonly logger = new Logger(SupermarcheService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   // ── Rayons ──────────────────────────────────────────────────────────────────
 
@@ -403,19 +410,97 @@ export class SupermarcheService {
     id: string,
     tenantId: string,
     data: UpdateStockDto,
+    actor: AuditActor,
   ) {
     const article = await this.prisma.article.findFirst({
       where: { id, tenantId },
     });
     if (!article) throw new NotFoundException('Article non trouvé');
-    return this.prisma.stock.updateMany({
+
+    const stockAvant = await this.prisma.stock.findFirst({
       where: { articleId: id, depot: { tenantId } },
-      data: { quantite: data.stock },
     });
+    const nouvelleQuantite = Number(data.stock);
+    if (!Number.isFinite(nouvelleQuantite) || nouvelleQuantite < 0) {
+      throw new BadRequestException('Quantité de stock invalide');
+    }
+    const quantiteAvant = stockAvant?.quantite ?? 0;
+    const difference = nouvelleQuantite - quantiteAvant;
+
+    const result = await this.prisma.stock.updateMany({
+      where: { articleId: id, depot: { tenantId } },
+      data: { quantite: nouvelleQuantite },
+    });
+    if (result.count === 0) throw new NotFoundException('Stock introuvable');
+
+    const motif = `Ajustement manuel (${difference >= 0 ? '+' : ''}${difference})`;
+    if (stockAvant) {
+      await this.prisma.mouvementStock.create({
+        data: {
+          tenantId,
+          articleId: id,
+          depotId: stockAvant.depotId,
+          type: 'AJUSTEMENT_INVENTAIRE',
+          quantite: Math.abs(difference),
+          motif,
+        },
+      });
+    }
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: stockAvant?.depotId ?? actor.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.AJUSTEMENT_STOCK,
+        severite: AuditSeverite.ATTENTION,
+        targetType: 'Stock',
+        targetId: id,
+        reference: article.designation,
+        description: `Ajustement de stock "${article.designation}" : ${quantiteAvant} → ${nouvelleQuantite} (${difference >= 0 ? '+' : ''}${difference})`,
+        valeurAvant: { quantite: quantiteAvant },
+        valeurApres: { quantite: nouvelleQuantite, difference },
+        motif,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log AJUSTEMENT_STOCK:', err));
+
+    return { success: true, quantite: nouvelleQuantite };
   }
 
-  async deleteArticle(id: string, tenantId: string) {
-    return this.prisma.article.delete({ where: { id, tenantId } });
+  async deleteArticle(id: string, tenantId: string, actor: AuditActor) {
+    const article = await this.prisma.article.findFirst({ where: { id, tenantId } });
+    if (!article) throw new NotFoundException('Article non trouvé');
+    const deleted = await this.prisma.article.delete({ where: { id, tenantId } });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: actor.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.SUPPRESSION_ARTICLE,
+        severite: AuditSeverite.ATTENTION,
+        targetType: 'Article',
+        targetId: id,
+        reference: article.designation,
+        description: `Article "${article.designation}" supprimé`,
+        valeurAvant: {
+          designation: article.designation,
+          prixVente: article.prixVente,
+          prixAchat: article.prixAchat,
+          codeBarres: article.codeBarres,
+        },
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log SUPPRESSION_ARTICLE:', err));
+
+    return deleted;
   }
 
   // ── Clients ─────────────────────────────────────────────────────────────────
@@ -446,11 +531,46 @@ export class SupermarcheService {
   }
 
   async updateClient(id: string, tenantId: string, data: any) {
-    return this.prisma.client.update({ where: { id, tenantId }, data });
+    const updateData: any = {};
+    if (data.nom !== undefined) updateData.nom = data.nom;
+    if (data.telephone !== undefined) updateData.telephone = data.telephone;
+    if (data.adresse !== undefined) updateData.adresse = data.adresse;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.plafondCredit !== undefined) updateData.plafondCredit = parseFloat(data.plafondCredit) || 0;
+    if (data.soldeCredit !== undefined) updateData.soldeCredit = parseFloat(data.soldeCredit) || 0;
+    if (data.depotId !== undefined) updateData.depotId = data.depotId;
+
+    return this.prisma.client.update({ where: { id, tenantId }, data: updateData });
   }
 
-  async deleteClient(id: string, tenantId: string) {
-    return this.prisma.client.delete({ where: { id, tenantId } });
+  async deleteClient(id: string, tenantId: string, actor: AuditActor) {
+    const client = await this.prisma.client.findFirst({ where: { id, tenantId } });
+    if (!client) throw new NotFoundException('Client non trouvé');
+    const deleted = await this.prisma.client.delete({ where: { id, tenantId } });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: client.depotId ?? actor.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.SUPPRESSION_CLIENT,
+        severite: AuditSeverite.ATTENTION,
+        targetType: 'Client',
+        targetId: id,
+        reference: client.nom,
+        description: `Client "${client.nom}" supprimé`,
+        valeurAvant: {
+          nom: client.nom,
+          telephone: client.telephone,
+        },
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log SUPPRESSION_CLIENT:', err));
+
+    return deleted;
   }
 
   // ── Fournisseurs ────────────────────────────────────────────────────────────
@@ -474,7 +594,15 @@ export class SupermarcheService {
   }
 
   async updateFournisseur(id: string, tenantId: string, data: any) {
-    return this.prisma.fournisseur.update({ where: { id, tenantId }, data });
+    const updateData: any = {};
+    if (data.nom !== undefined) updateData.nom = data.nom;
+    if (data.telephone !== undefined) updateData.telephone = data.telephone;
+    if (data.adresse !== undefined) updateData.adresse = data.adresse;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.depotId !== undefined) updateData.depotId = data.depotId;
+
+    return this.prisma.fournisseur.update({ where: { id, tenantId }, data: updateData });
   }
 
   async deleteFournisseur(id: string, tenantId: string) {
@@ -490,17 +618,40 @@ export class SupermarcheService {
     });
   }
 
-  async createDepense(tenantId: string, data: any) {
-    return this.prisma.depense.create({
+  async createDepense(tenantId: string, data: any, actor: AuditActor) {
+    const montant = Number(data.montant);
+    const depense = await this.prisma.depense.create({
       data: {
         categorie: data.categorie,
-        montant: Number(data.montant),
+        montant,
         motif: data.motif,
         photoUrl: data.photoUrl,
         depotId: data.depotId,
         tenantId,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.DEPENSE_ENREGISTREE,
+        severite: AuditSeverite.INFO,
+        targetType: 'Depense',
+        targetId: depense.id,
+        description: `Dépense enregistrée : ${data.motif || 'sans libellé'} (${montant} FCFA)`,
+        valeurApres: { montant, categorie: depense.categorie, motif: data.motif },
+        motif: data.motif,
+        montant: -montant,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log DEPENSE_ENREGISTREE:', err));
+
+    return depense;
   }
 
   async updateDepense(id: string, tenantId: string, data: any) {
@@ -573,8 +724,8 @@ export class SupermarcheService {
     });
   }
 
-  async createInventaire(tenantId: string, data: any) {
-    return this.prisma.$transaction(async (tx) => {
+  async createInventaire(tenantId: string, data: any, actor: AuditActor) {
+    const inventaire = await this.prisma.$transaction(async (tx) => {
       const results: any[] = [];
       for (const ligne of data.lignes) {
         const existing = await tx.stock.findFirst({
@@ -608,16 +759,43 @@ export class SupermarcheService {
           },
         });
 
-        results.push(updated);
+        results.push({
+          articleId: ligne.articleId,
+          quantiteAvant: existing.quantite,
+          quantiteApres: Number(ligne.stockPhysique),
+          ecart,
+        });
       }
-      return { success: true, updated: results.length };
+      return results;
     });
+
+    const ecartTotal = inventaire.reduce((sum, l) => sum + l.ecart, 0);
+    const nbEcarts = inventaire.filter((l) => l.ecart !== 0).length;
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.INVENTAIRE_REALISE,
+        severite: nbEcarts > 0 ? AuditSeverite.ATTENTION : AuditSeverite.INFO,
+        targetType: 'Inventaire',
+        targetId: null,
+        description: `Inventaire réalisé sur ${inventaire.length} article(s), ${nbEcarts} écart(s) constaté(s), écart net ${ecartTotal >= 0 ? '+' : ''}${ecartTotal}`,
+        valeurApres: { lignes: inventaire, ecartTotal, nbEcarts },
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log INVENTAIRE_REALISE:', err));
+
+    return { success: true, updated: inventaire.length };
   }
 
   // ── Ventes ──────────────────────────────────────────────────────────────────
 
-  async createVente(tenantId: string, data: any, userId?: string) {
-    console.log('=== CREATE VENTE DEBUG ===');
+  async createVente(tenantId: string, data: any, actor: AuditActor) {
     if (!data.depotId) throw new BadRequestException('depotId est requis');
     if (!Array.isArray(data.panier) || data.panier.length === 0) {
       throw new BadRequestException('panier est requis');
@@ -643,16 +821,17 @@ export class SupermarcheService {
     // Les vérifications de stock sont maintenant faites dans la transaction
 
     let validUserId: string | null = null;
-    if (userId) {
-      const user = await this.prisma.user.findFirst({ where: { id: userId } });
-      if (user) validUserId = userId;
+    if (actor.userId) {
+      const user = await this.prisma.user.findFirst({ where: { id: actor.userId } });
+      if (user) validUserId = actor.userId;
     }
 
     const reference = `VENTE-${Date.now()}`;
 
+    let vente: any;
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        const vente = await tx.vente.create({
+      vente = await this.prisma.$transaction(async (tx) => {
+        const v = await tx.vente.create({
           data: {
             reference,
             total: Number(data.total),
@@ -692,10 +871,18 @@ export class SupermarcheService {
             throw new BadRequestException(`Stock insuffisant pour l'article ${articleId}`);
           }
 
-          await tx.stock.updateMany({
-            where: { articleId, depotId: data.depotId },
+          const decremente = await tx.stock.updateMany({
+            where: { articleId, depotId: data.depotId, quantite: { gte: qte } },
             data: { quantite: { decrement: qte } },
           });
+          if (decremente.count === 0) {
+            // Concurrence : le stock a changé entre la vérification et la
+            // décrémentation. Auparavant ce cas passait silencieusement :
+            // la vente était créée sans jamais toucher le stock réel.
+            throw new ConflictException(
+              `Stock modifié entre-temps pour l'article ${articleId}, veuillez réessayer`,
+            );
+          }
 
           await tx.mouvementStock.create({
             data: {
@@ -709,12 +896,113 @@ export class SupermarcheService {
           });
         }
 
-        return vente;
+        return v;
       });
     } catch (error: any) {
       console.error('=== TRANSACTION ERROR ===', error);
       throw error;
     }
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.VENTE_CREEE,
+        severite: AuditSeverite.INFO,
+        targetType: 'Vente',
+        targetId: vente.id,
+        reference: vente.reference,
+        description: `Vente ${vente.reference} créée (${vente.lignes.length} article(s), ${vente.total} FCFA)`,
+        valeurApres: {
+          total: vente.total,
+          modePaiement: vente.modePaiement,
+          nbArticles: vente.lignes.length,
+        },
+        montant: vente.total,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log VENTE_CREEE:', err));
+
+    const montantRemise = vente.lignes.reduce(
+      (sum: number, l: any) => sum + (l.remise || 0),
+      0,
+    );
+    if (montantRemise > 0) {
+      await this.auditService
+        .logEvent({
+          tenantId,
+          depotId: data.depotId,
+          actorUserId: actor.userId,
+          actorEmail: actor.email,
+          actorRole: actor.role,
+          action: AUDIT_ACTIONS.REMISE_ACCORDEE,
+          severite: AuditSeverite.ATTENTION,
+          targetType: 'Vente',
+          targetId: vente.id,
+          reference: vente.reference,
+          description: `Remise accordée sur la vente ${vente.reference} (-${montantRemise} FCFA)`,
+          valeurApres: { montantRemise },
+          montant: -montantRemise,
+          ipAddress: actor.ip,
+          userAgent: actor.userAgent,
+        })
+        .catch((err) => console.error('[Audit] Échec log REMISE_ACCORDEE:', err));
+    }
+
+    return vente;
+  }
+
+  async annulerVente(id: string, tenantId: string, motif: string | undefined, actor: AuditActor) {
+    const vente = await this.prisma.vente.findFirst({
+      where: { id, tenantId },
+      include: { lignes: true },
+    });
+    if (!vente) throw new NotFoundException('Vente non trouvée');
+    if (vente.statut === 'ANNULE')
+      throw new BadRequestException('Cette vente est déjà annulée');
+
+    const motifFinal = motif || 'Annulation manuelle';
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.vente.update({
+        where: { id },
+        data: { statut: 'ANNULE', motifAnnulation: motifFinal },
+      });
+      for (const ligne of vente.lignes) {
+        await tx.stock.updateMany({
+          where: { articleId: ligne.articleId, depotId: vente.depotId },
+          data: { quantite: { increment: ligne.quantite } },
+        });
+      }
+    });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: vente.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.VENTE_ANNULEE,
+        severite: AuditSeverite.CRITIQUE,
+        targetType: 'Vente',
+        targetId: vente.id,
+        reference: vente.reference,
+        description: `Vente ${vente.reference} annulée (${vente.total} FCFA) — motif : ${motifFinal}`,
+        valeurAvant: { statut: vente.statut, total: vente.total },
+        valeurApres: { statut: 'ANNULE', motif: motifFinal },
+        motif: motifFinal,
+        montant: -vente.total,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log VENTE_ANNULEE:', err));
+
+    return { success: true };
   }
 
   // ── Réceptions (SOLUTION MULTI-TENANT DURABLE & SÉCURISÉE) ─────────────────
@@ -1167,14 +1455,14 @@ export class SupermarcheService {
     };
   }
 
-  async ouvrirCaisse(tenantId: string, data: any) {
+  async ouvrirCaisse(tenantId: string, data: any, actor: AuditActor) {
     requireString(data.depotId, 'depotId');
     requireString(data.userId, 'userId');
     const existing = await this.prisma.sessionCaisse.findFirst({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
     });
     if (existing) throw new ConflictException('Une caisse est deja ouverte');
-    return this.prisma.sessionCaisse.create({
+    const session = await this.prisma.sessionCaisse.create({
       data: {
         fondInitial: parseFloat(data.montantInitial) || 0,
         depotId: data.depotId,
@@ -1183,9 +1471,37 @@ export class SupermarcheService {
         estOuverte: true,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.CAISSE_OUVERTE,
+        severite: AuditSeverite.INFO,
+        targetType: 'SessionCaisse',
+        targetId: session.id,
+        description: `Caisse ouverte avec un fond initial de ${session.fondInitial} FCFA`,
+        valeurApres: { fondInitial: session.fondInitial },
+        montant: session.fondInitial,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log CAISSE_OUVERTE:', err));
+
+    return session;
   }
 
-  async fermerCaisse(tenantId: string, data: any) {
+  async fermerCaisse(tenantId: string, data: any, actor: AuditActor) {
+    const session = await this.prisma.sessionCaisse.findFirst({
+      where: { tenantId, depotId: data.depotId, estOuverte: true },
+    });
+    if (!session) {
+      throw new BadRequestException('Aucune session de caisse ouverte à fermer.');
+    }
+
     const result = await this.prisma.sessionCaisse.updateMany({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
       data: {
@@ -1198,25 +1514,76 @@ export class SupermarcheService {
     if (result.count === 0) {
       throw new BadRequestException('Aucune session de caisse ouverte à fermer.');
     }
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: AUDIT_ACTIONS.CAISSE_FERMEE,
+        severite: data.ecart ? AuditSeverite.ATTENTION : AuditSeverite.INFO,
+        targetType: 'SessionCaisse',
+        targetId: session.id,
+        description: `Caisse fermée — fond final ${data.fondFinal ?? 0} FCFA${
+          data.ecart ? `, écart de ${data.ecart} FCFA` : ''
+        }`,
+        valeurAvant: { fondInitial: session.fondInitial, estOuverte: true },
+        valeurApres: {
+          fondFinal: data.fondFinal ?? null,
+          ecart: data.ecart ?? null,
+          estOuverte: false,
+        },
+        montant: data.ecart ?? null,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log CAISSE_FERMEE:', err));
+
     return result;
   }
 
-  async mouvementCaisse(tenantId: string, data: any) {
+  async mouvementCaisse(tenantId: string, data: any, actor: AuditActor) {
     const session = await this.prisma.sessionCaisse.findFirst({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
     });
     if (!session) throw new BadRequestException('Caisse non ouverte');
-    return this.prisma.mouvementCaisse.create({
+
+    const montant = parseFloat(data.montant);
+    const estEntree = data.typeMouvement === 'ENTREE';
+    const motif = data.motif || 'Mouvement';
+
+    const mouvement = await this.prisma.mouvementCaisse.create({
       data: {
-        type:
-          data.typeMouvement === 'ENTREE'
-            ? 'ENCAISSEMENT_VENTE'
-            : 'DECAISSEMENT_DEPENSE',
-        montant: parseFloat(data.montant),
-        motif: data.motif || 'Mouvement',
+        type: estEntree ? 'ENCAISSEMENT_VENTE' : 'DECAISSEMENT_DEPENSE',
+        montant,
+        motif,
         sessionId: session.id,
       },
     });
+
+    await this.auditService
+      .logEvent({
+        tenantId,
+        depotId: data.depotId,
+        actorUserId: actor.userId,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: estEntree ? AUDIT_ACTIONS.ENTREE_CAISSE : AUDIT_ACTIONS.SORTIE_CAISSE,
+        severite: AuditSeverite.INFO,
+        targetType: 'MouvementCaisse',
+        targetId: mouvement.id,
+        description: `${estEntree ? 'Entrée' : 'Sortie'} de caisse de ${montant} FCFA — motif : ${motif}`,
+        valeurApres: { montant, motif },
+        motif,
+        montant: estEntree ? montant : -montant,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      })
+      .catch((err) => console.error('[Audit] Échec log mouvement caisse:', err));
+
+    return mouvement;
   }
 
   async rapportJournalier(tenantId: string, depotId?: string) {

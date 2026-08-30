@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 import AutocompleteInput from '../../../shared/components/forms/AutocompleteInput';
@@ -29,7 +30,9 @@ const venteSchema = z.object({
   panier: z.array(panierLigneSchema).min(1, 'Ajoutez au moins un article au panier'),
 });
 
-export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, metier = 'depot', depotId }) {
+export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, metier = 'depot', depotId: propDepotId }) {
+  const depot = useDepot();
+  const depotId = propDepotId ?? depot?.depotId ?? depot?.depotActif?.id ?? null;
   const queryClient = useQueryClient();
   const notif = useNotif();
 
@@ -102,20 +105,7 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
 
  const mutation = useMutation({
     mutationFn: async (data) => {
-      // 1. 🔍 Extraction sécurisée du depotId depuis l'objet complexe 'depot_user'
-      const userString = localStorage.getItem('depot_user');
-      let extractedDepotId = null;
-      
-      if (userString) {
-        try {
-          const userData = JSON.parse(userString);
-          extractedDepotId = userData.depotId || userData.depot_id;
-        } catch (e) {
-          console.error("Erreur lors de l'analyse de depot_user dans le formulaire", e);
-        }
-      }
-
-      // 2. Construction du payload ultra-propre attendu par NestJS
+      // Construction du payload ultra-propre attendu par NestJS
       const payload = {
         clientId: data.clientId || undefined,
         modePaiement: data.modePaiement,
@@ -124,9 +114,7 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
         montantOM: data.montantOM ? Number(data.montantOM) : undefined,
         montantMoMo: data.montantMoMo ? Number(data.montantMoMo) : undefined,
         total: Number(total),
-        
-        // 🏢 On utilise l'ID extrait ou celui passé par la prop
-        depotId: depotId || data.depotId || extractedDepotId,
+        depotId: depotId || data.depotId,
         
         // 🛒 Le panier traduit en articles (déjà validé)
         articles: data.panier.map(p => ({

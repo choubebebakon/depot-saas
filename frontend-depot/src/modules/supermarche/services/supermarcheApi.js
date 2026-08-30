@@ -61,6 +61,16 @@ export const supermarcheApi = {
   createVente: (data) =>
     api.post('/supermarche/ventes', data, getTenantHeaders()),
 
+  // Promotions
+  getPromotions: () =>
+    api.get('/supermarche/promotions', getTenantHeaders()),
+  createPromotion: (data) =>
+    api.post('/supermarche/promotions', data, getTenantHeaders()),
+  updatePromotion: (id, data) =>
+    api.patch(`/supermarche/promotions/${id}`, data, getTenantHeaders()),
+  deletePromotion: (id) =>
+    api.delete(`/supermarche/promotions/${id}`, getTenantHeaders()),
+
   // Codes-barres
   scanCodeBarres: (code) =>
     api.get(`/supermarche/codes-barres/scan/${code}`, getTenantHeaders()),

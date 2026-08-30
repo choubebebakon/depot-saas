@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
@@ -11,7 +11,7 @@ import PhotoUpload from '../../../shared/components/forms/PhotoUpload';
 
 const articleSchema = z.object({
   designation: z.string().min(2, 'La désignation doit contenir au moins 2 caractères'),
-  famille: z.string().optional(),
+  familleId: z.string().optional(),
   prixVente: z.coerce.number().positive('Le prix de vente doit être supérieur à 0'),
   prixAchat: z.coerce.number().min(0, 'Le prix d\'achat ne peut pas être négatif').optional().or(z.literal('')),
   seuilCritique: z.coerce.number().min(0, 'Le seuil critique ne peut pas être négatif'),
@@ -27,11 +27,19 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
   const queryClient = useQueryClient();
   const notif = useNotif();
 
+  const { data: familles } = useQuery({
+    queryKey: ['depot-familles'],
+    queryFn: async () => {
+      const res = await api.get('/depot-boissons/familles');
+      return res.data || [];
+    },
+  });
+
   const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(articleSchema),
     defaultValues: {
       designation: '',
-      famille: '',
+      familleId: '',
       prixVente: '',
       prixAchat: '',
       seuilCritique: 0,
@@ -48,7 +56,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
     if (edit) {
       reset({
         designation: edit.designation || edit.nom || '',
-        famille: edit.famille || '',
+        familleId: edit.familleId || '',
         prixVente: edit.prixVente || '',
         prixAchat: edit.prixAchat || '',
         seuilCritique: edit.seuilCritique || 0,
@@ -62,7 +70,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
     } else {
       reset({
         designation: '',
-        famille: '',
+        familleId: '',
         prixVente: '',
         prixAchat: '',
         seuilCritique: 0,
@@ -123,17 +131,23 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
       />
 
       <Controller
-        name="famille"
+        name="familleId"
         control={control}
         render={({ field }) => (
-          <FormField
-            label="Famille"
-            name="famille"
-            value={field.value}
-            onChange={(e) => field.onChange(e.target.value)}
-            error={errors.famille?.message}
-            placeholder="Ex: Bières, Eaux, Jus"
-          />
+          <div>
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Famille</label>
+            <select
+              {...field}
+              disabled={mutation.isPending}
+              className="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
+            >
+              <option value="">Sans famille</option>
+              {familles?.map(f => (
+                <option key={f.id} value={f.id}>{f.emoji} {f.nom}</option>
+              ))}
+            </select>
+            {errors.familleId && <span className="text-red-400 text-xs mt-1">{errors.familleId.message}</span>}
+          </div>
         )}
       />
 

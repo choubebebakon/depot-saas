@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'; import api from '../../../api'; import { PERMISSIONS } from '../permissions'; import { usePermission } from '../../../shared/hooks/usePermission';
+import { useState, useEffect, useCallback } from 'react';;
 import OrdreTravailForm from '../forms/OrdreTravailForm';
 import DiagnosticForm from '../forms/DiagnosticForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';

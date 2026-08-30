@@ -46,6 +46,34 @@ export function usePermission(permissionsOrSousModule, page) {
   const rawMetier = metier || user?.metier || localStorage.getItem('gestock_metier');
   const slug = normalizeMetierSlug(rawMetier);
 
+  if (permissionsOrSousModule === undefined && page === undefined) {
+    const tokenPayload = decodeJwtPayload(localStorage.getItem('depot_token'));
+    const actualRole = tokenPayload?.role || user?.role || null;
+    const tenantId = tokenPayload?.tenantId || user?.tenantId || null;
+    const depotId = tokenPayload?.depotId ?? user?.depotId ?? null;
+
+    const can = (permission) => hasRole(actualRole, RBAC_PERMISSIONS[permission] || []);
+    const filterMenu = (items) =>
+      items.filter((item) => !item.permission || can(item.permission));
+
+    return {
+      role: actualRole,
+      tenantId,
+      depotId,
+      can,
+      filterMenu,
+      canAccessAllDepots: can('TENANT_ALL_DEPOTS'),
+      canReadStocks: can('STOCK_READ'),
+      canWriteStocks: can('STOCK_WRITE'),
+      canReadSales: can('SALES_READ'),
+      canWriteSales: can('SALES_WRITE'),
+      canReadFinance: can('FINANCE_READ'),
+      canWriteFinance: can('FINANCE_WRITE'),
+      canReadEmployees: can('EMPLOYEES_READ'),
+      canWriteEmployees: can('EMPLOYEES_WRITE'),
+    };
+  }
+
   // Nouvelle API : usePermission(sousModule)
   if (typeof permissionsOrSousModule === 'string') {
     const legacyPerms = LEGACY_PERMISSION_MAP[permissionsOrSousModule];
@@ -126,31 +154,4 @@ export function usePermission(permissionsOrSousModule, page) {
   };
 }
 
-export function usePermissions() {
-  const { user } = useAuth();
-  const tokenPayload = decodeJwtPayload(localStorage.getItem('depot_token'));
-  const role = tokenPayload?.role || user?.role || null;
-  const tenantId = tokenPayload?.tenantId || user?.tenantId || null;
-  const depotId = tokenPayload?.depotId ?? user?.depotId ?? null;
 
-  const can = (permission) => hasRole(role, RBAC_PERMISSIONS[permission] || []);
-  const filterMenu = (items) =>
-    items.filter((item) => !item.permission || can(item.permission));
-
-  return {
-    role,
-    tenantId,
-    depotId,
-    can,
-    filterMenu,
-    canAccessAllDepots: can('TENANT_ALL_DEPOTS'),
-    canReadStocks: can('STOCK_READ'),
-    canWriteStocks: can('STOCK_WRITE'),
-    canReadSales: can('SALES_READ'),
-    canWriteSales: can('SALES_WRITE'),
-    canReadFinance: can('FINANCE_READ'),
-    canWriteFinance: can('FINANCE_WRITE'),
-    canReadEmployees: can('EMPLOYEES_READ'),
-    canWriteEmployees: can('EMPLOYEES_WRITE'),
-  };
-}

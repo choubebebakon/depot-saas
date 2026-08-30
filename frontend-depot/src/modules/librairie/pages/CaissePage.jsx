@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'; import api from '../../../api'; import { PERMISSIONS } from '../permissions'; import { usePermission } from '../../../shared/hooks/usePermission'; import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import { useState, useEffect, useCallback } from 'react';; import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePagination } from '../../../hooks/usePagination';
 
 // SHIELD METIER DE SÉCURITÉ RUNTIME

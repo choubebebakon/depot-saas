@@ -71,7 +71,7 @@ export default function CategoriesPage() {
 
   const filteredCategories = search
     ? categories.filter((c) => c.nom?.toLowerCase().includes(search.toLowerCase()))
-    : categories;
+    : categories.sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
 
   return (
     <div className="p-6">

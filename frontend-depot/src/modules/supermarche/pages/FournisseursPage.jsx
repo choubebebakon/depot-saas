@@ -79,7 +79,7 @@ export default function FournisseursPage() {
                   
                   <td className="px-5 py-4">
                     <span className="text-xs font-bold text-slate-300 bg-slate-700/50 px-2.5 py-1 rounded-lg">
-                      {f.depotName || 'Aucun'}
+                      {f.depot?.nom || 'Aucun'}
                     </span>
                   </td>
                   

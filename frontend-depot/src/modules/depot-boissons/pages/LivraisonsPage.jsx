@@ -1,9 +1,10 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
+import { useDepot } from '../../../contexts/DepotContext';
 import { depotApi } from '../services/depotApi';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 
@@ -14,6 +15,8 @@ export default function LivraisonsPage() {
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('livraisons');
+  const depot = useDepot();
+  const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
 
   const [showModal, setShowModal] = useState(null);
   const [formData, setFormData] = useState({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId: '' });
@@ -22,6 +25,10 @@ export default function LivraisonsPage() {
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
+  }
+
+  if (!depotId) {
+    return <div className="p-6 text-center text-red-400 font-bold">DÃ©pÃ´t non sÃ©lectionnÃ©</div>;
   }
 
   // Fetch deliveries
@@ -130,8 +137,7 @@ export default function LivraisonsPage() {
         </div>
         {canWrite && (
           <button onClick={() => {
-            const depotId = user?.depotActif?.id || '';
-            setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId });
+            setFormData({ fournisseurId: '', articles: '', dateLivraison: '', notes: '', depotId: depotId || '' });
             setShowModal('create');
           }}
             className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-blue-600/20">

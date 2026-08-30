@@ -73,6 +73,7 @@ import { ExportsModule } from './exports/exports.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { SupportModule } from './support/support.module';
 import { BillingModule } from './billing/billing.module';
+import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 
 @Module({
   imports: [
@@ -144,6 +145,7 @@ import { BillingModule } from './billing/billing.module';
     InvoicesModule,
     SupportModule,
     BillingModule,
+    PlatformAdminModule,
   ],
   controllers: [AppController],
   providers: [

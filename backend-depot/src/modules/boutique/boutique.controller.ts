@@ -23,6 +23,7 @@ import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { buildAuditActor } from '../../audit/audit-actor.util';
 import {
   PromotionsService,
   ArticlesService,
@@ -157,7 +158,7 @@ export class BoutiqueController {
   @RequirePermission('stock', 'write')
   @HttpCode(HttpStatus.OK)
   async deleteArticle(@Param('id') id: string, @Req() req: any) {
-    return this.articlesService.delete(id, this.getTenantId(req));
+    return this.articlesService.delete(id, this.getTenantId(req), buildAuditActor(req));
   }
   // ── Stock ─────────────────────────────────────────────────────────────────
 
@@ -219,7 +220,7 @@ export class BoutiqueController {
   @RequirePermission('clients', 'write')
   @HttpCode(HttpStatus.OK)
   async deleteClient(@Param('id') id: string, @Req() req: any) {
-    return this.clientsService.delete(id, this.getTenantId(req));
+    return this.clientsService.delete(id, this.getTenantId(req), buildAuditActor(req));
   }
 
   // ── Crédit Client ─────────────────────────────────────────────────────────────
@@ -319,6 +320,7 @@ export class BoutiqueController {
     return this.depensesService.create(
       { ...data, depotId },
       this.getTenantId(req),
+      buildAuditActor(req),
     );
   }
 
@@ -358,7 +360,7 @@ export class BoutiqueController {
     return this.ventesService.createVente(
       this.getTenantId(req),
       { ...data, depotId },
-      req.user.id,
+      buildAuditActor(req),
     );
   }
 
@@ -385,7 +387,70 @@ export class BoutiqueController {
     @Body() body: any,
     @Req() req: any,
   ) {
-    return this.ventesService.annulerVente(id, this.getTenantId(req), body?.motif);
+    return this.ventesService.annulerVente(
+      id,
+      this.getTenantId(req),
+      body?.motif,
+      buildAuditActor(req),
+    );
+  }
+
+  // ── Caisse ────────────────────────────────────────────────────────────────
+  // Ces routes étaient absentes alors que le frontend (CaissePage.jsx) les
+  // appelle depuis toujours -> 404 garanti. Les méthodes de service
+  // existaient déjà (VentesService.ouvrirCaisse/fermerCaisse/...), il
+  // manquait uniquement leur exposition HTTP.
+
+  @Get('caisse/statut')
+  @RequirePermission('caisse', 'read')
+  async getCaisseStatut(@Req() req: any, @Query('depotId') depotId?: string) {
+    return this.ventesService.getCaisseStatut(
+      this.getTenantId(req),
+      depotId || this.getDepotId(req),
+    );
+  }
+
+  @Post('caisse/ouvrir')
+  @RequirePermission('caisse', 'write')
+  async ouvrirCaisse(@Body() data: any, @Req() req: any) {
+    const depotId = data.depotId || this.getDepotId(req);
+    const actor = buildAuditActor(req);
+    return this.ventesService.ouvrirCaisse(
+      this.getTenantId(req),
+      { ...data, depotId, userId: data.userId || actor.userId },
+      actor,
+    );
+  }
+
+  @Post('caisse/fermer')
+  @RequirePermission('caisse', 'write')
+  async fermerCaisse(@Body() data: any, @Req() req: any) {
+    const depotId = data.depotId || this.getDepotId(req);
+    return this.ventesService.fermerCaisse(
+      this.getTenantId(req),
+      { ...data, depotId },
+      buildAuditActor(req),
+    );
+  }
+
+  @Post('caisse/mouvement')
+  @RequirePermission('caisse', 'write')
+  async mouvementCaisse(@Body() data: any, @Req() req: any) {
+    const depotId = data.depotId || this.getDepotId(req);
+    return this.ventesService.mouvementCaisse(
+      this.getTenantId(req),
+      { ...data, depotId },
+      buildAuditActor(req),
+    );
+  }
+
+  @Get('caisse/rapport-journalier')
+  @RequirePermission('caisse', 'read')
+  async rapportJournalierCaisse(@Req() req: any, @Query('depotId') depotId?: string) {
+    return this.ventesService.rapportJournalier(
+      this.getTenantId(req),
+      depotId || this.getDepotId(req),
+    );
   }
 
   // ── Rapports ──────────────────────────────────────────────────────────────

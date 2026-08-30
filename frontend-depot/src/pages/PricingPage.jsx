@@ -19,14 +19,14 @@ const PLANS = [
     monthly: 25000, annual: 249000, depots: 1,
     badge: null,
     desc: 'Pour les petits commerces',
-    features: ['1 structure', 'Gestion des stocks', 'Rapport intelligent', 'Support standard', 'Export EXCEL', 'Notification', 'IA (chatbot)', 'Audit gestion'],
+    features: ['1 structure', 'Gestion des stocks', 'Rapport intelligent', 'Support standard', 'Export EXCEL', 'Notification', 'IA avancée', 'Audit gestion avancé'],
   },
   {
     id: 'PME', name: 'PME', icon: 'Trophy', color: 'amber',
     monthly: 50000, annual: 498000, depots: 10,
     badge: 'RECOMMANDÉ',
     desc: 'La référence multi-structures',
-    features: ['10 structures', 'Multi-stock avancé', 'Rapports détaillés', 'Support prioritaire', 'Gestion du personnel illimité', 'Gestion des rôles dans l\'entreprise', 'Notification — alerte stock — rupture', 'IA avancée'],
+    features: ['10 structures', 'Multi-stock avancé', 'Rapports détaillés', 'Support prioritaire', 'Gestion du personnel illimité', 'Gestion des rôles dans l\'entreprise', 'Notification — alerte stock — rupture', 'IA avancée' , 'Audit gestion avancé'],
   },
   {
     id: 'ENTERPRISE', name: 'ENTERPRISE', icon: 'Globe', color: 'purple',
@@ -391,7 +391,7 @@ export default function PricingPage() {
             <span style={{ fontSize: 12, color: '#8b5cf6', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>Plans & Tarifs</span>
           </div>
           <h1 style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 900, color: '#1e293b', lineHeight: 1.1, margin: '0 0 20px', letterSpacing: -2 }}>
-            Gérez vos dépôts<br />
+            Gérez votre Entreprises<br />
             <span style={{ background: 'linear-gradient(135deg, #f59e0b, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>sans limite</span>
           </h1>
           <p style={{ fontSize: 18, color: '#64748b', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>

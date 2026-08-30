@@ -41,6 +41,7 @@ import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { buildAuditActor } from '../../audit/audit-actor.util';
 
 @Controller('supermarche')
 @Metier(MetierType.SUPERMARCHE)
@@ -181,14 +182,19 @@ export class SupermarcheController {
     @Body() data: UpdateStockDto,
   ) {
     this.checkTenantId(req);
-    return this.service.partialUpdateArticleStock(id, req.user.tenantId, data);
+    return this.service.partialUpdateArticleStock(
+      id,
+      req.user.tenantId,
+      data,
+      buildAuditActor(req),
+    );
   }
 
   @Delete('produits/:id')
   @RequirePermission('stock', 'write')
   async deleteProduit(@Req() req: any, @Param('id') id: string) {
     this.checkTenantId(req);
-    return this.service.deleteArticle(id, req.user.tenantId);
+    return this.service.deleteArticle(id, req.user.tenantId, buildAuditActor(req));
   }
 
   // ── Clients ───────────────────────────────────────────────────────────────
@@ -226,7 +232,7 @@ export class SupermarcheController {
   @RequirePermission('clients', 'write')
   async deleteClient(@Req() req: any, @Param('id') id: string) {
     this.checkTenantId(req);
-    return this.service.deleteClient(id, req.user.tenantId);
+    return this.service.deleteClient(id, req.user.tenantId, buildAuditActor(req));
   }
 
   // ── Fournisseurs ──────────────────────────────────────────────────────────
@@ -276,7 +282,7 @@ export class SupermarcheController {
   @RequirePermission('depenses', 'write')
   async createDepense(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.createDepense(req.user.tenantId, data);
+    return this.service.createDepense(req.user.tenantId, data, buildAuditActor(req));
   }
 
   @Patch('depenses/:id')
@@ -348,7 +354,11 @@ export class SupermarcheController {
   @RequirePermission('inventaire', 'write')
   async createInventaire(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.createInventaire(req.user.tenantId, data);
+    return this.service.createInventaire(
+      req.user.tenantId,
+      data,
+      buildAuditActor(req),
+    );
   }
 
   // ── Ventes ────────────────────────────────────────────────────────────────
@@ -357,7 +367,23 @@ export class SupermarcheController {
   @RequirePermission('pos_caisse', 'write')
   async createVente(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.createVente(req.user.tenantId, data, req.user.userId);
+    return this.service.createVente(req.user.tenantId, data, buildAuditActor(req));
+  }
+
+  @Patch('ventes/:id/annuler')
+  @RequirePermission('pos_caisse', 'write')
+  async annulerVente(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
+    this.checkTenantId(req);
+    return this.service.annulerVente(
+      id,
+      req.user.tenantId,
+      body?.motif,
+      buildAuditActor(req),
+    );
   }
 
   // ── Réceptions ────────────────────────────────────────────────────────────
@@ -498,24 +524,26 @@ export class SupermarcheController {
   @RequirePermission('pos_caisse', 'write')
   async ouvrirCaisse(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.ouvrirCaisse(req.user.tenantId, {
-      ...data,
-      userId: req.user.userId,
-    });
+    const actor = buildAuditActor(req);
+    return this.service.ouvrirCaisse(
+      req.user.tenantId,
+      { ...data, userId: data.userId || req.user.userId },
+      actor,
+    );
   }
 
   @Post('caisse/fermer')
   @RequirePermission('pos_caisse', 'write')
   async fermerCaisse(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.fermerCaisse(req.user.tenantId, data);
+    return this.service.fermerCaisse(req.user.tenantId, data, buildAuditActor(req));
   }
 
   @Post('caisse/mouvement')
   @RequirePermission('pos_caisse', 'write')
   async mouvementCaisse(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.mouvementCaisse(req.user.tenantId, data);
+    return this.service.mouvementCaisse(req.user.tenantId, data, buildAuditActor(req));
   }
 
   @Get('caisse/rapport-journalier')

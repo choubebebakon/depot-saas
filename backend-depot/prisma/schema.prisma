@@ -653,6 +653,15 @@ model JournalAudit {
   valeurApres  Json?
   metadataText String?
   severite     AuditSeverite @default(INFO)
+
+  // === ÉLÉMENTS MANQUANTS AJOUTÉS ICI ===
+  resultat     AuditResultat?
+  metier       String?
+  motif        String?
+  requestId    String?
+  sessionId    String?
+  // ======================================
+
   ipAddress    String?
   userAgent    String?
   montant      Float?
@@ -664,6 +673,7 @@ model JournalAudit {
   @@index([action])
   @@index([depotId])
   @@index([severite])
+  @@index([resultat])
 }
 
 model MaintenanceTricycle {
@@ -2483,6 +2493,12 @@ enum AuditSeverite {
   INFO
   ATTENTION
   CRITIQUE
+}
+
+enum AuditResultat {
+  SUCCES
+  ECHEC
+  // Ajustez les valeurs selon celles utilisées dans votre application
 }
 
 enum AlertType {

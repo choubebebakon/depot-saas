@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingCart, Package, MapPin, Users, Settings, LogOut, PlusCircle, Printer, BarChart3, Warehouse, CreditCard, Tag, AlertTriangle, Box, ClipboardList, Users2, FileText, Activity, ShieldCheck, Wrench, ArrowRightLeft, Target, Receipt, Truck, Building2, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
-import { usePermissions } from '../shared/hooks/usePermission';
+import { usePermission } from '../shared/hooks/usePermission';
 import { filterByRole, ROLES } from '../utils/rbac';
 import { getMetierMenus, getMetierConfig } from '../config/metier-dashboard.config';
 
@@ -179,7 +179,7 @@ const ROLE_GATE_MAP = {
 
 export default function MainLayout() {
   const { user, role, logout } = useAuth();
-  const permissions = usePermissions();
+  const permissions = usePermission();
   const { depots, depotActif, changerDepot } = useDepot();
   const navigate = useNavigate();
 

@@ -345,4 +345,212 @@ export class StocksService {
       date: today,
     };
   }
+
+  // === GESTION DES LOTS ===
+
+  async getLots(tenantId: string, articleId?: string, depotId?: string) {
+    const where: any = { tenantId };
+    if (articleId) where.articleId = articleId;
+    if (depotId) where.depotId = depotId;
+
+    return this.prisma.lotStock.findMany({
+      where,
+      include: {
+        article: true,
+        depot: true,
+      },
+      orderBy: { dlc: 'asc' },
+    });
+  }
+
+  async getLotById(tenantId: string, lotId: string) {
+    const lot = await this.prisma.lotStock.findFirst({
+      where: { id: lotId, tenantId },
+      include: {
+        article: true,
+        depot: true,
+      },
+    });
+
+    if (!lot) {
+      throw new NotFoundException(`Lot with ID ${lotId} not found`);
+    }
+
+    return lot;
+  }
+
+  async createLot(data: {
+    articleId: string;
+    depotId: string;
+    tenantId: string;
+    quantite: number;
+    dlc?: Date;
+    numeroLot?: string;
+    actor: { userId: string; email: string; role: string };
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const lot = await tx.lotStock.create({
+        data: {
+          articleId: data.articleId,
+          depotId: data.depotId,
+          tenantId: data.tenantId,
+          quantite: data.quantite,
+          quantiteInitiale: data.quantite,
+          dlc: data.dlc,
+          numeroLot: data.numeroLot,
+        },
+        include: {
+          article: true,
+          depot: true,
+        },
+      });
+
+      // Mettre à jour le stock global
+      await tx.stock.upsert({
+        where: {
+          articleId_depotId: {
+            articleId: data.articleId,
+            depotId: data.depotId,
+          },
+        },
+        update: { quantite: { increment: data.quantite } },
+        create: {
+          articleId: data.articleId,
+          depotId: data.depotId,
+          quantite: data.quantite,
+        },
+      });
+
+      // Audit
+      await this.auditService.logEvent({
+        tenantId: data.tenantId,
+        actorUserId: data.actor.userId,
+        actorEmail: data.actor.email,
+        actorRole: data.actor.role,
+        action: 'CREATION_LOT',
+        targetType: 'LOT_STOCK',
+        targetId: lot.id,
+        reference: lot.numeroLot || lot.id,
+        description: `Création lot: ${data.quantite} unités, DLC: ${data.dlc ? new Date(data.dlc).toLocaleDateString('fr-FR') : 'N/A'}`,
+        metadata: { ...data },
+      });
+
+      return lot;
+    });
+  }
+
+  async updateLot(tenantId: string, lotId: string, data: {
+    quantite?: number;
+    dlc?: Date;
+    numeroLot?: string;
+  }) {
+    const lot = await this.prisma.lotStock.findFirst({
+      where: { id: lotId, tenantId },
+    });
+
+    if (!lot) {
+      throw new NotFoundException(`Lot with ID ${lotId} not found`);
+    }
+
+    const ancienneQuantite = lot.quantite;
+    const nouvelleQuantite = data.quantite !== undefined ? data.quantite : ancienneQuantite;
+    const difference = nouvelleQuantite - ancienneQuantite;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedLot = await tx.lotStock.update({
+        where: { id: lotId },
+        data: {
+          ...(data.quantite !== undefined && { quantite: data.quantite }),
+          ...(data.dlc && { dlc: data.dlc }),
+          ...(data.numeroLot && { numeroLot: data.numeroLot }),
+        },
+        include: {
+          article: true,
+          depot: true,
+        },
+      });
+
+      // Ajuster le stock global si la quantité a changé
+      if (difference !== 0) {
+        await tx.stock.update({
+          where: {
+            articleId_depotId: {
+              articleId: lot.articleId,
+              depotId: lot.depotId,
+            },
+          },
+          data: { quantite: { increment: difference } },
+        });
+      }
+
+      return updatedLot;
+    });
+  }
+
+  async deleteLot(tenantId: string, lotId: string) {
+    const lot = await this.prisma.lotStock.findFirst({
+      where: { id: lotId, tenantId },
+    });
+
+    if (!lot) {
+      throw new NotFoundException(`Lot with ID ${lotId} not found`);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Déduire du stock global
+      await tx.stock.update({
+        where: {
+          articleId_depotId: {
+            articleId: lot.articleId,
+            depotId: lot.depotId,
+          },
+        },
+        data: { quantite: { decrement: lot.quantite } },
+      });
+
+      await tx.lotStock.delete({
+        where: { id: lotId },
+      });
+
+      return { success: true, message: 'Lot supprimé' };
+    });
+  }
+
+  async getDLCAlertes(tenantId: string, depotId?: string, jours: number = 30) {
+    const dateLimite = new Date();
+    dateLimite.setDate(dateLimite.getDate() + jours);
+
+    const where: any = {
+      tenantId,
+      dlc: { lte: dateLimite },
+    };
+    if (depotId) where.depotId = depotId;
+
+    const lots = await this.prisma.lotStock.findMany({
+      where,
+      include: {
+        article: true,
+        depot: true,
+      },
+      orderBy: { dlc: 'asc' },
+    });
+
+    // Catégoriser par urgence
+    const perimes = lots.filter(l => l.dlc && new Date(l.dlc) < new Date());
+    const urgent = lots.filter(l => l.dlc && new Date(l.dlc) >= new Date() && new Date(l.dlc) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const bientot = lots.filter(l => l.dlc && new Date(l.dlc) > new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+
+    return {
+      total: lots.length,
+      perimes: perimes.length,
+      urgent: urgent.length,
+      bientot: bientot.length,
+      lots: lots.map(l => ({
+        ...l,
+        joursRestants: l.dlc ? Math.ceil((new Date(l.dlc).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null,
+        urgence: l.dlc && new Date(l.dlc) < new Date() ? 'PERIME' :
+                 l.dlc && new Date(l.dlc) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'URGENT' : 'BIENTOT',
+      })),
+    };
+  }
 }

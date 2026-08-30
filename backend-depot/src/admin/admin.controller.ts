@@ -82,4 +82,82 @@ export class AdminController {
       limit: limit ? parseInt(limit, 10) : 100,
     });
   }
+
+  // === GESTION DES UTILISATEURS ===
+
+  @Get('users')
+  getAllUsers(
+    @Query('tenantId') tenantId?: string,
+    @Query('role') role?: string,
+    @Query('isActive') isActive?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.adminService.getAllUsers({
+      tenantId,
+      role,
+      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
+  }
+
+  @Get('users/:id')
+  getUserById(@Param('id') userId: string) {
+    return this.adminService.getUserById(userId);
+  }
+
+  @Post('users/:id/toggle-active')
+  toggleUserActive(@Param('id') userId: string) {
+    return this.adminService.toggleUserActive(userId);
+  }
+
+  @Post('users/:id/role')
+  updateUserRole(
+    @Param('id') userId: string,
+    @Body('role') role: string,
+  ) {
+    return this.adminService.updateUserRole(userId, role);
+  }
+
+  @Post('users/:id/super-admin')
+  toggleSuperAdmin(@Param('id') userId: string) {
+    return this.adminService.toggleSuperAdmin(userId);
+  }
+
+  @Delete('users/:id')
+  deleteUser(@Param('id') userId: string) {
+    return this.adminService.deleteUser(userId);
+  }
+
+  // === ANALYTICS AVANCÉS ===
+
+  @Get('analytics/overview')
+  getAnalyticsOverview() {
+    return this.adminService.getAnalyticsOverview();
+  }
+
+  @Get('analytics/usage')
+  getUsageMetrics(
+    @Query('period') period?: string,
+  ) {
+    return this.adminService.getUsageMetrics(period);
+  }
+
+  @Get('analytics/revenue')
+  getRevenueAnalytics(
+    @Query('period') period?: string,
+  ) {
+    return this.adminService.getRevenueAnalytics(period);
+  }
+
+  @Get('analytics/churn')
+  getChurnAnalytics() {
+    return this.adminService.getChurnAnalytics();
+  }
+
+  @Get('analytics/feature-usage')
+  getFeatureUsage() {
+    return this.adminService.getFeatureUsage();
+  }
 }

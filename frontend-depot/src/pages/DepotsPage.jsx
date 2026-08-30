@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useData } from '../hooks/useData';
 import { useNotif } from '../context/NotifContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
 import api from '../api/axios';
+import FormModal from '../shared/components/forms/FormModal';
+import FormField from '../shared/components/forms/FormField';
 import {
   Plus, Edit, Trash2, MapPin, Building2, Save, X,
   AlertTriangle, RefreshCw, Hash, Crown
@@ -19,20 +24,42 @@ const PLAN_DEPOT_LIMITS = {
   ENTERPRISE: Infinity
 };
 
+// Schéma de validation Zod
+const depotSchema = z.object({
+  nom: z.string().min(1, 'Le nom du dépôt est requis'),
+  adresse: z.string().optional(),
+  emplacement: z.string().optional(),
+  codePrefix: z.string().min(1, 'Le préfixe est requis').max(5, 'Le préfixe ne peut pas dépasser 5 caractères'),
+});
+
 export default function DepotsPage() {
   const { metier: metierParam } = useParams();
-  const { metier: metierAuth, tenantId, planType, refreshUser } = useAuth(); // 👈 Récupération de planType et refreshUser
+  const { metier: metierAuth, tenantId, planType, refreshUser } = useAuth();
   const { depotActif, changerDepot } = useDepot();
   const metier = metierParam || metierAuth;
   const prefix = metier ? metier.toLowerCase().replace(/_/g, '-') : '';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDepot, setEditingDepot] = useState(null);
-  const [formData, setFormData] = useState({
-    nom: '', adresse: '', emplacement: '', codePrefix: 'DEP'
-  });
+  const [formLoading, setFormLoading] = useState(false);
 
   const { success, error: notifError, info } = useNotif();
+
+  // Configuration react-hook-form avec Zod
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(depotSchema),
+    defaultValues: {
+      nom: '',
+      adresse: '',
+      emplacement: '',
+      codePrefix: 'DEP',
+    },
+  });
 
   // Chargement des dépôts du tenant actuel
   const { data: depots = [], loading, refetch } = useData('/depots', { params: { tenantId }, enabled: !!tenantId });
@@ -52,19 +79,25 @@ export default function DepotsPage() {
   const openModal = (depot = null) => {
     if (depot) {
       setEditingDepot(depot);
-      setFormData({
-        nom: depot.nom, adresse: depot.adresse,
-        emplacement: depot.emplacement, codePrefix: depot.codePrefix || 'DEP'
+      reset({
+        nom: depot.nom,
+        adresse: depot.adresse,
+        emplacement: depot.emplacement,
+        codePrefix: depot.codePrefix || 'DEP',
       });
       setIsModalOpen(true);
     } else {
-      // Si c'est une création, on vérifie d'abord la limite côté client
       if (isLimitReached) {
         notifError(`Votre formule actuelle (${currentPlan}) est limitée à ${maxAllowedDepots} dépôt(s). Veuillez améliorer votre abonnement.`, 'Limite atteinte');
         return;
       }
       setEditingDepot(null);
-      setFormData({ nom: '', adresse: '', emplacement: '', codePrefix: 'DEP' });
+      reset({
+        nom: '',
+        adresse: '',
+        emplacement: '',
+        codePrefix: 'DEP',
+      });
       setIsModalOpen(true);
     }
   };
@@ -72,22 +105,25 @@ export default function DepotsPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingDepot(null);
+    reset();
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
+    setFormLoading(true);
     try {
       if (editingDepot) {
-        await api.patch(`/depots/${editingDepot.id}`, { ...formData, tenantId });
+        await api.patch(`/depots/${editingDepot.id}`, { ...data, tenantId });
         success('Dépôt mis à jour');
       } else {
-        await api.post('/depots', { ...formData, tenantId });
+        await api.post('/depots', { ...data, tenantId });
         success('Dépôt créé avec succès');
       }
       closeModal();
       refetch();
     } catch (err) {
       notifError(err.response?.data?.message || 'Erreur lors de l\'opération', 'Échec');
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -241,86 +277,49 @@ export default function DepotsPage() {
       </div>
 
       {/* Modal d'ajout / modification */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={closeModal} />
-          <div className="relative bg-slate-900 border border-slate-800 w-full max-w-lg rounded-[2.5rem] shadow-2xl shadow-indigo-500/10 overflow-hidden">
-            <div className="p-8 border-b border-slate-800 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-black text-white">{editingDepot ? 'Modifier le Dépôt' : 'Nouveau Dépôt'}</h2>
-                <p className="text-slate-500 text-xs mt-1">Identifiez clairement votre point de stockage.</p>
-              </div>
-              <button onClick={closeModal} className="p-3 text-slate-500 hover:text-white transition-colors">
-                <X size={24} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2 block">Nom du Dépôt *</label>
-                  <input
-                    required
-                    value={formData.nom}
-                    onChange={e => setFormData({ ...formData, nom: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all font-bold"
-                    placeholder="ex: Entrepôt Nord"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2 block">Préfixe Code *</label>
-                    <input
-                      required
-                      value={formData.codePrefix}
-                      onChange={e => setFormData({ ...formData, codePrefix: e.target.value.toUpperCase() })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all font-mono font-bold"
-                      maxLength={5}
-                      placeholder="DEP"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2 block">Emplacement</label>
-                    <input
-                      value={formData.emplacement}
-                      onChange={e => setFormData({ ...formData, emplacement: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all"
-                      placeholder="ex: Zone A"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2 block">Adresse Physique</label>
-                  <textarea
-                    rows={3}
-                    value={formData.adresse}
-                    onChange={e => setFormData({ ...formData, adresse: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all text-sm"
-                    placeholder="ex: Boulevard de la liberté, Douala"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-indigo-500/20 uppercase tracking-widest text-sm flex items-center justify-center gap-2"
-                >
-                  <Save size={20} />
-                  {editingDepot ? 'Mettre à jour' : 'Créer le Dépôt'}
-                </button>
-              </div>
-            </form>
+      <FormModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSubmit={handleFormSubmit(onSubmit)}
+        title={editingDepot ? 'Modifier le Dépôt' : 'Nouveau Dépôt'}
+        loading={formLoading}
+        submitLabel={editingDepot ? 'Mettre à jour' : 'Créer le Dépôt'}
+        submitIcon={<Save size={18} />}
+      >
+        <div className="space-y-4">
+          <FormField
+            label="Nom du Dépôt"
+            name="nom"
+            placeholder="ex: Entrepôt Nord"
+            error={errors.nom?.message}
+            {...register('nom')}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              label="Préfixe Code"
+              name="codePrefix"
+              placeholder="DEP"
+              maxLength={5}
+              error={errors.codePrefix?.message}
+              {...register('codePrefix')}
+            />
+            <FormField
+              label="Emplacement"
+              name="emplacement"
+              placeholder="ex: Zone A"
+              {...register('emplacement')}
+            />
           </div>
+          <FormField
+            label="Adresse Physique"
+            name="adresse"
+            type="textarea"
+            rows={3}
+            placeholder="ex: Boulevard de la liberté, Douala"
+            {...register('adresse')}
+          />
         </div>
-      )}
+      </FormModal>
     </div>
   );
 }

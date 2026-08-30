@@ -1,7 +1,25 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'node:crypto';
 import { DepotScopeService } from '../depot-scope.service';
 import * as jwt from 'jsonwebtoken';
+
+// Préfixes de controller connus des métiers actifs — sert uniquement à
+// alimenter le champ "metier" du Journal Audit, ne remplace pas
+// metier-slug.middleware (routage réel, alias legacy inclus).
+const METIER_PREFIXES = new Set([
+  'boutique',
+  'supermarche',
+  'depot-boissons',
+]);
+
+function extractMetierFromPath(path: string): string | null {
+  // path type : /api/v1/boutique/ventes → segments ['api','v1','boutique','ventes']
+  const segments = path.split('/').filter(Boolean);
+  const apiIndex = segments.indexOf('v1');
+  const candidate = apiIndex >= 0 ? segments[apiIndex + 1] : segments[0];
+  return candidate && METIER_PREFIXES.has(candidate) ? candidate : null;
+}
 
 @Injectable()
 export class ContextMiddleware implements NestMiddleware {
@@ -56,8 +74,17 @@ export class ContextMiddleware implements NestMiddleware {
       depotId = null;
     }
 
+    // Identifiant de requête (Journal Audit) : généré une seule fois ici,
+    // au tout début du cycle de vie de la requête, puis conservé sur `req`
+    // pour que DepotScopeInterceptor (qui ré-ouvre son propre contexte
+    // ALS après les guards) puisse le réutiliser sans le régénérer.
+    const requestId = randomUUID();
+    (req as any).auditRequestId = requestId;
+    const metier = extractMetierFromPath(req.path);
+    (req as any).auditMetier = metier;
+
     // 3. Lancement du contexte asynchrone pour Prisma
-    this.depotScope.run({ tenantId, depotId, role }, () => {
+    this.depotScope.run({ tenantId, depotId, role, requestId, metier }, () => {
       next();
     });
   }

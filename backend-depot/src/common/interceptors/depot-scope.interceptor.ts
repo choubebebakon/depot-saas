@@ -44,6 +44,13 @@ export class DepotScopeInterceptor implements NestInterceptor {
           tenantId: user.tenantId,
           depotId: this.getRequestedDepotId(request),
           role: user.role,
+          // Ré-injectés depuis ce que ContextMiddleware a déjà déposé sur
+          // `req` plus tôt dans le cycle de vie de la requête — ce
+          // deuxième run() du contexte ALS remplace entièrement le
+          // contexte précédent, donc sans ça ces deux champs seraient
+          // perdus pour tout le reste de la requête (controller/service).
+          requestId: (request as any).auditRequestId ?? null,
+          metier: (request as any).auditMetier ?? null,
         },
         () => {
           return next.handle().subscribe({
