@@ -5,7 +5,7 @@ import { User, Mail, Phone, Building, MapPin, Calendar, Shield, Edit2, Save, Cam
 import userApi from '../api/userApi';
 
 export default function ProfilPage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshUser } = useAuth();
   const { success, error } = useNotif();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -123,9 +123,9 @@ export default function ProfilPage() {
       };
       reader.readAsDataURL(file);
 
-      // Upload vers le serveur
-      const result = await userApi.uploadAvatar(file);
-      updateUser({ ...user, avatar: result.avatar });
+      // Upload vers le serveur puis resynchronisation depuis la source de vérité
+      await userApi.uploadAvatar(file);
+      await refreshUser();
       success('Photo de profil mise à jour');
     } catch (err) {
       error('Erreur lors du téléchargement de la photo');
@@ -257,7 +257,7 @@ export default function ProfilPage() {
             <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
               <Lock className="w-5 h-5" />
               Sécurité
-            </h3>
+n            </h3>
             <button
               onClick={() => setShowPasswordModal(true)}
               className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2 mb-3"
