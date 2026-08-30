@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { PaymentStatus, PaymentMethod, TenantStatus, AuditSeverite } from '@prisma/client';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { AdminService } from './admin.service';
