@@ -16,27 +16,58 @@ const articleSchema = z.object({
   prixAchat: z.coerce.number().min(0, "Le prix d'achat ne peut pas être négatif").optional().or(z.literal('')),
   prixGros: z.coerce.number().min(0, 'Le prix de gros ne peut pas être négatif').optional().or(z.literal('')),
   seuilCritique: z.coerce.number().min(0, 'Le seuil critique ne peut pas être négatif'),
-  codeBarres: z.string().optional(), unite: z.string().default('PIECE'), rayonId: z.string().optional(),
+  codeBarres: z.string().optional(),
+  unite: z.string().default('PIECE'),
+  rayonId: z.string().optional(),
   photoUrl: z.string().nullable().optional(),
   datePeremption: z.string().optional().refine((v) => !v || !Number.isNaN(new Date(v).getTime()), 'Date de péremption invalide'),
 });
-const toLocal = (v) => { if (!v) return ''; const d = new Date(v); if (Number.isNaN(d.getTime())) return ''; const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
-const defaults = { designation:'', prixVente:'', prixAchat:'', prixGros:'', seuilCritique:0, codeBarres:'', unite:'PIECE', rayonId:'', photoUrl:null, datePeremption:'' };
+
+const toLocal = (v) => {
+  if (!v) return '';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+const defaults = { designation: '', prixVente: '', prixAchat: '', prixGros: '', seuilCritique: 0, codeBarres: '', unite: 'PIECE', rayonId: '', photoUrl: null, datePeremption: '' };
 
 export default function ArticleSupermarcheForm({ isOpen, onClose, onSuccess, edit }) {
-  const queryClient = useQueryClient(); const notif = useNotif();
-  const { control, handleSubmit, reset, setValue, watch, formState:{ errors } } = useForm({ resolver:zodResolver(articleSchema), defaultValues:defaults });
-  const { data: rayonsData } = useQuery({ queryKey:['supermarche-rayons'], queryFn:async()=>{ const r=await supermarcheApi.getRayons(); const raw=r.data?.data??r.data; return Array.isArray(raw)?raw:[]; }, enabled:isOpen });
-  const rayons=rayonsData||[];
-  useEffect(()=>{ if(edit) reset({...defaults, designation:edit.designation||'', prixVente:edit.prixVente??'', prixAchat:edit.prixAchat??'', prixGros:edit.prixGros??'', seuilCritique:edit.seuilCritique??0, codeBarres:edit.codeBarres||'', unite:edit.unite||'PIECE', rayonId:edit.rayons?.[0]?.rayonId||edit.rayonId||'', photoUrl:edit.photoUrl||null, datePeremption:toLocal(edit.datePeremption)}); else reset(defaults); },[edit,isOpen,reset]);
-  const mutation=useMutation({ mutationFn:async(data)=>{ const {rayonId,prixGros,datePeremption,...fields}=data; const payload={...fields, prixAchat:data.prixAchat===''?undefined:Number(data.prixAchat), prixGros:prixGros===''?undefined:Number(prixGros), seuilCritique:Number(data.seuilCritique), codeBarres:data.codeBarres||undefined, photoUrl:data.photoUrl||undefined, datePeremption:datePeremption?new Date(datePeremption).toISOString():null}; if(edit){const r=await supermarcheApi.updateArticle(edit.id,payload); if(rayonId) await supermarcheApi.assignArticleToRayon(rayonId,edit.id); return r.data;} const r=await supermarcheApi.createArticle(payload); const a=r.data?.data??r.data; if(rayonId&&a?.id) await supermarcheApi.assignArticleToRayon(rayonId,a.id); return a; }, onSuccess:()=>{queryClient.invalidateQueries({queryKey:['supermarche-articles']}); queryClient.invalidateQueries({queryKey:['supermarche-rayons']}); queryClient.invalidateQueries({queryKey:['supermarche-dashboard']}); notif.success(edit?'Article mis à jour':'Article créé avec succès'); onSuccess?.(); onClose();}, onError:(err)=>notif.error(err.response?.data?.message||'Une erreur est survenue') });
-  const values=watch();
-  return <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((d)=>mutation.mutate(d))} title={edit?'Modifier article':'Nouvel article'} loading={mutation.isPending} size="lg" submitLabel={edit?'Modifier':'Créer'}>
-    <Controller name="designation" control={control} render={({field})=><FormField label="Désignation" name="designation" value={field.value} onChange={(e)=>field.onChange(e.target.value)} required placeholder="Nom de l'article" error={errors.designation?.message}/>}/>
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4"><Controller name="prixVente" control={control} render={({field})=><FormField label="Prix vente" name="prixVente" type="number" value={field.value} onChange={(e)=>field.onChange(e.target.value)} required min={0} unit="FCFA" error={errors.prixVente?.message}/>}/><Controller name="prixAchat" control={control} render={({field})=><FormField label="Prix achat" name="prixAchat" type="number" value={field.value} onChange={(e)=>field.onChange(e.target.value)} min={0} unit="FCFA" error={errors.prixAchat?.message}/>}/><Controller name="prixGros" control={control} render={({field})=><FormField label="Prix de gros" name="prixGros" type="number" value={field.value} onChange={(e)=>field.onChange(e.target.value)} min={0} unit="FCFA" hint="Optionnel" error={errors.prixGros?.message}/>/></div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"><Controller name="unite" control={control} render={({field})=><FormField label="Unité" name="unite" type="select" value={field.value} onChange={(e)=>field.onChange(e.target.value)} options={[{value:'PIECE',label:'Pièce'},{value:'KG',label:'kg'},{value:'LITRE',label:'Litre'},{value:'M2',label:'m²'}]}/>}/><Controller name="rayonId" control={control} render={({field})=><FormField label="Rayon" name="rayonId" type="select" value={field.value} onChange={(e)=>field.onChange(e.target.value)} options={rayons.map(r=>({value:r.id,label:r.nom}))}/>/></div>
-    <div className="grid grid-cols-1 gap-4 mt-4"><Controller name="codeBarres" control={control} render={({field})=><FormField label="Code-barres" name="codeBarres" value={field.value} onChange={(e)=>field.onChange(e.target.value)} placeholder="Saisir le code-barres" hint="Saisie manuelle ou scan direct" error={errors.codeBarres?.message}/>}/><div className="p-4 bg-slate-900/40 rounded-xl border border-slate-700/40" onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();}}}><p className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">Option alternative : Scanner / Douchette externe</p><div className="contents"><BarcodeScanner onScan={code=>setValue('codeBarres',code,{shouldValidate:true})} placeholder="Cliquez ici puis flashez l'article" mode="both"/></div></div></div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"><Controller name="seuilCritique" control={control} render={({field})=><FormField label="Seuil critique" name="seuilCritique" type="number" value={field.value} onChange={(e)=>field.onChange(e.target.value)} min={0} error={errors.seuilCritique?.message}/>}/><Controller name="datePeremption" control={control} render={({field})=><FormField label="Date et heure de péremption" name="datePeremption" type="datetime-local" value={field.value} onChange={(e)=>field.onChange(e.target.value)} min={new Date().toISOString().slice(0,16)} hint="Optionnel" error={errors.datePeremption?.message}/>}/></div>
-    <div className="mt-4"><PhotoUpload label="Photo de l'article" name="photoUrl" value={values.photoUrl} onChange={e=>setValue('photoUrl',e.target.value)}/></div>
+  const queryClient = useQueryClient();
+  const notif = useNotif();
+  const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({ resolver: zodResolver(articleSchema), defaultValues: defaults });
+
+  const { data: rayonsData } = useQuery({
+    queryKey: ['supermarche-rayons'],
+    queryFn: async () => { const r = await supermarcheApi.getRayons(); const raw = r.data?.data ?? r.data; return Array.isArray(raw) ? raw : []; },
+    enabled: isOpen,
+  });
+  const rayons = rayonsData || [];
+
+  useEffect(() => {
+    if (edit) reset({ ...defaults, designation: edit.designation || '', prixVente: edit.prixVente ?? '', prixAchat: edit.prixAchat ?? '', prixGros: edit.prixGros ?? '', seuilCritique: edit.seuilCritique ?? 0, codeBarres: edit.codeBarres || '', unite: edit.unite || 'PIECE', rayonId: edit.rayons?.[0]?.rayonId || edit.rayonId || '', photoUrl: edit.photoUrl || null, datePeremption: toLocal(edit.datePeremption) });
+    else reset(defaults);
+  }, [edit, isOpen, reset]);
+
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      const { rayonId, prixGros, datePeremption, ...fields } = data;
+      const payload = { ...fields, prixAchat: data.prixAchat === '' ? undefined : Number(data.prixAchat), prixGros: prixGros === '' ? undefined : Number(prixGros), seuilCritique: Number(data.seuilCritique), codeBarres: data.codeBarres || undefined, photoUrl: data.photoUrl || undefined, datePeremption: datePeremption ? new Date(datePeremption).toISOString() : null };
+      if (edit) { const r = await supermarcheApi.updateArticle(edit.id, payload); if (rayonId) await supermarcheApi.assignArticleToRayon(rayonId, edit.id); return r.data; }
+      const r = await supermarcheApi.createArticle(payload); const a = r.data?.data ?? r.data; if (rayonId && a?.id) await supermarcheApi.assignArticleToRayon(rayonId, a.id); return a;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['supermarche-articles'] }); queryClient.invalidateQueries({ queryKey: ['supermarche-rayons'] }); queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'] }); notif.success(edit ? 'Article mis à jour' : 'Article créé avec succès'); onSuccess?.(); onClose(); },
+    onError: (err) => notif.error(err.response?.data?.message || 'Une erreur est survenue'),
+  });
+
+  const values = watch();
+  return <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((d) => mutation.mutate(d))} title={edit ? 'Modifier article' : 'Nouvel article'} loading={mutation.isPending} size="lg" submitLabel={edit ? 'Modifier' : 'Créer'}>
+    <Controller name="designation" control={control} render={({ field }) => <FormField label="Désignation" name="designation" value={field.value} onChange={(e) => field.onChange(e.target.value)} required placeholder="Nom de l'article" error={errors.designation?.message} />} />
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4"><Controller name="prixVente" control={control} render={({ field }) => <FormField label="Prix vente" name="prixVente" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} required min={0} unit="FCFA" error={errors.prixVente?.message} />} /><Controller name="prixAchat" control={control} render={({ field }) => <FormField label="Prix achat" name="prixAchat" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={0} unit="FCFA" error={errors.prixAchat?.message} />} /><Controller name="prixGros" control={control} render={({ field }) => <FormField label="Prix de gros" name="prixGros" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={0} unit="FCFA" hint="Optionnel" error={errors.prixGros?.message} />} /></div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"><Controller name="unite" control={control} render={({ field }) => <FormField label="Unité" name="unite" type="select" value={field.value} onChange={(e) => field.onChange(e.target.value)} options={[{ value: 'PIECE', label: 'Pièce' }, { value: 'KG', label: 'kg' }, { value: 'LITRE', label: 'Litre' }, { value: 'M2', label: 'm²' }]} />} /><Controller name="rayonId" control={control} render={({ field }) => <FormField label="Rayon" name="rayonId" type="select" value={field.value} onChange={(e) => field.onChange(e.target.value)} options={rayons.map((r) => ({ value: r.id, label: r.nom }))} />} /></div>
+    <div className="grid grid-cols-1 gap-4 mt-4"><Controller name="codeBarres" control={control} render={({ field }) => <FormField label="Code-barres" name="codeBarres" value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="Saisir le code-barres" hint="Saisie manuelle ou scan direct" error={errors.codeBarres?.message} />} /><div className="p-4 bg-slate-900/40 rounded-xl border border-slate-700/40" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); } }}><p className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">Option alternative : Scanner / Douchette externe</p><div className="contents"><BarcodeScanner onScan={(code) => setValue('codeBarres', code, { shouldValidate: true })} placeholder="Cliquez ici puis flashez l'article" mode="both" /></div></div></div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"><Controller name="seuilCritique" control={control} render={({ field }) => <FormField label="Seuil critique" name="seuilCritique" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={0} error={errors.seuilCritique?.message} />} /><Controller name="datePeremption" control={control} render={({ field }) => <FormField label="Date et heure de péremption" name="datePeremption" type="datetime-local" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={new Date().toISOString().slice(0, 16)} hint="Optionnel" error={errors.datePeremption?.message} />} /></div>
+    <div className="mt-4"><PhotoUpload label="Photo de l'article" name="photoUrl" value={values.photoUrl} onChange={(e) => setValue('photoUrl', e.target.value)} /></div>
   </FormModal>;
 }
