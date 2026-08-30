@@ -47,11 +47,12 @@ export default function LivraisonsPage() {
   const createMutation = useMutation({
     mutationFn: (data) => depotApi.createLivraison({ ...data, depotId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['depot-livraisons'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-livraisons', depotId] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-stock'] });
       notif.success('Nouvelle livraison créée');
       setShowModal(false);
-      setFormData(EMPTY_FORM);
+      setFormData({ ...EMPTY_FORM });
     },
     onError: (err) => notif.error(err.response?.data?.message || 'Erreur lors de la création'),
   });
@@ -59,8 +60,9 @@ export default function LivraisonsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id) => depotApi.deleteLivraison(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['depot-livraisons'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-livraisons', depotId] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-stock'] });
       notif.success('Livraison supprimée');
       setConfirmDelete(null);
     },
@@ -70,7 +72,8 @@ export default function LivraisonsPage() {
   const handleCreate = () => {
     if (!depotId) return notif.error('Aucun dépôt actif sélectionné');
     if (!formData.fournisseurId) return notif.warning('Veuillez sélectionner un fournisseur');
-    createMutation.mutate(formData);
+    if (!formData.dateLivraison) return notif.warning('Veuillez renseigner la date de livraison');
+    createMutation.mutate({ ...formData, depotId });
   };
 
   if (metier !== 'DEPOT_BOISSONS') return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
@@ -81,7 +84,7 @@ export default function LivraisonsPage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div><h1 className="text-2xl font-black text-white tracking-tight">Livraisons</h1><p className="text-slate-400 text-sm mt-1">Suivi des entrées marchandises ({totalItems} livraison{totalItems > 1 ? 's' : ''})</p></div>
-        {canWrite && <button onClick={() => { setFormData(EMPTY_FORM); setShowModal(true); }} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm">➕ Nouvelle livraison</button>}
+        {canWrite && <button onClick={() => { setFormData({ ...EMPTY_FORM }); setShowModal(true); }} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm">➕ Nouvelle livraison</button>}
       </div>
 
       <select value={filtreStatut} onChange={e => { setFiltreStatut(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm">
