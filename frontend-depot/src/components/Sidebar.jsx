@@ -6,6 +6,7 @@ import {
   Receipt, Warehouse, CreditCard, Tag, Box, ClipboardList, Users2, FileText, Activity
 } from 'lucide-react';
 import Icon from '../shared/components/Icon';
+import { resolveMediaUrl } from '../utils/media';
 
 // Dictionnaire de secours pour mapper les chaînes de texte vers de vrais composants Lucide si besoin
 const ICON_MAP = {
@@ -27,6 +28,13 @@ export default function Sidebar({
   setSidebarOpen
 }) {
   const ICON_SIZE = 20;
+  const avatarSource = user?.avatarUrl || user?.avatar || user?.photoUrl || user?.photo || null;
+  const avatarUrl = resolveMediaUrl(avatarSource);
+  const [avatarFailed, setAvatarFailed] = React.useState(false);
+
+  React.useEffect(() => {
+    setAvatarFailed(false);
+  }, [avatarUrl]);
 
   // Fonction sécurisée pour rendre l'icône peu importe son format (chaîne ou composant)
   const renderItemIcon = (iconProp) => {
@@ -108,8 +116,18 @@ export default function Sidebar({
       {/* Pied de page : Profil & Déconnexion */}
       <div className="p-4 border-t border-slate-800 bg-slate-900/20">
         <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-inner">
-            {user?.email?.[0]?.toUpperCase() || 'U'}
+          <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-inner overflow-hidden">
+            {avatarUrl && !avatarFailed ? (
+              <img
+                src={avatarUrl}
+                alt={user?.nom ? `Photo de ${user.nom}` : 'Photo de profil'}
+                className="w-full h-full object-cover"
+                loading="eager"
+                onError={() => setAvatarFailed(true)}
+              />
+            ) : (
+              user?.nom?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
+            )}
           </div>
           <div className="min-w-0">
             <p className="text-white text-xs font-bold truncate">{user?.email}</p>
