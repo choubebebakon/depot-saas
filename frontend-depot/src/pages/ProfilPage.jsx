@@ -257,7 +257,7 @@ export default function ProfilPage() {
             <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
               <Lock className="w-5 h-5" />
               Sécurité
-n            </h3>
+            </h3>
             <button
               onClick={() => setShowPasswordModal(true)}
               className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2 mb-3"
