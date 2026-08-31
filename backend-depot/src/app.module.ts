@@ -4,7 +4,6 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
-// Core & Common
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
@@ -12,8 +11,8 @@ import { DepotScopeService } from './common/depot-scope.service';
 import { ContextMiddleware } from './common/middleware/context.middleware';
 import { DepotScopeInterceptor } from './common/interceptors/depot-scope.interceptor';
 import { PromotionScopeInterceptor } from './common/interceptors/promotion-scope.interceptor';
+import { TourneeScopeInterceptor } from './common/interceptors/tournee-scope.interceptor';
 
-// Modules de base & Auth
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TenantsModule } from './tenants/tenants.module';
@@ -24,7 +23,6 @@ import { PermissionGuard } from './auth/guards/permission.guard';
 import { AccessStatusGuard } from './common/guards/access-status.guard';
 import { QuotaDepotGuard } from './common/guards/quota-depot.guard';
 
-// Modules métiers et transverses
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { CommissionsModule } from './commissions/commissions.module';
 import { AdminModule } from './admin/admin.module';
@@ -64,10 +62,9 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot({
       pinoHttp: {
-        transport:
-          process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty', options: { singleLine: true } }
-            : undefined,
+        transport: process.env.NODE_ENV !== 'production'
+          ? { target: 'pino-pretty', options: { singleLine: true } }
+          : undefined,
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
@@ -121,6 +118,7 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
     { provide: APP_GUARD, useClass: PermissionGuard },
     { provide: APP_INTERCEPTOR, useClass: DepotScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PromotionScopeInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: TourneeScopeInterceptor },
   ],
 })
 export class AppModule implements NestModule {
