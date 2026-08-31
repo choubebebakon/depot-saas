@@ -1,14 +1,11 @@
-export default function Loader({ className = '', size = 'md', color = 'emerald', label = 'Chargement...', inline = false }) {
-  const sizeMap = { sm: 'w-5 h-5 border-2', md: 'w-8 h-8 border-4', lg: 'w-12 h-12 border-4' };
-  const colorMap = {
-    emerald: 'border-emerald-500', amber: 'border-amber-500', blue: 'border-blue-500', red: 'border-red-500',
-  };
-  const wrapper = inline ? 'inline-flex items-center gap-2' : 'flex flex-col items-center justify-center py-16 gap-3';
+import React from 'react';
 
+export default function Loader({ size = 'md', label = 'Chargement…', className = '' }) {
+  const sizes = { sm: 'h-4 w-4 border-2', md: 'h-8 w-8 border-2', lg: 'h-12 w-12 border-4' };
   return (
-    <div className={`${wrapper} ${className}`} role="status" aria-live="polite">
-      <span className={`${sizeMap[size] || sizeMap.md} ${colorMap[color] || colorMap.emerald} border-t-transparent rounded-full animate-spin`} aria-hidden="true" />
-      {label && <span className="text-slate-500 text-sm">{label}</span>}
+    <div className={`flex items-center justify-center gap-3 p-6 ${className}`} role="status" aria-live="polite">
+      <span className={`animate-spin rounded-full border-current border-t-transparent ${sizes[size] || sizes.md}`} aria-hidden="true" />
+      {label && <span className="text-sm text-slate-400">{label}</span>}
     </div>
   );
 }
