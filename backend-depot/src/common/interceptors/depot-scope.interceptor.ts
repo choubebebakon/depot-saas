@@ -1,16 +1,14 @@
 import {
-  CallHandler,
   ExecutionContext,
   ForbiddenException,
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { CallHandler as NestCallHandler } from '@nestjs/common';
 import { Request } from 'express';
 import { Observable, Subscription } from 'rxjs';
 import { AuthenticatedUser } from '../../auth/strategies/jwt.strategy';
-import { DepotScopeService } from '../depot-scope.service';
 import { PrismaService } from '../../prisma.service';
+import { DepotScopeService } from '../depot-scope.service';
 
 interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
@@ -21,7 +19,12 @@ const MULTI_DEPOT_ROLES = new Set(['PATRON', 'GERANT']);
 function normalizeDepotId(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
-  if (!normalized || normalized === 'all' || normalized === 'null' || normalized === 'undefined') {
+  if (
+    !normalized ||
+    normalized === 'all' ||
+    normalized === 'null' ||
+    normalized === 'undefined'
+  ) {
     return null;
   }
   return normalized;
@@ -34,7 +37,7 @@ export class DepotScopeInterceptor implements NestInterceptor {
     private readonly prisma: PrismaService,
   ) {}
 
-  intercept(context: ExecutionContext, next: NestCallHandler): Observable<unknown> {
+  intercept(context: ExecutionContext, next: import('@nestjs/common').CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
 
@@ -107,14 +110,25 @@ export class DepotScopeInterceptor implements NestInterceptor {
       return user.depotId ?? null;
     }
 
-    const depot = await this.prisma.depot.findFirst({
-      where: {
-        id: requestedDepotId,
+    // La validation doit ignorer le scope de dépôt hérité du middleware :
+    // sinon un PATRON/GERANT déjà affecté au dépôt A ne pourrait pas vérifier
+    // puis sélectionner le dépôt B. Le tenant reste néanmoins obligatoire.
+    const depot = await this.depotScope.run(
+      {
         tenantId: user.tenantId,
-        isArchived: false,
+        depotId: null,
+        role: user.role,
       },
-      select: { id: true },
-    });
+      () =>
+        this.prisma.depot.findFirst({
+          where: {
+            id: requestedDepotId,
+            tenantId: user.tenantId,
+            isArchived: false,
+          },
+          select: { id: true },
+        }),
+    );
 
     if (!depot) {
       throw new ForbiddenException('Accès refusé à ce dépôt.');
