@@ -1,4 +1,5 @@
 import {
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -32,6 +33,7 @@ export class OuvrirCaisseDto {
 
 export class FermerCaisseDto {
   @IsString()
+  @IsNotEmpty()
   sessionId: string;
 
   // Compatibilité legacy : le tenant est toujours injecté côté serveur.
@@ -57,6 +59,7 @@ export class CreateDepenseDto {
   id?: string;
 
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   categorie: string;
 
@@ -65,6 +68,7 @@ export class CreateDepenseDto {
   montant: number;
 
   @IsString()
+  @IsNotEmpty()
   @MaxLength(500)
   motif: string;
 
