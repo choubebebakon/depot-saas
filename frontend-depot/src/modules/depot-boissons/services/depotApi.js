@@ -3,12 +3,7 @@ import api from '../../../api/axios';
 function getTenantHeaders(depotIdOverride = null) {
   const tenantId = localStorage.getItem('gestock_tenantId');
   const depotId = depotIdOverride || localStorage.getItem('depot_actif_id');
-  return {
-    headers: {
-      'X-Tenant-Id': tenantId || '',
-      'X-Depot-Id': depotId || '',
-    },
-  };
+  return { headers: { 'X-Tenant-Id': tenantId || '', 'X-Depot-Id': depotId || '' } };
 }
 
 function cleanParams(params) {
@@ -24,8 +19,7 @@ function requireDepotId(depotId) {
 export const depotApi = {
   getDashboardStats: () => {
     const depotId = localStorage.getItem('depot_actif_id');
-    const params = depotId ? { depotId } : {};
-    return api.get('/depot-boissons/dashboard', { ...getTenantHeaders(depotId), params });
+    return api.get('/depot-boissons/dashboard', { ...getTenantHeaders(depotId), params: depotId ? { depotId } : {} });
   },
   getArticles: (params) => api.get('/depot-boissons/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
   getArticle: (id) => api.get(`/depot-boissons/articles/${id}`, getTenantHeaders()),
@@ -62,10 +56,7 @@ export const depotApi = {
 
   getTricycles: (depotId) => {
     const activeDepotId = requireDepotId(depotId);
-    return api.get('/tournees/tricycles', {
-      ...getTenantHeaders(activeDepotId),
-      params: { depotId: activeDepotId },
-    });
+    return api.get('/tournees/tricycles', { ...getTenantHeaders(activeDepotId), params: { depotId: activeDepotId } });
   },
   createTricycle: (data) => {
     const activeDepotId = requireDepotId(data?.depotId);
@@ -75,13 +66,17 @@ export const depotApi = {
     const activeDepotId = requireDepotId(data?.depotId);
     return api.patch(`/tournees/tricycles/${id}`, { ...data, depotId: activeDepotId }, getTenantHeaders(activeDepotId));
   },
+  getCommerciaux: (depotId) => {
+    const activeDepotId = requireDepotId(depotId);
+    return api.get('/users/commerciaux', {
+      ...getTenantHeaders(activeDepotId),
+      params: { depotId: activeDepotId },
+    });
+  },
 
   getTournees: (params = {}) => {
     const activeDepotId = requireDepotId(params.depotId);
-    return api.get('/depot-boissons/tournees', {
-      ...getTenantHeaders(activeDepotId),
-      params: cleanParams({ ...params, depotId: activeDepotId }),
-    });
+    return api.get('/depot-boissons/tournees', { ...getTenantHeaders(activeDepotId), params: cleanParams({ ...params, depotId: activeDepotId }) });
   },
   getTournee: (id, depotId) => api.get(`/depot-boissons/tournees/${id}`, getTenantHeaders(requireDepotId(depotId))),
   createTournee: (data) => {
