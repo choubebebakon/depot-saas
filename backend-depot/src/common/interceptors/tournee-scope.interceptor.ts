@@ -10,23 +10,16 @@ interface ScopedRequest extends Request {
   depotScope?: { tenantId: string; depotId: string | null; role: string };
 }
 
+const MULTI_DEPOT_ROLES = new Set(['PATRON', 'GERANT']);
+
 function normalize(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const v = value.trim();
   return v && v !== 'all' && v !== 'null' && v !== 'undefined' ? v : null;
 }
-
-function routePath(request: Request): string {
-  return (request.path || request.originalUrl || '').split('?')[0];
-}
-
-function isTourneeRoute(request: Request): boolean {
-  return /\/depot-boissons\/tournees(?:\/|$)/i.test(routePath(request)) || /\/tournees(?:\/|$)/i.test(routePath(request));
-}
-
-function isTricycleRoute(request: Request): boolean {
-  return /\/tournees\/tricycles(?:\/|$)/i.test(routePath(request));
-}
+function routePath(request: Request): string { return (request.path || request.originalUrl || '').split('?')[0]; }
+function isTourneeRoute(request: Request): boolean { return /\/depot-boissons\/tournees(?:\/|$)/i.test(routePath(request)) || /\/tournees(?:\/|$)/i.test(routePath(request)); }
+function isTricycleRoute(request: Request): boolean { return /\/tournees\/tricycles(?:\/|$)/i.test(routePath(request)); }
 
 @Injectable()
 export class TourneeScopeInterceptor implements NestInterceptor {
@@ -45,7 +38,6 @@ export class TourneeScopeInterceptor implements NestInterceptor {
           request.depotScope = { tenantId: user.tenantId, depotId, role: user.role };
           this.forceAuthoritativeScope(request, user.tenantId, depotId);
           if (!isTricycleRoute(request)) await this.assertTourneeTarget(request, user.tenantId, depotId);
-
           subscription = this.depotScope.run(
             { tenantId: user.tenantId, depotId, role: user.role, requestId: (request as any).auditRequestId ?? null, metier: (request as any).auditMetier ?? 'DEPOT_BOISSONS' },
             () => next.handle().subscribe({ next: (value) => observer.next(value), error: (error) => observer.error(error), complete: () => observer.complete() }),
@@ -59,12 +51,21 @@ export class TourneeScopeInterceptor implements NestInterceptor {
   private async resolveDepot(user: AuthenticatedUser, request: Request): Promise<string | null> {
     const header = Array.isArray(request.headers['x-depot-id']) ? request.headers['x-depot-id'][0] : request.headers['x-depot-id'];
     const requested = normalize(header ?? request.query.depotId);
-    if (user.depotId) {
+
+    if (!MULTI_DEPOT_ROLES.has(user.role)) {
+      if (!user.depotId) {
+        if (requested) throw new ForbiddenException('Cet utilisateur n’est affecté à aucun dépôt.');
+        return null;
+      }
       if (requested && requested !== user.depotId) throw new ForbiddenException('Accès refusé à ce dépôt.');
       return user.depotId;
     }
-    if (!requested) return null;
-    const depot = await this.prisma.depot.findFirst({ where: { id: requested, tenantId: user.tenantId, isArchived: false }, select: { id: true } });
+
+    if (!requested) return user.depotId ?? null;
+    const depot = await this.depotScope.run(
+      { tenantId: user.tenantId, depotId: null, role: user.role },
+      () => this.prisma.depot.findFirst({ where: { id: requested, tenantId: user.tenantId, isArchived: false }, select: { id: true } }),
+    );
     if (!depot) throw new ForbiddenException('Accès refusé à ce dépôt.');
     return depot.id;
   }
