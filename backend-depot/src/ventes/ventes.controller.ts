@@ -13,7 +13,6 @@ import {
 import { RoleUser } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { DepotScopeService } from '../common/depot-scope.service';
 import { CreateVenteDto } from './dto/create-vente.dto';
 import {
   AnnulerVenteDto,
@@ -31,20 +30,17 @@ import { VentesService } from './ventes.service';
   RoleUser.MAGASINIER,
 )
 export class VentesController {
-  constructor(
-    private readonly ventesService: VentesService,
-    private readonly depotScope: DepotScopeService,
-  ) {}
+  constructor(private readonly ventesService: VentesService) {}
 
-  private getTenantId(user: any): string {
-    if (!user?.tenantId) {
-      throw new BadRequestException('Accès refusé : tenantId manquant dans le token.');
+  private getTenantId(req: any): string {
+    if (!req.depotScope?.tenantId || req.depotScope.tenantId !== req.user?.tenantId) {
+      throw new BadRequestException('Contexte tenant invalide.');
     }
-    return user.tenantId;
+    return req.depotScope.tenantId;
   }
 
-  private getDepotId(): string {
-    const depotId = this.depotScope.getDepotId();
+  private getDepotId(req: any): string {
+    const depotId = req.depotScope?.depotId;
     if (!depotId) {
       throw new BadRequestException('Aucun dépôt actif sélectionné.');
     }
@@ -61,15 +57,14 @@ export class VentesController {
   async create(
     @Body() createVenteDto: CreateVenteDto,
     @CurrentUser() user: any,
+    @Req() req: any,
   ) {
     try {
-      const tenantId = this.getTenantId(user);
-      const depotId = this.getDepotId();
       return await this.ventesService.createVente(
         {
           ...createVenteDto,
-          tenantId,
-          depotId,
+          tenantId: this.getTenantId(req),
+          depotId: this.getDepotId(req),
         },
         user,
       );
@@ -80,44 +75,44 @@ export class VentesController {
   }
 
   @Get('stats')
-  getStats(@CurrentUser() user: any) {
+  getStats(@Req() req: any) {
     return this.ventesService.getStats(
-      this.getTenantId(user),
-      this.getDepotId(),
+      this.getTenantId(req),
+      this.getDepotId(req),
     );
   }
 
   @Get('validations/en-attente')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
-  findEnAttenteValidation(@CurrentUser() user: any) {
+  findEnAttenteValidation(@Req() req: any) {
     return this.ventesService.findEnAttenteValidation(
-      this.getTenantId(user),
-      this.getDepotId(),
+      this.getTenantId(req),
+      this.getDepotId(req),
     );
   }
 
   @Get()
   findAll(
-    @CurrentUser() user: any,
+    @Req() req: any,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('statut') statut?: string,
   ) {
     return this.ventesService.findAll(
-      this.getTenantId(user),
+      this.getTenantId(req),
       startDate,
       endDate,
-      this.getDepotId(),
+      this.getDepotId(req),
       statut,
     );
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+  findOne(@Param('id') id: string, @Req() req: any) {
     return this.ventesService.findOne(
       id,
-      this.getTenantId(user),
-      this.getDepotId(),
+      this.getTenantId(req),
+      this.getDepotId(req),
     );
   }
 
@@ -127,12 +122,13 @@ export class VentesController {
     @Param('id') id: string,
     @Body() _body: ValiderSortieVenteDto,
     @CurrentUser() user: any,
+    @Req() req: any,
   ) {
     try {
       return await this.ventesService.validerSortieVente(
         id,
-        this.getTenantId(user),
-        this.getDepotId(),
+        this.getTenantId(req),
+        this.getDepotId(req),
         user,
       );
     } catch (error) {
@@ -150,21 +146,22 @@ export class VentesController {
     @Param('id') id: string,
     @Body() body: AnnulerVenteDto,
     @CurrentUser() user: any,
+    @Req() req: any,
   ) {
     return this.ventesService.annulerVente(
       id,
       body.motif,
-      this.getTenantId(user),
-      this.getDepotId(),
+      this.getTenantId(req),
+      this.getDepotId(req),
       user,
     );
   }
 
   @Get('caisse')
-  async getCaisse(@CurrentUser() user: any) {
+  async getCaisse(@Req() req: any) {
     return this.ventesService.getCaisse(
-      this.getTenantId(user),
-      this.getDepotId(),
+      this.getTenantId(req),
+      this.getDepotId(req),
     );
   }
 
@@ -173,8 +170,8 @@ export class VentesController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateVenteDto,
-    @CurrentUser() user: any,
+    @Req() req: any,
   ) {
-    return this.ventesService.update(this.getTenantId(user), id, dto);
+    return this.ventesService.update(this.getTenantId(req), id, dto);
   }
 }
