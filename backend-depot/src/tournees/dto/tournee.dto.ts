@@ -89,4 +89,7 @@ export class CreateTricycleDto {
 
   @IsString()
   tenantId: string;
+
+  @IsString()
+  depotId: string;
 }
