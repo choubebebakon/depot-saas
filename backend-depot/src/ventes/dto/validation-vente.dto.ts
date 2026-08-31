@@ -1,23 +1,23 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class ValiderSortieVenteDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  tenantId: string;
+  tenantId?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  depotId: string;
+  depotId?: string;
 }
 
 export class AnnulerVenteDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  tenantId: string;
+  tenantId?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  depotId: string;
+  depotId?: string;
 
   @IsString()
   @IsNotEmpty()
