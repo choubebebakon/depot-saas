@@ -17,6 +17,7 @@ export class CreateClientDto {
   @Min(0)
   plafondCredit?: number;
 
+  @IsOptional()
   @IsString()
-  tenantId: string;
+  depotId?: string;
 }
