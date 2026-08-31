@@ -108,7 +108,7 @@ export class CaisseService {
       if (!session.estOuverte)
         throw new BadRequestException('Session déjà fermée');
 
-      const totalEntrees = session.mouvements
+      const totalEntreesMouvements = session.mouvements
         .filter((m) =>
           ['FOND_INITIAL', 'ENCAISSEMENT_VENTE', 'ENCAISSEMENT_DETTE'].includes(
             m.type,
@@ -122,6 +122,46 @@ export class CaisseService {
         )
         .reduce((acc, m) => acc + m.montant, 0);
 
+      // Le POS enregistre historiquement les ventes dans Vente et certaines
+      // intégrations peuvent ne pas encore créer le mouvement de caisse au
+      // moment exact de la vente. On réconcilie donc ici le montant cash des
+      // ventes de la session, sans compter deux fois les mouvements déjà
+      // enregistrés comme ENCAISSEMENT_VENTE.
+      const ventesSession = await tx.vente.aggregate({
+        where: {
+          tenantId: dto.tenantId,
+          depotId: dto.depotId,
+          statut: StatutVente.PAYE,
+          date: { gte: session.dateOuverture },
+        },
+        _sum: { montantCash: true },
+      });
+
+      const cashVentes = ventesSession._sum?.montantCash ?? 0;
+      const cashVentesDejaMouvements = session.mouvements
+        .filter((m) => m.type === 'ENCAISSEMENT_VENTE')
+        .reduce((acc, m) => acc + m.montant, 0);
+      const cashVentesNonComptabilisees = Math.max(
+        0,
+        cashVentes - cashVentesDejaMouvements,
+      );
+
+      // On conserve une trace comptable de la réconciliation effectuée à la
+      // clôture. Le mouvement est lié à la session et ne peut donc pas fuiter
+      // vers une autre caisse.
+      if (cashVentesNonComptabilisees > 0) {
+        await tx.mouvementCaisse.create({
+          data: {
+            type: 'ENCAISSEMENT_VENTE',
+            montant: cashVentesNonComptabilisees,
+            motif: 'Réconciliation des ventes POS à la clôture',
+            reference: `RECONCILIATION_VENTES_${session.id}`,
+            sessionId: session.id,
+          },
+        });
+      }
+
+      const totalEntrees = totalEntreesMouvements + cashVentesNonComptabilisees;
       const soldeTheorique = totalEntrees - totalSorties;
       const ecart = dto.fondFinal - soldeTheorique;
 
