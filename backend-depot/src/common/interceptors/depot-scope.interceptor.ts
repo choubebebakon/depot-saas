@@ -12,6 +12,11 @@ import { DepotScopeService } from '../depot-scope.service';
 
 interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
+  depotScope?: {
+    tenantId: string;
+    depotId: string | null;
+    role: string;
+  };
 }
 
 const MULTI_DEPOT_ROLES = new Set(['PATRON', 'GERANT']);
@@ -55,6 +60,17 @@ export class DepotScopeInterceptor implements NestInterceptor {
 
       void this.resolveDepotId(user, requestedDepotId)
         .then((depotId) => {
+          const resolvedScope = {
+            tenantId: user.tenantId,
+            depotId,
+            role: user.role,
+          };
+
+          // Expose the already validated scope to controllers/services without
+          // creating a second DepotScopeService/AsyncLocalStorage instance in
+          // feature modules.
+          request.depotScope = resolvedScope;
+
           // The authenticated server-side scope is authoritative. Controllers
           // historically accepted depotId from request bodies/query params;
           // normalize those values here so a client cannot silently override
@@ -63,9 +79,7 @@ export class DepotScopeInterceptor implements NestInterceptor {
 
           subscription = this.depotScope.run(
             {
-              tenantId: user.tenantId,
-              depotId,
-              role: user.role,
+              ...resolvedScope,
               requestId: (request as any).auditRequestId ?? null,
               metier: (request as any).auditMetier ?? null,
             },
@@ -118,8 +132,6 @@ export class DepotScopeInterceptor implements NestInterceptor {
     user: AuthenticatedUser,
     requestedDepotId: string | null,
   ): Promise<string | null> {
-    // Un utilisateur affecté à un dépôt ne peut jamais changer de dépôt via
-    // un header/query falsifiable. Son scope reste celui du JWT.
     if (!MULTI_DEPOT_ROLES.has(user.role)) {
       if (!user.depotId) {
         if (requestedDepotId) {
@@ -135,9 +147,6 @@ export class DepotScopeInterceptor implements NestInterceptor {
       return user.depotId;
     }
 
-    // PATRON/GERANT peuvent changer de dépôt, mais uniquement à l'intérieur
-    // de leur propre tenant. Un dépôt d'un autre tenant est systématiquement
-    // refusé, même si son UUID est connu.
     if (!requestedDepotId) {
       return user.depotId ?? null;
     }
