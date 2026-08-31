@@ -31,7 +31,7 @@ export class LigneVenteDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  prix?: number; // Prix validé par front-end (utile pour conditionnement)
+  prix?: number;
 
   @IsOptional()
   @IsString()
@@ -41,7 +41,7 @@ export class LigneVenteDto {
   casierMixte?: boolean;
 
   @IsOptional()
-  composition?: any; // JSON representation of the mixed crate
+  composition?: any;
 }
 
 export class RetourConsigneDto {
@@ -67,13 +67,16 @@ export enum ModePaiement {
 }
 
 export class CreateVenteDto {
+  // Ces deux champs sont optionnels uniquement pour compatibilité avec les
+  // anciens clients. Ils ne constituent jamais une preuve d'identité/scope :
+  // le controller remplace leurs valeurs par le contexte authentifié.
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  depotId: string;
+  depotId?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  tenantId: string;
+  tenantId?: string;
 
   @IsOptional()
   @IsString()
@@ -83,7 +86,6 @@ export class CreateVenteDto {
   @IsEnum(ModePaiement)
   modePaiement?: ModePaiement;
 
-  // Ventilation des montants (si paiement mixte ou précis)
   @IsOptional()
   @IsNumber()
   montantCash?: number;
