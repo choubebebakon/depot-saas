@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MouvementConsigne } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import {
@@ -11,15 +15,64 @@ import {
 
 @Injectable()
 export class ConsignesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
+
+  private async assertDepotScope(tenantId: string, depotId: string) {
+    const depot = await this.prisma.depot.findFirst({
+      where: { id: depotId, tenantId, isArchived: false },
+      select: { id: true },
+    });
+    if (!depot) {
+      throw new NotFoundException('Dépôt introuvable ou non autorisé');
+    }
+  }
+
+  private async assertClientScope(
+    tenantId: string,
+    depotId: string,
+    clientId: string,
+  ) {
+    const client = await this.prisma.client.findFirst({
+      where: { id: clientId, tenantId, depotId },
+      select: { id: true, nom: true, depotId: true },
+    });
+    if (!client) {
+      throw new NotFoundException('Client introuvable dans le dépôt actif');
+    }
+    return client;
+  }
+
+  private async assertVenteScope(
+    tenantId: string,
+    depotId: string,
+    venteId: string,
+    clientId?: string,
+  ) {
+    const vente = await this.prisma.vente.findFirst({
+      where: {
+        id: venteId,
+        tenantId,
+        depotId,
+        ...(clientId ? { clientId } : {}),
+      },
+      select: { id: true, clientId: true, depotId: true, tenantId: true },
+    });
+    if (!vente) {
+      throw new NotFoundException('Vente introuvable dans le dépôt actif');
+    }
+    return vente;
+  }
 
   // ── Configuration des types de consignes ─────────────────
+  // Les types restent une configuration au niveau du tenant.
 
-  async createTypeConsigne(dto: CreateTypeConsigneDto) {
-    // Vérifie qu'il n'existe pas déjà pour ce tenant
+  async createTypeConsigne(
+    tenantId: string,
+    dto: CreateTypeConsigneDto,
+  ) {
     const existant = await this.prisma.typeConsigneConfig.findUnique({
       where: {
-        tenantId_type: { tenantId: dto.tenantId, type: dto.type as any },
+        tenantId_type: { tenantId, type: dto.type as any },
       },
     });
     if (existant) {
@@ -33,7 +86,7 @@ export class ConsignesService {
         type: dto.type as any,
         valeurXAF: dto.valeurXAF,
         description: dto.description,
-        tenantId: dto.tenantId,
+        tenantId,
       },
     });
   }
@@ -53,7 +106,7 @@ export class ConsignesService {
     const type = await this.prisma.typeConsigneConfig.findFirst({
       where: { id, tenantId },
     });
-    if (!type) throw new BadRequestException('Type de consigne introuvable');
+    if (!type) throw new NotFoundException('Type de consigne introuvable');
 
     return this.prisma.typeConsigneConfig.update({
       where: { id },
@@ -61,56 +114,58 @@ export class ConsignesService {
     });
   }
 
-  // ── Inventaire vides au dépôt ─────────────────────────────
+  // ── Inventaire des vides au dépôt ────────────────────────
 
-  async getInventaireVides(tenantId: string) {
-    // Calcule le stock de vides au dépôt par type
-    // = total entrées (vides rendus) - total sorties (vides repartis)
+  async getInventaireVides(tenantId: string, depotId: string) {
+    await this.assertDepotScope(tenantId, depotId);
+
     const types = await this.prisma.typeConsigneConfig.findMany({
       where: { tenantId },
+      orderBy: { type: 'asc' },
     });
 
-    const inventaire = await Promise.all(
+    return Promise.all(
       types.map(async (type) => {
         const mouvements = await this.prisma.mouvementConsigne.findMany({
-          where: { typeConsigneId: type.id, tenantId },
+          where: { typeConsigneId: type.id, tenantId, depotId },
+          select: { estSortie: true, quantite: true },
         });
 
         const totalSorties = mouvements
           .filter((m) => m.estSortie)
           .reduce((acc, m) => acc + m.quantite, 0);
-
         const totalEntrees = mouvements
           .filter((m) => !m.estSortie)
           .reduce((acc, m) => acc + m.quantite, 0);
-
-        const stockVides = totalEntrees - totalSorties;
+        const stockVides = Math.max(0, totalEntrees - totalSorties);
 
         return {
           typeConsigne: type,
-          stockVides: Math.max(0, stockVides),
+          stockVides,
           totalSorties,
           totalEntrees,
-          valeurTotale: Math.max(0, stockVides) * type.valeurXAF,
+          valeurTotale: stockVides * type.valeurXAF,
         };
       }),
     );
-
-    return inventaire;
   }
 
   // ── Portefeuille consignes par client ─────────────────────
 
-  async getPortefeuilleClient(clientId: string, tenantId: string) {
+  async getPortefeuilleClient(
+    clientId: string,
+    tenantId: string,
+    depotId: string,
+  ) {
+    await this.assertDepotScope(tenantId, depotId);
+    await this.assertClientScope(tenantId, depotId, clientId);
+
     const portefeuille = await this.prisma.portefeuilleConsigne.findMany({
-      where: { clientId },
-      include: {
-        typeConsigne: true,
-        client: true,
-      },
+      where: { clientId, depotId },
+      include: { typeConsigne: true, client: true },
+      orderBy: { typeConsigne: { type: 'asc' } },
     });
 
-    // Calcule la valeur totale des consignes dues
     const valeurTotale = portefeuille.reduce(
       (acc, p) => acc + p.quantite * p.typeConsigne.valeurXAF,
       0,
@@ -119,15 +174,19 @@ export class ConsignesService {
     return { portefeuille, valeurTotale };
   }
 
-  async getAllPortefeuilles(tenantId: string) {
+  async getAllPortefeuilles(tenantId: string, depotId: string) {
+    await this.assertDepotScope(tenantId, depotId);
+
     const clients = await this.prisma.client.findMany({
-      where: { tenantId },
+      where: { tenantId, depotId },
       include: {
         portefeuilleConsignes: {
+          where: { depotId, quantite: { gt: 0 } },
           include: { typeConsigne: true },
-          where: { quantite: { gt: 0 } },
+          orderBy: { typeConsigne: { type: 'asc' } },
         },
       },
+      orderBy: { nom: 'asc' },
     });
 
     return clients
@@ -144,15 +203,29 @@ export class ConsignesService {
 
   // ── Mouvement de consigne ─────────────────────────────────
 
-  async enregistrerMouvement(dto: MouvementConsigneDto) {
-    const typeConsigne = await this.prisma.typeConsigneConfig.findFirst({
-      where: { id: dto.typeConsigneId, tenantId: dto.tenantId },
-    });
-    if (!typeConsigne)
-      throw new BadRequestException('Type de consigne introuvable');
+  async enregistrerMouvement(
+    tenantId: string,
+    depotId: string,
+    dto: MouvementConsigneDto,
+  ) {
+    await this.assertDepotScope(tenantId, depotId);
 
-    return await this.prisma.$transaction(async (tx) => {
-      // Créer le mouvement
+    const typeConsigne = await this.prisma.typeConsigneConfig.findFirst({
+      where: { id: dto.typeConsigneId, tenantId },
+    });
+    if (!typeConsigne) {
+      throw new NotFoundException('Type de consigne introuvable');
+    }
+
+    if (dto.clientId) {
+      await this.assertClientScope(tenantId, depotId, dto.clientId);
+    }
+
+    if (dto.venteId) {
+      await this.assertVenteScope(tenantId, depotId, dto.venteId, dto.clientId);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
       const mouvement = await tx.mouvementConsigne.create({
         data: {
           quantite: dto.quantite,
@@ -160,40 +233,52 @@ export class ConsignesService {
           motif: dto.motif,
           typeConsigneId: dto.typeConsigneId,
           venteId: dto.venteId || null,
-          tenantId: dto.tenantId,
+          tenantId,
+          depotId,
         },
         include: { typeConsigne: true },
       });
 
-      // Mettre à jour le portefeuille client si applicable
       if (dto.clientId) {
-        const portefeuille = await tx.portefeuilleConsigne.findUnique({
+        const portefeuille = await tx.portefeuilleConsigne.findFirst({
           where: {
-            clientId_typeConsigneId: {
-              clientId: dto.clientId,
-              typeConsigneId: dto.typeConsigneId,
-            },
+            clientId: dto.clientId,
+            typeConsigneId: dto.typeConsigneId,
+            depotId,
           },
         });
 
         if (portefeuille) {
+          if (portefeuille.depotId !== depotId) {
+            throw new BadRequestException('Portefeuille hors du dépôt actif');
+          }
           const newQte = dto.estSortie
-            ? portefeuille.quantite + dto.quantite // client a plus de vides à rendre
-            : Math.max(0, portefeuille.quantite - dto.quantite); // client rend des vides
+            ? portefeuille.quantite + dto.quantite
+            : portefeuille.quantite - dto.quantite;
+
+          if (newQte < 0) {
+            throw new BadRequestException(
+              'Quantité rendue supérieure au portefeuille client',
+            );
+          }
 
           await tx.portefeuilleConsigne.update({
             where: { id: portefeuille.id },
             data: { quantite: newQte },
           });
         } else if (dto.estSortie) {
-          // Crée le portefeuille si première sortie
           await tx.portefeuilleConsigne.create({
             data: {
               clientId: dto.clientId,
               typeConsigneId: dto.typeConsigneId,
               quantite: dto.quantite,
+              depotId,
             },
           });
+        } else {
+          throw new BadRequestException(
+            'Aucun portefeuille client disponible pour ce retour',
+          );
         }
       }
 
@@ -203,67 +288,89 @@ export class ConsignesService {
 
   // ── Traiter une vente avec consignes ──────────────────────
 
-  async traiterVenteConsignes(dto: VenteAvecConsignesDto) {
-    return await this.prisma.$transaction(async (tx) => {
+  async traiterVenteConsignes(
+    tenantId: string,
+    depotId: string,
+    dto: VenteAvecConsignesDto,
+  ) {
+    await this.assertDepotScope(tenantId, depotId);
+    await this.assertVenteScope(tenantId, depotId, dto.venteId, dto.clientId);
+
+    if (!dto.lignesConsignes.length) {
+      return { mouvements: [], caution: 0 };
+    }
+
+    return this.prisma.$transaction(async (tx) => {
       let caution = 0;
       const mouvements: MouvementConsigne[] = [];
 
       for (const ligne of dto.lignesConsignes) {
-        const typeConsigne = await tx.typeConsigneConfig.findUnique({
-          where: { id: ligne.typeConsigneId },
+        if (ligne.quantiteSortie === 0 && ligne.quantiteRendue === 0) continue;
+        if (ligne.quantiteRendue > ligne.quantiteSortie && ligne.quantiteSortie === 0) {
+          // Un retour sans sortie est possible uniquement si le client possède
+          // déjà les vides dans son portefeuille.
+        }
+
+        const typeConsigne = await tx.typeConsigneConfig.findFirst({
+          where: { id: ligne.typeConsigneId, tenantId },
         });
-        if (!typeConsigne) continue;
+        if (!typeConsigne) {
+          throw new BadRequestException('Type de consigne introuvable');
+        }
 
         const netSortie = ligne.quantiteSortie - ligne.quantiteRendue;
 
         if (ligne.quantiteSortie > 0) {
-          // Mouvement sortie (emballages qui partent)
           const mvtSortie = await tx.mouvementConsigne.create({
             data: {
               quantite: ligne.quantiteSortie,
               estSortie: true,
-              motif: `Vente — emballages sortis`,
+              motif: 'Vente — emballages sortis',
               typeConsigneId: ligne.typeConsigneId,
               venteId: dto.venteId,
-              tenantId: dto.tenantId,
+              tenantId,
+              depotId,
             },
           });
           mouvements.push(mvtSortie);
         }
 
         if (ligne.quantiteRendue > 0) {
-          // Mouvement entrée (vides rendus)
           const mvtEntree = await tx.mouvementConsigne.create({
             data: {
               quantite: ligne.quantiteRendue,
               estSortie: false,
-              motif: `Vente — vides rendus`,
+              motif: 'Vente — vides rendus',
               typeConsigneId: ligne.typeConsigneId,
               venteId: dto.venteId,
-              tenantId: dto.tenantId,
+              tenantId,
+              depotId,
             },
           });
           mouvements.push(mvtEntree);
         }
 
-        // Caution = net sortie × valeur consigne
         if (netSortie > 0) {
           caution += netSortie * typeConsigne.valeurXAF;
         }
 
-        // Mise à jour portefeuille client
         if (dto.clientId && netSortie !== 0) {
-          const portefeuille = await tx.portefeuilleConsigne.findUnique({
+          const portefeuille = await tx.portefeuilleConsigne.findFirst({
             where: {
-              clientId_typeConsigneId: {
-                clientId: dto.clientId,
-                typeConsigneId: ligne.typeConsigneId,
-              },
+              clientId: dto.clientId,
+              typeConsigneId: ligne.typeConsigneId,
+              depotId,
             },
           });
 
+          const newQte = (portefeuille?.quantite ?? 0) + netSortie;
+          if (newQte < 0) {
+            throw new BadRequestException(
+              'Retour de consignes supérieur au portefeuille client',
+            );
+          }
+
           if (portefeuille) {
-            const newQte = Math.max(0, portefeuille.quantite + netSortie);
             await tx.portefeuilleConsigne.update({
               where: { id: portefeuille.id },
               data: { quantite: newQte },
@@ -274,6 +381,7 @@ export class ConsignesService {
                 clientId: dto.clientId,
                 typeConsigneId: ligne.typeConsigneId,
                 quantite: netSortie,
+                depotId,
               },
             });
           }
@@ -286,24 +394,40 @@ export class ConsignesService {
 
   // ── Rendu sans achat ──────────────────────────────────────
 
-  async renduSansAchat(dto: RenduSansAchatDto) {
-    const typeConsigne = await this.prisma.typeConsigneConfig.findFirst({
-      where: { id: dto.typeConsigneId, tenantId: dto.tenantId },
-    });
-    if (!typeConsigne)
-      throw new BadRequestException('Type de consigne introuvable');
+  async renduSansAchat(
+    tenantId: string,
+    depotId: string,
+    dto: RenduSansAchatDto,
+  ) {
+    await this.assertDepotScope(tenantId, depotId);
+    await this.assertClientScope(tenantId, depotId, dto.clientId);
 
-    const client = await this.prisma.client.findFirst({
-      where: { id: dto.clientId, tenantId: dto.tenantId },
+    const typeConsigne = await this.prisma.typeConsigneConfig.findFirst({
+      where: { id: dto.typeConsigneId, tenantId },
     });
-    if (!client) throw new BadRequestException('Client introuvable');
+    if (!typeConsigne) {
+      throw new NotFoundException('Type de consigne introuvable');
+    }
 
     const montantRembourse = dto.estRemboursementCash
       ? dto.quantite * typeConsigne.valeurXAF
       : 0;
 
-    return await this.prisma.$transaction(async (tx) => {
-      // Mouvement consigne (entrée de vides)
+    return this.prisma.$transaction(async (tx) => {
+      const portefeuille = await tx.portefeuilleConsigne.findFirst({
+        where: {
+          clientId: dto.clientId,
+          typeConsigneId: dto.typeConsigneId,
+          depotId,
+        },
+      });
+
+      if (!portefeuille || portefeuille.quantite < dto.quantite) {
+        throw new BadRequestException(
+          'Quantité retournée supérieure au portefeuille client',
+        );
+      }
+
       const mouvement = await tx.mouvementConsigne.create({
         data: {
           quantite: dto.quantite,
@@ -311,30 +435,19 @@ export class ConsignesService {
           estRemboursementCash: dto.estRemboursementCash,
           montantRembourse,
           motif: dto.estRemboursementCash
-            ? `Rendu sans achat — remboursement cash`
-            : `Rendu sans achat — avoir emballage`,
+            ? 'Rendu sans achat — remboursement cash'
+            : 'Rendu sans achat — avoir emballage',
           typeConsigneId: dto.typeConsigneId,
-          tenantId: dto.tenantId,
+          tenantId,
+          depotId,
         },
         include: { typeConsigne: true },
       });
 
-      // Mise à jour portefeuille client
-      const portefeuille = await tx.portefeuilleConsigne.findUnique({
-        where: {
-          clientId_typeConsigneId: {
-            clientId: dto.clientId,
-            typeConsigneId: dto.typeConsigneId,
-          },
-        },
+      await tx.portefeuilleConsigne.update({
+        where: { id: portefeuille.id },
+        data: { quantite: { decrement: dto.quantite } },
       });
-
-      if (portefeuille) {
-        await tx.portefeuilleConsigne.update({
-          where: { id: portefeuille.id },
-          data: { quantite: Math.max(0, portefeuille.quantite - dto.quantite) },
-        });
-      }
 
       return {
         mouvement,
@@ -349,20 +462,25 @@ export class ConsignesService {
 
   // ── Historique mouvements ─────────────────────────────────
 
-  async getHistorique(tenantId: string, limit = 100) {
+  async getHistorique(tenantId: string, depotId: string, limit = 100) {
+    await this.assertDepotScope(tenantId, depotId);
+    const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 500);
+
     return this.prisma.mouvementConsigne.findMany({
-      where: { tenantId },
+      where: { tenantId, depotId },
       include: { typeConsigne: true, vente: true },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take: safeLimit,
     });
   }
 
   // ── Stats globales consignes ──────────────────────────────
 
-  async getStats(tenantId: string) {
-    const inventaire = await this.getInventaireVides(tenantId);
-    const portefeuilles = await this.getAllPortefeuilles(tenantId);
+  async getStats(tenantId: string, depotId: string) {
+    const [inventaire, portefeuilles] = await Promise.all([
+      this.getInventaireVides(tenantId, depotId),
+      this.getAllPortefeuilles(tenantId, depotId),
+    ]);
 
     const totalVidesDepot = inventaire.reduce(
       (acc, i) => acc + i.stockVides,
@@ -378,7 +496,6 @@ export class ConsignesService {
     );
     const nbClientsAvecConsignes = portefeuilles.length;
 
-    // Remboursements cash du mois
     const debutMois = new Date();
     debutMois.setDate(1);
     debutMois.setHours(0, 0, 0, 0);
@@ -386,6 +503,7 @@ export class ConsignesService {
     const remboursements = await this.prisma.mouvementConsigne.aggregate({
       where: {
         tenantId,
+        depotId,
         estRemboursementCash: true,
         createdAt: { gte: debutMois },
       },
