@@ -5,7 +5,11 @@ import {
   IsOptional,
   IsEnum,
   Min,
+  IsArray,
+  ValidateNested,
+  IsInt,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum TypeConsigneEnum {
   BOUTEILLE_33CL = 'BOUTEILLE_33CL',
@@ -26,9 +30,6 @@ export class CreateTypeConsigneDto {
   @IsOptional()
   @IsString()
   description?: string;
-
-  @IsString()
-  tenantId: string;
 }
 
 export class UpdateTypeConsigneDto {
@@ -45,12 +46,12 @@ export class MouvementConsigneDto {
   @IsString()
   typeConsigneId: string;
 
-  @IsNumber()
+  @IsInt()
   @Min(1)
   quantite: number;
 
   @IsBoolean()
-  estSortie: boolean; // true = vides sortis, false = vides rendus
+  estSortie: boolean;
 
   @IsOptional()
   @IsString()
@@ -63,9 +64,6 @@ export class MouvementConsigneDto {
   @IsOptional()
   @IsString()
   motif?: string;
-
-  @IsString()
-  tenantId: string;
 }
 
 export class RenduSansAchatDto {
@@ -75,29 +73,35 @@ export class RenduSansAchatDto {
   @IsString()
   typeConsigneId: string;
 
-  @IsNumber()
+  @IsInt()
   @Min(1)
   quantite: number;
 
   @IsBoolean()
-  estRemboursementCash: boolean; // true = cash, false = avoir
+  estRemboursementCash: boolean;
+}
 
+export class VenteConsigneLineDto {
   @IsString()
-  tenantId: string;
+  typeConsigneId: string;
+
+  @IsInt()
+  @Min(0)
+  quantiteSortie: number;
+
+  @IsInt()
+  @Min(0)
+  quantiteRendue: number;
 }
 
 export class VenteAvecConsignesDto {
   @IsString()
   venteId: string;
 
-  lignesConsignes: {
-    typeConsigneId: string;
-    quantiteSortie: number; // emballages sortis avec la vente
-    quantiteRendue: number; // vides rendus par le client
-  }[];
-
-  @IsString()
-  tenantId: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VenteConsigneLineDto)
+  lignesConsignes: VenteConsigneLineDto[];
 
   @IsOptional()
   @IsString()
