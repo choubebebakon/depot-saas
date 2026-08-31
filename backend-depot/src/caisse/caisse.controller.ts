@@ -28,11 +28,28 @@ export class CaisseController {
     return req.user.tenantId;
   }
 
+  private getDepotId(req: any): string {
+    const depotId = req.scope?.depotId ?? req.headers?.['x-depot-id'];
+    if (Array.isArray(depotId)) {
+      if (!depotId[0]) {
+        throw new BadRequestException('Aucun dépôt actif sélectionné.');
+      }
+      return depotId[0];
+    }
+    if (!depotId || depotId === 'all' || depotId === 'undefined' || depotId === 'null') {
+      throw new BadRequestException('Aucun dépôt actif sélectionné.');
+    }
+    return depotId;
+  }
+
   @Post('ouvrir')
   ouvrirSession(@Req() req: any, @Body() dto: OuvrirCaisseDto) {
     return this.caisseService.ouvrirSession({
       ...dto,
       tenantId: this.getTenantId(req),
+      depotId: this.getDepotId(req),
+      // L'utilisateur qui ouvre la session est toujours celui authentifié.
+      userId: req.user.id,
     });
   }
 
@@ -41,31 +58,32 @@ export class CaisseController {
     return this.caisseService.fermerSession({
       ...dto,
       tenantId: this.getTenantId(req),
+      depotId: this.getDepotId(req),
     });
   }
 
   @Get('session-active')
-  getSessionActive(
-    @Req() req: any,
-    @Query('depotId') depotId: string,
-  ) {
-    return this.caisseService.getSessionActive(this.getTenantId(req), depotId);
+  getSessionActive(@Req() req: any, @Query('depotId') _depotId?: string) {
+    return this.caisseService.getSessionActive(
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
   }
 
   @Get('historique')
-  getHistorique(
-    @Req() req: any,
-    @Query('depotId') depotId: string,
-  ) {
-    return this.caisseService.getHistorique(this.getTenantId(req), depotId);
+  getHistorique(@Req() req: any, @Query('depotId') _depotId?: string) {
+    return this.caisseService.getHistorique(
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
   }
 
   @Get('resume')
-  getResume(
-    @Req() req: any,
-    @Query('depotId') depotId: string,
-  ) {
-    return this.caisseService.getResume(this.getTenantId(req), depotId);
+  getResume(@Req() req: any, @Query('depotId') _depotId?: string) {
+    return this.caisseService.getResume(
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
   }
 
   @Post('depenses')
@@ -73,19 +91,20 @@ export class CaisseController {
     return this.caisseService.createDepense({
       ...dto,
       tenantId: this.getTenantId(req),
+      depotId: this.getDepotId(req),
     });
   }
 
   @Get('depenses')
   getDepenses(
     @Req() req: any,
-    @Query('depotId') depotId: string,
+    @Query('depotId') _depotId: string,
     @Query('dateDebut') dateDebut?: string,
     @Query('dateFin') dateFin?: string,
   ) {
     return this.caisseService.getDepenses(
       this.getTenantId(req),
-      depotId,
+      this.getDepotId(req),
       dateDebut,
       dateFin,
     );
