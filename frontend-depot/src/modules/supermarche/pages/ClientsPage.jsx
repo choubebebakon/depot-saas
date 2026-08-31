@@ -25,30 +25,33 @@ export default function ClientsPage() {
   const { success, error: notifError } = useNotif();
   const perm = usePermission(PERMISSIONS, 'clients');
 
-  // 1. Récupération des données
   const { data: clientsData = [], loading, refetch } = useData(`/${prefix}/clients`, { enabled: true });
-  const clients = Array.isArray(clientsData?.data) ? clientsData.data : (Array.isArray(clientsData) ? clientsData : []);
+  const clients = Array.isArray(clientsData?.data)
+    ? clientsData.data
+    : (Array.isArray(clientsData) ? clientsData : []);
 
-  // 2. Filtrage
-  const filtres = (clients || []).filter(item =>
-    !search || JSON.stringify(item).toLowerCase().includes((search || '').toLowerCase())
-  );
+  const normalizedSearch = search.trim().toLowerCase();
+  const filtres = clients.filter((item) => {
+    if (!normalizedSearch) return true;
+    return [item?.nom, item?.telephone, item?.adresse]
+      .filter((value) => value !== null && value !== undefined)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+  });
 
-  // 3. Pagination sécurisée
   const pagination = usePagination(filtres, 10);
   const paginated = pagination?.paginated || [];
   const { totalItems } = pagination;
 
   const handleDelete = async () => {
-    if (!confirmDelete) return;
+    if (!confirmDelete || deleting) return;
     setDeleting(true);
     try {
       await api.delete(`/${prefix}/clients/${confirmDelete.id}`);
       setConfirmDelete(null);
       success('Client supprimé');
-      refetch();
-    } catch {
-      notifError('Erreur lors de la suppression');
+      await refetch();
+    } catch (error) {
+      notifError(error?.response?.data?.message || 'Erreur lors de la suppression');
     } finally {
       setDeleting(false);
     }
@@ -69,8 +72,13 @@ export default function ClientsPage() {
         )}
       </div>
 
-      <input type="text" placeholder="🔍 Rechercher un client..." value={search} onChange={e => setSearch(e.target.value)}
-        className="mb-6 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72" />
+      <input
+        type="text"
+        placeholder="🔍 Rechercher par nom, téléphone ou adresse..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="mb-6 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -78,7 +86,6 @@ export default function ClientsPage() {
         <div className="text-center py-20 text-slate-400">Aucun client trouvé</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Si paginated est vide, on affiche les 'filtres' par sécurité */}
           {(paginated.length > 0 ? paginated : filtres).map(c => (
             <div key={c.id} className="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 hover:border-amber-500/50 transition-all group">
               <div className="flex items-start justify-between mb-3">
@@ -91,11 +98,11 @@ export default function ClientsPage() {
                   {perm.canDelete && <button onClick={() => setConfirmDelete(c)} className="text-red-400 hover:text-red-300 text-xs">🗑️</button>}
                 </div>
               </div>
-              
               <div className="space-y-1.5 text-xs text-slate-400">
                 <p>📞 {c.telephone || 'Non renseigné'}</p>
                 <p>📍 {c.adresse || 'Non renseignée'}</p>
-                <p>💳 Plafond: <span className="text-emerald-400 font-bold">{c.plafondCredit} F</span></p>
+                <p>💳 Plafond: <span className="text-emerald-400 font-bold">{Number(c.plafondCredit || 0).toLocaleString('fr-FR')} F</span></p>
+                <p>💰 Solde crédit: <span className={Number(c.soldeCredit || 0) > 0 ? 'text-red-400 font-bold' : 'text-emerald-400'}>{Number(c.soldeCredit || 0).toLocaleString('fr-FR')} F</span></p>
               </div>
             </div>
           ))}
