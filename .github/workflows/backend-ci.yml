@@ -5,6 +5,7 @@ on:
     branches: [ main, develop, 'fix/audit-corrections-phase1' ]
   pull_request:
     branches: [ main, develop, 'fix/audit-corrections-phase1' ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -39,6 +40,10 @@ jobs:
         working-directory: backend-depot
         run: npm ci
 
+      - name: Validate Prisma schema
+        working-directory: backend-depot
+        run: npx prisma validate
+
       - name: Generate Prisma Client
         working-directory: backend-depot
         run: npx prisma generate
@@ -60,4 +65,4 @@ jobs:
         working-directory: backend-depot
         run: npm run build
 
-# Phase 1 validation: keep backend build/test execution reproducible on the correction branch.
+# Phase 1 validation: schema validation must pass before Prisma generation, tests, and build.
