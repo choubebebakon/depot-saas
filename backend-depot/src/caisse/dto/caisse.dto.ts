@@ -5,22 +5,34 @@ export class OuvrirCaisseDto {
   @Min(0)
   fondInitial: number;
 
+  // Le depotId est résolu côté serveur depuis le scope authentifié.
+  // Le champ reste optionnel uniquement pour compatibilité avec les anciens
+  // clients : le controller/service n'en fait jamais une source d'autorité.
+  @IsOptional()
   @IsString()
-  depotId: string;
+  depotId?: string;
 
+  // Conservé optionnellement pour compatibilité de payload. La valeur finale
+  // est toujours remplacée par req.user.id côté serveur.
+  @IsOptional()
   @IsString()
-  userId: string;
+  userId?: string;
 
+  // Conservé optionnellement pour compatibilité de payload. La valeur finale
+  // est toujours remplacée par req.user.tenantId côté serveur.
+  @IsOptional()
   @IsString()
-  tenantId: string;
+  tenantId?: string;
 }
 
 export class FermerCaisseDto {
   @IsString()
   sessionId: string;
 
+  // Compatibilité legacy : le tenant est toujours injecté côté serveur.
+  @IsOptional()
   @IsString()
-  tenantId: string;
+  tenantId?: string;
 
   @IsNumber()
   @Min(0)
@@ -42,11 +54,15 @@ export class CreateDepenseDto {
   @IsString()
   motif: string;
 
+  // Compatibilité legacy : le dépôt est résolu depuis le scope serveur.
+  @IsOptional()
   @IsString()
-  depotId: string;
+  depotId?: string;
 
+  // Compatibilité legacy : le tenant est toujours injecté côté serveur.
+  @IsOptional()
   @IsString()
-  tenantId: string;
+  tenantId?: string;
 
   @IsOptional()
   @IsString()
