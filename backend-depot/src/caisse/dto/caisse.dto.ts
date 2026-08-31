@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class OuvrirCaisseDto {
   @IsNumber()
@@ -6,20 +13,18 @@ export class OuvrirCaisseDto {
   fondInitial: number;
 
   // Le depotId est résolu côté serveur depuis le scope authentifié.
-  // Le champ reste optionnel uniquement pour compatibilité avec les anciens
-  // clients : le controller/service n'en fait jamais une source d'autorité.
   @IsOptional()
   @IsString()
   depotId?: string;
 
-  // Conservé optionnellement pour compatibilité de payload. La valeur finale
-  // est toujours remplacée par req.user.id côté serveur.
+  // Conservé optionnellement pour compatibilité avec les anciens clients.
+  // La valeur finale est toujours remplacée par req.user.id côté serveur.
   @IsOptional()
   @IsString()
   userId?: string;
 
-  // Conservé optionnellement pour compatibilité de payload. La valeur finale
-  // est toujours remplacée par req.user.tenantId côté serveur.
+  // Conservé optionnellement pour compatibilité avec les anciens clients.
+  // La valeur finale est toujours remplacée par req.user.tenantId côté serveur.
   @IsOptional()
   @IsString()
   tenantId?: string;
@@ -40,18 +45,27 @@ export class FermerCaisseDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   motifEcart?: string;
 }
 
 export class CreateDepenseDto {
+  // Identifiant généré côté client uniquement pour permettre l'idempotence
+  // des synchronisations offline. Il ne constitue jamais une autorité métier.
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @IsString()
+  @MaxLength(100)
   categorie: string;
 
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   montant: number;
 
   @IsString()
+  @MaxLength(500)
   motif: string;
 
   // Compatibilité legacy : le dépôt est résolu depuis le scope serveur.
@@ -66,5 +80,6 @@ export class CreateDepenseDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   photoUrl?: string;
 }
