@@ -1,12 +1,15 @@
-import React from 'react';
-
-export default function EmptyState({ title = 'Aucune donnée', description = 'Aucun élément à afficher.', icon = null, action = null, children = null, className = '' }) {
+export default function EmptyState({ icon = '📋', title = 'Aucune donnée', message, description, action, actionLabel, className = '', children = null }) {
+  const text = description ?? message;
   return (
-    <div role="status" className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-700 p-8 text-center ${className}`}>
-      {icon && <div aria-hidden="true">{icon}</div>}
-      <h3 className="text-base font-bold text-white">{title}</h3>
-      <p className="max-w-md text-sm text-slate-400">{description}</p>
-      {action}
+    <div className={`text-center py-16 px-6 ${className}`} role="status">
+      <span className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-800 text-3xl" aria-hidden="true">{icon}</span>
+      <p className="text-slate-200 font-bold mt-4">{title}</p>
+      {text && <p className="text-slate-500 text-sm mt-1 max-w-md mx-auto">{text}</p>}
+      {action && (actionLabel ? (
+        <button type="button" onClick={action} className="mt-6 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-600/20">
+          {actionLabel}
+        </button>
+      ) : action)}
       {children}
     </div>
   );
