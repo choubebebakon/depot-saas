@@ -20,6 +20,12 @@ function shouldSkipDepotInjection(url = '') {
   return GLOBAL_DEPOT_FREE_PATHS.some((path) => url.startsWith(path));
 }
 
+/**
+ * Le dépôt actif est un choix d'interface, pas une preuve d'autorisation.
+ * Le backend valide toujours ce choix contre le JWT + tenant avant d'ouvrir
+ * le scope Prisma. localStorage ne constitue donc jamais une frontière de
+ * sécurité.
+ */
 function getActiveDepotId() {
   const depotId = localStorage.getItem('depot_actif_id');
   return depotId && depotId !== 'all' ? depotId : null;
@@ -27,34 +33,28 @@ function getActiveDepotId() {
 
 function pickDepotIdFromRequest(config) {
   const method = (config.method || 'get').toLowerCase();
+
   if (['get', 'delete'].includes(method)) {
     const depotId = config.params?.depotId;
-    return typeof depotId === 'string' && depotId.trim() && depotId !== 'all' ? depotId : null;
+    return typeof depotId === 'string' && depotId.trim() && depotId !== 'all'
+      ? depotId
+      : null;
   }
+
   if (config.data instanceof FormData) {
     const depotId = config.data.get('depotId');
-    return typeof depotId === 'string' && depotId.trim() && depotId !== 'all' ? depotId : null;
+    return typeof depotId === 'string' && depotId.trim() && depotId !== 'all'
+      ? depotId
+      : null;
   }
+
   const depotId = config.data?.depotId;
-  return typeof depotId === 'string' && depotId.trim() && depotId !== 'all' ? depotId : null;
+  return typeof depotId === 'string' && depotId.trim() && depotId !== 'all'
+    ? depotId
+    : null;
 }
 
 api.defaults.headers.post['Content-Type'] = 'application/json';
-
-function getTenantId() {
-  const fromStorage = localStorage.getItem('gestock_tenantId');
-  if (fromStorage) return fromStorage;
-
-  const savedUser = localStorage.getItem('depot_user') || localStorage.getItem('user');
-  if (!savedUser) return null;
-
-  try {
-    const user = JSON.parse(savedUser);
-    return user?.tenantId || null;
-  } catch {
-    return null;
-  }
-}
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('depot_token');
@@ -62,28 +62,30 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  const tenantId = getTenantId();
-  if (tenantId) {
-    config.headers['x-tenant-id'] = tenantId;
-  }
-
+  // IMPORTANT : le tenantId n'est plus envoyé depuis localStorage.
+  // L'identité du tenant est exclusivement déterminée par le JWT côté
+  // backend. Un éventuel x-tenant-id fourni par un client ne doit jamais
+  // pouvoir changer le contexte de sécurité.
   const depotId = pickDepotIdFromRequest(config) || getActiveDepotId();
   if (!depotId || shouldSkipDepotInjection(config.url || '')) {
     return config;
   }
 
+  // x-depot-id sert uniquement à demander un changement de scope.
+  // Le backend vérifie que ce dépôt appartient au tenant authentifié et que
+  // le rôle de l'utilisateur autorise ce changement.
   config.headers['X-Depot-Id'] = depotId;
 
   if (['get', 'delete'].includes((config.method || 'get').toLowerCase())) {
     const existingDepotId = config.params?.depotId;
-    const finalDepotId = (typeof existingDepotId === 'string' && existingDepotId.trim()) ? existingDepotId : depotId;
+    const finalDepotId =
+      typeof existingDepotId === 'string' && existingDepotId.trim()
+        ? existingDepotId
+        : depotId;
     config.params = { ...(config.params || {}), depotId: finalDepotId };
     return config;
   }
 
-  // Les FormData (ex: upload de fichiers) ne doivent jamais être spread avec
-  // {...config.data} — ça ne copie pas correctement les entrées internes du
-  // FormData (dont le fichier) et casse silencieusement l'upload.
   if (config.data instanceof FormData) {
     if (!config.data.has('depotId')) {
       config.data.append('depotId', depotId);
@@ -106,7 +108,7 @@ function subscribeTokenRefresh(cb) {
 }
 
 function onRefreshed(token) {
-  refreshSubscribers.map(cb => cb(token));
+  refreshSubscribers.map((cb) => cb(token));
   refreshSubscribers = [];
 }
 
@@ -121,7 +123,6 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       const isLoginRequest = originalRequest.url?.includes('/auth/login');
-      // CORRECTION 1 : Vérification stricte pour la route de refresh
       const isRefreshRequest = originalRequest.url?.endsWith('/auth/refresh');
 
       if (isLoginRequest || isRefreshRequest) {
@@ -134,7 +135,6 @@ api.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        // CORRECTION 2 : Gestion du rejet si le refresh échoue pour les requêtes en attente
         return new Promise((resolve, reject) => {
           subscribeTokenRefresh((token) => {
             if (token) {
@@ -154,7 +154,7 @@ api.interceptors.response.use(
         const { data } = await axios.post(
           `${api.defaults.baseURL}/auth/refresh`,
           {},
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const token = data.access_token || data.accessToken;
@@ -169,16 +169,14 @@ api.interceptors.response.use(
         isRefreshing = false;
         localStorage.removeItem('depot_token');
         localStorage.removeItem('depot_user');
-        
-        // CORRECTION 3 : On prévient les requêtes en attente que le refresh a échoué (token null)
-        onRefreshed(null); 
-        
+        onRefreshed(null);
         window.location.href = '/login';
         return Promise.reject(err);
       }
     }
+
     return Promise.reject(error);
-  }
+  },
 );
 
 registerQuotaForbiddenInterceptor(api);
@@ -187,10 +185,12 @@ registerQuotaForbiddenInterceptor(api);
  * Construit une URL dynamique pour un métier et une ressource donnés.
  * @param {string} metier - Identifiant du métier (ex: 'supermarche', 'pharmacie')
  * @param {string} resource - Chemin de la ressource (ex: '/stocks', '/rayons')
- * @returns {string} URL complète (ex: '/api/supermarche/stocks')
+ * @returns {string} URL complète
  */
 export function buildUrl(metier, resource) {
-  const base = api.defaults.baseURL.replace(/\/api\/v1$/, '').replace(/\/api\/v1\/$/, '');
+  const base = api.defaults.baseURL
+    .replace(/\/api\/v1$/, '')
+    .replace(/\/api\/v1\/$/, '');
   const metierSlug = metier.toLowerCase().replace(/_/g, '-');
   const path = resource.startsWith('/') ? resource : `/${resource}`;
   return `${base}/api/${metierSlug}${path}`;
