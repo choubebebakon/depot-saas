@@ -60,9 +60,18 @@ export class VentesController {
     @Req() req: any,
   ) {
     try {
+      // tenantId/depotId sont des données de contexte serveur, jamais des
+      // autorités fournies par le client. Même si le DTO les accepte encore
+      // pour compatibilité, ils sont explicitement retirés ici.
+      const { tenantId: _clientTenantId, depotId: _clientDepotId, ...saleData } =
+        createVenteDto as CreateVenteDto & {
+          tenantId?: string;
+          depotId?: string;
+        };
+
       return await this.ventesService.createVente(
         {
-          ...createVenteDto,
+          ...saleData,
           tenantId: this.getTenantId(req),
           depotId: this.getDepotId(req),
         },
