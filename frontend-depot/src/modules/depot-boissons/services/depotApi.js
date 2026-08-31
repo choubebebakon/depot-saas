@@ -11,10 +11,6 @@ function getTenantHeaders(depotIdOverride = null) {
   };
 }
 
-/**
- * Supprime les clés vides (""), null ou undefined avant envoi HTTP
- * pour éviter des filtres invalides côté Prisma (ex: search="", depotId="")
- */
 function cleanParams(params) {
   if (!params || typeof params !== 'object') return params;
   return Object.fromEntries(
@@ -23,108 +19,63 @@ function cleanParams(params) {
 }
 
 export const depotApi = {
-  // Dashboard
   getDashboardStats: () => {
     const depotId = localStorage.getItem('depot_actif_id');
     const params = depotId ? { depotId } : {};
     return api.get('/depot-boissons/dashboard', { ...getTenantHeaders(depotId), params });
   },
 
-  // Articles / Stock
   getArticles: (params) =>
     api.get('/depot-boissons/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getArticle: (id) =>
-    api.get(`/depot-boissons/articles/${id}`, getTenantHeaders()),
-  createArticle: (data) =>
-    api.post('/depot-boissons/articles', data, getTenantHeaders(data?.depotId)),
-  updateArticle: (id, data) =>
-    api.patch(`/depot-boissons/articles/${id}`, data, getTenantHeaders(data?.depotId)),
-  archiveArticle: (id) =>
-    api.delete(`/depot-boissons/articles/${id}`, getTenantHeaders()),
-  getStockHistory: (id) =>
-    api.get(`/depot-boissons/articles/${id}/historique`, getTenantHeaders()),
+  getArticle: (id) => api.get(`/depot-boissons/articles/${id}`, getTenantHeaders()),
+  createArticle: (data) => api.post('/depot-boissons/articles', data, getTenantHeaders(data?.depotId)),
+  updateArticle: (id, data) => api.patch(`/depot-boissons/articles/${id}`, data, getTenantHeaders(data?.depotId)),
+  archiveArticle: (id) => api.delete(`/depot-boissons/articles/${id}`, getTenantHeaders()),
+  getStockHistory: (id) => api.get(`/depot-boissons/articles/${id}/historique`, getTenantHeaders()),
 
-  // Entrées / Sorties stock
-  entreStock: (data) =>
-    api.post('/depot-boissons/stock/entree', data, getTenantHeaders(data?.depotId)),
-  sortieStock: (data) =>
-    api.post('/depot-boissons/stock/sortie', data, getTenantHeaders(data?.depotId)),
-  transfertStock: (data) =>
-    api.post('/depot-boissons/stock/transfert', data, getTenantHeaders(data?.depotId)),
+  entreStock: (data) => api.post('/depot-boissons/stock/entree', data, getTenantHeaders(data?.depotId)),
+  sortieStock: (data) => api.post('/depot-boissons/stock/sortie', data, getTenantHeaders(data?.depotId)),
+  transfertStock: (data) => api.post('/depot-boissons/stock/transfert', data, getTenantHeaders(data?.depotId)),
 
-  // Conditionnements
-  getConditionnements: () =>
-    api.get('/depot-boissons/conditionnements', getTenantHeaders()),
-  createConditionnement: (data) =>
-    api.post('/depot-boissons/conditionnements', data, getTenantHeaders(data?.depotId)),
-  updateConditionnement: (id, data) =>
-    api.patch(`/depot-boissons/conditionnements/${id}`, data, getTenantHeaders(data?.depotId)),
-  deleteConditionnement: (id) =>
-    api.delete(`/depot-boissons/conditionnements/${id}`, getTenantHeaders()),
+  getConditionnements: () => api.get('/depot-boissons/conditionnements', getTenantHeaders()),
+  createConditionnement: (data) => api.post('/depot-boissons/conditionnements', data, getTenantHeaders(data?.depotId)),
+  updateConditionnement: (id, data) => api.patch(`/depot-boissons/conditionnements/${id}`, data, getTenantHeaders(data?.depotId)),
+  deleteConditionnement: (id) => api.delete(`/depot-boissons/conditionnements/${id}`, getTenantHeaders()),
 
-  // Consignes
-  getConsignesClient: (clientId) =>
-    api.get(`/depot-boissons/consignes/${clientId}`, getTenantHeaders()),
-  sortirConsigne: (data) =>
-    api.post('/depot-boissons/consignes/sortie', data, getTenantHeaders(data?.depotId)),
-  retourConsigne: (data) =>
-    api.post('/depot-boissons/consignes/retour', data, getTenantHeaders(data?.depotId)),
-  rembourserConsigne: (data) =>
-    api.post('/depot-boissons/consignes/remboursement', data, getTenantHeaders(data?.depotId)),
-  historiqueConsignes: (clientId) =>
-    api.get(`/depot-boissons/consignes/${clientId}/historique`, getTenantHeaders()),
+  getConsignesClient: (clientId) => api.get(`/depot-boissons/consignes/${clientId}`, getTenantHeaders()),
+  sortirConsigne: (data) => api.post('/depot-boissons/consignes/sortie', data, getTenantHeaders(data?.depotId)),
+  retourConsigne: (data) => api.post('/depot-boissons/consignes/retour', data, getTenantHeaders(data?.depotId)),
+  rembourserConsigne: (data) => api.post('/depot-boissons/consignes/remboursement', data, getTenantHeaders(data?.depotId)),
+  historiqueConsignes: (clientId) => api.get(`/depot-boissons/consignes/${clientId}/historique`, getTenantHeaders()),
 
-  // Livraisons
-  getLivraisons: (params) =>
-    api.get('/depot-boissons/livraisons', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getLivraison: (id) =>
-    api.get(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
-  createLivraison: (data) =>
-    api.post('/depot-boissons/livraisons', data, getTenantHeaders(data?.depotId)),
-  updateLivraison: (id, data) =>
-    api.patch(`/depot-boissons/livraisons/${id}`, data, getTenantHeaders(data?.depotId)),
-  deleteLivraison: (id) =>
-    api.delete(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
+  getLivraisons: (params) => api.get('/depot-boissons/livraisons', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getLivraison: (id) => api.get(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
+  createLivraison: (data) => api.post('/depot-boissons/livraisons', data, getTenantHeaders(data?.depotId)),
+  updateLivraison: (id, data) => api.patch(`/depot-boissons/livraisons/${id}`, data, getTenantHeaders(data?.depotId)),
+  deleteLivraison: (id) => api.delete(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
 
-  // Dépôts
-  getDepots: () =>
-    api.get('/depot-boissons/depots', getTenantHeaders()),
+  getDepots: () => api.get('/depot-boissons/depots', getTenantHeaders()),
 
-  // Tournées
-  getTournees: (params) =>
-    api.get('/depot-boissons/tournees', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getTournee: (id) =>
-    api.get(`/depot-boissons/tournees/${id}`, getTenantHeaders()),
-  createTournee: (data) =>
-    api.post('/depot-boissons/tournees', data, getTenantHeaders(data?.depotId)),
-  demarrerTournee: (id) =>
-    api.post(`/depot-boissons/tournees/${id}/demarrer`, {}, getTenantHeaders()),
-  cloturerTournee: (id, data) =>
-    api.post(`/depot-boissons/tournees/${id}/cloturer`, data, getTenantHeaders(data?.depotId)),
-  chargerArticlesTournee: (id, data) =>
-    api.post(`/depot-boissons/tournees/${id}/charger`, data, getTenantHeaders(data?.depotId)),
-  getRecapTournee: (id) =>
-    api.get(`/depot-boissons/tournees/${id}/recap`, getTenantHeaders()),
+  getTournees: (params) => api.get('/depot-boissons/tournees', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getTournee: (id) => api.get(`/depot-boissons/tournees/${id}`, getTenantHeaders()),
+  createTournee: (data) => api.post('/depot-boissons/tournees', data, getTenantHeaders(data?.depotId)),
+  demarrerTournee: (id) => api.post(`/depot-boissons/tournees/${id}/demarrer`, {}, getTenantHeaders()),
+  cloturerTournee: (id, data) => api.post(`/depot-boissons/tournees/${id}/cloturer`, data, getTenantHeaders(data?.depotId)),
+  chargerArticlesTournee: (id, data) => api.post(`/depot-boissons/tournees/${id}/charger`, data, getTenantHeaders(data?.depotId)),
+  getRecapTournee: (id) => api.get(`/depot-boissons/tournees/${id}/recap`, getTenantHeaders()),
 
-  // Clients
-  getClients: (params) =>
-    api.get('/depot-boissons/clients', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getClient: (id) =>
-    api.get(`/depot-boissons/clients/${id}`, getTenantHeaders()),
-  createClient: (data) =>
-    api.post('/depot-boissons/clients', data, getTenantHeaders(data?.depotId)),
-  updateClient: (id, data) =>
-    api.patch(`/depot-boissons/clients/${id}`, data, getTenantHeaders(data?.depotId)),
-  payerDette: (id, data) =>
-    api.post(`/depot-boissons/clients/${id}/payer-dette`, data, getTenantHeaders(data?.depotId)),
-  historiqueAchats: (id, params) =>
-    api.get(`/depot-boissons/clients/${id}/historique-achats`, { ...getTenantHeaders(), params: cleanParams(params) }),
+  getClients: (params) => api.get('/depot-boissons/clients', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getClient: (id) => api.get(`/depot-boissons/clients/${id}`, getTenantHeaders()),
+  createClient: (data) => api.post('/depot-boissons/clients', data, getTenantHeaders(data?.depotId)),
+  updateClient: (id, data) => api.patch(`/depot-boissons/clients/${id}`, data, getTenantHeaders(data?.depotId)),
+  payerDette: (id, data) => api.post(`/depot-boissons/clients/${id}/payer-dette`, data, getTenantHeaders(data?.depotId)),
+  historiqueAchats: (id, params) => api.get(`/depot-boissons/clients/${id}/historique-achats`, { ...getTenantHeaders(), params: cleanParams(params) }),
 
-  // Fournisseurs
-  getFournisseurs: (params) =>
-    api.get('/depot-boissons/fournisseurs', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getFournisseur: (id) =>
-    api.get(`/depot-boissons/fournisseurs/${id}`, getTenantHeaders()),
+  // Fournisseurs: le depotId actif est fourni explicitement par la page.
+  getFournisseurs: (params = {}, depotIdOverride = null) =>
+    api.get('/depot-boissons/fournisseurs', { ...getTenantHeaders(depotIdOverride), params: cleanParams(params) }),
+  getFournisseur: (id, depotIdOverride = null) =>
+    api.get(`/depot-boissons/fournisseurs/${id}`, getTenantHeaders(depotIdOverride)),
   createFournisseur: (data) =>
     api.post('/depot-boissons/fournisseurs', data, getTenantHeaders(data?.depotId)),
   updateFournisseur: (id, data) =>
@@ -135,48 +86,29 @@ export const depotApi = {
     api.post(`/depot-boissons/fournisseurs/${id}/receptionner`, data, getTenantHeaders(data?.depotId)),
   reglerDetteFournisseur: (id, data) =>
     api.post(`/depot-boissons/fournisseurs/${id}/regler`, data, getTenantHeaders(data?.depotId)),
-  historiqueCommandes: (id) =>
-    api.get(`/depot-boissons/fournisseurs/${id}/commandes`, getTenantHeaders()),
+  historiqueCommandes: (id, depotIdOverride = null) =>
+    api.get(`/depot-boissons/fournisseurs/${id}/commandes`, getTenantHeaders(depotIdOverride)),
 
-  // Ventes
-  getVentes: (params) =>
-    api.get('/depot-boissons/ventes', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getVente: (id) =>
-    api.get(`/depot-boissons/ventes/${id}`, getTenantHeaders()),
-  createVente: (data) =>
-    api.post('/depot-boissons/ventes', data, getTenantHeaders(data?.depotId)),
-  annulerVente: (id) =>
-    api.post(`/depot-boissons/ventes/${id}/annuler`, {}, getTenantHeaders()),
-  imprimerTicket: (id) =>
-    api.get(`/depot-boissons/ventes/${id}/ticket`, { ...getTenantHeaders(), responseType: 'blob' }),
+  getVentes: (params) => api.get('/depot-boissons/ventes', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getVente: (id) => api.get(`/depot-boissons/ventes/${id}`, getTenantHeaders()),
+  createVente: (data) => api.post('/depot-boissons/ventes', data, getTenantHeaders(data?.depotId)),
+  annulerVente: (id) => api.post(`/depot-boissons/ventes/${id}/annuler`, {}, getTenantHeaders()),
+  imprimerTicket: (id) => api.get(`/depot-boissons/ventes/${id}/ticket`, { ...getTenantHeaders(), responseType: 'blob' }),
 
-  // Caisse
-  getCaisseStatut: (depotId) =>
-    api.get('/depot-boissons/caisse/statut', getTenantHeaders(depotId)),
-  ouvrirCaisse: (data) =>
-    api.post('/depot-boissons/caisse/ouvrir', data, getTenantHeaders(data?.depotId)),
-  fermerCaisse: (data = {}) =>
-    api.post('/depot-boissons/caisse/fermer', data, getTenantHeaders(data?.depotId)),
-  mouvementCaisse: (data) =>
-    api.post('/depot-boissons/caisse/mouvement', data, getTenantHeaders(data?.depotId)),
-  rapportJournalier: (depotId) =>
-    api.get('/depot-boissons/caisse/rapport-journalier', getTenantHeaders(depotId)),
+  getCaisseStatut: (depotId) => api.get('/depot-boissons/caisse/statut', getTenantHeaders(depotId)),
+  ouvrirCaisse: (data) => api.post('/depot-boissons/caisse/ouvrir', data, getTenantHeaders(data?.depotId)),
+  fermerCaisse: (data = {}) => api.post('/depot-boissons/caisse/fermer', data, getTenantHeaders(data?.depotId)),
+  mouvementCaisse: (data) => api.post('/depot-boissons/caisse/mouvement', data, getTenantHeaders(data?.depotId)),
+  rapportJournalier: (depotId) => api.get('/depot-boissons/caisse/rapport-journalier', getTenantHeaders(depotId)),
 
-  // Dépenses
-  getDepenses: (params) =>
-    api.get('/depot-boissons/depenses', { ...getTenantHeaders(), params: cleanParams(params) }),
-  createDepense: (data) =>
-    api.post('/depot-boissons/depenses', data, getTenantHeaders(data?.depotId)),
-  deleteDepense: (id) =>
-    api.delete(`/depot-boissons/depenses/${id}`, getTenantHeaders()),
+  getDepenses: (params) => api.get('/depot-boissons/depenses', { ...getTenantHeaders(), params: cleanParams(params) }),
+  createDepense: (data) => api.post('/depot-boissons/depenses', data, getTenantHeaders(data?.depotId)),
+  deleteDepense: (id) => api.delete(`/depot-boissons/depenses/${id}`, getTenantHeaders()),
 
-  // Rapports
-  getRapport: (type, params) =>
-    api.get(`/depot-boissons/rapports/${type}`, { ...getTenantHeaders(), params: cleanParams(params) }),
-  exporterRapport: (type, format, params) =>
-    api.get(`/depot-boissons/rapports/${type}/export.${format}`, {
-      ...getTenantHeaders(),
-      params: cleanParams(params),
-      responseType: 'blob',
-    }),
+  getRapport: (type, params) => api.get(`/depot-boissons/rapports/${type}`, { ...getTenantHeaders(), params: cleanParams(params) }),
+  exporterRapport: (type, format, params) => api.get(`/depot-boissons/rapports/${type}/export.${format}`, {
+    ...getTenantHeaders(),
+    params: cleanParams(params),
+    responseType: 'blob',
+  }),
 };
