@@ -1,10 +1,21 @@
-import { Controller, Get, Post, Body, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
+import { Request } from 'express';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+    role: string;
+    tenantId: string;
+    depotId: string | null;
+  };
+}
 
 @Controller('tenant')
 export class TenantsController {
@@ -18,27 +29,36 @@ export class TenantsController {
 
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTenantDto: UpdateTenantDto) {
-    return this.tenantsService.update(id, updateTenantDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateTenantDto: UpdateTenantDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.tenantsService.update(id, updateTenantDto, req.user);
   }
 
-  @Roles(RoleUser.PATRON, RoleUser.GERANT)
+  @Roles(
+    RoleUser.PATRON,
+    RoleUser.GERANT,
+    RoleUser.CAISSIER,
+    RoleUser.MAGASINIER,
+    RoleUser.COMMERCIAL,
+    RoleUser.COMPTABLE,
+  )
   @Get('info')
-  getInfo() {
-    return this.tenantsService.getInfo();
+  getInfo(@Req() req: AuthenticatedRequest) {
+    return this.tenantsService.getInfo(req.user);
   }
 
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
   @Get()
-  findAll() {
-    return this.tenantsService.findAll();
+  findAll(@Req() req: AuthenticatedRequest) {
+    return this.tenantsService.findAll(req.user?.tenantId);
   }
 
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tenantsService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.tenantsService.findOne(id, req.user?.tenantId);
   }
-
-  // On a supprimé update et remove pour l'instant pour nettoyer les erreurs
 }
