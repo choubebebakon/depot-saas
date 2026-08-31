@@ -101,7 +101,9 @@ export class TenantsService {
     return {
       tenant,
       depots,
-      plan: tenant.planType,
+      // Le frontend historique attend les plans en minuscules.
+      // L'enum Prisma reste volontairement en majuscules dans `tenant`.
+      plan: String(tenant.planType).toLowerCase(),
       currentDepotId: user.depotId ?? null,
     };
   }
