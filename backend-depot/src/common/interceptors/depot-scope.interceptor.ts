@@ -37,7 +37,10 @@ export class DepotScopeInterceptor implements NestInterceptor {
     private readonly prisma: PrismaService,
   ) {}
 
-  intercept(context: ExecutionContext, next: import('@nestjs/common').CallHandler): Observable<unknown> {
+  intercept(
+    context: ExecutionContext,
+    next: import('@nestjs/common').CallHandler,
+  ): Observable<unknown> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
 
@@ -52,6 +55,12 @@ export class DepotScopeInterceptor implements NestInterceptor {
 
       void this.resolveDepotId(user, requestedDepotId)
         .then((depotId) => {
+          // The authenticated server-side scope is authoritative. Controllers
+          // historically accepted depotId from request bodies/query params;
+          // normalize those values here so a client cannot silently override
+          // the validated depot selected by the scope layer.
+          this.applyAuthoritativeDepotScope(request, depotId);
+
           subscription = this.depotScope.run(
             {
               tenantId: user.tenantId,
@@ -82,6 +91,29 @@ export class DepotScopeInterceptor implements NestInterceptor {
     return normalizeDepotId(headerDepotId ?? request.query.depotId);
   }
 
+  private applyAuthoritativeDepotScope(
+    request: AuthenticatedRequest,
+    depotId: string | null,
+  ): void {
+    const body = request.body as Record<string, unknown> | undefined;
+    if (body && Object.prototype.hasOwnProperty.call(body, 'depotId')) {
+      if (depotId) {
+        body.depotId = depotId;
+      } else {
+        delete body.depotId;
+      }
+    }
+
+    const query = request.query as Record<string, unknown> | undefined;
+    if (query && Object.prototype.hasOwnProperty.call(query, 'depotId')) {
+      if (depotId) {
+        query.depotId = depotId;
+      } else {
+        delete query.depotId;
+      }
+    }
+  }
+
   private async resolveDepotId(
     user: AuthenticatedUser,
     requestedDepotId: string | null,
@@ -110,9 +142,6 @@ export class DepotScopeInterceptor implements NestInterceptor {
       return user.depotId ?? null;
     }
 
-    // La validation doit ignorer le scope de dépôt hérité du middleware :
-    // sinon un PATRON/GERANT déjà affecté au dépôt A ne pourrait pas vérifier
-    // puis sélectionner le dépôt B. Le tenant reste néanmoins obligatoire.
     const depot = await this.depotScope.run(
       {
         tenantId: user.tenantId,
