@@ -56,6 +56,8 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { SupportModule } from './support/support.module';
 import { BillingModule } from './billing/billing.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
+import { RealtimeModule } from './common/realtime/realtime.module';
+import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation.interceptor';
 
 @Module({
   imports: [
@@ -105,6 +107,7 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
     SupportModule,
     BillingModule,
     PlatformAdminModule,
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [
@@ -119,6 +122,7 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
     { provide: APP_INTERCEPTOR, useClass: DepotScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PromotionScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: TourneeScopeInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: RealtimeMutationInterceptor },
   ],
 })
 export class AppModule implements NestModule {
