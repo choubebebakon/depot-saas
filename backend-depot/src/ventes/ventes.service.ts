@@ -50,15 +50,33 @@ export class VentesService {
       lignes,
       clientId,
       modePaiement,
+      montantCash,
+      montantOM,
+      montantMoMo,
+      montantCredit,
       tourneeId,
       retoursConsigne,
     } = dto;
 
     return await this.prisma.$transaction(async (tx) => {
+      if (!Array.isArray(lignes) || lignes.length === 0) {
+        throw new BadRequestException('Une vente doit contenir au moins une ligne.');
+      }
+
       let totalVente = 0;
       const lignesData: any[] = [];
 
       for (const ligne of lignes) {
+        const quantite = Number(ligne.quantite);
+        if (!Number.isFinite(quantite) || quantite <= 0) {
+          throw new BadRequestException('La quantité de chaque ligne doit être supérieure à 0.');
+        }
+
+        const remise = Number(ligne.remise || 0);
+        if (!Number.isFinite(remise) || remise < 0) {
+          throw new BadRequestException('La remise doit être un montant positif ou nul.');
+        }
+
         const article = await tx.article.findUnique({
           where: { id: ligne.articleId },
         });
@@ -68,20 +86,72 @@ export class VentesService {
           ligne.casierMixte || ligne.conditionnementId
             ? ligne.prix || article.prixVente
             : article.prixVente;
-        const totalLigne = prixBase * ligne.quantite - (ligne.remise || 0);
+        if (!Number.isFinite(prixBase) || prixBase < 0) {
+          throw new BadRequestException(`Prix invalide pour l'article ${article.designation}.`);
+        }
+
+        const totalLigne = prixBase * quantite - remise;
+        if (totalLigne < 0) {
+          throw new BadRequestException('Le total d'une ligne ne peut pas être négatif.');
+        }
         totalVente += totalLigne;
 
         lignesData.push({
           id: ligne.id || undefined,
           articleId: article.id,
-          quantite: ligne.quantite,
+          quantite,
           prix: prixBase,
-          remise: ligne.remise || 0,
+          remise,
           total: totalLigne,
           casierMixte: ligne.casierMixte || false,
           composition: ligne.composition || null,
           conditionnementId: ligne.conditionnementId || null,
         });
+      }
+
+      const mode = modePaiement || ModePaiement.CASH;
+      const montantTotal = Number(totalVente.toFixed(2));
+      const cash = Number((montantCash ?? (mode === ModePaiement.CASH ? montantTotal : 0)));
+      const om = Number((montantOM ?? (mode === ModePaiement.ORANGE_MONEY ? montantTotal : 0)));
+      const momo = Number((montantMoMo ?? (mode === ModePaiement.MTN_MOMO ? montantTotal : 0)));
+      const credit = Number((montantCredit ?? (mode === ModePaiement.CREDIT ? montantTotal : 0)));
+
+      for (const montant of [cash, om, momo, credit]) {
+        if (!Number.isFinite(montant) || montant < 0) {
+          throw new BadRequestException('Les montants de paiement doivent être positifs ou nuls.');
+        }
+      }
+
+      const totalPaiement = Number((cash + om + momo + credit).toFixed(2));
+      if (Math.abs(totalPaiement - montantTotal) > 0.01) {
+        throw new BadRequestException(
+          `Paiement incohérent : ${totalPaiement} FCFA pour une vente de ${montantTotal} FCFA.`,
+        );
+      }
+
+      if (mode === ModePaiement.CREDIT && !clientId) {
+        throw new BadRequestException('Un client est obligatoire pour une vente à crédit.');
+      }
+
+      if (mode === ModePaiement.CASH && cash <= 0) {
+        throw new BadRequestException('Le montant CASH est obligatoire pour une vente comptant.');
+      }
+
+      // Toute part CASH doit être rattachée à une session ouverte du même
+      // tenant/dépôt. Les paiements électroniques et le crédit n'alimentent
+      // pas la caisse physique.
+      let sessionCaisse: { id: string } | null = null;
+      if (cash > 0) {
+        sessionCaisse = await tx.sessionCaisse.findFirst({
+          where: { tenantId, depotId, estOuverte: true },
+          select: { id: true },
+        });
+
+        if (!sessionCaisse) {
+          throw new BadRequestException(
+            'Impossible d\'encaisser en espèces : aucune session de caisse ouverte pour ce dépôt.',
+          );
+        }
       }
 
       let reference = clientRef;
@@ -97,14 +167,18 @@ export class VentesService {
         reference = `FAC-${annee}-${String(count + 1).padStart(6, '0')}`;
       }
 
-      // Création de la vente (Statut PAYE par défaut pour le POS)
+      // Création de la vente et de ses composantes financières dans la même transaction.
       const vente = await tx.vente.create({
         data: {
           id: id || undefined,
           reference,
-          total: totalVente,
+          total: montantTotal,
           statut: StatutVente.PAYE,
-          modePaiement: modePaiement || ModePaiement.CASH,
+          modePaiement: mode,
+          montantCash: cash,
+          montantOM: om,
+          montantMoMo: momo,
+          montantCredit: credit,
           depotId,
           tenantId,
           createurId: actor.userId,
@@ -115,6 +189,20 @@ export class VentesService {
         },
         include: { lignes: { include: { article: true } }, client: true },
       });
+
+      // CASH uniquement : entrée dans la caisse physique, dans la même transaction
+      // que la vente et le mouvement de stock.
+      if (cash > 0 && sessionCaisse) {
+        await tx.mouvementCaisse.create({
+          data: {
+            type: 'ENCAISSEMENT_VENTE',
+            montant: cash,
+            motif: `Encaissement vente ${reference}`,
+            reference: vente.id,
+            sessionId: sessionCaisse.id,
+          },
+        });
+      }
 
       // --- LOGIQUE ATOMIQUE : STOCKS ET MOUVEMENTS ---
       for (const ligne of lignesData) {
@@ -149,13 +237,12 @@ export class VentesService {
             data: {
               quantite: retour.quantite,
               motif: `Retour vide sur vente ${reference}`,
-              estSortie: false, // C'est un retour, donc ce n'est pas une sortie
+              estSortie: false,
               tenantId: tenantId,
               typeConsigne: { connect: { id: retour.typeConsigneId } },
             },
           });
 
-          // Mise à jour du portefeuille consigne du client
           await tx.portefeuilleConsigne.upsert({
             where: {
               clientId_typeConsigneId: {
@@ -173,7 +260,6 @@ export class VentesService {
         }
       }
 
-      // Audit remise
       const remiseTotale = lignes.reduce(
         (acc: number, l: any) => acc + (l.remise || 0),
         0,
@@ -245,7 +331,6 @@ export class VentesService {
 
         for (const dec of stockDecs) {
           if (vente.tourneeId) {
-            // Vente en tournée : Tricycle stock
             const ligneCh = await tx.ligneChargement.findFirst({
               where: { tourneeId: vente.tourneeId, articleId: dec.articleId },
             });
@@ -260,7 +345,6 @@ export class VentesService {
               data: { quantiteVendue: { increment: dec.quantite } },
             });
           } else {
-            // Vente au dépôt : FIFO automatique
             await tx.stock.upsert({
               where: {
                 articleId_depotId: {
@@ -276,7 +360,6 @@ export class VentesService {
               },
             });
 
-            // FIFO des lots
             await this.dlcService.deduireLotFIFO(
               dec.articleId,
               vente.depotId,
