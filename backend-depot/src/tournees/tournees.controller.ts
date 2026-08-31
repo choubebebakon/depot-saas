@@ -11,12 +11,7 @@ import {
 import { TourneesService } from './tournees.service';
 
 @Controller('tournees')
-@Roles(
-  RoleUser.PATRON,
-  RoleUser.GERANT,
-  RoleUser.COMMERCIAL,
-  RoleUser.MAGASINIER,
-)
+@Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.COMMERCIAL, RoleUser.MAGASINIER)
 export class TourneesController {
   constructor(private readonly service: TourneesService) {}
 
@@ -27,8 +22,9 @@ export class TourneesController {
   }
 
   @Get('tricycles')
-  findTricycles(@Query('tenantId') tenantId: string) {
-    return this.service.findTricycles(tenantId);
+  @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
+  findTricycles(@Query('tenantId') tenantId: string, @Query('depotId') depotId: string) {
+    return this.service.findTricycles(tenantId, depotId);
   }
 
   @Post('ouvrir')
@@ -56,25 +52,17 @@ export class TourneesController {
   }
 
   @Get('stats')
-  stats(@Query('tenantId') tenantId: string) {
-    return this.service.statsTournees(tenantId);
+  stats(@Query('tenantId') tenantId: string, @Query('depotId') depotId: string) {
+    return this.service.statsTournees(tenantId, depotId);
   }
 
   @Get()
-  findAll(
-    @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string,
-    @Query('statut') statut?: string,
-  ) {
+  findAll(@Query('tenantId') tenantId: string, @Query('depotId') depotId: string, @Query('statut') statut?: string) {
     return this.service.findAll(tenantId, depotId, statut);
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string,
-  ) {
+  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string, @Query('depotId') depotId: string) {
     return this.service.findOne(id, tenantId, depotId);
   }
 }
