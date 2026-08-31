@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
 import { useNotif } from '../../../context/NotifContext';
-import { useAuth } from '../../../contexts/AuthContext';
 import { useDepot } from '../../../hooks/useDepot';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
@@ -18,31 +17,27 @@ const consigneSchema = z.object({
   quantite: z.coerce.number().int().min(1, 'Minimum 1'),
   estSortie: z.boolean(),
   estRemboursement: z.boolean(),
-  montantRembourse: z.coerce.number().min(0, 'Montant invalide').optional().or(z.literal('')),
   motif: z.string().trim().max(255, 'Motif trop long').optional().or(z.literal('')),
-}).superRefine((data, ctx) => {
-  if (data.estRemboursement) {
-    const montant = data.montantRembourse === '' ? 0 : Number(data.montantRembourse);
-    if (!Number.isFinite(montant) || montant <= 0) {
-      ctx.addIssue({ code: 'custom', message: 'Montant requis pour un remboursement', path: ['montantRembourse'] });
-    }
-  }
 });
 
 const emptyValues = {
-  clientId: '', typeConsigneId: '', quantite: 1, estSortie: true,
-  estRemboursement: false, montantRembourse: '', motif: '',
+  clientId: '',
+  typeConsigneId: '',
+  quantite: 1,
+  estSortie: true,
+  estRemboursement: false,
+  motif: '',
 };
 
-export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
+export default function ConsigneForm({ isOpen, onClose, onSuccess }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
-  const { user } = useAuth();
   const depotContext = useDepot();
   const depotId = depotContext?.depotId || depotContext?.activeDepotId || depotContext?.depot?.id;
 
-  const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
-    resolver: zodResolver(consigneSchema), defaultValues: emptyValues,
+  const { control, handleSubmit, watch, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(consigneSchema),
+    defaultValues: emptyValues,
   });
 
   const estSortie = watch('estSortie');
@@ -51,61 +46,179 @@ export default function ConsigneForm({ isOpen, onClose, onSuccess, edit, metier 
   const { data: typesConsigne = [], isLoading: typesLoading } = useQuery({
     queryKey: ['types-consigne', depotId],
     queryFn: async () => {
-      const r = await api.get('/consignes/types', { params: { depotId } });
+      const r = await api.get('/consignes/types', {
+        headers: { 'X-Depot-Id': depotId },
+      });
       return r.data?.data || r.data || [];
     },
     enabled: isOpen && Boolean(depotId),
   });
 
   useEffect(() => {
-    if (edit) reset({ ...emptyValues, ...edit, quantite: edit.quantite || 1, montantRembourse: edit.montantRembourse ?? '' });
-    else reset(emptyValues);
-  }, [edit, isOpen, reset]);
+    if (isOpen) reset(emptyValues);
+  }, [isOpen, reset]);
 
-  const prefix = `/${metier}`;
   const fetchClients = async (q) => {
     if (!depotId) return [];
-    const r = await api.get(`${prefix}/clients`, { params: { search: q, limit: 8, depotId } });
+    const r = await api.get('/depot-boissons/clients', {
+      params: { search: q, limit: 8, depotId },
+      headers: { 'X-Depot-Id': depotId },
+    });
     return r.data?.data || r.data || [];
   };
 
   const mutation = useMutation({
     mutationFn: async (data) => {
       if (!depotId) throw new Error('Aucun dépôt actif');
-      const payload = { ...data, depotId, quantite: Number(data.quantite), montantRembourse: data.montantRembourse === '' ? null : Number(data.montantRembourse) };
-      const r = edit
-        ? await api.patch(`${prefix}/consignes/${edit.id}`, payload)
-        : await api.post(`${prefix}/consignes`, payload);
+
+      const headers = { 'X-Depot-Id': depotId };
+      if (data.estRemboursement) {
+        const r = await api.post('/consignes/rendu-sans-achat', {
+          clientId: data.clientId,
+          typeConsigneId: data.typeConsigneId,
+          quantite: Number(data.quantite),
+          estRemboursementCash: true,
+        }, { headers });
+        return r.data;
+      }
+
+      const r = await api.post('/consignes/mouvements', {
+        clientId: data.clientId,
+        typeConsigneId: data.typeConsigneId,
+        quantite: Number(data.quantite),
+        estSortie: data.estSortie,
+        motif: data.motif || undefined,
+      }, { headers });
       return r.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['depot-consignes', depotId] });
       queryClient.invalidateQueries({ queryKey: ['depot-consignes-client', depotId] });
-      queryClient.invalidateQueries({ queryKey: ['depot-dashboard', depotId] });
+      queryClient.invalidateQueries({ queryKey: ['depot-clients', depotId] });
       queryClient.invalidateQueries({ queryKey: ['types-consigne', depotId] });
-      notif.success(edit ? 'Mouvement consigne mis à jour' : 'Mouvement consigne enregistré');
+      notif.success(estRemboursement ? 'Remboursement de consigne enregistré' : 'Mouvement de consigne enregistré');
       onSuccess?.();
       onClose();
+      reset(emptyValues);
     },
-    onError: (err) => notif.error(err.response?.data?.message || 'Une erreur est survenue'),
+    onError: (err) => {
+      notif.error(err.response?.data?.message || 'Impossible d’enregistrer le mouvement de consigne');
+    },
   });
 
   return (
-    <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier mouvement consigne' : 'Mouvement consigne'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Enregistrer'}>
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onSubmit={handleSubmit((data) => mutation.mutate(data))}
+      title="Mouvement consigne"
+      loading={mutation.isPending}
+      submitLabel={estRemboursement ? 'Rembourser' : 'Enregistrer'}
+    >
       {!depotId && <div role="alert" className="mb-4">Aucun dépôt actif sélectionné.</div>}
+
       <div className="mb-4">
-        <Controller name="clientId" control={control} render={({ field }) => <AutocompleteInput label="Client" name="clientId" value={field.value} onChange={field.onChange} fetchSuggestions={fetchClients} placeholder="Rechercher un client..." required error={errors.clientId?.message} />} />
+        <Controller
+          name="clientId"
+          control={control}
+          render={({ field }) => (
+            <AutocompleteInput
+              label="Client"
+              name="clientId"
+              value={field.value}
+              onChange={field.onChange}
+              fetchSuggestions={fetchClients}
+              placeholder="Rechercher un client..."
+              required
+              error={errors.clientId?.message}
+            />
+          )}
+        />
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <Controller name="typeConsigneId" control={control} render={({ field }) => <FormField label="Type de consigne" name="typeConsigneId" type="select" value={field.value} onChange={(e) => field.onChange(e.target.value)} required error={errors.typeConsigneId?.message} options={typesConsigne.map(t => ({ value: t.id, label: t.nom }))} />} />
-        <Controller name="quantite" control={control} render={({ field }) => <NumberInput label="Quantité" name="quantite" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={1} required error={errors.quantite?.message} />} />
+        <Controller
+          name="typeConsigneId"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Type de consigne"
+              name="typeConsigneId"
+              type="select"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              required
+              error={errors.typeConsigneId?.message}
+              options={typesConsigne.map((t) => ({ value: t.id, label: t.nom || t.type }))}
+            />
+          )}
+        />
+        <Controller
+          name="quantite"
+          control={control}
+          render={({ field }) => (
+            <NumberInput
+              label="Quantité"
+              name="quantite"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              min={1}
+              required
+              error={errors.quantite?.message}
+            />
+          )}
+        />
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <Controller name="estSortie" control={control} render={({ field }) => <FormField label="Type" name="estSortie" type="toggle" value={field.value} onChange={(e) => field.onChange(Boolean(e.target.value))} toggleLabel={estSortie ? 'Sortie consigne' : 'Retour consigne'} />} />
-        <Controller name="estRemboursement" control={control} render={({ field }) => <FormField label="Remboursement" name="estRemboursement" type="toggle" value={field.value} onChange={(e) => { const checked = Boolean(e.target.value); field.onChange(checked); if (!checked) setValue('montantRembourse', ''); }} toggleLabel="Rembourser en cash" />} />
+        <Controller
+          name="estSortie"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Type"
+              name="estSortie"
+              type="toggle"
+              value={field.value}
+              onChange={(e) => field.onChange(Boolean(e.target.value))}
+              toggleLabel={estSortie ? 'Sortie consigne' : 'Retour consigne'}
+            />
+          )}
+        />
+        <Controller
+          name="estRemboursement"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Remboursement"
+              name="estRemboursement"
+              type="toggle"
+              value={field.value}
+              onChange={(e) => field.onChange(Boolean(e.target.value))}
+              toggleLabel="Remboursement cash"
+            />
+          )}
+        />
       </div>
-      {estRemboursement && <div className="mt-4"><Controller name="montantRembourse" control={control} render={({ field }) => <FormField label="Montant remboursement" name="montantRembourse" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={0} unit="FCFA" error={errors.montantRembourse?.message} />} /></div>}
-      <div className="mt-4"><Controller name="motif" control={control} render={({ field }) => <FormField label="Motif" name="motif" type="textarea" value={field.value} onChange={(e) => field.onChange(e.target.value)} rows={2} placeholder="Motif du mouvement..." error={errors.motif?.message} />} /></div>
+
+      <div className="mt-4">
+        <Controller
+          name="motif"
+          control={control}
+          render={({ field }) => (
+            <FormField
+              label="Motif"
+              name="motif"
+              type="textarea"
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              rows={2}
+              placeholder="Motif du mouvement..."
+              error={errors.motif?.message}
+            />
+          )}
+        />
+      </div>
+
       {typesLoading && <div>Chargement des types de consigne…</div>}
       {mutation.isError && <div role="alert">Impossible d'enregistrer la consigne. Vérifiez vos droits et le dépôt actif.</div>}
     </FormModal>
