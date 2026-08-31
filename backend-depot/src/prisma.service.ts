@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
@@ -50,8 +50,6 @@ export class PrismaService
 
     // Modèles dont l'isolation est portée directement par tenantId et qui
     // peuvent être utilisés sans dépôt actif (catalogue partagé du tenant).
-    // Cette liste est volontairement explicite : on ne suppose jamais qu'un
-    // modèle possède tenantId sans l'avoir vérifié dans le schéma Prisma.
     const directTenantModels = [
       'PaiementSouscription',
       'Famille',
@@ -111,10 +109,43 @@ export class PrismaService
             }
 
             // ----------------------------------------------------------------
+            // 0. PROTECTION ATOMIQUE DU STOCK
+            // ----------------------------------------------------------------
+            // Les ventes POS utilisent principalement upsert + decrement.
+            // Ajouter la quantité disponible au WHERE transforme l'opération
+            // en contrôle optimiste atomique : deux ventes concurrentes ne
+            // peuvent pas toutes deux décrémenter un stock insuffisant.
+            // Pour un upsert, un stock absent ou insuffisant ne doit surtout
+            // pas être créé avec une quantité négative : on rejette donc le
+            // chemin create lorsque sa quantité serait négative.
+            if (model === 'Stock' && ['update', 'updateMany', 'upsert'].includes(operation)) {
+              const decrement = Number(anyArgs.data?.quantite?.decrement ?? 0);
+
+              if (Number.isFinite(decrement) && decrement > 0) {
+                anyArgs.where = {
+                  ...(anyArgs.where ?? {}),
+                  quantite: { gte: decrement },
+                };
+
+                if (operation === 'upsert') {
+                  const createQuantite = Number(anyArgs.create?.quantite ?? 0);
+                  if (Number.isFinite(createQuantite) && createQuantite < 0) {
+                    throw new BadRequestException(
+                      'Stock insuffisant pour effectuer cette sortie.',
+                    );
+                  }
+                }
+              }
+            }
+
+            // ----------------------------------------------------------------
             // 1. ISOLATION TENANT DIRECTE
             // ----------------------------------------------------------------
             if (directTenantModels.includes(model)) {
-              if (readOperations.has(operation) || mutationWhereOperations.has(operation)) {
+              if (
+                readOperations.has(operation) ||
+                mutationWhereOperations.has(operation)
+              ) {
                 anyArgs.where = {
                   ...(anyArgs.where ?? {}),
                   tenantId,
@@ -157,7 +188,10 @@ export class PrismaService
             // 2. ISOLATION DEPOT DIRECTE
             // ----------------------------------------------------------------
             if (depotId && directDepotModels.includes(model)) {
-              if (readOperations.has(operation) || mutationWhereOperations.has(operation)) {
+              if (
+                readOperations.has(operation) ||
+                mutationWhereOperations.has(operation)
+              ) {
                 anyArgs.where = {
                   ...(anyArgs.where ?? {}),
                   depotId,
@@ -198,7 +232,10 @@ export class PrismaService
             if (depotId && relationScopedWhere[model]) {
               const scopedWhere = relationScopedWhere[model](depotId);
 
-              if (readOperations.has(operation) || mutationWhereOperations.has(operation)) {
+              if (
+                readOperations.has(operation) ||
+                mutationWhereOperations.has(operation)
+              ) {
                 anyArgs.where = {
                   ...(anyArgs.where ?? {}),
                   ...scopedWhere,
