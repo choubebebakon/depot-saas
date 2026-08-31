@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { DepotScopeService } from '../common/depot-scope.service';
 import { CaisseService } from './caisse.service';
 import {
   CreateDepenseDto,
@@ -19,7 +20,10 @@ import {
 @Controller('caisse')
 @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.CAISSIER, RoleUser.COMPTABLE)
 export class CaisseController {
-  constructor(private readonly caisseService: CaisseService) {}
+  constructor(
+    private readonly caisseService: CaisseService,
+    private readonly depotScope: DepotScopeService,
+  ) {}
 
   private getTenantId(req: any): string {
     if (!req.user?.tenantId) {
@@ -28,15 +32,9 @@ export class CaisseController {
     return req.user.tenantId;
   }
 
-  private getDepotId(req: any): string {
-    const depotId = req.scope?.depotId ?? req.headers?.['x-depot-id'];
-    if (Array.isArray(depotId)) {
-      if (!depotId[0]) {
-        throw new BadRequestException('Aucun dépôt actif sélectionné.');
-      }
-      return depotId[0];
-    }
-    if (!depotId || depotId === 'all' || depotId === 'undefined' || depotId === 'null') {
+  private getDepotId(): string {
+    const depotId = this.depotScope.getDepotId();
+    if (!depotId) {
       throw new BadRequestException('Aucun dépôt actif sélectionné.');
     }
     return depotId;
@@ -47,8 +45,7 @@ export class CaisseController {
     return this.caisseService.ouvrirSession({
       ...dto,
       tenantId: this.getTenantId(req),
-      depotId: this.getDepotId(req),
-      // L'utilisateur qui ouvre la session est toujours celui authentifié.
+      depotId: this.getDepotId(),
       userId: req.user.id,
     });
   }
@@ -58,7 +55,7 @@ export class CaisseController {
     return this.caisseService.fermerSession({
       ...dto,
       tenantId: this.getTenantId(req),
-      depotId: this.getDepotId(req),
+      depotId: this.getDepotId(),
     });
   }
 
@@ -66,7 +63,7 @@ export class CaisseController {
   getSessionActive(@Req() req: any, @Query('depotId') _depotId?: string) {
     return this.caisseService.getSessionActive(
       this.getTenantId(req),
-      this.getDepotId(req),
+      this.getDepotId(),
     );
   }
 
@@ -74,7 +71,7 @@ export class CaisseController {
   getHistorique(@Req() req: any, @Query('depotId') _depotId?: string) {
     return this.caisseService.getHistorique(
       this.getTenantId(req),
-      this.getDepotId(req),
+      this.getDepotId(),
     );
   }
 
@@ -82,7 +79,7 @@ export class CaisseController {
   getResume(@Req() req: any, @Query('depotId') _depotId?: string) {
     return this.caisseService.getResume(
       this.getTenantId(req),
-      this.getDepotId(req),
+      this.getDepotId(),
     );
   }
 
@@ -91,7 +88,7 @@ export class CaisseController {
     return this.caisseService.createDepense({
       ...dto,
       tenantId: this.getTenantId(req),
-      depotId: this.getDepotId(req),
+      depotId: this.getDepotId(),
     });
   }
 
@@ -104,7 +101,7 @@ export class CaisseController {
   ) {
     return this.caisseService.getDepenses(
       this.getTenantId(req),
-      this.getDepotId(req),
+      this.getDepotId(),
       dateDebut,
       dateFin,
     );
