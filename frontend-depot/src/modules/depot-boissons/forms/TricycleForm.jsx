@@ -11,7 +11,6 @@ import { depotApi } from '../services/depotApi';
 
 const tricycleSchema = z.object({
   immatriculation: z.string().trim().min(1, 'L’immatriculation est requise').max(50, 'Immatriculation trop longue'),
-  modele: z.string().trim().min(1, 'Le modèle est requis').max(100, 'Modèle trop long'),
   chauffeurId: z.string().optional(),
 });
 
@@ -20,10 +19,9 @@ export default function TricycleForm({ isOpen, onClose, onSuccess, edit, depotId
   const notif = useNotif();
   const depot = useDepot();
   const activeDepotId = depotId || depot?.depotId || depot?.depotActif?.id || null;
-
   const { control, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(tricycleSchema),
-    defaultValues: { immatriculation: '', modele: '', chauffeurId: '' },
+    defaultValues: { immatriculation: '', chauffeurId: '' },
   });
 
   const { data: commerciaux = [], isLoading: commerciauxLoading } = useQuery({
@@ -38,20 +36,15 @@ export default function TricycleForm({ isOpen, onClose, onSuccess, edit, depotId
   useEffect(() => {
     if (!isOpen) return;
     reset(edit
-      ? {
-          immatriculation: edit.immatriculation || edit.nom || '',
-          modele: edit.modele || '',
-          chauffeurId: edit.chauffeurId || '',
-        }
-      : { immatriculation: '', modele: '', chauffeurId: '' });
+      ? { immatriculation: edit.immatriculation || edit.nom || '', chauffeurId: edit.chauffeurId || '' }
+      : { immatriculation: '', chauffeurId: '' });
   }, [edit, isOpen, reset]);
 
   const mutation = useMutation({
     mutationFn: (data) => {
       if (!activeDepotId) throw new Error('Dépôt actif requis');
-      return edit
-        ? depotApi.updateTricycle(edit.id, { ...data, depotId: activeDepotId, nom: data.immatriculation })
-        : depotApi.createTricycle({ ...data, depotId: activeDepotId, nom: data.immatriculation });
+      const payload = { ...data, depotId: activeDepotId, nom: data.immatriculation };
+      return edit ? depotApi.updateTricycle(edit.id, payload) : depotApi.createTricycle(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-tricycles', activeDepotId] });
@@ -62,14 +55,10 @@ export default function TricycleForm({ isOpen, onClose, onSuccess, edit, depotId
     },
     onError: (err) => {
       const status = err?.response?.status;
-      const message = status === 403
-        ? 'Vous n’avez pas la permission de gérer les tricycles.'
-        : status === 404
-          ? 'Le dépôt ou le tricycle est introuvable.'
-          : status === 409
-            ? 'Cette immatriculation est déjà utilisée.'
-            : status === 422
-              ? 'Les données du tricycle sont invalides.'
+      const message = status === 403 ? 'Vous n’avez pas la permission de gérer les tricycles.'
+        : status === 404 ? 'Le dépôt ou le tricycle est introuvable.'
+          : status === 409 ? 'Cette immatriculation est déjà utilisée ou le tricycle est en tournée.'
+            : status === 422 ? 'Les données du tricycle sont invalides.'
               : err?.message || err?.response?.data?.message || 'Impossible d’enregistrer le tricycle.';
       notif.error(message);
     },
@@ -78,30 +67,14 @@ export default function TricycleForm({ isOpen, onClose, onSuccess, edit, depotId
   return (
     <FormModal isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit((data) => mutation.mutate(data))} title={edit ? 'Modifier tricycle' : 'Nouveau tricycle'} loading={mutation.isPending} submitLabel={edit ? 'Modifier' : 'Créer'}>
       {!activeDepotId ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300">
-          Sélectionnez d’abord un dépôt actif pour gérer un tricycle.
-        </div>
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300">Sélectionnez d’abord un dépôt actif pour gérer un tricycle.</div>
       ) : (
         <div className="space-y-4">
           <Controller name="immatriculation" control={control} render={({ field }) => (
             <FormField label="Immatriculation" name="immatriculation" value={field.value} onChange={(e) => field.onChange(e.target.value)} required placeholder="Ex: AB-123-CD" error={errors.immatriculation?.message} />
           )} />
-          <Controller name="modele" control={control} render={({ field }) => (
-            <FormField label="Modèle" name="modele" value={field.value} onChange={(e) => field.onChange(e.target.value)} required placeholder="Ex: Yamaha 125cc" error={errors.modele?.message} />
-          )} />
           <Controller name="chauffeurId" control={control} render={({ field }) => (
-            <FormField
-              label="Chauffeur (optionnel)"
-              name="chauffeurId"
-              type="select"
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              error={errors.chauffeurId?.message}
-              options={[
-                { value: '', label: commerciauxLoading ? 'Chargement…' : 'Aucun chauffeur' },
-                ...commerciaux.map((c) => ({ value: c.id, label: c.nom || c.name || c.email })),
-              ]}
-            />
+            <FormField label="Chauffeur (optionnel)" name="chauffeurId" type="select" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.chauffeurId?.message} options={[{ value: '', label: commerciauxLoading ? 'Chargement…' : 'Aucun chauffeur' }, ...commerciaux.map((c) => ({ value: c.id, label: c.nom || c.name || c.email }))]} />
           )} />
           <p className="text-xs text-slate-500">Le tricycle est automatiquement rattaché au dépôt actif. Le dépôt ne peut pas être changé depuis ce formulaire.</p>
         </div>
