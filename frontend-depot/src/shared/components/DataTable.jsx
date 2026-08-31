@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 const ITEMS_PER_PAGE = 20;
 
 export default function DataTable({
-  columns,
+  columns = [],
   data = [],
   loading = false,
   error = null,
@@ -18,10 +18,12 @@ export default function DataTable({
   keyExtractor = (item, i) => item?.id ?? i,
   className = '',
   onRetry,
+  searchId = 'gestock-table-search',
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const safePageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : ITEMS_PER_PAGE;
   const safeData = Array.isArray(data) ? data : [];
+  const safeColumns = Array.isArray(columns) ? columns : [];
 
   const totalPages = Math.max(1, Math.ceil(safeData.length / safePageSize));
   const paginatedData = useMemo(
@@ -67,12 +69,10 @@ export default function DataTable({
     <div className={`bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden ${className}`}>
       {(onSearch || filters) && (
         <div className="p-4 border-b border-slate-700/50 flex flex-wrap gap-3 items-center">
-          {onSearch && (
-            <label className="sr-only" htmlFor="gestock-table-search">Rechercher dans le tableau</label>
-          )}
+          {onSearch && <label className="sr-only" htmlFor={searchId}>Rechercher dans le tableau</label>}
           {onSearch && (
             <input
-              id="gestock-table-search"
+              id={searchId}
               type="search"
               placeholder={searchPlaceholder}
               value={searchValue}
@@ -89,13 +89,15 @@ export default function DataTable({
           <span className="text-5xl" aria-hidden="true">{emptyIcon}</span>
           <p className="text-slate-300 font-semibold mt-4">{emptyMessage}</p>
         </div>
+      ) : safeColumns.length === 0 ? (
+        <div className="text-center py-12 text-slate-500" role="alert">Aucune colonne configurée.</div>
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-900/50">
                 <tr className="text-slate-400 text-xs font-bold uppercase tracking-widest">
-                  {columns.map((col, i) => (
+                  {safeColumns.map((col, i) => (
                     <th key={col.key ?? col.accessor ?? i} scope="col" className={`px-5 py-4 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                       {col.label}
                     </th>
@@ -116,7 +118,7 @@ export default function DataTable({
                     tabIndex={onRowClick ? 0 : undefined}
                     className={`transition-colors ${onRowClick ? 'cursor-pointer hover:bg-slate-700/20 focus:outline-none focus:bg-slate-700/30' : 'hover:bg-slate-700/20'}`}
                   >
-                    {columns.map((col, ci) => (
+                    {safeColumns.map((col, ci) => (
                       <td key={col.key ?? col.accessor ?? ci} className={`px-5 py-4 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                         {col.render ? col.render(item) : item?.[col.accessor]}
                       </td>
@@ -129,25 +131,16 @@ export default function DataTable({
 
           {totalPages > 1 && (
             <nav className="flex items-center justify-between gap-4 px-5 py-4 border-t border-slate-700/50 bg-slate-900/30" aria-label="Pagination">
-              <span className="text-slate-400 text-xs">
-                {safeData.length} résultat{safeData.length > 1 ? 's' : ''} — Page {currentPage}/{totalPages}
-              </span>
+              <span className="text-slate-400 text-xs">{safeData.length} résultat{safeData.length > 1 ? 's' : ''} — Page {currentPage}/{totalPages}</span>
               <div className="flex gap-1">
-                <button type="button" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} aria-label="Page précédente"
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹</button>
+                <button type="button" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} aria-label="Page précédente" className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹</button>
                 {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                   const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
                   const page = start + i;
                   if (page > totalPages) return null;
-                  return (
-                    <button type="button" key={page} onClick={() => goToPage(page)} aria-current={currentPage === page ? 'page' : undefined}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${currentPage === page ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
-                      {page}
-                    </button>
-                  );
+                  return <button type="button" key={page} onClick={() => goToPage(page)} aria-current={currentPage === page ? 'page' : undefined} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${currentPage === page ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>{page}</button>;
                 })}
-                <button type="button" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} aria-label="Page suivante"
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">›</button>
+                <button type="button" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} aria-label="Page suivante" className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">›</button>
               </div>
             </nav>
           )}
