@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
@@ -19,21 +19,13 @@ export default function ConsignesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
-  }
-
-  if (!depotId) {
-    return <div className="p-6 text-center text-red-400 font-bold">Dépôt non sélectionné</div>;
-  }
-
   const clientsQuery = useQuery({
     queryKey: ['depot-clients', depotId],
     queryFn: async () => {
       const res = await depotApi.getClients({ limit: 100, depotId });
       return res.data?.data || res.data || [];
     },
-    enabled: Boolean(depotId),
+    enabled: metier === 'DEPOT_BOISSONS' && Boolean(depotId),
   });
 
   const clients = Array.isArray(clientsQuery.data)
@@ -46,8 +38,22 @@ export default function ConsignesPage() {
       const res = await depotApi.getConsignesClient(selectedClient.id, { depotId });
       return res.data;
     },
-    enabled: Boolean(depotId && selectedClient?.id),
+    enabled: metier === 'DEPOT_BOISSONS' && Boolean(depotId && selectedClient?.id),
   });
+
+  useEffect(() => {
+    if (!depotId) {
+      setSelectedClient(null);
+      setFormOpen(false);
+      setEditItem(null);
+    }
+  }, [depotId]);
+
+  useEffect(() => {
+    if (selectedClient && !clients.some((client) => client.id === selectedClient.id)) {
+      setSelectedClient(null);
+    }
+  }, [clients, selectedClient]);
 
   const openForm = () => {
     setEditItem(null);
@@ -67,6 +73,14 @@ export default function ConsignesPage() {
     c.nom?.toLowerCase().includes(search.toLowerCase()) ||
     c.telephone?.includes(search),
   );
+
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+  }
+
+  if (!depotId) {
+    return <div className="p-6 text-center text-red-400 font-bold">Dépôt non sélectionné</div>;
+  }
 
   if (clientsQuery.isLoading) {
     return (
