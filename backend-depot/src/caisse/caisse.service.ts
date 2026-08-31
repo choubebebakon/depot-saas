@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { StatutVente } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { DepotScopeService } from '../common/depot-scope.service';
 import {
   OuvrirCaisseDto,
   FermerCaisseDto,
@@ -9,12 +10,33 @@ import {
 
 @Injectable()
 export class CaisseService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly depotScope: DepotScopeService,
+  ) {}
+
+  private assertScope(tenantId: string, depotId: string): void {
+    const scopedTenantId = this.depotScope.getTenantId();
+    const scopedDepotId = this.depotScope.getDepotId();
+
+    if (!scopedTenantId || scopedTenantId !== tenantId) {
+      throw new ForbiddenException('Contexte tenant invalide.');
+    }
+
+    if (!scopedDepotId || scopedDepotId !== depotId) {
+      throw new ForbiddenException('Contexte dépôt invalide.');
+    }
+  }
 
   // ── Sessions Caisse ──────────────────────────────────────
 
   async ouvrirSession(dto: OuvrirCaisseDto) {
-    // Vérifie qu'il n'y a pas déjà une session ouverte sur ce Depot
+    if (!dto.depotId || !dto.tenantId || !dto.userId) {
+      throw new BadRequestException('Contexte de caisse incomplet.');
+    }
+
+    this.assertScope(dto.tenantId, dto.depotId);
+
     const sessionExistante = await this.prisma.sessionCaisse.findFirst({
       where: { depotId: dto.depotId, tenantId: dto.tenantId, estOuverte: true },
     });
@@ -25,32 +47,43 @@ export class CaisseService {
       );
     }
 
-    const session = await this.prisma.sessionCaisse.create({
-      data: {
-        fondInitial: dto.fondInitial,
-        depotId: dto.depotId,
-        userId: dto.userId,
-        tenantId: dto.tenantId,
-        estOuverte: true,
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.sessionCaisse.create({
+        data: {
+          fondInitial: dto.fondInitial,
+          depotId: dto.depotId,
+          userId: dto.userId,
+          tenantId: dto.tenantId,
+          estOuverte: true,
+        },
+      });
 
-    // Mouvement initial
-    await this.prisma.mouvementCaisse.create({
-      data: {
-        type: 'FOND_INITIAL',
-        montant: dto.fondInitial,
-        motif: 'Ouverture de caisse',
-        sessionId: session.id,
-      },
-    });
+      await tx.mouvementCaisse.create({
+        data: {
+          type: 'FOND_INITIAL',
+          montant: dto.fondInitial,
+          motif: 'Ouverture de caisse',
+          sessionId: session.id,
+        },
+      });
 
-    return session;
+      return session;
+    });
   }
 
-  async fermerSession(dto: FermerCaisseDto) {
+  async fermerSession(dto: FermerCaisseDto & { depotId: string }) {
+    if (!dto.tenantId || !dto.depotId) {
+      throw new BadRequestException('Contexte de caisse incomplet.');
+    }
+
+    this.assertScope(dto.tenantId, dto.depotId);
+
     const session = await this.prisma.sessionCaisse.findFirst({
-      where: { id: dto.sessionId, tenantId: dto.tenantId },
+      where: {
+        id: dto.sessionId,
+        tenantId: dto.tenantId,
+        depotId: dto.depotId,
+      },
       include: { mouvements: true },
     });
 
@@ -58,7 +91,6 @@ export class CaisseService {
     if (!session.estOuverte)
       throw new BadRequestException('Session déjà fermée');
 
-    // Calcul du solde théorique
     const totalEntrees = session.mouvements
       .filter((m) =>
         ['FOND_INITIAL', 'ENCAISSEMENT_VENTE', 'ENCAISSEMENT_DETTE'].includes(
@@ -89,6 +121,7 @@ export class CaisseService {
   }
 
   async getSessionActive(tenantId: string, depotId: string) {
+    this.assertScope(tenantId, depotId);
     return this.prisma.sessionCaisse.findFirst({
       where: { tenantId, depotId, estOuverte: true },
       include: {
@@ -99,6 +132,7 @@ export class CaisseService {
   }
 
   async getHistorique(tenantId: string, depotId: string) {
+    this.assertScope(tenantId, depotId);
     return this.prisma.sessionCaisse.findMany({
       where: { tenantId, depotId },
       include: {
@@ -112,26 +146,26 @@ export class CaisseService {
 
   // ── Dépenses ─────────────────────────────────────────────
 
-  async createDepense(dto: any) {
-    // Trouve la session active
+  async createDepense(dto: CreateDepenseDto & { tenantId: string; depotId: string }) {
+    this.assertScope(dto.tenantId, dto.depotId);
+
     const session = await this.prisma.sessionCaisse.findFirst({
       where: { depotId: dto.depotId, tenantId: dto.tenantId, estOuverte: true },
     });
 
     const depense = await this.prisma.depense.create({
       data: {
-        id: dto.id || undefined,
+        id: (dto as any).id || undefined,
         categorie: dto.categorie,
         montant: dto.montant,
         motif: dto.motif,
         depotId: dto.depotId,
         tenantId: dto.tenantId,
         photoUrl: dto.photoUrl,
-        createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
+        createdAt: (dto as any).createdAt ? new Date((dto as any).createdAt) : undefined,
       },
     });
 
-    // Enregistre le mouvement caisse si session active
     if (session) {
       await this.prisma.mouvementCaisse.create({
         data: {
@@ -140,7 +174,7 @@ export class CaisseService {
           motif: `${dto.categorie} — ${dto.motif}`,
           reference: depense.id,
           sessionId: session.id,
-          createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
+          createdAt: (dto as any).createdAt ? new Date((dto as any).createdAt) : undefined,
         },
       });
     }
@@ -154,6 +188,8 @@ export class CaisseService {
     dateDebut?: string,
     dateFin?: string,
   ) {
+    this.assertScope(tenantId, depotId);
+
     const where: any = { tenantId, depotId };
 
     if (dateDebut || dateFin) {
@@ -175,10 +211,11 @@ export class CaisseService {
   // ── Résumé caisse du jour ────────────────────────────────
 
   async getResume(tenantId: string, depotId: string) {
+    this.assertScope(tenantId, depotId);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Ventes du jour en cash
     const ventesJour = await this.prisma.vente.aggregate({
       where: {
         tenantId,
@@ -196,14 +233,12 @@ export class CaisseService {
       _count: { _all: true },
     });
 
-    // Dépenses du jour
     const depensesJour = await this.prisma.depense.aggregate({
       where: { tenantId, depotId, createdAt: { gte: today } },
       _sum: { montant: true },
       _count: { _all: true },
     });
 
-    // Session active
     const sessionActive = await this.getSessionActive(tenantId, depotId);
 
     return {
