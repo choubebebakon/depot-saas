@@ -35,6 +35,10 @@ function normalizeDepotId(value: unknown): string | null {
   return normalized;
 }
 
+function isClientRoute(request: Request): boolean {
+  return /\/clients(?:\/|$)/i.test(request.path || request.originalUrl || '');
+}
+
 @Injectable()
 export class DepotScopeInterceptor implements NestInterceptor {
   constructor(
@@ -58,24 +62,29 @@ export class DepotScopeInterceptor implements NestInterceptor {
     return new Observable<unknown>((observer) => {
       let subscription: Subscription | undefined;
 
-      void this.resolveDepotId(user, requestedDepotId)
-        .then((depotId) => {
+      void this.resolveDepotId(user, requestedDepotId, request)
+        .then(async (depotId) => {
           const resolvedScope = {
             tenantId: user.tenantId,
             depotId,
             role: user.role,
           };
 
-          // Expose the already validated scope to controllers/services without
-          // creating a second DepotScopeService/AsyncLocalStorage instance in
-          // feature modules.
           request.depotScope = resolvedScope;
-
-          // The authenticated server-side scope is authoritative. Controllers
-          // historically accepted depotId from request bodies/query params;
-          // normalize those values here so a client cannot silently override
-          // the validated depot selected by the scope layer.
           this.applyAuthoritativeDepotScope(request, depotId);
+
+          // Les routes Clients sont strictement mono-dépôt dans l'interface métier.
+          // Même PATRON/GERANT doit sélectionner un dépôt avant de lire ou modifier
+          // un client : aucun endpoint Client ne doit devenir une vue "tous dépôts".
+          if (isClientRoute(request) && !depotId) {
+            throw new ForbiddenException('Un dépôt actif est requis pour accéder aux clients.');
+          }
+
+          // Défense en profondeur : les mutations et lectures unitaires sont
+          // autorisées uniquement si la cible appartient déjà au tenant ET au dépôt.
+          await this.assertClientTargetScope(request, user.tenantId, depotId);
+
+          const execute = () => next.handle();
 
           subscription = this.depotScope.run(
             {
@@ -84,8 +93,8 @@ export class DepotScopeInterceptor implements NestInterceptor {
               metier: (request as any).auditMetier ?? null,
             },
             () =>
-              next.handle().subscribe({
-                next: (value: unknown) => observer.next(value),
+              execute().subscribe({
+                next: (value: unknown) => observer.next(this.filterClientResponse(request, value, depotId)),
                 error: (error: unknown) => observer.error(error),
                 complete: () => observer.complete(),
               }),
@@ -110,7 +119,15 @@ export class DepotScopeInterceptor implements NestInterceptor {
     depotId: string | null,
   ): void {
     const body = request.body as Record<string, unknown> | undefined;
-    if (body && Object.prototype.hasOwnProperty.call(body, 'depotId')) {
+    if (body && isClientRoute(request)) {
+      if (depotId) {
+        // Pour Clients, le dépôt est toujours injecté côté serveur : le payload
+        // client ne peut ni l'omettre ni choisir un autre dépôt.
+        body.depotId = depotId;
+      } else {
+        delete body.depotId;
+      }
+    } else if (body && Object.prototype.hasOwnProperty.call(body, 'depotId')) {
       if (depotId) {
         body.depotId = depotId;
       } else {
@@ -128,9 +145,71 @@ export class DepotScopeInterceptor implements NestInterceptor {
     }
   }
 
+  private async assertClientTargetScope(
+    request: AuthenticatedRequest,
+    tenantId: string,
+    depotId: string | null,
+  ): Promise<void> {
+    if (!isClientRoute(request) || !depotId) return;
+
+    const method = request.method.toUpperCase();
+    const clientId = request.params?.id;
+
+    // GET /clients et POST /clients n'ont pas de cible existante à contrôler.
+    if (!clientId || (method !== 'GET' && method !== 'PATCH' && method !== 'PUT' && method !== 'DELETE' && method !== 'POST')) {
+      return;
+    }
+
+    // POST /clients/:id/... (ex. règlement de dette) cible également un client.
+    // Toute cible hors dépôt doit être refusée avant d'entrer dans le service métier.
+    const client = await this.prisma.client.findFirst({
+      where: {
+        id: clientId,
+        tenantId,
+        depotId,
+      },
+      select: { id: true },
+    });
+
+    if (!client) {
+      throw new ForbiddenException('Accès refusé à ce client dans ce dépôt.');
+    }
+  }
+
+  private filterClientResponse(
+    request: AuthenticatedRequest,
+    value: unknown,
+    depotId: string | null,
+  ): unknown {
+    if (!isClientRoute(request) || !depotId || value == null) return value;
+
+    // Les services existants peuvent encore retourner une liste filtrée uniquement
+    // par tenant. On applique ici une seconde barrière avant la réponse HTTP.
+    if (Array.isArray(value)) {
+      return value.filter((item: any) => item?.depotId === depotId);
+    }
+
+    if (typeof value === 'object') {
+      const candidate = value as Record<string, any>;
+      if (Array.isArray(candidate.data)) {
+        return {
+          ...candidate,
+          data: candidate.data.filter((item: any) => item?.depotId === depotId),
+        };
+      }
+
+      if (candidate.depotId && candidate.depotId !== depotId) {
+        throw new ForbiddenException('Accès refusé à ce client dans ce dépôt.');
+      }
+    }
+
+    return value;
+  }
+
   private async resolveDepotId(
     user: AuthenticatedUser,
     requestedDepotId: string | null,
+    request: Request,
   ): Promise<string | null> {
     if (!MULTI_DEPOT_ROLES.has(user.role)) {
       if (!user.depotId) {
