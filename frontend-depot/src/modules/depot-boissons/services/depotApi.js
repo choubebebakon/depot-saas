@@ -13,9 +13,12 @@ function getTenantHeaders(depotIdOverride = null) {
 
 function cleanParams(params) {
   if (!params || typeof params !== 'object') return params;
-  return Object.fromEntries(
-    Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
-  );
+  return Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined));
+}
+
+function requireDepotId(depotId) {
+  if (!depotId) throw new Error('Dépôt actif requis');
+  return depotId;
 }
 
 export const depotApi = {
@@ -24,7 +27,6 @@ export const depotApi = {
     const params = depotId ? { depotId } : {};
     return api.get('/depot-boissons/dashboard', { ...getTenantHeaders(depotId), params });
   },
-
   getArticles: (params) => api.get('/depot-boissons/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
   getArticle: (id) => api.get(`/depot-boissons/articles/${id}`, getTenantHeaders()),
   createArticle: (data) => api.post('/depot-boissons/articles', data, getTenantHeaders(data?.depotId)),
@@ -58,13 +60,48 @@ export const depotApi = {
   deleteLivraison: (id) => api.delete(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
   getDepots: () => api.get('/depot-boissons/depots', getTenantHeaders()),
 
-  getTournees: (params) => api.get('/depot-boissons/tournees', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getTournee: (id) => api.get(`/depot-boissons/tournees/${id}`, getTenantHeaders()),
-  createTournee: (data) => api.post('/depot-boissons/tournees', data, getTenantHeaders(data?.depotId)),
-  demarrerTournee: (id) => api.post(`/depot-boissons/tournees/${id}/demarrer`, {}, getTenantHeaders()),
-  cloturerTournee: (id, data) => api.post(`/depot-boissons/tournees/${id}/cloturer`, data, getTenantHeaders(data?.depotId)),
-  chargerArticlesTournee: (id, data) => api.post(`/depot-boissons/tournees/${id}/charger`, data, getTenantHeaders(data?.depotId)),
-  getRecapTournee: (id) => api.get(`/depot-boissons/tournees/${id}/recap`, getTenantHeaders()),
+  getTricycles: (depotId) => {
+    const activeDepotId = requireDepotId(depotId);
+    return api.get('/tournees/tricycles', {
+      ...getTenantHeaders(activeDepotId),
+      params: { depotId: activeDepotId },
+    });
+  },
+  createTricycle: (data) => {
+    const activeDepotId = requireDepotId(data?.depotId);
+    return api.post('/tournees/tricycles', { ...data, depotId: activeDepotId }, getTenantHeaders(activeDepotId));
+  },
+  updateTricycle: (id, data) => {
+    const activeDepotId = requireDepotId(data?.depotId);
+    return api.patch(`/tournees/tricycles/${id}`, { ...data, depotId: activeDepotId }, getTenantHeaders(activeDepotId));
+  },
+
+  getTournees: (params = {}) => {
+    const activeDepotId = requireDepotId(params.depotId);
+    return api.get('/depot-boissons/tournees', {
+      ...getTenantHeaders(activeDepotId),
+      params: cleanParams({ ...params, depotId: activeDepotId }),
+    });
+  },
+  getTournee: (id, depotId) => api.get(`/depot-boissons/tournees/${id}`, getTenantHeaders(requireDepotId(depotId))),
+  createTournee: (data) => {
+    const activeDepotId = requireDepotId(data?.depotId);
+    return api.post('/depot-boissons/tournees', { ...data, depotId: activeDepotId }, getTenantHeaders(activeDepotId));
+  },
+  updateTournee: (id, data) => {
+    const activeDepotId = requireDepotId(data?.depotId);
+    return api.patch(`/depot-boissons/tournees/${id}`, { ...data, depotId: activeDepotId }, getTenantHeaders(activeDepotId));
+  },
+  demarrerTournee: (id, depotId) => api.post(`/depot-boissons/tournees/${id}/demarrer`, {}, getTenantHeaders(requireDepotId(depotId))),
+  cloturerTournee: (id, data) => {
+    const activeDepotId = requireDepotId(data?.depotId);
+    return api.post(`/depot-boissons/tournees/${id}/cloturer`, data, getTenantHeaders(activeDepotId));
+  },
+  chargerArticlesTournee: (id, data) => {
+    const activeDepotId = requireDepotId(data?.depotId);
+    return api.post(`/depot-boissons/tournees/${id}/charger`, data, getTenantHeaders(activeDepotId));
+  },
+  getRecapTournee: (id, depotId) => api.get(`/depot-boissons/tournees/${id}/recap`, getTenantHeaders(requireDepotId(depotId))),
 
   getClients: (params) => api.get('/depot-boissons/clients', { ...getTenantHeaders(), params: cleanParams(params) }),
   getClient: (id) => api.get(`/depot-boissons/clients/${id}`, getTenantHeaders()),
