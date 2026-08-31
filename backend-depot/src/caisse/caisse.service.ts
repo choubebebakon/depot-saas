@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { StatutVente } from '@prisma/client';
+import { Prisma, StatutVente } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { DepotScopeService } from '../common/depot-scope.service';
 import {
@@ -37,38 +37,54 @@ export class CaisseService {
 
     this.assertScope(dto.tenantId, dto.depotId);
 
-    const sessionExistante = await this.prisma.sessionCaisse.findFirst({
-      where: { depotId: dto.depotId, tenantId: dto.tenantId, estOuverte: true },
-    });
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const sessionExistante = await tx.sessionCaisse.findFirst({
+            where: {
+              depotId: dto.depotId,
+              tenantId: dto.tenantId,
+              estOuverte: true,
+            },
+          });
 
-    if (sessionExistante) {
-      throw new BadRequestException(
-        'Une session de caisse est déjà ouverte sur ce Depot.',
+          if (sessionExistante) {
+            throw new BadRequestException(
+              'Une session de caisse est déjà ouverte sur ce Depot.',
+            );
+          }
+
+          const session = await tx.sessionCaisse.create({
+            data: {
+              fondInitial: dto.fondInitial,
+              depotId: dto.depotId,
+              userId: dto.userId,
+              tenantId: dto.tenantId,
+              estOuverte: true,
+            },
+          });
+
+          await tx.mouvementCaisse.create({
+            data: {
+              type: 'FOND_INITIAL',
+              montant: dto.fondInitial,
+              motif: 'Ouverture de caisse',
+              sessionId: session.id,
+            },
+          });
+
+          return session;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
+    } catch (error) {
+      if ((error as any)?.code === 'P2034') {
+        throw new BadRequestException(
+          'Une autre ouverture de caisse est en cours. Réessayez.',
+        );
+      }
+      throw error;
     }
-
-    return this.prisma.$transaction(async (tx) => {
-      const session = await tx.sessionCaisse.create({
-        data: {
-          fondInitial: dto.fondInitial,
-          depotId: dto.depotId,
-          userId: dto.userId,
-          tenantId: dto.tenantId,
-          estOuverte: true,
-        },
-      });
-
-      await tx.mouvementCaisse.create({
-        data: {
-          type: 'FOND_INITIAL',
-          montant: dto.fondInitial,
-          motif: 'Ouverture de caisse',
-          sessionId: session.id,
-        },
-      });
-
-      return session;
-    });
   }
 
   async fermerSession(dto: FermerCaisseDto & { depotId: string }) {
@@ -78,45 +94,47 @@ export class CaisseService {
 
     this.assertScope(dto.tenantId, dto.depotId);
 
-    const session = await this.prisma.sessionCaisse.findFirst({
-      where: {
-        id: dto.sessionId,
-        tenantId: dto.tenantId,
-        depotId: dto.depotId,
-      },
-      include: { mouvements: true },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.sessionCaisse.findFirst({
+        where: {
+          id: dto.sessionId,
+          tenantId: dto.tenantId,
+          depotId: dto.depotId,
+        },
+        include: { mouvements: true },
+      });
 
-    if (!session) throw new BadRequestException('Session introuvable');
-    if (!session.estOuverte)
-      throw new BadRequestException('Session déjà fermée');
+      if (!session) throw new BadRequestException('Session introuvable');
+      if (!session.estOuverte)
+        throw new BadRequestException('Session déjà fermée');
 
-    const totalEntrees = session.mouvements
-      .filter((m) =>
-        ['FOND_INITIAL', 'ENCAISSEMENT_VENTE', 'ENCAISSEMENT_DETTE'].includes(
-          m.type,
-        ),
-      )
-      .reduce((acc, m) => acc + m.montant, 0);
+      const totalEntrees = session.mouvements
+        .filter((m) =>
+          ['FOND_INITIAL', 'ENCAISSEMENT_VENTE', 'ENCAISSEMENT_DETTE'].includes(
+            m.type,
+          ),
+        )
+        .reduce((acc, m) => acc + m.montant, 0);
 
-    const totalSorties = session.mouvements
-      .filter((m) =>
-        ['DECAISSEMENT_DEPENSE', 'DECAISSEMENT_VIDES'].includes(m.type),
-      )
-      .reduce((acc, m) => acc + m.montant, 0);
+      const totalSorties = session.mouvements
+        .filter((m) =>
+          ['DECAISSEMENT_DEPENSE', 'DECAISSEMENT_VIDES'].includes(m.type),
+        )
+        .reduce((acc, m) => acc + m.montant, 0);
 
-    const soldeTheorique = totalEntrees - totalSorties;
-    const ecart = dto.fondFinal - soldeTheorique;
+      const soldeTheorique = totalEntrees - totalSorties;
+      const ecart = dto.fondFinal - soldeTheorique;
 
-    return this.prisma.sessionCaisse.update({
-      where: { id: dto.sessionId },
-      data: {
-        fondFinal: dto.fondFinal,
-        ecart,
-        motifEcart: ecart !== 0 ? dto.motifEcart : null,
-        estOuverte: false,
-        dateCloture: new Date(),
-      },
+      return tx.sessionCaisse.update({
+        where: { id: dto.sessionId },
+        data: {
+          fondFinal: dto.fondFinal,
+          ecart,
+          motifEcart: ecart !== 0 ? dto.motifEcart : null,
+          estOuverte: false,
+          dateCloture: new Date(),
+        },
+      });
     });
   }
 
@@ -149,37 +167,47 @@ export class CaisseService {
   async createDepense(dto: CreateDepenseDto & { tenantId: string; depotId: string }) {
     this.assertScope(dto.tenantId, dto.depotId);
 
-    const session = await this.prisma.sessionCaisse.findFirst({
-      where: { depotId: dto.depotId, tenantId: dto.tenantId, estOuverte: true },
-    });
-
-    const depense = await this.prisma.depense.create({
-      data: {
-        id: (dto as any).id || undefined,
-        categorie: dto.categorie,
-        montant: dto.montant,
-        motif: dto.motif,
-        depotId: dto.depotId,
-        tenantId: dto.tenantId,
-        photoUrl: dto.photoUrl,
-        createdAt: (dto as any).createdAt ? new Date((dto as any).createdAt) : undefined,
-      },
-    });
-
-    if (session) {
-      await this.prisma.mouvementCaisse.create({
-        data: {
-          type: 'DECAISSEMENT_DEPENSE',
-          montant: dto.montant,
-          motif: `${dto.categorie} — ${dto.motif}`,
-          reference: depense.id,
-          sessionId: session.id,
-          createdAt: (dto as any).createdAt ? new Date((dto as any).createdAt) : undefined,
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.sessionCaisse.findFirst({
+        where: {
+          depotId: dto.depotId,
+          tenantId: dto.tenantId,
+          estOuverte: true,
         },
       });
-    }
 
-    return depense;
+      const depense = await tx.depense.create({
+        data: {
+          id: (dto as any).id || undefined,
+          categorie: dto.categorie,
+          montant: dto.montant,
+          motif: dto.motif,
+          depotId: dto.depotId,
+          tenantId: dto.tenantId,
+          photoUrl: dto.photoUrl,
+          createdAt: (dto as any).createdAt
+            ? new Date((dto as any).createdAt)
+            : undefined,
+        },
+      });
+
+      if (session) {
+        await tx.mouvementCaisse.create({
+          data: {
+            type: 'DECAISSEMENT_DEPENSE',
+            montant: dto.montant,
+            motif: `${dto.categorie} — ${dto.motif}`,
+            reference: depense.id,
+            sessionId: session.id,
+            createdAt: (dto as any).createdAt
+              ? new Date((dto as any).createdAt)
+              : undefined,
+          },
+        });
+      }
+
+      return depense;
+    });
   }
 
   async getDepenses(
