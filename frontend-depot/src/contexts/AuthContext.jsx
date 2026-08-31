@@ -1,7 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { roleLabel, normalizeMetierSlug } from '../shared/permissions/matrix';
+import { useRealtimeSync } from '../shared/realtime/useRealtimeSync';
 
 const AuthContext = createContext(null);
 
@@ -26,6 +28,22 @@ function loadStoredUser() {
         localStorage.removeItem('user');
         return null;
     }
+}
+
+function RealtimeSessionBridge() {
+    const { user, tenantId, isAuthenticated } = useAuth();
+    const queryClient = useQueryClient();
+    const token = isAuthenticated ? localStorage.getItem('depot_token') : null;
+
+    useRealtimeSync({
+        token,
+        tenantId,
+        depotId: user?.depotId || null,
+        queryClient,
+        enabled: isAuthenticated,
+    });
+
+    return null;
 }
 
 export function AuthProvider({ children }) {
@@ -105,7 +123,6 @@ export function AuthProvider({ children }) {
         verifyAuth();
     }, [refreshUser]);
 
-    // Libellé de poste local si API absente
     useEffect(() => {
         if (libellePoste || !user?.role) return;
         const slug = normalizeMetierSlug(user.metier || localStorage.getItem('gestock_metier'));
@@ -162,6 +179,7 @@ export function AuthProvider({ children }) {
             isAuthenticated: !!user,
         }}>
             {children}
+            <RealtimeSessionBridge />
         </AuthContext.Provider>
     );
 }
