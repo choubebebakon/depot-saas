@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../../../context/NotifContext';
 import { useSectorQuery } from '../../../hooks/useSectorQuery';
@@ -18,14 +18,13 @@ const TYPES_BOUTIQUE = [
 export default function CategoriesPage() {
   const queryClient = useQueryClient();
   const { success, error: notifError } = useNotif();
-
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [search, setSearch] = useState('');
   const [seedOpen, setSeedOpen] = useState(false);
 
-  const { data: categories = [], isLoading } = useSectorQuery(
+  const { data: categories = [], isLoading, isError, error } = useSectorQuery(
     ['boutique-categories'],
     async () => {
       const res = await boutiqueApi.getCategories();
@@ -42,9 +41,7 @@ export default function CategoriesPage() {
       success('Catégorie supprimée');
       setConfirmDelete(null);
     },
-    onError: (err) => {
-      notifError(err.response?.data?.message || 'Erreur lors de la suppression', 'Échec');
-    },
+    onError: (err) => notifError(err.response?.data?.message || 'Erreur lors de la suppression', 'Échec'),
   });
 
   const seedMutation = useMutation({
@@ -54,24 +51,21 @@ export default function CategoriesPage() {
       success(`${res.data?.created || 0} catégories créées pour ${res.data?.type}`);
       setSeedOpen(false);
     },
-    onError: (err) => {
-      notifError(err.response?.data?.message || 'Erreur lors de l\'initialisation', 'Échec');
-    },
+    onError: (err) => notifError(err.response?.data?.message || "Erreur lors de l'initialisation", 'Échec'),
   });
 
+  const filteredCategories = useMemo(() => {
+    const normalized = search.trim().toLowerCase();
+    const source = Array.isArray(categories) ? categories : [];
+    const result = normalized
+      ? source.filter((c) => c.nom?.toLowerCase().includes(normalized))
+      : [...source];
+    return result.sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0) || (a.nom || '').localeCompare(b.nom || '', 'fr'));
+  }, [categories, search]);
+
   const handleDelete = () => {
-    if (confirmDelete) {
-      deleteMutation.mutate(confirmDelete.id);
-    }
+    if (confirmDelete) deleteMutation.mutate(confirmDelete.id);
   };
-
-  const handleSeed = (type) => {
-    seedMutation.mutate(type);
-  };
-
-  const filteredCategories = search
-    ? categories.filter((c) => c.nom?.toLowerCase().includes(search.toLowerCase()))
-    : categories.sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
 
   return (
     <div className="p-6">
@@ -83,34 +77,26 @@ export default function CategoriesPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => setSeedOpen(true)}
-            className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20"
-          >
+          <button onClick={() => setSeedOpen(true)} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
             <Sprout className="w-4 h-4" /> Initialiser
           </button>
-          <button
-            onClick={() => { setEditItem(null); setFormOpen(true); }}
-            className="bg-amber-500 hover:bg-amber-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20"
-          >
+          <button onClick={() => { setEditItem(null); setFormOpen(true); }} className="bg-amber-500 hover:bg-amber-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20">
             + Nouvelle
           </button>
         </div>
       </div>
 
       <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Rechercher une catégorie..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="bg-slate-800 border border-slate-700 focus:border-amber-500 text-white rounded-xl px-4 py-2 text-sm outline-none w-64"
-        />
+        <input type="text" placeholder="Rechercher une catégorie..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-800 border border-slate-700 focus:border-amber-500 text-white rounded-xl px-4 py-2 text-sm outline-none w-64" />
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
+      ) : isError ? (
+        <div className="text-center py-20">
+          <AlertTriangle className="w-12 h-12 mx-auto text-red-400" />
+          <p className="text-red-300 font-semibold mt-4">Impossible de charger les catégories</p>
+          <p className="text-slate-500 text-sm mt-1">{error?.response?.data?.message || error?.message || 'Erreur réseau ou serveur'}</p>
         </div>
       ) : filteredCategories.length === 0 ? (
         <div className="text-center py-20">
@@ -121,41 +107,17 @@ export default function CategoriesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredCategories.map((c) => (
-            <div
-              key={c.id}
-              className="bg-slate-800/60 border border-slate-700/50 hover:border-slate-600 rounded-2xl p-5 transition-all group"
-              style={{ borderLeftColor: c.couleur || '#6366f1', borderLeftWidth: '4px' }}
-            >
+            <div key={c.id} className="bg-slate-800/60 border border-slate-700/50 hover:border-slate-600 rounded-2xl p-5 transition-all group" style={{ borderLeftColor: c.couleur || '#6366f1', borderLeftWidth: '4px' }}>
               <div className="flex items-start justify-between">
                 <div>
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-lg mb-3"
-                    style={{ backgroundColor: `${c.couleur || '#6366f1'}33` }}
-                  >
-                  </div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-lg mb-3" style={{ backgroundColor: `${c.couleur || '#6366f1'}33` }} />
                   <h3 className="text-white font-bold text-base">{c.nom}</h3>
-                  <p className="text-slate-500 text-xs mt-1">
-                    {c._count?.articles || 0} article{c._count?.articles !== 1 ? 's' : ''}
-                  </p>
-                  {!c.actif && (
-                    <span className="text-slate-500 text-xs mt-1 block flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Inactive</span>
-                  )}
+                  <p className="text-slate-500 text-xs mt-1">{c._count?.articles || 0} article{c._count?.articles !== 1 ? 's' : ''}</p>
+                  {!c.actif && <span className="text-slate-500 text-xs mt-1 block flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Inactive</span>}
                 </div>
                 <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => { setEditItem(c); setFormOpen(true); }}
-                    className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm"
-                    title="Modifier"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(c)}
-                    className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors text-sm"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => { setEditItem(c); setFormOpen(true); }} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm" title="Modifier"><Edit className="w-4 h-4" /></button>
+                  <button onClick={() => setConfirmDelete(c)} className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors text-sm" title="Supprimer"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             </div>
@@ -163,51 +125,9 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <CategorieForm
-        isOpen={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['boutique-categories'] });
-        }}
-        edit={editItem}
-      />
-
-      <ConfirmModal
-        isOpen={!!confirmDelete}
-        onConfirm={handleDelete}
-        onCancel={() => setConfirmDelete(null)}
-        loading={deleteMutation.isPending}
-        title="Supprimer la catégorie"
-        message={`Supprimer « ${confirmDelete?.nom} » ? Cette action est irréversible.`}
-      />
-
-      <ConfirmModal
-        isOpen={seedOpen}
-        onConfirm={() => setSeedOpen(false)}
-        onCancel={() => setSeedOpen(false)}
-        loading={seedMutation.isPending}
-        title="Initialiser les catégories"
-        message={
-          <div className="space-y-3">
-            <div className="text-slate-300">Choisissez le type de boutique pour initialiser les catégories prédéfinies :</div>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              {TYPES_BOUTIQUE.map((type) => (
-                <button
-                  key={type.key}
-                  onClick={() => handleSeed(type.key)}
-                  disabled={seedMutation.isPending}
-                  className="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl p-4 text-left transition-all disabled:opacity-50"
-                >
-                  <span className="text-2xl block mb-2">{type.icone && <type.icone className="w-8 h-8" />}</span>
-                  <span className="text-white font-semibold text-sm">{type.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        }
-        showCancel={true}
-        confirmLabel="Annuler"
-      />
+      <CategorieForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['boutique-categories'] })} edit={editItem} />
+      <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleteMutation.isPending} title="Supprimer la catégorie" message={`Supprimer « ${confirmDelete?.nom} » ? Cette action est irréversible.`} />
+      <ConfirmModal isOpen={seedOpen} onConfirm={() => setSeedOpen(false)} onCancel={() => setSeedOpen(false)} loading={seedMutation.isPending} title="Initialiser les catégories" message={<div className="space-y-3"><div className="text-slate-300">Choisissez le type de boutique pour initialiser les catégories prédéfinies :</div><div className="grid grid-cols-2 gap-3 mt-4">{TYPES_BOUTIQUE.map((type) => { const Icon = type.icone; return <button key={type.key} onClick={() => seedMutation.mutate(type.key)} disabled={seedMutation.isPending} className="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl p-4 text-left transition-all disabled:opacity-50"><Icon className="w-8 h-8 mb-2" /><span className="text-white font-semibold text-sm">{type.label}</span></button>; })}</div></div>} showCancel={true} confirmLabel="Annuler" />
     </div>
   );
 }
