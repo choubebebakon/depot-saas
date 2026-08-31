@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -31,7 +32,7 @@ export class FournisseursController {
     const tenantId = this.depotScope.getTenantId();
     const depotId = this.depotScope.getDepotId();
     if (!tenantId || !depotId) {
-      throw new Error('Contexte tenant/dépôt introuvable.');
+      throw new ForbiddenException('Contexte tenant/dépôt introuvable.');
     }
     return { tenantId, depotId };
   }
