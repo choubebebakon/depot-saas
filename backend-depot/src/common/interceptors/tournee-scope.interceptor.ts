@@ -21,10 +21,10 @@ function routePath(request: Request): string {
 }
 
 function isTourneeRoute(request: Request): boolean {
-  return /\/depot-boissons\/tournees(?:\/|$)/i.test(routePath(request));
+  return /\/depot-boissons\/tournees(?:\/|$)/i.test(routePath(request)) || /\/tournees(?:\/|$)/i.test(routePath(request));
 }
 
-function isLegacyTricycleRoute(request: Request): boolean {
+function isTricycleRoute(request: Request): boolean {
   return /\/tournees\/tricycles(?:\/|$)/i.test(routePath(request));
 }
 
@@ -35,7 +35,7 @@ export class TourneeScopeInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: import('@nestjs/common').CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<ScopedRequest>();
     const user = request.user;
-    if (!user || (!isTourneeRoute(request) && !isLegacyTricycleRoute(request))) return next.handle();
+    if (!user || !isTourneeRoute(request)) return next.handle();
 
     return new Observable((observer) => {
       let subscription: Subscription | undefined;
@@ -44,7 +44,7 @@ export class TourneeScopeInterceptor implements NestInterceptor {
           if (!depotId) throw new ForbiddenException('Un dépôt actif est requis pour gérer les tournées.');
           request.depotScope = { tenantId: user.tenantId, depotId, role: user.role };
           this.forceAuthoritativeScope(request, user.tenantId, depotId);
-          if (isTourneeRoute(request)) await this.assertTourneeTarget(request, user.tenantId, depotId);
+          if (!isTricycleRoute(request)) await this.assertTourneeTarget(request, user.tenantId, depotId);
 
           subscription = this.depotScope.run(
             { tenantId: user.tenantId, depotId, role: user.role, requestId: (request as any).auditRequestId ?? null, metier: (request as any).auditMetier ?? 'DEPOT_BOISSONS' },
@@ -71,19 +71,13 @@ export class TourneeScopeInterceptor implements NestInterceptor {
 
   private forceAuthoritativeScope(request: ScopedRequest, tenantId: string, depotId: string): void {
     const body = request.body as Record<string, unknown> | undefined;
-    if (body) {
-      body.tenantId = tenantId;
-      body.depotId = depotId;
-    }
+    if (body) { body.tenantId = tenantId; body.depotId = depotId; }
     const query = request.query as Record<string, unknown> | undefined;
-    if (query) {
-      query.tenantId = tenantId;
-      query.depotId = depotId;
-    }
+    if (query) { query.tenantId = tenantId; query.depotId = depotId; }
   }
 
   private async assertTourneeTarget(request: Request, tenantId: string, depotId: string): Promise<void> {
-    const id = request.params?.id;
+    const id = request.params?.id || (request.body as any)?.tourneeId;
     if (!id) return;
     const tournee = await this.prisma.tournee.findFirst({ where: { id, tenantId, depotId }, select: { id: true } });
     if (!tournee) throw new ForbiddenException('Accès refusé à cette tournée dans ce dépôt.');
