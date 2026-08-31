@@ -2,7 +2,7 @@ name: Backend CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'fix/audit-corrections-phase1' ]
   pull_request:
     branches: [ main, develop ]
 
@@ -48,7 +48,7 @@ jobs:
       - name: Run Lint
         run: |
           cd backend-depot
-          npm run lint || true # On ne bloque pas encore totalement sur le lint
+          npm run lint || true
 
       - name: Run Tests
         run: |
