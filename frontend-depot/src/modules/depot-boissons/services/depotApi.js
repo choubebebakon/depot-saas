@@ -25,17 +25,20 @@ export const depotApi = {
     return api.get('/depot-boissons/dashboard', { ...getTenantHeaders(depotId), params });
   },
 
-  getArticles: (params) =>
-    api.get('/depot-boissons/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getArticles: (params) => api.get('/depot-boissons/articles', { ...getTenantHeaders(), params: cleanParams(params) }),
   getArticle: (id) => api.get(`/depot-boissons/articles/${id}`, getTenantHeaders()),
   createArticle: (data) => api.post('/depot-boissons/articles', data, getTenantHeaders(data?.depotId)),
   updateArticle: (id, data) => api.patch(`/depot-boissons/articles/${id}`, data, getTenantHeaders(data?.depotId)),
   archiveArticle: (id) => api.delete(`/depot-boissons/articles/${id}`, getTenantHeaders()),
   getStockHistory: (id) => api.get(`/depot-boissons/articles/${id}/historique`, getTenantHeaders()),
-
   entreStock: (data) => api.post('/depot-boissons/stock/entree', data, getTenantHeaders(data?.depotId)),
   sortieStock: (data) => api.post('/depot-boissons/stock/sortie', data, getTenantHeaders(data?.depotId)),
   transfertStock: (data) => api.post('/depot-boissons/stock/transfert', data, getTenantHeaders(data?.depotId)),
+
+  getPromotions: () => api.get('/depot-boissons/promotions', getTenantHeaders()),
+  createPromotion: (data) => api.post('/depot-boissons/promotions', data, getTenantHeaders(data?.depotId)),
+  updatePromotion: (id, data) => api.patch(`/depot-boissons/promotions/${id}`, data, getTenantHeaders(data?.depotId)),
+  deletePromotion: (id) => api.delete(`/depot-boissons/promotions/${id}`, getTenantHeaders()),
 
   getConditionnements: () => api.get('/depot-boissons/conditionnements', getTenantHeaders()),
   createConditionnement: (data) => api.post('/depot-boissons/conditionnements', data, getTenantHeaders(data?.depotId)),
@@ -53,7 +56,6 @@ export const depotApi = {
   createLivraison: (data) => api.post('/depot-boissons/livraisons', data, getTenantHeaders(data?.depotId)),
   updateLivraison: (id, data) => api.patch(`/depot-boissons/livraisons/${id}`, data, getTenantHeaders(data?.depotId)),
   deleteLivraison: (id) => api.delete(`/depot-boissons/livraisons/${id}`, getTenantHeaders()),
-
   getDepots: () => api.get('/depot-boissons/depots', getTenantHeaders()),
 
   getTournees: (params) => api.get('/depot-boissons/tournees', { ...getTenantHeaders(), params: cleanParams(params) }),
@@ -71,23 +73,14 @@ export const depotApi = {
   payerDette: (id, data) => api.post(`/depot-boissons/clients/${id}/payer-dette`, data, getTenantHeaders(data?.depotId)),
   historiqueAchats: (id, params) => api.get(`/depot-boissons/clients/${id}/historique-achats`, { ...getTenantHeaders(), params: cleanParams(params) }),
 
-  // Fournisseurs: le depotId actif est fourni explicitement par la page.
-  getFournisseurs: (params = {}, depotIdOverride = null) =>
-    api.get('/depot-boissons/fournisseurs', { ...getTenantHeaders(depotIdOverride), params: cleanParams(params) }),
-  getFournisseur: (id, depotIdOverride = null) =>
-    api.get(`/depot-boissons/fournisseurs/${id}`, getTenantHeaders(depotIdOverride)),
-  createFournisseur: (data) =>
-    api.post('/depot-boissons/fournisseurs', data, getTenantHeaders(data?.depotId)),
-  updateFournisseur: (id, data) =>
-    api.patch(`/depot-boissons/fournisseurs/${id}`, data, getTenantHeaders(data?.depotId)),
-  passerCommandeFournisseur: (data) =>
-    api.post('/depot-boissons/fournisseurs/commander', data, getTenantHeaders(data?.depotId)),
-  receptionnerLivraison: (id, data) =>
-    api.post(`/depot-boissons/fournisseurs/${id}/receptionner`, data, getTenantHeaders(data?.depotId)),
-  reglerDetteFournisseur: (id, data) =>
-    api.post(`/depot-boissons/fournisseurs/${id}/regler`, data, getTenantHeaders(data?.depotId)),
-  historiqueCommandes: (id, depotIdOverride = null) =>
-    api.get(`/depot-boissons/fournisseurs/${id}/commandes`, getTenantHeaders(depotIdOverride)),
+  getFournisseurs: (params = {}, depotIdOverride = null) => api.get('/depot-boissons/fournisseurs', { ...getTenantHeaders(depotIdOverride), params: cleanParams(params) }),
+  getFournisseur: (id, depotIdOverride = null) => api.get(`/depot-boissons/fournisseurs/${id}`, getTenantHeaders(depotIdOverride)),
+  createFournisseur: (data) => api.post('/depot-boissons/fournisseurs', data, getTenantHeaders(data?.depotId)),
+  updateFournisseur: (id, data) => api.patch(`/depot-boissons/fournisseurs/${id}`, data, getTenantHeaders(data?.depotId)),
+  passerCommandeFournisseur: (data) => api.post('/depot-boissons/fournisseurs/commander', data, getTenantHeaders(data?.depotId)),
+  receptionnerLivraison: (id, data) => api.post(`/depot-boissons/fournisseurs/${id}/receptionner`, data, getTenantHeaders(data?.depotId)),
+  reglerDetteFournisseur: (id, data) => api.post(`/depot-boissons/fournisseurs/${id}/regler`, data, getTenantHeaders(data?.depotId)),
+  historiqueCommandes: (id, depotIdOverride = null) => api.get(`/depot-boissons/fournisseurs/${id}/commandes`, getTenantHeaders(depotIdOverride)),
 
   getVentes: (params) => api.get('/depot-boissons/ventes', { ...getTenantHeaders(), params: cleanParams(params) }),
   getVente: (id) => api.get(`/depot-boissons/ventes/${id}`, getTenantHeaders()),
@@ -104,11 +97,6 @@ export const depotApi = {
   getDepenses: (params) => api.get('/depot-boissons/depenses', { ...getTenantHeaders(), params: cleanParams(params) }),
   createDepense: (data) => api.post('/depot-boissons/depenses', data, getTenantHeaders(data?.depotId)),
   deleteDepense: (id) => api.delete(`/depot-boissons/depenses/${id}`, getTenantHeaders()),
-
   getRapport: (type, params) => api.get(`/depot-boissons/rapports/${type}`, { ...getTenantHeaders(), params: cleanParams(params) }),
-  exporterRapport: (type, format, params) => api.get(`/depot-boissons/rapports/${type}/export.${format}`, {
-    ...getTenantHeaders(),
-    params: cleanParams(params),
-    responseType: 'blob',
-  }),
+  exporterRapport: (type, format, params) => api.get(`/depot-boissons/rapports/${type}/export.${format}`, { ...getTenantHeaders(), params: cleanParams(params), responseType: 'blob' }),
 };
