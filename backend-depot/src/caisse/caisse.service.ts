@@ -122,11 +122,6 @@ export class CaisseService {
         )
         .reduce((acc, m) => acc + m.montant, 0);
 
-      // Le POS enregistre historiquement les ventes dans Vente et certaines
-      // intégrations peuvent ne pas encore créer le mouvement de caisse au
-      // moment exact de la vente. On réconcilie donc ici le montant cash des
-      // ventes de la session, sans compter deux fois les mouvements déjà
-      // enregistrés comme ENCAISSEMENT_VENTE.
       const ventesSession = await tx.vente.aggregate({
         where: {
           tenantId: dto.tenantId,
@@ -146,9 +141,6 @@ export class CaisseService {
         cashVentes - cashVentesDejaMouvements,
       );
 
-      // On conserve une trace comptable de la réconciliation effectuée à la
-      // clôture. Le mouvement est lié à la session et ne peut donc pas fuiter
-      // vers une autre caisse.
       if (cashVentesNonComptabilisees > 0) {
         await tx.mouvementCaisse.create({
           data: {
@@ -207,47 +199,132 @@ export class CaisseService {
   async createDepense(dto: CreateDepenseDto & { tenantId: string; depotId: string }) {
     this.assertScope(dto.tenantId, dto.depotId);
 
-    return this.prisma.$transaction(async (tx) => {
-      const session = await tx.sessionCaisse.findFirst({
-        where: {
-          depotId: dto.depotId,
-          tenantId: dto.tenantId,
-          estOuverte: true,
-        },
-      });
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          // L'identifiant est utilisé uniquement pour rendre les retries
+          // offline idempotents. Il ne permet jamais de changer le tenant ou
+          // le dépôt de la dépense existante.
+          if (dto.id) {
+            const existante = await tx.depense.findUnique({
+              where: { id: dto.id },
+            });
 
-      const depense = await tx.depense.create({
-        data: {
-          id: (dto as any).id || undefined,
-          categorie: dto.categorie,
-          montant: dto.montant,
-          motif: dto.motif,
-          depotId: dto.depotId,
-          tenantId: dto.tenantId,
-          photoUrl: dto.photoUrl,
-          createdAt: (dto as any).createdAt
-            ? new Date((dto as any).createdAt)
-            : undefined,
-        },
-      });
+            if (existante) {
+              if (
+                existante.tenantId !== dto.tenantId ||
+                existante.depotId !== dto.depotId
+              ) {
+                throw new ForbiddenException(
+                  'Cette dépense appartient à un autre périmètre.',
+                );
+              }
+              return existante;
+            }
+          }
 
-      if (session) {
-        await tx.mouvementCaisse.create({
-          data: {
-            type: 'DECAISSEMENT_DEPENSE',
-            montant: dto.montant,
-            motif: `${dto.categorie} — ${dto.motif}`,
-            reference: depense.id,
-            sessionId: session.id,
-            createdAt: (dto as any).createdAt
-              ? new Date((dto as any).createdAt)
-              : undefined,
-          },
-        });
+          const session = await tx.sessionCaisse.findFirst({
+            where: {
+              depotId: dto.depotId,
+              tenantId: dto.tenantId,
+              estOuverte: true,
+            },
+          });
+
+          if (!session) {
+            throw new BadRequestException(
+              'Impossible d’enregistrer une dépense sans caisse ouverte sur ce dépôt.',
+            );
+          }
+
+          // Le montant disponible est calculé dans la même transaction que
+          // l'écriture de la dépense. L'isolation Serializable empêche deux
+          // dépenses concurrentes de faire passer la caisse sous zéro.
+          const entrees = await tx.mouvementCaisse.aggregate({
+            where: {
+              sessionId: session.id,
+              type: { in: ['FOND_INITIAL', 'ENCAISSEMENT_VENTE', 'ENCAISSEMENT_DETTE'] },
+            },
+            _sum: { montant: true },
+          });
+
+          const sorties = await tx.mouvementCaisse.aggregate({
+            where: {
+              sessionId: session.id,
+              type: { in: ['DECAISSEMENT_DEPENSE', 'DECAISSEMENT_VIDES'] },
+            },
+            _sum: { montant: true },
+          });
+
+          const cashVentes = await tx.vente.aggregate({
+            where: {
+              tenantId: dto.tenantId,
+              depotId: dto.depotId,
+              statut: StatutVente.PAYE,
+              date: { gte: session.dateOuverture },
+            },
+            _sum: { montantCash: true },
+          });
+
+          const cashVentesMouvements = await tx.mouvementCaisse.aggregate({
+            where: {
+              sessionId: session.id,
+              type: 'ENCAISSEMENT_VENTE',
+            },
+            _sum: { montant: true },
+          });
+
+          const ventesNonComptabilisees = Math.max(
+            0,
+            (cashVentes._sum?.montantCash ?? 0) -
+              (cashVentesMouvements._sum?.montant ?? 0),
+          );
+
+          const soldeDisponible =
+            (entrees._sum?.montant ?? 0) +
+            ventesNonComptabilisees -
+            (sorties._sum?.montant ?? 0);
+
+          if (dto.montant > soldeDisponible) {
+            throw new BadRequestException(
+              `Dépense refusée : solde caisse disponible insuffisant (${soldeDisponible.toLocaleString('fr-FR')} FCFA).`,
+            );
+          }
+
+          const depense = await tx.depense.create({
+            data: {
+              id: dto.id,
+              categorie: dto.categorie.trim(),
+              montant: dto.montant,
+              motif: dto.motif.trim(),
+              depotId: dto.depotId,
+              tenantId: dto.tenantId,
+              photoUrl: dto.photoUrl?.trim() || undefined,
+            },
+          });
+
+          await tx.mouvementCaisse.create({
+            data: {
+              type: 'DECAISSEMENT_DEPENSE',
+              montant: dto.montant,
+              motif: `${dto.categorie.trim()} — ${dto.motif.trim()}`,
+              reference: depense.id,
+              sessionId: session.id,
+            },
+          });
+
+          return depense;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      if ((error as any)?.code === 'P2034') {
+        throw new BadRequestException(
+          'Une autre opération de caisse est en cours. Réessayez.',
+        );
       }
-
-      return depense;
-    });
+      throw error;
+    }
   }
 
   async getDepenses(
@@ -262,9 +339,18 @@ export class CaisseService {
 
     if (dateDebut || dateFin) {
       where.createdAt = {};
-      if (dateDebut) where.createdAt.gte = new Date(dateDebut);
+      if (dateDebut) {
+        const debut = new Date(dateDebut);
+        if (Number.isNaN(debut.getTime())) {
+          throw new BadRequestException('dateDebut invalide.');
+        }
+        where.createdAt.gte = debut;
+      }
       if (dateFin) {
         const fin = new Date(dateFin);
+        if (Number.isNaN(fin.getTime())) {
+          throw new BadRequestException('dateFin invalide.');
+        }
         fin.setHours(23, 59, 59, 999);
         where.createdAt.lte = fin;
       }
