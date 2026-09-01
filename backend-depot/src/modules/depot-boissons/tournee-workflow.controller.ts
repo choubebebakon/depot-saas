@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -35,73 +36,43 @@ export class TourneeWorkflowController {
 
   @Get()
   @RequirePermission('tournees', 'read')
-  list(@Req() req: any) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.list(tenantId, depotId);
-  }
+  list(@Req() req: any) { const { tenantId, depotId } = this.scope(req); return this.service.list(tenantId, depotId); }
 
   @Get(':id')
   @RequirePermission('tournees', 'read')
-  get(@Req() req: any, @Param('id') id: string) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.get(tenantId, depotId, id);
-  }
+  get(@Req() req: any, @Param('id') id: string) { const { tenantId, depotId } = this.scope(req); return this.service.get(tenantId, depotId, id); }
 
   @Post()
   @RequirePermission('tournees', 'write')
-  create(@Req() req: any, @Body() data: any) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.create(tenantId, depotId, data);
-  }
+  create(@Req() req: any, @Body() data: any) { const { tenantId, depotId } = this.scope(req); return this.service.create(tenantId, depotId, data); }
 
   @Patch(':id')
   @RequirePermission('tournees', 'write')
-  update(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.update(tenantId, depotId, id, data);
-  }
+  update(@Req() req: any, @Param('id') id: string, @Body() data: any) { const { tenantId, depotId } = this.scope(req); return this.service.update(tenantId, depotId, id, data); }
 
   @Post(':id/lignes')
   @RequirePermission('tournees', 'write')
-  addLine(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.addLine(tenantId, depotId, id, data);
-  }
-
-  @Post(':id/depart')
-  @RequirePermission('tournees', 'write')
-  depart(@Req() req: any, @Param('id') id: string) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.depart(tenantId, depotId, id);
-  }
+  addLine(@Req() req: any, @Param('id') id: string, @Body() data: any) { const { tenantId, depotId } = this.scope(req); return this.service.addLine(tenantId, depotId, id, data); }
 
   @Delete(':id/lignes/:lineId')
   @RequirePermission('tournees', 'write')
-  removeLine(@Req() req: any, @Param('id') id: string, @Param('lineId') lineId: string) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.removeLine(tenantId, depotId, id, lineId);
-  }
+  removeLine(@Req() req: any, @Param('id') id: string, @Param('lineId') lineId: string) { const { tenantId, depotId } = this.scope(req); return this.service.removeLine(tenantId, depotId, id, lineId); }
+
+  @Post(':id/depart')
+  @RequirePermission('tournees', 'write')
+  depart(@Req() req: any, @Param('id') id: string) { const { tenantId, depotId } = this.scope(req); return this.service.depart(tenantId, depotId, id); }
 
   @Post(':id/reconciliation')
   @RequirePermission('tournees', 'write')
-  reconcile(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.reconcile(tenantId, depotId, id, data);
-  }
+  reconcile(@Req() req: any, @Param('id') id: string, @Body() data: any) { const { tenantId, depotId } = this.scope(req); return this.service.reconcile(tenantId, depotId, id, data); }
 
   @Post(':id/cloture')
   @RequirePermission('tournees', 'write')
-  close(@Req() req: any, @Param('id') id: string) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.close(tenantId, depotId, id);
-  }
+  close(@Req() req: any, @Param('id') id: string) { const { tenantId, depotId } = this.scope(req); return this.service.close(tenantId, depotId, id); }
 
   @Get('stock/:articleId')
   @RequirePermission('tournees', 'read')
-  stock(@Req() req: any, @Param('articleId') articleId: string) {
-    const { tenantId, depotId } = this.scope(req);
-    return this.service.stock(tenantId, depotId, articleId);
-  }
+  stock(@Req() req: any, @Param('articleId') articleId: string) { const { tenantId, depotId } = this.scope(req); return this.service.stock(tenantId, depotId, articleId); }
 
   @Get(':id/bon-sortie')
   @RequirePermission('tournees', 'read')
@@ -114,10 +85,7 @@ export class TourneeWorkflowController {
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
     const money = (n: number) => `${Number(n || 0).toLocaleString('fr-FR')} FCFA`;
     let y = 800;
-    const text = (value: string, x = 45, size = 10, isBold = false) => {
-      page.drawText(value, { x, y, size, font: isBold ? bold : font, color: rgb(0.08, 0.11, 0.16) });
-      y -= size + 7;
-    };
+    const text = (value: string, x = 45, size = 10, isBold = false) => { page.drawText(value, { x, y, size, font: isBold ? bold : font, color: rgb(0.08, 0.11, 0.16) }); y -= size + 7; };
     text('GESTOCK — BON DE SORTIE', 45, 18, true);
     text(`Référence : ${tournee.reference}`, 45, 11, true);
     text(`Date planifiée : ${new Date(tournee.datePlanifiee).toLocaleString('fr-FR')}`);
@@ -127,8 +95,11 @@ export class TourneeWorkflowController {
     y -= 8;
     page.drawLine({ start: { x: 45, y }, end: { x: 550, y }, thickness: 1, color: rgb(0.7, 0.7, 0.7) });
     y -= 18;
-    text('Article', 45, 9, true); text('Qté', 280, 9, true); text('PU', 350, 9, true); text('Total', 455, 9, true);
-    y -= 3;
+    page.drawText('Article', { x: 45, y, size: 9, font: bold });
+    page.drawText('Qté', { x: 280, y, size: 9, font: bold });
+    page.drawText('PU', { x: 350, y, size: 9, font: bold });
+    page.drawText('Total', { x: 455, y, size: 9, font: bold });
+    y -= 18;
     for (const line of tournee.lignes || []) {
       page.drawText(String(line.designation || '-').slice(0, 34), { x: 45, y, size: 9, font });
       page.drawText(String(line.quantiteChargee), { x: 280, y, size: 9, font });
