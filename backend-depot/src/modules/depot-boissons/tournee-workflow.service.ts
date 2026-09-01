@@ -27,18 +27,18 @@ export class TourneeWorkflowService {
   }
 
   async list(tenantId: string, depotId: string) {
-    return this.prisma.$queryRaw<any[]>`
+    return (await this.prisma.$queryRaw`
       SELECT w.*, json_build_object('id', t.id, 'nom', t.nom) AS tricycle,
         json_build_object('id', u.id, 'nom', u.nom, 'email', u.email) AS commercial,
         json_build_object('id', d.id, 'nom', d.nom) AS depot
       FROM "TourneeWorkflow" w JOIN "Tricycle" t ON t.id=w."tricycleId"
       JOIN "User" u ON u.id=w."commercialId" JOIN "Depot" d ON d.id=w."depotId"
       WHERE w."tenantId"=${tenantId} AND w."depotId"=${depotId}
-      ORDER BY w."datePlanifiee" DESC`;
+      ORDER BY w."datePlanifiee" DESC`) as any[];
   }
 
   async get(tenantId: string, depotId: string, id: string) {
-    const rows = await this.prisma.$queryRaw<any[]>`
+    const rows = (await this.prisma.$queryRaw`
       SELECT w.*, json_build_object('id', t.id, 'nom', t.nom) AS tricycle,
         json_build_object('id', u.id, 'nom', u.nom, 'email', u.email) AS commercial,
         json_build_object('id', d.id, 'nom', d.nom) AS depot,
@@ -51,7 +51,7 @@ export class TourneeWorkflowService {
         (SELECT json_build_object('id', dc.id, 'reference', dc.reference, 'montant', dc.montant, 'montantPaye', dc."montantPaye", 'statut', dc.statut) FROM "DetteCommerciale" dc WHERE dc."workflowId"=w.id) AS dette,
         COALESCE((SELECT json_agg(json_build_object('articleId', cs."articleId", 'quantite', cs.quantite)) FROM "DepotConsigneStock" cs WHERE cs."tenantId"=w."tenantId" AND cs."depotId"=w."depotId"), '[]'::json) AS stockConsignes
       FROM "TourneeWorkflow" w JOIN "Tricycle" t ON t.id=w."tricycleId" JOIN "User" u ON u.id=w."commercialId" JOIN "Depot" d ON d.id=w."depotId"
-      WHERE w.id=${id} AND w."tenantId"=${tenantId} AND w."depotId"=${depotId} LIMIT 1`;
+      WHERE w.id=${id} AND w."tenantId"=${tenantId} AND w."depotId"=${depotId} LIMIT 1`) as any[];
     if (!rows[0]) throw new NotFoundException('Tournée introuvable dans le dépôt actif.');
     return rows[0];
   }
@@ -127,11 +127,11 @@ export class TourneeWorkflowService {
 
   async depart(tenantId: string, depotId: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<any[]>`SELECT * FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} FOR UPDATE`;
+      const rows = (await tx.$queryRaw`SELECT * FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} FOR UPDATE`) as any[];
       const workflow = rows[0];
       if (!workflow) throw new NotFoundException('Tournée introuvable.');
       if (workflow.statut !== PLANIFIEE) throw new ConflictException('Cette tournée n’est plus planifiable.');
-      const lines = await tx.$queryRaw<any[]>`SELECT * FROM "TourneeWorkflowLine" WHERE "workflowId"=${id}`;
+      const lines = (await tx.$queryRaw`SELECT * FROM "TourneeWorkflowLine" WHERE "workflowId"=${id}`) as any[];
       if (!lines.length) throw new BadRequestException('Ajoutez au moins un article avant de valider le départ.');
       let totalQty = 0; let totalValue = 0;
       for (const line of lines) {
@@ -156,10 +156,10 @@ export class TourneeWorkflowService {
     if (!Array.isArray(data?.lignes)) throw new BadRequestException('Les lignes de retour sont obligatoires.');
     this.assertMoney(data.cashReel ?? 0, 'Cash réel'); this.assertMoney(data.orangeMoneyReel ?? 0, 'Orange Money réel'); this.assertMoney(data.mtnMomoReel ?? 0, 'MTN MoMo réel');
     return this.prisma.$transaction(async (tx) => {
-      const workflowRows = await tx.$queryRaw<any[]>`SELECT * FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} FOR UPDATE`;
+      const workflowRows = (await tx.$queryRaw`SELECT * FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} FOR UPDATE`) as any[];
       const workflow = workflowRows[0];
       if (!workflow || workflow.statut !== EN_COURS) throw new ConflictException('État de tournée invalide.');
-      const dbLines = await tx.$queryRaw<any[]>`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=${id}`;
+      const dbLines = (await tx.$queryRaw`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=${id}`) as any[];
       if (data.lignes.length !== dbLines.length) throw new BadRequestException('Toutes les lignes chargées doivent être renseignées une seule fois.');
       const byId = new Map(dbLines.map((line) => [line.id, line])); const seen = new Set<string>(); let caTheorique = 0;
       for (const input of data.lignes) {
@@ -183,10 +183,10 @@ export class TourneeWorkflowService {
 
   async close(tenantId: string, depotId: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<any[]>`SELECT * FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} FOR UPDATE`;
+      const rows = (await tx.$queryRaw`SELECT * FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} FOR UPDATE`) as any[];
       const workflow = rows[0]; if (!workflow) throw new NotFoundException('Tournée introuvable.');
       if (workflow.statut !== EN_COURS) throw new ConflictException('La tournée doit être EN_COURS avant clôture.');
-      const lines = await tx.$queryRaw<any[]>`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=${id}`;
+      const lines = (await tx.$queryRaw`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=${id}`) as any[];
       if (!lines.length) throw new BadRequestException('Aucune ligne de chargement.');
       const unprocessed = lines.filter((line) => Number(line.quantiteRetourPleins) + Number(line.quantiteVendueTheorique) !== Number(line.quantiteChargee));
       if (unprocessed.length) throw new ConflictException('Enregistrez le retour de toutes les lignes avant la clôture.');
