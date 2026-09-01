@@ -8,6 +8,7 @@ import { DepotBoissonsTourneesEditController } from './tournees-edit.controller'
 import { DepotBoissonsTourneesEditService } from './tournees-edit.service';
 import { TourneeWorkflowController } from './tournee-workflow.controller';
 import { TourneeWorkflowService } from './tournee-workflow.service';
+import { TourneeWorkflowOptionsController } from './tournee-workflow-options.controller';
 import { CaisseModule } from '../../caisse/caisse.module';
 import { AuditModule } from '../../audit/audit.module';
 
@@ -18,6 +19,7 @@ import { AuditModule } from '../../audit/audit.module';
     DepotBoissonsPromotionsController,
     DepotBoissonsTourneesEditController,
     TourneeWorkflowController,
+    TourneeWorkflowOptionsController,
   ],
   providers: [
     DepotBoissonsService,
