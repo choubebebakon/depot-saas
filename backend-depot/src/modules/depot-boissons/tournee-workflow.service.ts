@@ -19,11 +19,9 @@ export class TourneeWorkflowService {
   private assertPositiveInt(value: unknown, label: string) {
     if (!Number.isInteger(value) || Number(value) <= 0) throw new BadRequestException(`${label} doit être un entier supérieur à 0.`);
   }
-
   private assertNonNegativeInt(value: unknown, label: string) {
     if (!Number.isInteger(value) || Number(value) < 0) throw new BadRequestException(`${label} doit être un entier supérieur ou égal à 0.`);
   }
-
   private assertMoney(value: unknown, label: string) {
     if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new BadRequestException(`${label} est invalide.`);
   }
@@ -33,10 +31,8 @@ export class TourneeWorkflowService {
       SELECT w.*, json_build_object('id', t.id, 'nom', t.nom) AS tricycle,
         json_build_object('id', u.id, 'nom', u.nom, 'email', u.email) AS commercial,
         json_build_object('id', d.id, 'nom', d.nom) AS depot
-      FROM "TourneeWorkflow" w
-      JOIN "Tricycle" t ON t.id = w."tricycleId"
-      JOIN "User" u ON u.id = w."commercialId"
-      JOIN "Depot" d ON d.id = w."depotId"
+      FROM "TourneeWorkflow" w JOIN "Tricycle" t ON t.id=w."tricycleId"
+      JOIN "User" u ON u.id=w."commercialId" JOIN "Depot" d ON d.id=w."depotId"
       WHERE w."tenantId"=${tenantId} AND w."depotId"=${depotId}
       ORDER BY w."datePlanifiee" DESC`;
   }
@@ -48,17 +44,13 @@ export class TourneeWorkflowService {
         json_build_object('id', d.id, 'nom', d.nom) AS depot,
         COALESCE((SELECT json_agg(json_build_object(
           'id', l.id, 'articleId', l."articleId", 'designation', a.designation, 'format', a.format,
-          'estConsigne', a."estConsigne", 'quantiteChargee', l."quantiteChargee",
-          'prixUnitaireFacture', l."prixUnitaireFacture", 'quantiteRetourPleins', l."quantiteRetourPleins",
-          'quantiteRetourVides', l."quantiteRetourVides", 'quantiteVendueTheorique', l."quantiteVendueTheorique",
-          'caTheorique', l."caTheorique"
+          'estConsigne', a."estConsigne", 'quantiteChargee', l."quantiteChargee", 'prixUnitaireFacture', l."prixUnitaireFacture",
+          'quantiteRetourPleins', l."quantiteRetourPleins", 'quantiteRetourVides', l."quantiteRetourVides",
+          'quantiteVendueTheorique', l."quantiteVendueTheorique", 'caTheorique', l."caTheorique"
         ) ORDER BY a.designation) FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=w.id), '[]'::json) AS lignes,
-        (SELECT json_build_object('id', dc.id, 'reference', dc.reference, 'montant', dc.montant, 'montantPaye', dc."montantPaye", 'statut', dc.statut)
-          FROM "DetteCommerciale" dc WHERE dc."workflowId"=w.id) AS dette,
-        COALESCE((SELECT json_agg(json_build_object('articleId', cs."articleId", 'quantite', cs.quantite))
-          FROM "DepotConsigneStock" cs WHERE cs."tenantId"=w."tenantId" AND cs."depotId"=w."depotId"), '[]'::json) AS stockConsignes
-      FROM "TourneeWorkflow" w
-      JOIN "Tricycle" t ON t.id=w."tricycleId" JOIN "User" u ON u.id=w."commercialId" JOIN "Depot" d ON d.id=w."depotId"
+        (SELECT json_build_object('id', dc.id, 'reference', dc.reference, 'montant', dc.montant, 'montantPaye', dc."montantPaye", 'statut', dc.statut) FROM "DetteCommerciale" dc WHERE dc."workflowId"=w.id) AS dette,
+        COALESCE((SELECT json_agg(json_build_object('articleId', cs."articleId", 'quantite', cs.quantite)) FROM "DepotConsigneStock" cs WHERE cs."tenantId"=w."tenantId" AND cs."depotId"=w."depotId"), '[]'::json) AS stockConsignes
+      FROM "TourneeWorkflow" w JOIN "Tricycle" t ON t.id=w."tricycleId" JOIN "User" u ON u.id=w."commercialId" JOIN "Depot" d ON d.id=w."depotId"
       WHERE w.id=${id} AND w."tenantId"=${tenantId} AND w."depotId"=${depotId} LIMIT 1`;
     if (!rows[0]) throw new NotFoundException('Tournée introuvable dans le dépôt actif.');
     return rows[0];
@@ -83,7 +75,7 @@ export class TourneeWorkflowService {
       await tx.tricycle.update({ where: { id: tricycle.id }, data: { estLibre: false } });
       const id = randomUUID();
       await tx.$executeRaw`INSERT INTO "TourneeWorkflow" ("id","reference","statut","tenantId","depotId","tricycleId","commercialId","tourneeId","datePlanifiee") VALUES (${id},${reference},${PLANIFIEE},${tenantId},${depotId},${data.tricycleId},${data.commercialId},${tournee.id},${date})`;
-      return this.get(tenantId, depotId, id);
+      return { id, reference, statut: PLANIFIEE };
     });
   }
 
@@ -105,8 +97,8 @@ export class TourneeWorkflowService {
       await tx.tournee.update({ where: { id: current.tourneeId }, data: { tricycleId: data.tricycleId, commercialId: data.commercialId, dateOuverture: date } });
       if (oldTricycle && oldTricycle.id !== newTricycle.id) await tx.tricycle.update({ where: { id: oldTricycle.id }, data: { estLibre: true } });
       await tx.tricycle.update({ where: { id: newTricycle.id }, data: { estLibre: false } });
-      await tx.$executeRaw`UPDATE "TourneeWorkflow" SET "tricycleId"=${data.tricycleId}, "commercialId"=${data.commercialId}, "datePlanifiee"=${date}, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId}`;
-      return this.get(tenantId, depotId, id);
+      await tx.$executeRaw`UPDATE "TourneeWorkflow" SET "tricycleId"=${data.tricycleId}, "commercialId"=${data.commercialId}, "datePlanifiee"=${date}, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} AND "statut"=${PLANIFIEE}`;
+      return { id, statut: PLANIFIEE };
     });
   }
 
@@ -120,16 +112,16 @@ export class TourneeWorkflowService {
     if (!stock || stock.quantite < data.quantiteChargee) throw new ConflictException(`Stock insuffisant pour ${article.designation}. Disponible : ${stock?.quantite ?? 0}.`);
     const price = data.prixUnitaireFacture ?? article.prixVente;
     this.assertMoney(price, 'Prix unitaire');
-    const lineId = randomUUID();
-    await this.prisma.$executeRaw`INSERT INTO "TourneeWorkflowLine" ("id","workflowId","articleId","quantiteChargee","prixUnitaireFacture") VALUES (${lineId},${id},${article.id},${data.quantiteChargee},${price})`;
+    const result = await this.prisma.$executeRaw`INSERT INTO "TourneeWorkflowLine" ("id","workflowId","articleId","quantiteChargee","prixUnitaireFacture") SELECT ${randomUUID()}, ${id}, ${article.id}, ${data.quantiteChargee}, ${price} WHERE EXISTS (SELECT 1 FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} AND "statut"=${PLANIFIEE})`;
+    if (result !== 1) throw new ConflictException('La tournée a changé d’état pendant l’ajout.');
     return this.get(tenantId, depotId, id);
   }
 
   async removeLine(tenantId: string, depotId: string, id: string, lineId: string) {
     const current = await this.get(tenantId, depotId, id);
     if (current.statut !== PLANIFIEE) throw new ConflictException('Le chargement est verrouillé après le départ.');
-    const result = await this.prisma.$executeRaw`DELETE FROM "TourneeWorkflowLine" WHERE id=${lineId} AND "workflowId"=${id}`;
-    if (result !== 1) throw new NotFoundException('Ligne de chargement introuvable.');
+    const result = await this.prisma.$executeRaw`DELETE FROM "TourneeWorkflowLine" WHERE id=${lineId} AND "workflowId"=${id} AND EXISTS (SELECT 1 FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} AND "statut"=${PLANIFIEE})`;
+    if (result !== 1) throw new NotFoundException('Ligne de chargement introuvable ou tournée verrouillée.');
     return this.get(tenantId, depotId, id);
   }
 
@@ -151,9 +143,10 @@ export class TourneeWorkflowService {
         await tx.ligneChargement.create({ data: { quantiteChargee: Number(line.quantiteChargee), articleId: line.articleId, tourneeId: workflow.tourneeId } });
         totalQty += Number(line.quantiteChargee); totalValue += Number(line.quantiteChargee) * Number(line.prixUnitaireFacture);
       }
-      await tx.$executeRaw`UPDATE "TourneeWorkflow" SET "statut"=${EN_COURS}, "dateDepart"=CURRENT_TIMESTAMP, "totalQuantiteChargee"=${totalQty}, "totalValeurChargee"=${totalValue}, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${id} AND "statut"=${PLANIFIEE}`;
+      const changed = await tx.$executeRaw`UPDATE "TourneeWorkflow" SET "statut"=${EN_COURS}, "dateDepart"=CURRENT_TIMESTAMP, "totalQuantiteChargee"=${totalQty}, "totalValeurChargee"=${totalValue}, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${id} AND "statut"=${PLANIFIEE}`;
+      if (changed !== 1) throw new ConflictException('La tournée a changé d’état pendant la validation du départ.');
       await tx.tournee.update({ where: { id: workflow.tourneeId }, data: { statut: 'OUVERTE', dateOuverture: new Date() } });
-      return this.get(tenantId, depotId, id);
+      return { id, statut: EN_COURS, reference: workflow.reference };
     }, { isolationLevel: 'Serializable' });
   }
 
@@ -168,13 +161,11 @@ export class TourneeWorkflowService {
       if (!workflow || workflow.statut !== EN_COURS) throw new ConflictException('État de tournée invalide.');
       const dbLines = await tx.$queryRaw<any[]>`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=${id}`;
       if (data.lignes.length !== dbLines.length) throw new BadRequestException('Toutes les lignes chargées doivent être renseignées une seule fois.');
-      const byId = new Map(dbLines.map((line) => [line.id, line]));
-      const seen = new Set<string>(); let caTheorique = 0;
+      const byId = new Map(dbLines.map((line) => [line.id, line])); const seen = new Set<string>(); let caTheorique = 0;
       for (const input of data.lignes) {
         if (seen.has(input.lineId)) throw new BadRequestException('Une ligne de retour est renseignée plusieurs fois.');
         seen.add(input.lineId);
-        const line = byId.get(input.lineId);
-        if (!line) throw new BadRequestException('Une ligne de retour est invalide.');
+        const line = byId.get(input.lineId); if (!line) throw new BadRequestException('Une ligne de retour est invalide.');
         this.assertNonNegativeInt(input.quantiteRetourPleins, 'Retour pleins'); this.assertNonNegativeInt(input.quantiteRetourVides, 'Retour vides');
         const retourPleins = Number(input.quantiteRetourPleins); const retourVides = Number(input.quantiteRetourVides); const chargee = Number(line.quantiteChargee);
         if (retourPleins > chargee) throw new BadRequestException('Le retour plein ne peut pas dépasser la quantité chargée.');
@@ -184,26 +175,22 @@ export class TourneeWorkflowService {
         await tx.$executeRaw`UPDATE "TourneeWorkflowLine" SET "quantiteRetourPleins"=${retourPleins}, "quantiteRetourVides"=${retourVides}, "quantiteVendueTheorique"=${vendue}, "caTheorique"=${ca} WHERE id=${line.id}`;
       }
       const cash = Number(data.cashReel ?? 0); const om = Number(data.orangeMoneyReel ?? 0); const momo = Number(data.mtnMomoReel ?? 0); const total = cash + om + momo; const ecart = total - caTheorique;
-      await tx.$executeRaw`UPDATE "TourneeWorkflow" SET "cashReel"=${cash}, "orangeMoneyReel"=${om}, "mtnMomoReel"=${momo}, "montantEncaisseReel"=${total}, "caTheorique"=${caTheorique}, "ecartCaisse"=${ecart}, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${id} AND "statut"=${EN_COURS}`;
-      return this.get(tenantId, depotId, id);
+      const changed = await tx.$executeRaw`UPDATE "TourneeWorkflow" SET "cashReel"=${cash}, "orangeMoneyReel"=${om}, "mtnMomoReel"=${momo}, "montantEncaisseReel"=${total}, "caTheorique"=${caTheorique}, "ecartCaisse"=${ecart}, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} AND "statut"=${EN_COURS}`;
+      if (changed !== 1) throw new ConflictException('La tournée a changé d’état pendant le rapprochement.');
+      return { id, caTheorique, montantEncaisseReel: total, ecartCaisse: ecart };
     });
   }
 
   async close(tenantId: string, depotId: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
       const rows = await tx.$queryRaw<any[]>`SELECT * FROM "TourneeWorkflow" WHERE id=${id} AND "tenantId"=${tenantId} AND "depotId"=${depotId} FOR UPDATE`;
-      const workflow = rows[0];
-      if (!workflow) throw new NotFoundException('Tournée introuvable.');
+      const workflow = rows[0]; if (!workflow) throw new NotFoundException('Tournée introuvable.');
       if (workflow.statut !== EN_COURS) throw new ConflictException('La tournée doit être EN_COURS avant clôture.');
-      const lines = await tx.$queryRaw<any[]>`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId"`;
-      const tourLines = lines.filter((line) => true);
-      const scoped = tourLines.filter((line) => true);
-      const workflowLines = await tx.$queryRaw<any[]>`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=${id}`;
-      if (!workflowLines.length) throw new BadRequestException('Aucune ligne de chargement.');
-      const unprocessed = workflowLines.filter((line) => Number(line.quantiteRetourPleins) + Number(line.quantiteVendueTheorique) !== Number(line.quantiteChargee));
+      const lines = await tx.$queryRaw<any[]>`SELECT l.*, a."estConsigne" FROM "TourneeWorkflowLine" l JOIN "Article" a ON a.id=l."articleId" WHERE l."workflowId"=${id}`;
+      if (!lines.length) throw new BadRequestException('Aucune ligne de chargement.');
+      const unprocessed = lines.filter((line) => Number(line.quantiteRetourPleins) + Number(line.quantiteVendueTheorique) !== Number(line.quantiteChargee));
       if (unprocessed.length) throw new ConflictException('Enregistrez le retour de toutes les lignes avant la clôture.');
-
-      for (const line of workflowLines) {
+      for (const line of lines) {
         const retourPleins = Number(line.quantiteRetourPleins); const retourVides = Number(line.quantiteRetourVides);
         if (retourPleins > 0) {
           const stock = await tx.stock.findFirst({ where: { articleId: line.articleId, depotId }, select: { id: true } });
@@ -212,12 +199,9 @@ export class TourneeWorkflowService {
           await tx.mouvementStock.create({ data: { type: TypeMouvement.ENTREE, quantite: retourPleins, motif: `Réintégration retour tournée ${workflow.reference}`, articleId: line.articleId, depotId, tenantId, tourneeId: workflow.tourneeId } });
         }
         if (line.estConsigne && retourVides > 0) {
-          await tx.$executeRaw`
-            INSERT INTO "DepotConsigneStock" ("id","tenantId","depotId","articleId","quantite") VALUES (${randomUUID()},${tenantId},${depotId},${line.articleId},${retourVides})
-            ON CONFLICT ("depotId","articleId") DO UPDATE SET "quantite"="DepotConsigneStock"."quantite" + EXCLUDED."quantite", "updatedAt"=CURRENT_TIMESTAMP`;
-          }
+          await tx.$executeRaw`INSERT INTO "DepotConsigneStock" ("id","tenantId","depotId","articleId","quantite") VALUES (${randomUUID()},${tenantId},${depotId},${line.articleId},${retourVides}) ON CONFLICT ("depotId","articleId") DO UPDATE SET "quantite"="DepotConsigneStock"."quantite" + EXCLUDED."quantite", "updatedAt"=CURRENT_TIMESTAMP`;
+        }
       }
-
       const ecart = Number(workflow.ecartCaisse);
       if (ecart < 0) {
         const reference = `DTC-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${randomUUID().slice(0,8).toUpperCase()}`;
@@ -227,7 +211,7 @@ export class TourneeWorkflowService {
       if (closed !== 1) throw new ConflictException('La tournée a déjà été clôturée ou modifiée.');
       await tx.tournee.update({ where: { id: workflow.tourneeId }, data: { statut: 'CLOTURE_COMMERCIALE', dateCloture: new Date(), cashRemis: Number(workflow.cashReel), omRemis: Number(workflow.orangeMoneyReel), momoRemis: Number(workflow.mtnMomoReel), ecartStock: Number(workflow.ecartCaisse) } });
       await tx.tricycle.update({ where: { id: workflow.tricycleId }, data: { estLibre: true } });
-      return this.get(tenantId, depotId, id);
+      return { id, statut: CLOTUREE, ecartCaisse: ecart };
     }, { isolationLevel: 'Serializable' });
   }
 
