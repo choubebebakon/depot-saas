@@ -4,6 +4,7 @@ import { PrismaModule } from '../../prisma.module';
 import { DepotBoissonsController } from './depot-boissons.controller';
 import { DepotBoissonsService } from './depot-boissons.service';
 import { SecureDepotBoissonsVenteService } from './secure-vente.service';
+import { ProductionDepotStockService } from './production-stock.service';
 import { VenteConsigneSafetyInterceptor } from './vente-consigne-safety.interceptor';
 import { DepotBoissonsPromotionsController } from './promotions.controller';
 import { DepotBoissonsPromotionsService } from './promotions.service';
@@ -27,8 +28,10 @@ import { AuditModule } from '../../audit/audit.module';
   providers: [
     {
       provide: DepotBoissonsService,
-      useClass: SecureDepotBoissonsVenteService,
+      useClass: ProductionDepotStockService,
     },
+    SecureDepotBoissonsVenteService,
+    ProductionDepotStockService,
     {
       provide: APP_INTERCEPTOR,
       useClass: VenteConsigneSafetyInterceptor,
