@@ -11,7 +11,6 @@ import {
   InternalServerErrorException,
   BadRequestException,
   HttpException,
-  HttpStatus,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -40,36 +39,23 @@ export class AuthController {
     private readonly permissionService: PermissionService,
   ) {}
 
-  // Inscription d'un nouveau dépôt (Public)
   @Public()
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     try {
       return await this.authService.register(registerDto);
     } catch (error: any) {
-      this.logger.error(
-        `Erreur critique lors de l'inscription: ${error.message}`,
-        error.stack,
-      );
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException({
-        message:
-          error.message || 'Erreur interne lors de la création du compte',
-        error: 'Registration Failed',
-      });
+      this.logger.error(`Erreur critique lors de l'inscription: ${error.message}`, error.stack);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException({ message: error.message || 'Erreur interne lors de la création du compte', error: 'Registration Failed' });
     }
   }
 
-  // Connexion existante (Public)
   @Public()
   @Throttle({ default: { limit: 10, ttl: 300000 } })
   @Post('login')
   async login(
-    @Body() body: any,
+    @Body() body: LoginDto,
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -82,24 +68,25 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 jours
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    return {
-      access_token: result.access_token,
-      user: result.user,
-    };
+    return { access_token: result.access_token, user: result.user };
   }
 
-  // Renouvellement du token (Public car utilise le cookie de refresh)
+  /**
+   * Le refresh token est volontairement lu uniquement depuis le cookie
+   * httpOnly. Il ne doit pas être accepté dans le body afin de ne pas exposer
+   * le secret de session aux logs, proxies ou outils de debug HTTP.
+   */
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('refresh')
-  async refresh(@Req() req: any, @Body() body: any) {
-    const refreshToken = req.cookies?.refreshToken || body?.refreshToken;
+  async refresh(@Req() req: any) {
+    const refreshToken = req.cookies?.refreshToken;
     return this.authService.refresh(refreshToken);
   }
 
-  // Deconnexion (Protegee)
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
@@ -113,55 +100,31 @@ export class AuthController {
     return { message: 'Deconnexion reussie' };
   }
 
-  // Profil connecté (Protégé)
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@CurrentUser() user: any) {
     const tenant = await this.authService.getTenantInfo(user.tenantId);
-    return {
-      ...user,
-      metier: tenant?.metier,
-      nomEntreprise: tenant?.nomEntreprise ?? tenant?.name,
-    };
+    return { ...user, metier: tenant?.metier, nomEntreprise: tenant?.nomEntreprise ?? tenant?.name };
   }
 
-  /** Permissions granulaires du user courant pour le métier du tenant. */
   @UseGuards(JwtAuthGuard)
   @Get('permissions')
   async getPermissions(@CurrentUser() user: any) {
     const tenant = await this.authService.getTenantInfo(user.tenantId);
-    const metier = await this.permissionService.resolveMetierSlug(
-      user.tenantId,
-      undefined,
-      tenant?.metier,
-    );
-
+    const metier = await this.permissionService.resolveMetierSlug(user.tenantId, undefined, tenant?.metier);
     if (!metier) {
-      return {
-        fullAccess: false,
-        denySousModules: [],
-        permissions: {},
-        libellePoste: user.role,
-        metier: null,
-      };
+      return { fullAccess: false, denySousModules: [], permissions: {}, libellePoste: user.role, metier: null };
     }
-
-    const result = await this.permissionService.getPermissionsForUser(
-      user.role,
-      metier,
-    );
-
+    const result = await this.permissionService.getPermissionsForUser(user.role, metier);
     return { ...result, metier };
   }
 
-  // Mise à jour du profil utilisateur
   @UseGuards(JwtAuthGuard)
   @Put('me')
   async updateProfile(@CurrentUser() user: any, @Body() updateProfileDto: UpdateProfileDto) {
     return await this.authService.updateProfile(user.userId, updateProfileDto);
   }
 
-  // Upload de photo de profil
   @UseGuards(JwtAuthGuard)
   @Post('avatar')
   @UseInterceptors(
@@ -180,17 +143,14 @@ export class AuthController {
         }
         cb(null, true);
       },
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+      limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
   async uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('Aucun fichier reçu');
-    }
+    if (!file) throw new BadRequestException('Aucun fichier reçu');
     return await this.authService.uploadAvatar(user.userId, file);
   }
 
-  // Changement de mot de passe
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(
@@ -204,21 +164,18 @@ export class AuthController {
     });
   }
 
-  // Activation/Désactivation 2FA
   @UseGuards(JwtAuthGuard)
   @Post('2fa')
   async toggle2FA(@CurrentUser() user: any, @Body() body: { enabled: boolean }) {
     return await this.authService.toggle2FA(user.userId, body.enabled);
   }
 
-  // Récupérer les préférences utilisateur
   @UseGuards(JwtAuthGuard)
   @Get('preferences')
   async getPreferences(@CurrentUser() user: any) {
     return await this.authService.getPreferences(user.userId);
   }
 
-  // Mettre à jour les préférences utilisateur
   @UseGuards(JwtAuthGuard)
   @Put('preferences')
   async updatePreferences(@CurrentUser() user: any, @Body() preferencesDto: PreferencesDto) {
