@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma.module';
 import { DepotBoissonsController } from './depot-boissons.controller';
 import { DepotBoissonsService } from './depot-boissons.service';
+import { SecureDepotBoissonsVenteService } from './secure-vente.service';
 import { DepotBoissonsPromotionsController } from './promotions.controller';
 import { DepotBoissonsPromotionsService } from './promotions.service';
 import { DepotBoissonsTourneesEditController } from './tournees-edit.controller';
@@ -22,7 +23,10 @@ import { AuditModule } from '../../audit/audit.module';
     TourneeWorkflowOptionsController,
   ],
   providers: [
-    DepotBoissonsService,
+    {
+      provide: DepotBoissonsService,
+      useClass: SecureDepotBoissonsVenteService,
+    },
     DepotBoissonsPromotionsService,
     DepotBoissonsTourneesEditService,
     TourneeWorkflowService,
