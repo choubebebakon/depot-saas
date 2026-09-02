@@ -13,181 +13,219 @@ const panierLigneSchema = z.object({
   articleId: z.string().min(1, 'Article requis'),
   designation: z.string().optional(),
   codeBarres: z.string().optional(),
-  quantite: z.coerce.number().min(1, 'Minimum 1'),
-  prixUnitaire: z.coerce.number().min(0, 'Prix invalide'),
-  remise: z.coerce.number().min(0).max(100).default(0),
+  quantite: z.coerce.number().int().min(1, 'Minimum 1'),
+  prixUnitaire: z.coerce.number().finite().min(0, 'Prix invalide'),
+  remise: z.coerce.number().finite().min(0).max(100).default(0),
 });
 
 const venteSchema = z.object({
   clientId: z.string().optional().or(z.literal('')),
   depotId: z.string().optional().or(z.literal('')),
-  modePaiement: z.enum(['CASH', 'ORANGE_MONEY', 'MTN_MOMO', 'CARTE']),
-  remiseGlobale: z.coerce.number().min(0).max(100).default(0),
-  montantRecu: z.coerce.number().min(0).optional().or(z.literal('')),
+  modePaiement: z.enum(['CASH', 'ORANGE_MONEY', 'MTN_MOMO']),
+  remiseGlobale: z.coerce.number().finite().min(0).max(100).default(0),
+  montantRecu: z.coerce.number().finite().min(0).optional().or(z.literal('')),
   panier: z.array(panierLigneSchema).min(1, 'Ajoutez au moins un article au panier'),
 });
 
-export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depotId }) {
+const emptyValues = (depotId) => ({
+  clientId: '',
+  depotId: depotId || '',
+  modePaiement: 'CASH',
+  remiseGlobale: 0,
+  montantRecu: '',
+  panier: [],
+});
+
+export default function VenteBoutiqueForm({ onSuccess, depotId }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
 
-  const { control, handleSubmit, watch, reset, getValues, setValue, formState: { errors } } = useForm({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    getValues,
+    setValue,
+    formState: { errors },
+  } = useForm({
     resolver: zodResolver(venteSchema),
-    defaultValues: {
-      clientId: '',
-      depotId: depotId || '',
-      modePaiement: 'CASH',
-      remiseGlobale: 0,
-      montantRecu: '',
-      panier: [],
-    }
+    defaultValues: emptyValues(depotId),
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'panier' });
-
   const modePaiement = watch('modePaiement');
   const remiseGlobale = Number(watch('remiseGlobale')) || 0;
   const montantRecu = Number(watch('montantRecu')) || 0;
   const panier = watch('panier') || [];
 
   useEffect(() => {
-    reset({
-      clientId: '',
-      depotId: depotId || '',
-      modePaiement: 'CASH',
-      remiseGlobale: 0,
-      montantRecu: '',
-      panier: [],
-    });
+    reset(emptyValues(depotId));
   }, [depotId, reset]);
 
   const fetchClients = async (q) => {
-    const r = await boutiqueApi.getClients({ search: q, limit: 8 });
-    return r.data?.data || r.data || [];
+    const response = await boutiqueApi.getClients({ search: q, limit: 8, depotId });
+    return response.data?.data || response.data || [];
   };
 
   const fetchArticles = async (q) => {
-    const r = await boutiqueApi.getArticles({ search: q, limit: 8 });
-    return r.data?.data || r.data || [];
+    const response = await boutiqueApi.getArticles({ search: q, limit: 8 });
+    return response.data?.data || response.data || [];
   };
 
   const ajouterAuPanier = (article) => {
+    if (!article?.id) return;
+
     const current = getValues('panier') || [];
-    const idx = current.findIndex(p => p.articleId === article.id);
-    if (idx >= 0) {
-      setValue(`panier.${idx}.quantite`, Number(current[idx].quantite) + 1);
-    } else {
-      append({
-        articleId: article.id,
-        designation: article.designation,
-        codeBarres: article.codeBarres,
-        quantite: 1,
-        prixUnitaire: Number(article.prixVente) || 0,
-        remise: 0,
-      });
+    const index = current.findIndex((line) => line.articleId === article.id);
+
+    if (index >= 0) {
+      setValue(
+        `panier.${index}.quantite`,
+        Number(current[index].quantite) + 1,
+        { shouldDirty: true, shouldValidate: true },
+      );
+      return;
     }
+
+    append({
+      articleId: article.id,
+      designation: article.designation,
+      codeBarres: article.codeBarres,
+      quantite: 1,
+      prixUnitaire: Number(article.prixVente) || 0,
+      remise: 0,
+    });
   };
 
-  const sousTotal = panier.reduce((sum, p) => sum + (p.quantite * p.prixUnitaire * (1 - (p.remise || 0) / 100)), 0);
+  const sousTotal = panier.reduce((sum, line) => {
+    const quantity = Number(line.quantite) || 0;
+    const price = Number(line.prixUnitaire) || 0;
+    const remise = Number(line.remise) || 0;
+    return sum + quantity * price * (1 - remise / 100);
+  }, 0);
+
   const remiseMontant = sousTotal * (remiseGlobale / 100);
-  const total = sousTotal - remiseMontant;
-  const monnaie = montantRecu - total;
+  const total = Math.max(0, sousTotal - remiseMontant);
+  const monnaie = Math.max(0, montantRecu - total);
+  const montantInsuffisant = modePaiement === 'CASH' && montantRecu < total;
 
   const mutation = useMutation({
     mutationFn: async (data) => {
+      if (!depotId) {
+        throw new Error('Aucun dépôt actif sélectionné.');
+      }
+
+      if (data.modePaiement === 'CASH' && Number(data.montantRecu) < total) {
+        throw new Error('Le montant reçu est inférieur au total de la vente.');
+      }
+
       const payload = {
-        ...data,
-        depotId: data.depotId || depotId,
-        remiseGlobale,
-        panier: data.panier.map(p => ({
-          articleId: p.articleId,
-          quantite: p.quantite,
-          prix: p.prixUnitaire,
-          remise: p.remise,
+        id: crypto.randomUUID(),
+        depotId,
+        clientId: data.clientId || undefined,
+        modePaiement: data.modePaiement,
+        remiseGlobale: Number(data.remiseGlobale) || 0,
+        panier: data.panier.map((line) => ({
+          articleId: line.articleId,
+          quantite: Number(line.quantite),
+          prix: Number(line.prixUnitaire),
+          remise: Number(line.remise) || 0,
         })),
-        total,
+        total: Math.round(total * 100) / 100,
       };
-      const r = await boutiqueApi.createVente(payload);
-      return r.data;
+
+      const response = await boutiqueApi.createVente(payload);
+      return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (vente) => {
       queryClient.invalidateQueries({ queryKey: ['boutique-ventes'] });
       queryClient.invalidateQueries({ queryKey: ['boutique-stock'] });
       queryClient.invalidateQueries({ queryKey: ['boutique-dashboard'] });
-      notif.success('Vente enregistrée avec succès');
-      reset({
-        clientId: '',
-        depotId: depotId || '',
-        modePaiement: 'CASH',
-        remiseGlobale: 0,
-        montantRecu: '',
-        panier: [],
-      });
-      onSuccess?.();
+      queryClient.invalidateQueries({ queryKey: ['boutique-caisse-statut', depotId] });
+      notif.success(`Vente ${vente?.reference ? `#${vente.reference} ` : ''}enregistrée avec succès`);
+      reset(emptyValues(depotId));
+      onSuccess?.(vente);
     },
-    onError: (err) => {
-      const msg = err.response?.data?.message || err.message || 'Erreur lors de la vente';
-      notif.error(msg);
-    }
+    onError: (error) => {
+      const responseMessage = error.response?.data?.message;
+      const message = Array.isArray(responseMessage)
+        ? responseMessage.join(', ')
+        : responseMessage || error.message || 'Erreur lors de la vente';
+      notif.error(message);
+    },
   });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
         {errors.panier?.message && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.panier.message}</div>
+          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">
+            {errors.panier.message}
+          </div>
         )}
+
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-4">Ajouter un article</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Controller
-              name="article"
-              control={control}
-              render={({ field }) => (
-                <AutocompleteInput
-                  label="Article"
-                  placeholder="Rechercher un article..."
-                  fetchOptions={fetchArticles}
-                  onSelect={(article) => ajouterAuPanier(article)}
-                  displayValue={(article) => article.designation}
-                />
-              )}
+            <AutocompleteInput
+              label="Article"
+              placeholder="Rechercher un article..."
+              fetchOptions={fetchArticles}
+              onSelect={ajouterAuPanier}
+              displayValue={(article) => article.designation}
             />
-            <BarcodeScanner onScan={(code) => {
-              fetchArticles(code).then(articles => {
-                if (articles.length > 0) ajouterAuPanier(articles[0]);
-              });
-            }} />
+            <BarcodeScanner
+              onScan={(code) => {
+                fetchArticles(code).then((articles) => {
+                  if (articles.length > 0) ajouterAuPanier(articles[0]);
+                });
+              }}
+            />
           </div>
         </div>
+
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-4">Panier ({panier.length})</h3>
           {panier.length === 0 ? (
             <p className="text-slate-400 text-center py-8">Le panier est vide</p>
           ) : (
             <div className="space-y-2">
-              {panier.map((item, index) => (
-                <div key={item.id || index} className="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
-                  <div className="flex-1">
-                    <p className="text-white font-semibold text-sm">{item.designation}</p>
-                    <p className="text-slate-400 text-xs">{item.quantite} × {item.prixUnitaire.toLocaleString('fr-FR')} F</p>
+              {panier.map((item, index) => {
+                const quantity = Number(item.quantite) || 0;
+                const price = Number(item.prixUnitaire) || 0;
+                const remise = Number(item.remise) || 0;
+                const lineTotal = quantity * price * (1 - remise / 100);
+
+                return (
+                  <div key={item.id || `${item.articleId}-${index}`} className="flex items-center justify-between bg-slate-700/30 rounded-lg p-3 gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold text-sm truncate">{item.designation}</p>
+                      <p className="text-slate-400 text-xs">
+                        {quantity} × {price.toLocaleString('fr-FR')} F
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="text-white font-mono font-bold">
+                        {lineTotal.toLocaleString('fr-FR')} F
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        className="text-red-400 hover:text-red-300 p-1"
+                        aria-label={`Supprimer ${item.designation || 'l’article'}`}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-white font-mono font-bold">{(item.quantite * item.prixUnitaire * (1 - (item.remise || 0) / 100)).toLocaleString('fr-FR')} F</p>
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="text-red-400 hover:text-red-300 p-1"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
+
       <div className="space-y-4">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-4">Informations</h3>
@@ -200,10 +238,14 @@ export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depo
                   label="Client"
                   placeholder="Rechercher un client..."
                   fetchOptions={fetchClients}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onSelect={(client) => field.onChange(client?.id || '')}
                   displayValue={(client) => client.nom}
                 />
               )}
             />
+
             <Controller
               name="modePaiement"
               control={control}
@@ -213,17 +255,17 @@ export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depo
                   name="modePaiement"
                   type="select"
                   value={field.value}
-                  onChange={(e) => field.onChange(e.target.value)}
+                  onChange={(event) => field.onChange(event.target.value)}
                   options={[
                     { value: 'CASH', label: 'Espèces' },
                     { value: 'ORANGE_MONEY', label: 'Orange Money' },
                     { value: 'MTN_MOMO', label: 'MTN Mobile Money' },
-                    { value: 'CARTE', label: 'Carte bancaire' },
                   ]}
                   error={errors.modePaiement?.message}
                 />
               )}
             />
+
             <Controller
               name="remiseGlobale"
               control={control}
@@ -233,15 +275,17 @@ export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depo
                   name="remiseGlobale"
                   type="number"
                   value={field.value}
-                  onChange={(e) => field.onChange(e.target.value)}
+                  onChange={(event) => field.onChange(event.target.value)}
                   min="0"
                   max="100"
+                  step="0.01"
                   error={errors.remiseGlobale?.message}
                 />
               )}
             />
           </div>
         </div>
+
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-4">Récapitulatif</h3>
           <div className="space-y-2">
@@ -249,16 +293,19 @@ export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depo
               <span>Sous-total</span>
               <span className="font-mono">{sousTotal.toLocaleString('fr-FR')} F</span>
             </div>
+
             {remiseMontant > 0 && (
               <div className="flex justify-between text-green-400">
                 <span>Remise</span>
                 <span className="font-mono">-{remiseMontant.toLocaleString('fr-FR')} F</span>
               </div>
             )}
+
             <div className="flex justify-between text-white font-bold text-lg border-t border-slate-700 pt-2">
               <span>Total</span>
               <span className="font-mono text-cyan-400">{total.toLocaleString('fr-FR')} F</span>
             </div>
+
             {modePaiement === 'CASH' && (
               <>
                 <Controller
@@ -270,29 +317,36 @@ export default function VenteBoutiqueForm({ metier = 'boutique', onSuccess, depo
                       name="montantRecu"
                       type="number"
                       value={field.value}
-                      onChange={(e) => field.onChange(e.target.value)}
+                      onChange={(event) => field.onChange(event.target.value)}
                       min="0"
+                      step="1"
                       error={errors.montantRecu?.message}
                     />
                   )}
                 />
-                {montantRecu > 0 && (
+                {montantRecu > 0 && !montantInsuffisant && (
                   <div className="flex justify-between text-green-400 font-bold">
                     <span>Monnaie à rendre</span>
                     <span className="font-mono">{monnaie.toLocaleString('fr-FR')} F</span>
                   </div>
                 )}
+                {montantInsuffisant && (
+                  <p className="text-red-400 text-xs font-semibold">
+                    Montant reçu insuffisant : il manque {(total - montantRecu).toLocaleString('fr-FR')} F.
+                  </p>
+                )}
               </>
             )}
           </div>
         </div>
+
         <button
           type="button"
-          onClick={handleSubmit(mutation.mutate)}
-          disabled={mutation.isPending || panier.length === 0}
-          className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-600/20"
+          onClick={handleSubmit((data) => mutation.mutate(data))}
+          disabled={mutation.isPending || panier.length === 0 || montantInsuffisant || total <= 0 || !depotId}
+          className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-600/20 transition-colors"
         >
-          {mutation.isPending ? 'Traitement...' : 'Valider la vente'}
+          {mutation.isPending ? 'Traitement sécurisé...' : 'Valider la vente'}
         </button>
       </div>
     </div>
