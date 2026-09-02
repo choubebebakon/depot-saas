@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from '../../prisma.module';
 import { DepotBoissonsController } from './depot-boissons.controller';
 import { DepotBoissonsService } from './depot-boissons.service';
 import { SecureDepotBoissonsVenteService } from './secure-vente.service';
+import { VenteConsigneSafetyInterceptor } from './vente-consigne-safety.interceptor';
 import { DepotBoissonsPromotionsController } from './promotions.controller';
 import { DepotBoissonsPromotionsService } from './promotions.service';
 import { DepotBoissonsTourneesEditController } from './tournees-edit.controller';
@@ -26,6 +28,10 @@ import { AuditModule } from '../../audit/audit.module';
     {
       provide: DepotBoissonsService,
       useClass: SecureDepotBoissonsVenteService,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: VenteConsigneSafetyInterceptor,
     },
     DepotBoissonsPromotionsService,
     DepotBoissonsTourneesEditService,
