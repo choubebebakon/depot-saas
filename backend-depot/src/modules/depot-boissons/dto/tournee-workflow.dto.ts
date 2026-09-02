@@ -1,11 +1,20 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsDateString, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateTourneeWorkflowDto {
-  @IsString()
+  @IsUUID()
   tricycleId!: string;
 
-  @IsString()
+  @IsUUID()
   commercialId!: string;
 
   @IsOptional()
@@ -16,7 +25,7 @@ export class CreateTourneeWorkflowDto {
 export class UpdateTourneeWorkflowDto extends CreateTourneeWorkflowDto {}
 
 export class AddTourneeWorkflowLineDto {
-  @IsString()
+  @IsUUID()
   articleId!: string;
 
   @IsInt()
@@ -30,7 +39,7 @@ export class AddTourneeWorkflowLineDto {
 }
 
 export class TourneeReturnLineDto {
-  @IsString()
+  @IsUUID()
   lineId!: string;
 
   @IsInt()
