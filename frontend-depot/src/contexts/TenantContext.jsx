@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useEffect, useState } from 'react';
 import { fetchTenant } from '../services/tenantService';
 
 export const TenantContext = createContext(null);
