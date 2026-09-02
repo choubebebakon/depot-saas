@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../../prisma.module'; // Chemin relatif
+import { PrismaModule } from '../../prisma.module';
 import { AuditModule } from '../../audit/audit.module';
 import {
   PromotionsService,
@@ -11,6 +11,7 @@ import {
   DepensesService,
   VentesService,
 } from './boutique.service';
+import { ProductionBoutiqueVentesService } from './production-stock.service';
 import { BoutiqueController } from './boutique.controller';
 
 @Module({
@@ -24,7 +25,11 @@ import { BoutiqueController } from './boutique.controller';
     ClientsService,
     FournisseursService,
     DepensesService,
-    VentesService,
+    ProductionBoutiqueVentesService,
+    {
+      provide: VentesService,
+      useExisting: ProductionBoutiqueVentesService,
+    },
   ],
   exports: [
     PromotionsService,
