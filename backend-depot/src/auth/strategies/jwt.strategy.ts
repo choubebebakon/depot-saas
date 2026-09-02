@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PrismaService } from '../../prisma.service';
 
 export interface JwtPayload {
   sub: string; // userId
@@ -20,26 +21,56 @@ export interface AuthenticatedUser {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
+    const jwtSecret = process.env.JWT_SECRET?.trim() || (
+      process.env.NODE_ENV === 'production' ? undefined : 'dev-only-jwt-secret-change-me'
+    );
+
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET est obligatoire en production.');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:
-        process.env.JWT_SECRET || 'depot_saas_secret_super_secure_2026',
+      secretOrKey: jwtSecret,
     });
   }
 
-  async validate(payload: JwtPayload) {
+  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     if (!payload.sub || !payload.tenantId) {
       throw new UnauthorizedException('Token invalide');
     }
-    // L'objet retourné est injecté dans req.user partout
+
+    // Les claims role/tenant/depot d'un ancien token ne doivent pas conserver
+    // des privilèges après une modification de compte. La base est l'autorité.
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: payload.sub,
+        tenantId: payload.tenantId,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        tenantId: true,
+        depotId: true,
+        tenant: {
+          select: { estActif: true },
+        },
+      },
+    });
+
+    if (!user || !user.tenant.estActif) {
+      throw new UnauthorizedException('Session invalide ou compte indisponible.');
+    }
+
     return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      tenantId: payload.tenantId,
-      depotId: payload.depotId ?? null,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+      depotId: user.depotId ?? null,
     };
   }
 }
