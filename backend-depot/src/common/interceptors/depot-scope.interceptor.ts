@@ -2,7 +2,6 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-  NestInterceptor,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Observable, Subscription } from 'rxjs';
@@ -19,12 +18,20 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-const MULTI_DEPOT_ROLES = new Set(['PATRON', 'GERANT']);
+/**
+ * Le Patron peut sélectionner n'importe quel dépôt actif de son tenant.
+ *
+ * Pour un Gérant, user.depotId constitue actuellement l'unique périmètre
+ * explicite disponible dans le modèle. Tant qu'un modèle de membership
+ * User↔Depot n'existe pas, autoriser un Gérant à choisir arbitrairement un
+ * dépôt du tenant créerait une élévation de privilèges inter-dépôts.
+ */
+const MULTI_DEPOT_ROLES = new Set(['PATRON']);
 
 function normalizeDepotId(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
-  if (!normalized || normalized === 'all' || normalized === 'null' || normalized === 'undefined') return null;
+  if (!normalized || ['all', 'null', 'undefined'].includes(normalized)) return null;
   return normalized;
 }
 
@@ -94,7 +101,16 @@ export class DepotScopeInterceptor implements NestInterceptor {
     const headerDepotId = Array.isArray(request.headers['x-depot-id'])
       ? request.headers['x-depot-id'][0]
       : request.headers['x-depot-id'];
-    return normalizeDepotId(headerDepotId ?? request.query.depotId);
+    const header = normalizeDepotId(headerDepotId);
+    const query = normalizeDepotId(request.query.depotId);
+    const body = normalizeDepotId((request.body as Record<string, unknown> | undefined)?.depotId);
+
+    const explicit = [header, query, body].filter((value): value is string => Boolean(value));
+    if (new Set(explicit).size > 1) {
+      throw new ForbiddenException('Les identifiants de dépôt de la requête sont incohérents.');
+    }
+
+    return header ?? query ?? body;
   }
 
   private applyAuthoritativeDepotScope(request: AuthenticatedRequest, depotId: string | null): void {
@@ -167,29 +183,48 @@ export class DepotScopeInterceptor implements NestInterceptor {
     user: AuthenticatedUser,
     requestedDepotId: string | null,
   ): Promise<string | null> {
+    if (!user.tenantId) {
+      throw new ForbiddenException('Contexte tenant invalide.');
+    }
+
     if (!MULTI_DEPOT_ROLES.has(user.role)) {
       if (!user.depotId) {
-        if (requestedDepotId) throw new ForbiddenException('Cet utilisateur n’est affecté à aucun dépôt.');
+        if (requestedDepotId) {
+          throw new ForbiddenException('Cet utilisateur n’est affecté à aucun dépôt.');
+        }
         return null;
       }
+
       if (requestedDepotId && requestedDepotId !== user.depotId) {
         throw new ForbiddenException('Accès refusé à ce dépôt.');
       }
+
+      await this.assertActiveDepotOwnership(user.tenantId, user.depotId);
       return user.depotId;
     }
 
-    if (!requestedDepotId) return user.depotId ?? null;
+    if (!requestedDepotId) {
+      if (!user.depotId) return null;
+      await this.assertActiveDepotOwnership(user.tenantId, user.depotId);
+      return user.depotId;
+    }
 
-    const depot = await this.depotScope.run(
-      { tenantId: user.tenantId, depotId: null, role: user.role },
-      () =>
-        this.prisma.depot.findFirst({
-          where: { id: requestedDepotId, tenantId: user.tenantId, isArchived: false },
-          select: { id: true },
-        }),
-    );
+    await this.assertActiveDepotOwnership(user.tenantId, requestedDepotId);
+    return requestedDepotId;
+  }
 
-    if (!depot) throw new ForbiddenException('Accès refusé à ce dépôt.');
-    return depot.id;
+  private async assertActiveDepotOwnership(tenantId: string, depotId: string): Promise<void> {
+    const depot = await this.prisma.depot.findFirst({
+      where: {
+        id: depotId,
+        tenantId,
+        isArchived: false,
+      },
+      select: { id: true },
+    });
+
+    if (!depot) {
+      throw new ForbiddenException('Accès refusé à ce dépôt.');
+    }
   }
 }
