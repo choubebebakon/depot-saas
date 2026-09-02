@@ -1,6 +1,7 @@
 import { ExecutionContext, ForbiddenException, Injectable, NestInterceptor } from '@nestjs/common';
 import { Request } from 'express';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { PrismaService } from '../../prisma.service';
 import { AuthenticatedUser } from '../../auth/strategies/jwt.strategy';
 
@@ -10,9 +11,9 @@ interface ScopedRequest extends Request {
 }
 
 /**
- * Les routes de tournées legacy doivent utiliser exactement le même scope que
- * le reste de l'API. Le nouveau workflow /tournee-workflow est déjà protégé
- * par DepotScopeInterceptor et son propre controller/service.
+ * Les routes de tournées legacy utilisent exactement le même scope que le
+ * reste de l'API. Le nouveau workflow /tournee-workflow est déjà protégé par
+ * DepotScopeInterceptor et son propre controller/service.
  */
 function routePath(request: Request): string {
   return (request.path || request.originalUrl || '').split('?')[0];
@@ -44,22 +45,14 @@ export class TourneeScopeInterceptor implements NestInterceptor {
 
     // Ne relit plus X-Depot-Id / query.depotId et ne résout plus un dépôt à
     // partir du rôle. DepotScopeInterceptor a déjà effectué cette décision
-    // après authentification et a vérifié tenant + dépôt actif.
+    // après authentification et vérifié tenant + dépôt actif.
     this.forceAuthoritativeScope(request, scope.tenantId, scope.depotId);
 
-    return new Observable<unknown>((observer) => {
-      void (async () => {
-        if (!isTricycleRoute(request)) {
-          await this.assertTourneeTarget(request, scope.tenantId, scope.depotId);
-        }
-        const subscription = next.handle().subscribe({
-          next: (value) => observer.next(value),
-          error: (error) => observer.error(error),
-          complete: () => observer.complete(),
-        });
-        return () => subscription.unsubscribe();
-      })().catch((error) => observer.error(error));
-    });
+    const targetCheck = isTricycleRoute(request)
+      ? Promise.resolve()
+      : this.assertTourneeTarget(request, scope.tenantId, scope.depotId);
+
+    return from(targetCheck).pipe(switchMap(() => next.handle()));
   }
 
   private forceAuthoritativeScope(request: ScopedRequest, tenantId: string, depotId: string): void {
