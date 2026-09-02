@@ -6,6 +6,7 @@ import { roleLabel, normalizeMetierSlug } from '../shared/permissions/matrix';
 import { useRealtimeSync } from '../shared/realtime/useRealtimeSync';
 
 const AuthContext = createContext(null);
+const ACTIVE_DEPOT_STORAGE_KEY = 'depot_actif_id';
 
 function loadStoredUser() {
     const token = localStorage.getItem('depot_token');
@@ -33,12 +34,32 @@ function loadStoredUser() {
 function RealtimeSessionBridge() {
     const { user, tenantId, isAuthenticated } = useAuth();
     const queryClient = useQueryClient();
+    const [activeDepotId, setActiveDepotId] = useState(
+        () => localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY) || user?.depotId || null,
+    );
     const token = isAuthenticated ? localStorage.getItem('depot_token') : null;
+
+    useEffect(() => {
+        const syncActiveDepot = () => {
+            setActiveDepotId(
+                localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY) || user?.depotId || null,
+            );
+        };
+
+        window.addEventListener('gestock:depot-changed', syncActiveDepot);
+        window.addEventListener('storage', syncActiveDepot);
+        syncActiveDepot();
+
+        return () => {
+            window.removeEventListener('gestock:depot-changed', syncActiveDepot);
+            window.removeEventListener('storage', syncActiveDepot);
+        };
+    }, [user?.depotId]);
 
     useRealtimeSync({
         token,
         tenantId,
-        depotId: user?.depotId || null,
+        depotId: activeDepotId,
         queryClient,
         enabled: isAuthenticated,
     });
@@ -105,7 +126,16 @@ export function AuthProvider({ children }) {
             const token = localStorage.getItem('depot_token');
             if (token) {
                 try {
-                    await refreshUser();
+                    const refreshed = await refreshUser();
+                    if (!refreshed) {
+                        localStorage.removeItem('depot_token');
+                        localStorage.removeItem('depot_user');
+                        localStorage.removeItem('gestock_metier');
+                        delete api.defaults.headers.common.Authorization;
+                        setUser(null);
+                        setPermissionsState(null);
+                        setLibellePoste(null);
+                    }
                 } catch (error) {
                     console.error('[AuthContext] Session expirée ou invalide au démarrage:', error);
                     localStorage.removeItem('depot_token');
@@ -156,6 +186,7 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('depot_token');
             localStorage.removeItem('depot_user');
             localStorage.removeItem('gestock_metier');
+            localStorage.removeItem(ACTIVE_DEPOT_STORAGE_KEY);
             delete api.defaults.headers.common.Authorization;
             setUser(null);
             setPermissionsState(null);
