@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { fetchTenant } from '../services/tenantService';
 
 export const TenantContext = createContext(null);
@@ -8,23 +8,36 @@ const ACTIVE_DEPOT_STORAGE_KEY = 'depot_actif_id';
 function normalizeDepotId(value) {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
-  return normalized && normalized !== 'all' && normalized !== 'null' && normalized !== 'undefined'
+  return normalized && !['all', 'null', 'undefined'].includes(normalized)
     ? normalized
     : null;
 }
 
-function resolveInitialDepot(depots, currentDepotId) {
+function getStoredRole() {
+  try {
+    const raw = localStorage.getItem('depot_user');
+    return raw ? JSON.parse(raw)?.role ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveInitialDepot(depots, currentDepotId, role) {
   if (!Array.isArray(depots) || depots.length === 0) return null;
+
+  // Seul le Patron dispose actuellement d'un droit explicite de sélection
+  // inter-dépôts. Le backend reste l'autorité finale et revérifie le dépôt.
+  if (role === 'PATRON') {
+    const savedDepotId = normalizeDepotId(localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY));
+    if (savedDepotId) {
+      const savedDepot = depots.find((depot) => depot.id === savedDepotId);
+      if (savedDepot) return savedDepot;
+    }
+  }
 
   const jwtDepotId = normalizeDepotId(currentDepotId);
   if (jwtDepotId) {
     return depots.find((depot) => depot.id === jwtDepotId) ?? null;
-  }
-
-  const savedDepotId = normalizeDepotId(localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY));
-  if (savedDepotId) {
-    const savedDepot = depots.find((depot) => depot.id === savedDepotId);
-    if (savedDepot) return savedDepot;
   }
 
   return depots[0];
@@ -50,21 +63,20 @@ export function TenantProvider({ children }) {
 
   useEffect(() => {
     let mounted = true;
+    const role = getStoredRole();
 
     fetchTenant()
       .then((data) => {
         if (!mounted) return;
 
         const nextDepots = Array.isArray(data?.depots) ? data.depots : [];
-        const nextDepot = resolveInitialDepot(nextDepots, data?.currentDepotId);
+        const nextDepot = resolveInitialDepot(nextDepots, data?.currentDepotId, role);
 
         setTenant(data?.tenant ?? null);
         setDepots(nextDepots);
         setCurrentDepotState(nextDepot);
         setPlan(data?.plan ?? 'free');
 
-        // Un employé est verrouillé sur le dépôt porté par le JWT ; pour un
-        // manager multi-dépôts, on conserve le dépôt actif choisi dans l'UI.
         if (nextDepot?.id) {
           localStorage.setItem(ACTIVE_DEPOT_STORAGE_KEY, nextDepot.id);
         } else {
@@ -85,8 +97,14 @@ export function TenantProvider({ children }) {
 
   const switchDepot = useCallback((depotId) => {
     const normalizedDepotId = normalizeDepotId(depotId);
-    const depot = depots.find((item) => item.id === normalizedDepotId);
+    const role = getStoredRole();
 
+    if (role !== 'PATRON') {
+      console.warn('[TenantContext] Changement de dépôt refusé pour ce rôle.');
+      return;
+    }
+
+    const depot = depots.find((item) => item.id === normalizedDepotId);
     if (!depot) {
       console.warn(`[TenantContext] Depot "${depotId}" not found in authenticated tenant.`);
       return;
