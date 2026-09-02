@@ -59,52 +59,36 @@ export class VentesController {
     @CurrentUser() user: any,
     @Req() req: any,
   ) {
-    try {
-      const { tenantId: _clientTenantId, depotId: _clientDepotId, ...saleData } =
-        createVenteDto as CreateVenteDto & {
-          tenantId?: string;
-          depotId?: string;
-        };
+    const { tenantId: _clientTenantId, depotId: _clientDepotId, ...saleData } =
+      createVenteDto as CreateVenteDto & {
+        tenantId?: string;
+        depotId?: string;
+      };
 
-      return await this.ventesService.createVente(
-        {
-          ...saleData,
-          tenantId: this.getTenantId(req),
-          depotId: this.getDepotId(req),
-        },
-        user,
-      );
-    } catch (error) {
-      console.error('Erreur lors de la création de la vente:', error);
-      throw error;
-    }
+    return await this.ventesService.createVente(
+      {
+        ...saleData,
+        tenantId: this.getTenantId(req),
+        depotId: this.getDepotId(req),
+      },
+      user,
+    );
   }
 
   @Get('stats')
   getStats(@Req() req: any) {
-    return this.ventesService.getStats(
-      this.getTenantId(req),
-      this.getDepotId(req),
-    );
+    return this.ventesService.getStats(this.getTenantId(req), this.getDepotId(req));
   }
 
   @Get('validations/en-attente')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
   findEnAttenteValidation(@Req() req: any) {
-    return this.ventesService.findEnAttenteValidation(
-      this.getTenantId(req),
-      this.getDepotId(req),
-    );
+    return this.ventesService.findEnAttenteValidation(this.getTenantId(req), this.getDepotId(req));
   }
 
-  // Must stay before @Get(':id') so the literal "caisse" path is never
-  // interpreted as a vente identifier.
   @Get('caisse')
   async getCaisse(@Req() req: any) {
-    return this.ventesService.getCaisse(
-      this.getTenantId(req),
-      this.getDepotId(req),
-    );
+    return this.ventesService.getCaisse(this.getTenantId(req), this.getDepotId(req));
   }
 
   @Get()
@@ -125,11 +109,7 @@ export class VentesController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: any) {
-    return this.ventesService.findOne(
-      id,
-      this.getTenantId(req),
-      this.getDepotId(req),
-    );
+    return this.ventesService.findOne(id, this.getTenantId(req), this.getDepotId(req));
   }
 
   @Patch(':id/valider-sortie')
@@ -140,20 +120,12 @@ export class VentesController {
     @CurrentUser() user: any,
     @Req() req: any,
   ) {
-    try {
-      return await this.ventesService.validerSortieVente(
-        id,
-        this.getTenantId(req),
-        this.getDepotId(req),
-        user,
-      );
-    } catch (error) {
-      console.error(
-        `Erreur lors de la validation sortie (Vente ID: ${id}):`,
-        error,
-      );
-      throw error;
-    }
+    return await this.ventesService.validerSortieVente(
+      id,
+      this.getTenantId(req),
+      this.getDepotId(req),
+      user,
+    );
   }
 
   @Patch(':id/annuler')
@@ -180,6 +152,11 @@ export class VentesController {
     @Body() dto: UpdateVenteDto,
     @Req() req: any,
   ) {
-    return this.ventesService.update(this.getTenantId(req), id, dto);
+    return this.ventesService.update(
+      this.getTenantId(req),
+      this.getDepotId(req),
+      id,
+      dto,
+    );
   }
 }
