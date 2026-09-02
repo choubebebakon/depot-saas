@@ -98,6 +98,8 @@ export class ProductionDepotStockService extends SecureDepotBoissonsVenteService
       motif,
       ipAddress: actor.ip,
       userAgent: actor.userAgent,
+    }).catch((error) => {
+      console.error('[Audit] Échec log ENTREE_STOCK:', error);
     });
     return mouvement;
   }
@@ -145,6 +147,8 @@ export class ProductionDepotStockService extends SecureDepotBoissonsVenteService
       motif,
       ipAddress: actor.ip,
       userAgent: actor.userAgent,
+    }).catch((error) => {
+      console.error('[Audit] Échec log SORTIE_STOCK:', error);
     });
     return mouvement;
   }
@@ -235,6 +239,8 @@ export class ProductionDepotStockService extends SecureDepotBoissonsVenteService
       motif: motif || undefined,
       ipAddress: actor.ip,
       userAgent: actor.userAgent,
+    }).catch((error) => {
+      console.error('[Audit] Échec log TRANSFERT_CREE:', error);
     });
     return result.transfert;
   }
