@@ -2,16 +2,27 @@ import { useEffect } from 'react';
 import { connectRealtime, disconnectRealtime } from './realtimeClient';
 
 const RESOURCE_QUERY_ALIASES = {
-  stock: ['stock', 'stocks'], stocks: ['stock', 'stocks'],
-  vente: ['vente', 'ventes'], ventes: ['vente', 'ventes'],
-  caisse: ['caisse', 'caisses'],
-  client: ['client', 'clients'], clients: ['client', 'clients'],
-  fournisseur: ['fournisseur', 'fournisseurs'], fournisseurs: ['fournisseur', 'fournisseurs'],
-  depense: ['depense', 'depenses'], depenses: ['depense', 'depenses'],
-  promotion: ['promotion', 'promotions'], promotions: ['promotion', 'promotions'],
-  tournee: ['tournee', 'tournees'], tournees: ['tournee', 'tournees'],
-  consigne: ['consigne', 'consignes'], consignes: ['consigne', 'consignes'],
-  categorie: ['categorie', 'categories'], categories: ['categorie', 'categories'],
+  stock: ['stock', 'stocks', 'article', 'articles'],
+  stocks: ['stock', 'stocks', 'article', 'articles'],
+  article: ['article', 'articles', 'stock', 'stocks'],
+  articles: ['article', 'articles', 'stock', 'stocks'],
+  vente: ['vente', 'ventes', 'caisse', 'caisses', 'stock', 'stocks', 'article', 'articles', 'dashboard'],
+  ventes: ['vente', 'ventes', 'caisse', 'caisses', 'stock', 'stocks', 'article', 'articles', 'dashboard'],
+  caisse: ['caisse', 'caisses', 'vente', 'ventes', 'dashboard'],
+  client: ['client', 'clients'],
+  clients: ['client', 'clients'],
+  fournisseur: ['fournisseur', 'fournisseurs'],
+  fournisseurs: ['fournisseur', 'fournisseurs'],
+  depense: ['depense', 'depenses', 'caisse', 'caisses', 'dashboard'],
+  depenses: ['depense', 'depenses', 'caisse', 'caisses', 'dashboard'],
+  promotion: ['promotion', 'promotions', 'article', 'articles'],
+  promotions: ['promotion', 'promotions', 'article', 'articles'],
+  tournee: ['tournee', 'tournees', 'stock', 'stocks'],
+  tournees: ['tournee', 'tournees', 'stock', 'stocks'],
+  consigne: ['consigne', 'consignes', 'stock', 'stocks'],
+  consignes: ['consigne', 'consignes', 'stock', 'stocks'],
+  categorie: ['categorie', 'categories', 'article', 'articles'],
+  categories: ['categorie', 'categories', 'article', 'articles'],
 };
 
 function resourceMatches(queryKey, aliases) {
@@ -26,7 +37,7 @@ export function useRealtimeSync({ token, tenantId = null, depotId = null, queryC
   useEffect(() => {
     if (!enabled || !token || !queryClient) return undefined;
 
-    const socket = connectRealtime({
+    connectRealtime({
       token,
       depotId,
       onStatus,
@@ -44,10 +55,7 @@ export function useRealtimeSync({ token, tenantId = null, depotId = null, queryC
       },
     });
 
-    return () => {
-      // Le singleton reste actif entre les changements de page.
-      void socket;
-    };
+    return undefined;
   }, [depotId, enabled, onStatus, queryClient, tenantId, token]);
 
   return { disconnectRealtime };
