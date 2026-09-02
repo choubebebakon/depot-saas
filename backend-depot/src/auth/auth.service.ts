@@ -27,22 +27,24 @@ export class AuthService {
     private readonly auditService: AuditService,
   ) {}
 
+  private getRefreshSecret(): string {
+    const secret = process.env.JWT_REFRESH_SECRET?.trim() || (
+      process.env.NODE_ENV === 'production'
+        ? undefined
+        : 'dev-only-refresh-secret-change-me'
+    );
+    if (!secret) {
+      throw new Error('JWT_REFRESH_SECRET est obligatoire en production.');
+    }
+    return secret;
+  }
+
   async register(dto: any) {
     const { nomEntreprise, email, password, metier } = dto;
-
-    if (!dto.acceptTerms) {
-      throw new BadRequestException('Acceptation des CGU obligatoire');
-    }
-
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-    if (existingUser) {
-      throw new BadRequestException('Un compte avec cet email existe déjà.');
-    }
-
+    if (!dto.acceptTerms) throw new BadRequestException('Acceptation des CGU obligatoire');
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    if (existingUser) throw new BadRequestException('Un compte avec cet email existe déjà.');
     const hashedPassword = await bcrypt.hash(password, 12);
-
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -56,234 +58,97 @@ export class AuthService {
               statutAbonnement: StatutAbonnement.TRIAL,
               planType: 'FREE',
               metier: metier || 'DEPOT_BOISSONS',
-              depots: {
-                create: {
-                  nom: 'Depot Principal',
-                  adresse: 'A renseigner',
-                  emplacement: 'Localisation par defaut',
-                },
-              },
+              depots: { create: { nom: 'Depot Principal', adresse: 'A renseigner', emplacement: 'Localisation par defaut' } },
             },
           },
         },
-        include: {
-          tenant: true,
-        },
+        include: { tenant: true },
       });
-
-      this.emailService
-        .sendWelcomeEmail(user.email, nomEntreprise)
-        .catch((err) => {
-          console.error('Erreur envoi email bienvenue:', err.message);
-        });
-
-      return {
-        message: 'Compte créé avec succès',
-        tenantId: user.tenantId,
-        email: user.email,
-        metier: user.tenant.metier,
-      };
+      this.emailService.sendWelcomeEmail(user.email, nomEntreprise).catch((err) => {
+        console.error('Erreur envoi email bienvenue:', err.message);
+      });
+      return { message: 'Compte créé avec succès', tenantId: user.tenantId, email: user.email, metier: user.tenant.metier };
     });
   }
 
   async login(email: string, password: string, meta?: RequestMeta) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: { tenant: true },
-    });
-
+    const user = await this.prisma.user.findUnique({ where: { email }, include: { tenant: true } });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      // Limite assumée : si l'email n'existe pas du tout, on ne peut pas
-      // journaliser (JournalAudit.tenantId est obligatoire — pas de tenant
-      // à qui rattacher la tentative). On journalise uniquement l'échec
-      // quand le compte existe (email correct, mot de passe incorrect) :
-      // c'est le cas où le tenant est connu ET où le signal est le plus
-      // utile pour le Patron (tentative de piratage d'un compte réel).
       if (user) {
-        await this.auditService
-          .logEvent({
-            tenantId: user.tenantId,
-            depotId: user.depotId ?? null,
-            actorUserId: user.id,
-            actorEmail: user.email,
-            actorRole: user.role,
-            action: AUDIT_ACTIONS.ECHEC_CONNEXION,
-            severite: AuditSeverite.ATTENTION,
-            targetType: 'User',
-            targetId: user.id,
-            reference: user.email,
-            description: `Échec de connexion pour ${user.email} — mot de passe incorrect`,
-            ipAddress: meta?.ip ?? null,
-            userAgent: meta?.userAgent ?? null,
-          })
-          .catch((err) => console.error('[Audit] Échec log ECHEC_CONNEXION:', err));
+        await this.auditService.logEvent({
+          tenantId: user.tenantId, depotId: user.depotId ?? null, actorUserId: user.id,
+          actorEmail: user.email, actorRole: user.role, action: AUDIT_ACTIONS.ECHEC_CONNEXION,
+          severite: AuditSeverite.ATTENTION, targetType: 'User', targetId: user.id,
+          reference: user.email, description: `Échec de connexion pour ${user.email} — mot de passe incorrect`,
+          ipAddress: meta?.ip ?? null, userAgent: meta?.userAgent ?? null,
+        }).catch((err) => console.error('[Audit] Échec log ECHEC_CONNEXION:', err));
       }
       throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
-
     if (!user.tenant.estActif) {
-      await this.auditService
-        .logEvent({
-          tenantId: user.tenantId,
-          depotId: user.depotId ?? null,
-          actorUserId: user.id,
-          actorEmail: user.email,
-          actorRole: user.role,
-          action: AUDIT_ACTIONS.ECHEC_CONNEXION,
-          severite: AuditSeverite.ATTENTION,
-          targetType: 'User',
-          targetId: user.id,
-          reference: user.email,
-          description: `Échec de connexion pour ${user.email} — compte suspendu`,
-          ipAddress: meta?.ip ?? null,
-          userAgent: meta?.userAgent ?? null,
-        })
-        .catch((err) => console.error('[Audit] Échec log ECHEC_CONNEXION:', err));
-      throw new UnauthorizedException(
-        'Compte suspendu. Contactez votre administrateur.',
-      );
+      await this.auditService.logEvent({
+        tenantId: user.tenantId, depotId: user.depotId ?? null, actorUserId: user.id,
+        actorEmail: user.email, actorRole: user.role, action: AUDIT_ACTIONS.ECHEC_CONNEXION,
+        severite: AuditSeverite.ATTENTION, targetType: 'User', targetId: user.id,
+        reference: user.email, description: `Échec de connexion pour ${user.email} — compte suspendu`,
+        ipAddress: meta?.ip ?? null, userAgent: meta?.userAgent ?? null,
+      }).catch((err) => console.error('[Audit] Échec log ECHEC_CONNEXION:', err));
+      throw new UnauthorizedException('Compte suspendu. Contactez votre administrateur.');
     }
-
     const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      tenantId: user.tenantId,
+      sub: user.id, email: user.email, role: user.role, tenantId: user.tenantId,
       depotId: user.depotId ?? undefined,
     };
-
     const access_token = this.jwtService.sign(payload);
-    const refresh_token = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET || 'refresh_secret_secure_2026',
-      expiresIn: '30d',
-    });
-
+    const refresh_token = this.jwtService.sign(payload, { secret: this.getRefreshSecret(), expiresIn: '30d' });
     const refreshTokenHash = await argon2.hash(refresh_token);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshTokenHash },
-    });
-
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId: user.id },
-    });
-
+    await this.prisma.user.update({ where: { id: user.id }, data: { refreshTokenHash } });
+    await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
     const randomToken = randomBytes(32).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
-    await this.prisma.refreshToken.create({
-      data: {
-        token: randomToken,
-        userId: user.id,
-        expiresAt,
-      },
-    });
-
-    await this.auditService
-      .logEvent({
-        tenantId: user.tenantId,
-        depotId: user.depotId ?? null,
-        actorUserId: user.id,
-        actorEmail: user.email,
-        actorRole: user.role,
-        action: AUDIT_ACTIONS.CONNEXION,
-        severite: AuditSeverite.INFO,
-        targetType: 'User',
-        targetId: user.id,
-        reference: user.email,
-        description: `Connexion de ${user.email}`,
-        ipAddress: meta?.ip ?? null,
-        userAgent: meta?.userAgent ?? null,
-      })
-      .catch((err) => console.error('[Audit] Échec log CONNEXION:', err));
-
+    await this.prisma.refreshToken.create({ data: { token: randomToken, userId: user.id, expiresAt } });
+    await this.auditService.logEvent({
+      tenantId: user.tenantId, depotId: user.depotId ?? null, actorUserId: user.id,
+      actorEmail: user.email, actorRole: user.role, action: AUDIT_ACTIONS.CONNEXION,
+      severite: AuditSeverite.INFO, targetType: 'User', targetId: user.id, reference: user.email,
+      description: `Connexion de ${user.email}`, ipAddress: meta?.ip ?? null, userAgent: meta?.userAgent ?? null,
+    }).catch((err) => console.error('[Audit] Échec log CONNEXION:', err));
     return {
-      access_token,
-      refresh_token,
+      access_token, refresh_token,
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        tenantId: user.tenantId,
-        depotId: user.depotId ?? null,
-        nomEntreprise: user.tenant.nomEntreprise ?? user.tenant.name,
-        metier: user.tenant.metier,
-        statutAbonnement: user.tenant.statutAbonnement,
-        isSuperAdmin: user.isSuperAdmin,
+        id: user.id, email: user.email, role: user.role, tenantId: user.tenantId,
+        depotId: user.depotId ?? null, nomEntreprise: user.tenant.nomEntreprise ?? user.tenant.name,
+        metier: user.tenant.metier, statutAbonnement: user.tenant.statutAbonnement, isSuperAdmin: user.isSuperAdmin,
       },
     };
   }
 
   async getTenantInfo(tenantId: string) {
-    return this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: {
-        metier: true,
-        nomEntreprise: true,
-        name: true,
-        statutAbonnement: true,
-      },
-    });
+    return this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { metier: true, nomEntreprise: true, name: true, statutAbonnement: true } });
   }
 
   async logout(userId: string, meta?: RequestMeta) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshTokenHash: null },
-    });
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId },
-    });
-
+    await this.prisma.user.update({ where: { id: userId }, data: { refreshTokenHash: null } });
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
     if (user) {
-      await this.auditService
-        .logEvent({
-          tenantId: user.tenantId,
-          depotId: user.depotId ?? null,
-          actorUserId: user.id,
-          actorEmail: user.email,
-          actorRole: user.role,
-          action: AUDIT_ACTIONS.DECONNEXION,
-          severite: AuditSeverite.INFO,
-          targetType: 'User',
-          targetId: user.id,
-          reference: user.email,
-          description: `Déconnexion de ${user.email}`,
-          ipAddress: meta?.ip ?? null,
-          userAgent: meta?.userAgent ?? null,
-        })
-        .catch((err) => console.error('[Audit] Échec log DECONNEXION:', err));
+      await this.auditService.logEvent({
+        tenantId: user.tenantId, depotId: user.depotId ?? null, actorUserId: user.id,
+        actorEmail: user.email, actorRole: user.role, action: AUDIT_ACTIONS.DECONNEXION,
+        severite: AuditSeverite.INFO, targetType: 'User', targetId: user.id, reference: user.email,
+        description: `Déconnexion de ${user.email}`, ipAddress: meta?.ip ?? null, userAgent: meta?.userAgent ?? null,
+      }).catch((err) => console.error('[Audit] Échec log DECONNEXION:', err));
     }
   }
 
   async validateRefreshTokenFromCookie(token: string) {
     try {
-      const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_REFRESH_SECRET || 'refresh_secret_secure_2026',
-      });
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        include: { refreshTokens: true },
-      });
-
-      if (
-        !user ||
-        !user.refreshTokenHash ||
-        !(await argon2.verify(user.refreshTokenHash, token))
-      ) {
-        return null;
-      }
-
-      const validRefreshToken = user.refreshTokens.find(
-        (rt) => rt.expiresAt > new Date(),
-      );
-      if (!validRefreshToken) {
-        return null;
-      }
-
+      const payload = this.jwtService.verify(token, { secret: this.getRefreshSecret() });
+      const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, include: { refreshTokens: true, tenant: true } });
+      if (!user || !user.tenant.estActif || !user.refreshTokenHash || !(await argon2.verify(user.refreshTokenHash, token))) return null;
+      const validRefreshToken = user.refreshTokens.find((rt) => rt.expiresAt > new Date());
+      if (!validRefreshToken) return null;
       return user;
     } catch {
       return null;
@@ -291,172 +156,71 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    if (!refreshToken) {
-      throw new UnauthorizedException('Token de renouvellement manquant');
-    }
-
+    if (!refreshToken) throw new UnauthorizedException('Token de renouvellement manquant');
     const user = await this.validateRefreshTokenFromCookie(refreshToken);
-    if (!user) {
-      throw new UnauthorizedException(
-        'Token de renouvellement invalide ou expire',
-      );
-    }
-
+    if (!user) throw new UnauthorizedException('Token de renouvellement invalide ou expire');
     const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      tenantId: user.tenantId,
+      sub: user.id, email: user.email, role: user.role, tenantId: user.tenantId,
       depotId: user.depotId ?? undefined,
     };
-
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    return { access_token: this.jwtService.sign(payload) };
   }
 
-  // Mise à jour du profil utilisateur
   async updateProfile(userId: string, updateProfileDto: any) {
-    const user = await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id: userId },
-      data: {
-        nom: updateProfileDto.nom,
-        email: updateProfileDto.email,
-        telephone: updateProfileDto.telephone,
-        adresse: updateProfileDto.adresse,
-      },
-      select: {
-        id: true,
-        email: true,
-        nom: true,
-        telephone: true,
-        adresse: true,
-        role: true,
-        tenantId: true,
-        avatar: true,
-        createdAt: true,
-      },
+      data: { nom: updateProfileDto.nom, email: updateProfileDto.email, telephone: updateProfileDto.telephone, adresse: updateProfileDto.adresse },
+      select: { id: true, email: true, nom: true, telephone: true, adresse: true, role: true, tenantId: true, avatar: true, createdAt: true },
     });
-
-    return user;
   }
 
-  // Upload de photo de profil
   async uploadAvatar(userId: string, file: Express.Multer.File) {
-    // Le fichier est déjà écrit sur disque par Multer (diskStorage) au moment
-    // où cette méthode est appelée — file.filename correspond au nom réel écrit.
     const avatarUrl = `/uploads/avatars/${file.filename}`;
-
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { avatar: avatarUrl },
-      select: { avatar: true },
-    });
-
+    const user = await this.prisma.user.update({ where: { id: userId }, data: { avatar: avatarUrl }, select: { avatar: true } });
     return { avatar: user.avatar };
   }
 
-  // Changement de mot de passe
   async changePassword(userId: string, changePasswordDto: any, meta?: RequestMeta) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Utilisateur non trouvé');
-    }
-
-    const isCurrentPasswordValid = await bcrypt.compare(
-      changePasswordDto.currentPassword,
-      user.password,
-    );
-
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('Utilisateur non trouvé');
+    const isCurrentPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password);
     if (!isCurrentPasswordValid) {
-      await this.auditService
-        .logEvent({
-          tenantId: user.tenantId,
-          depotId: user.depotId ?? null,
-          actorUserId: user.id,
-          actorEmail: user.email,
-          actorRole: user.role,
-          action: AUDIT_ACTIONS.ECHEC_CONNEXION,
-          severite: AuditSeverite.ATTENTION,
-          targetType: 'User',
-          targetId: user.id,
-          reference: user.email,
-          description: `Échec de changement de mot de passe pour ${user.email} — mot de passe actuel incorrect`,
-          ipAddress: meta?.ip ?? null,
-          userAgent: meta?.userAgent ?? null,
-        })
-        .catch((err) => console.error('[Audit] Échec log échec changement mdp:', err));
+      await this.auditService.logEvent({
+        tenantId: user.tenantId, depotId: user.depotId ?? null, actorUserId: user.id,
+        actorEmail: user.email, actorRole: user.role, action: AUDIT_ACTIONS.ECHEC_CONNEXION,
+        severite: AuditSeverite.ATTENTION, targetType: 'User', targetId: user.id, reference: user.email,
+        description: `Échec de changement de mot de passe pour ${user.email} — mot de passe actuel incorrect`,
+        ipAddress: meta?.ip ?? null, userAgent: meta?.userAgent ?? null,
+      }).catch((err) => console.error('[Audit] Échec log échec changement mdp:', err));
       throw new BadRequestException('Mot de passe actuel incorrect');
     }
-
     const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 12);
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
-
-    await this.auditService
-      .logEvent({
-        tenantId: user.tenantId,
-        depotId: user.depotId ?? null,
-        actorUserId: user.id,
-        actorEmail: user.email,
-        actorRole: user.role,
-        action: AUDIT_ACTIONS.CHANGEMENT_MOT_DE_PASSE,
-        severite: AuditSeverite.ATTENTION,
-        targetType: 'User',
-        targetId: user.id,
-        reference: user.email,
-        description: `Mot de passe changé pour ${user.email}`,
-        ipAddress: meta?.ip ?? null,
-        userAgent: meta?.userAgent ?? null,
-      })
-      .catch((err) => console.error('[Audit] Échec log CHANGEMENT_MOT_DE_PASSE:', err));
-
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { password: hashedPassword, refreshTokenHash: null } }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+    ]);
+    await this.auditService.logEvent({
+      tenantId: user.tenantId, depotId: user.depotId ?? null, actorUserId: user.id,
+      actorEmail: user.email, actorRole: user.role, action: AUDIT_ACTIONS.CHANGEMENT_MOT_DE_PASSE,
+      severite: AuditSeverite.ATTENTION, targetType: 'User', targetId: user.id, reference: user.email,
+      description: `Mot de passe changé pour ${user.email}`, ipAddress: meta?.ip ?? null, userAgent: meta?.userAgent ?? null,
+    }).catch((err) => console.error('[Audit] Échec log CHANGEMENT_MOT_DE_PASSE:', err));
     return { message: 'Mot de passe changé avec succès' };
   }
 
-  // Activation/Désactivation 2FA
   async toggle2FA(userId: string, enabled: boolean) {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { twoFAEnabled: enabled },
-      select: { twoFAEnabled: true },
-    });
-
+    const user = await this.prisma.user.update({ where: { id: userId }, data: { twoFAEnabled: enabled }, select: { twoFAEnabled: true } });
     return { twoFAEnabled: user.twoFAEnabled };
   }
 
-  // Récupérer les préférences utilisateur
   async getPreferences(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { preferences: true },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Utilisateur non trouvé');
-    }
-
-    return user.preferences || {
-      emailNotifications: true,
-      darkMode: true,
-      language: 'fr',
-    };
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { preferences: true } });
+    if (!user) throw new UnauthorizedException('Utilisateur non trouvé');
+    return user.preferences || { emailNotifications: true, darkMode: true, language: 'fr' };
   }
 
-  // Mettre à jour les préférences utilisateur
   async updatePreferences(userId: string, preferencesDto: any) {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { preferences: preferencesDto },
-      select: { preferences: true },
-    });
-
+    const user = await this.prisma.user.update({ where: { id: userId }, data: { preferences: preferencesDto }, select: { preferences: true } });
     return user.preferences;
   }
 }
