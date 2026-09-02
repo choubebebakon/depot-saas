@@ -1,68 +1,79 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, GoneException, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Metier } from '../auth/decorators/metier.decorator';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
+import { MetierGuard } from '../common/guards/metier.guard';
+import { MetierType } from '../common/config/metier-roles.config';
 import { RoleUser } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
-import {
-  ChargerTourneeDto,
-  ClotureCommercialeDto,
-  CreateTricycleDto,
-  OuvrirTourneeDto,
-  ValidationMagasinierDto,
-} from './dto/tournee.dto';
+import { CreateTricycleDto } from './dto/tournee.dto';
 import { TourneesService } from './tournees.service';
 
 @Controller('tournees')
+@Metier(MetierType.DEPOT_BOISSONS)
+@UseGuards(JwtAuthGuard, MetierGuard)
 @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.COMMERCIAL, RoleUser.MAGASINIER)
 export class TourneesController {
   constructor(private readonly service: TourneesService) {}
 
+  private scope(req: any) {
+    const tenantId = req.user?.tenantId;
+    const depotId = req.depotScope?.depotId;
+    if (!tenantId) throw new GoneException('Contexte tenant absent.');
+    if (!depotId) throw new GoneException('Dépôt actif requis.');
+    return { tenantId, depotId };
+  }
+
   @Post('tricycles')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
-  createTricycle(@Body() dto: CreateTricycleDto) {
-    return this.service.createTricycle(dto);
+  @RequirePermission('tournees', 'write')
+  createTricycle(@Req() req: any, @Body() dto: CreateTricycleDto) {
+    const { tenantId, depotId } = this.scope(req);
+    return this.service.createTricycle({ ...dto, tenantId, depotId });
   }
 
   @Get('tricycles')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
-  findTricycles(@Query('tenantId') tenantId: string, @Query('depotId') depotId: string) {
+  @RequirePermission('tournees', 'read')
+  findTricycles(@Req() req: any) {
+    const { tenantId, depotId } = this.scope(req);
     return this.service.findTricycles(tenantId, depotId);
   }
 
+  /**
+   * Legacy workflow intentionally disabled.
+   * The only writable source of truth is /depot-boissons/tournee-workflow.
+   */
   @Post('ouvrir')
-  @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
-  ouvrirTournee(@Body() dto: OuvrirTourneeDto) {
-    return this.service.ouvrirTournee(dto);
-  }
+  ouvrirTournee() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
 
   @Post('charger')
-  @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
-  chargerTournee(@Body() dto: ChargerTourneeDto) {
-    return this.service.chargerTournee(dto);
-  }
+  chargerTournee() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
 
   @Post('cloture-commerciale')
-  @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.COMMERCIAL)
-  clotureCommerciale(@Body() dto: ClotureCommercialeDto) {
-    return this.service.clotureCommerciale(dto);
-  }
+  clotureCommerciale() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
 
   @Post('valider-magasinier')
-  @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
-  validerMagasinier(@Body() dto: ValidationMagasinierDto) {
-    return this.service.validerMagasinier(dto);
-  }
+  validerMagasinier() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
 
   @Get('stats')
-  stats(@Query('tenantId') tenantId: string, @Query('depotId') depotId: string) {
+  @RequirePermission('tournees', 'read')
+  stats(@Req() req: any) {
+    const { tenantId, depotId } = this.scope(req);
     return this.service.statsTournees(tenantId, depotId);
   }
 
   @Get()
-  findAll(@Query('tenantId') tenantId: string, @Query('depotId') depotId: string, @Query('statut') statut?: string) {
-    return this.service.findAll(tenantId, depotId, statut);
+  @RequirePermission('tournees', 'read')
+  findAll(@Req() req: any) {
+    const { tenantId, depotId } = this.scope(req);
+    return this.service.findAll(tenantId, depotId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string, @Query('depotId') depotId: string) {
+  @RequirePermission('tournees', 'read')
+  findOne(@Req() req: any, @Param('id') id: string) {
+    const { tenantId, depotId } = this.scope(req);
     return this.service.findOne(id, tenantId, depotId);
   }
 }
