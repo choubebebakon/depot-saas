@@ -9,10 +9,12 @@ import { Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { JwtPayload } from '../../auth/strategies/jwt.strategy';
+import { DepotsService } from '../../depots/depots.service';
 import { RealtimeEvent } from './realtime.service';
 
 const TENANT_ROOM = (tenantId: string) => `tenant:${tenantId}`;
 const DEPOT_ROOM = (tenantId: string, depotId: string) => `tenant:${tenantId}:depot:${depotId}`;
+const MULTI_DEPOT_ROLES = new Set(['PATRON']);
 
 @WebSocketGateway({
   namespace: '/realtime',
@@ -31,7 +33,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   private readonly logger = new Logger(RealtimeGateway.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly depotsService: DepotsService,
+  ) {}
 
   async handleConnection(socket: Socket): Promise<void> {
     try {
@@ -44,23 +49,21 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       }
 
       const requestedDepotId = this.readOptionalString(socket.handshake.auth?.depotId);
-      if (requestedDepotId && payload.depotId !== requestedDepotId) {
-        throw new UnauthorizedException('Dépôt non autorisé');
-      }
+      const depotId = await this.resolveAuthorizedDepot(payload, requestedDepotId);
 
       socket.data.userId = payload.sub;
       socket.data.tenantId = payload.tenantId;
-      socket.data.depotId = payload.depotId ?? null;
+      socket.data.depotId = depotId;
       socket.data.role = payload.role;
 
       await socket.join(TENANT_ROOM(payload.tenantId));
-      if (payload.depotId) {
-        await socket.join(DEPOT_ROOM(payload.tenantId, payload.depotId));
+      if (depotId) {
+        await socket.join(DEPOT_ROOM(payload.tenantId, depotId));
       }
 
       socket.emit('realtime:ready', {
         tenantId: payload.tenantId,
-        depotId: payload.depotId ?? null,
+        depotId,
       });
     } catch (error) {
       this.logger.warn(`Socket refusée ${socket.id}: ${error instanceof Error ? error.message : 'auth error'}`);
@@ -85,6 +88,29 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
 
     this.server.to(TENANT_ROOM(event.tenantId)).emit('realtime:event', envelope);
+  }
+
+  private async resolveAuthorizedDepot(
+    payload: JwtPayload,
+    requestedDepotId: string | null,
+  ): Promise<string | null> {
+    const tokenDepotId = this.readOptionalString(payload.depotId);
+
+    if (!MULTI_DEPOT_ROLES.has(payload.role)) {
+      if (requestedDepotId && requestedDepotId !== tokenDepotId) {
+        throw new UnauthorizedException('Dépôt non autorisé');
+      }
+      return tokenDepotId;
+    }
+
+    if (!requestedDepotId) return tokenDepotId;
+
+    const depot = await this.depotsService.findOne(requestedDepotId, payload.tenantId);
+    if (!depot || depot.isArchived) {
+      throw new UnauthorizedException('Dépôt non autorisé');
+    }
+
+    return depot.id;
   }
 
   private extractToken(socket: Socket): string | null {
