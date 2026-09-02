@@ -10,50 +10,41 @@ import { Observable, from } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { PrismaService } from '../../prisma.service';
 
+interface ScopedRequest extends Request {
+  user?: { tenantId?: string };
+  depotScope?: { tenantId: string; depotId: string | null };
+}
+
 /**
- * Enforce le périmètre dépôt sur les routes Promotions existantes.
+ * Les promotions historiques sont rattachées au tenant et non directement au
+ * dépôt. Pour empêcher une promotion d'un autre dépôt d'être lue/modifiée,
+ * l'article doit néanmoins posséder un stock dans le dépôt actif.
  *
- * Le modèle Promotion historique est rattaché au tenant, pas directement au
- * dépôt. On ne prétend donc pas créer une fausse colonne depotId : le périmètre
- * autorisé est déterminé par l'article et son stock dans le dépôt actif.
- *
- * Toute promotion manipulée doit donc :
- *   tenantId authentifié + article appartenant au tenant + stock de l'article
- *   dans le dépôt actif.
+ * Le dépôt actif est exclusivement celui résolu par DepotScopeInterceptor.
+ * Aucun header/query/body ne devient une autorité de sécurité ici.
  */
 @Injectable()
 export class PromotionScopeInterceptor implements NestInterceptor {
   constructor(private readonly prisma: PrismaService) {}
 
-  private getDepotId(req: any): string {
-    const raw = req.headers?.['x-depot-id'];
-    const depotId = Array.isArray(raw) ? raw[0] : raw;
-    if (!depotId || ['undefined', 'null', 'all'].includes(String(depotId))) {
-      throw new BadRequestException('Dépôt actif requis pour les promotions.');
-    }
-    return String(depotId);
-  }
-
-  private getTenantId(req: any): string {
-    const tenantId = req.user?.tenantId;
-    if (!tenantId) {
-      throw new BadRequestException('tenantId manquant dans le contexte authentifié.');
-    }
-    return tenantId;
-  }
-
-  private isPromotionRoute(req: any): boolean {
+  private isPromotionRoute(req: Request): boolean {
     const path = String(req.originalUrl || req.url || '').split('?')[0];
-    return /^\/api\/v1\/supermarche\/promotions(?:\/[^/]+)?$/.test(path)
-      || /^\/supermarche\/promotions(?:\/[^/]+)?$/.test(path);
+    return /(?:^|\/)promotions(?:\/[^/]+)?$/i.test(path);
   }
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
-    const req = context.switchToHttp().getRequest();
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
+    const req = context.switchToHttp().getRequest<ScopedRequest>();
     if (!this.isPromotionRoute(req)) return next.handle();
 
-    const tenantId = this.getTenantId(req);
-    const depotId = this.getDepotId(req);
+    const tenantId = req.user?.tenantId;
+    const depotId = req.depotScope?.depotId;
+    if (!tenantId) {
+      throw new BadRequestException('Contexte tenant manquant.');
+    }
+    if (!depotId) {
+      throw new BadRequestException('Dépôt actif requis pour les promotions.');
+    }
+
     const method = String(req.method || '').toUpperCase();
     const id = req.params?.id;
     const articleId = req.body?.articleId;
@@ -63,14 +54,14 @@ export class PromotionScopeInterceptor implements NestInterceptor {
       await this.assertArticleInDepot(tenantId, depotId, articleId);
     }
 
-    if (method === 'PATCH') {
+    if (method === 'PATCH' || method === 'PUT') {
       if (!id) throw new BadRequestException('Identifiant promotion requis.');
       const promotion = await this.prisma.promotion.findFirst({
         where: { id, tenantId },
         select: { id: true, articleId: true },
       });
       if (!promotion) throw new NotFoundException('Promotion introuvable.');
-      await this.assertArticleInDepot(tenantId, depotId, req.body?.articleId || promotion.articleId);
+      await this.assertArticleInDepot(tenantId, depotId, articleId || promotion.articleId);
     }
 
     if (method === 'DELETE' || method === 'GET') {
@@ -85,29 +76,43 @@ export class PromotionScopeInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      mergeMap(async (result) => {
-        if (method !== 'GET' || id || !Array.isArray(result)) return result;
-
-        const articleIds = result
-          .map((promotion: any) => promotion?.articleId)
-          .filter(Boolean);
-        if (!articleIds.length) return result;
-
-        const stocks = await this.prisma.stock.findMany({
-          where: {
-            depotId,
-            articleId: { in: articleIds },
-            article: { tenantId },
-          },
-          select: { articleId: true },
-        });
-        const allowed = new Set(stocks.map((stock) => stock.articleId));
-        return result.filter((promotion: any) => allowed.has(promotion.articleId));
-      }),
+      mergeMap((result: unknown) =>
+        from(this.filterListResult(result, method, tenantId, depotId)),
+      ),
     );
   }
 
-  private async assertArticleInDepot(tenantId: string, depotId: string, articleId: string) {
+  private async filterListResult(
+    result: unknown,
+    method: string,
+    tenantId: string,
+    depotId: string,
+  ): Promise<unknown> {
+    if (method !== 'GET' || !Array.isArray(result)) return result;
+
+    const articleIds = result
+      .map((promotion: any) => promotion?.articleId)
+      .filter(Boolean);
+    if (!articleIds.length) return result;
+
+    const stocks = await this.prisma.stock.findMany({
+      where: {
+        depotId,
+        articleId: { in: articleIds },
+        article: { tenantId },
+      },
+      select: { articleId: true },
+    });
+
+    const allowed = new Set(stocks.map((stock) => stock.articleId));
+    return result.filter((promotion: any) => allowed.has(promotion.articleId));
+  }
+
+  private async assertArticleInDepot(
+    tenantId: string,
+    depotId: string,
+    articleId: string,
+  ): Promise<void> {
     const article = await this.prisma.article.findFirst({
       where: {
         id: articleId,
@@ -116,6 +121,7 @@ export class PromotionScopeInterceptor implements NestInterceptor {
       },
       select: { id: true },
     });
+
     if (!article) {
       throw new NotFoundException('Article introuvable dans le dépôt actif.');
     }
