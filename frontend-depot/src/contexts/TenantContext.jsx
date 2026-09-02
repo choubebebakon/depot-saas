@@ -43,6 +43,14 @@ function resolveInitialDepot(depots, currentDepotId, role) {
   return depots[0];
 }
 
+function notifyDepotChanged(depotId) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('gestock:depot-changed', {
+      detail: { depotId: depotId ?? null },
+    }));
+  }
+}
+
 export function TenantProvider({ children }) {
   const [tenant, setTenant] = useState(null);
   const [currentDepot, setCurrentDepotState] = useState(null);
@@ -59,6 +67,8 @@ export function TenantProvider({ children }) {
     } else {
       localStorage.removeItem(ACTIVE_DEPOT_STORAGE_KEY);
     }
+
+    notifyDepotChanged(depot?.id ?? null);
   }, []);
 
   useEffect(() => {
@@ -82,6 +92,8 @@ export function TenantProvider({ children }) {
         } else {
           localStorage.removeItem(ACTIVE_DEPOT_STORAGE_KEY);
         }
+
+        notifyDepotChanged(nextDepot?.id ?? null);
       })
       .catch((err) => {
         if (mounted) setError(err);
