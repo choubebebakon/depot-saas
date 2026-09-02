@@ -7,12 +7,16 @@ import {
   Min,
   IsOptional,
   IsEnum,
+  IsUUID,
+  MaxLength,
+  IsBoolean,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class LigneVenteDto {
   @IsOptional()
-  @IsString()
+  @IsUUID()
   id?: string;
 
   @IsString()
@@ -28,20 +32,26 @@ export class LigneVenteDto {
   @Min(0)
   remise?: number;
 
+  /**
+   * Prix affiché par le client uniquement pour les cas métier autorisés
+   * (conditionnement / casier mixte). Le backend reste la source de vérité.
+   */
   @IsOptional()
   @IsNumber()
   @Min(0)
   prix?: number;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   conditionnementId?: string;
 
   @IsOptional()
+  @IsBoolean()
   casierMixte?: boolean;
 
   @IsOptional()
-  composition?: any;
+  @IsObject()
+  composition?: Record<string, unknown> | unknown[];
 }
 
 export class RetourConsigneDto {
@@ -55,6 +65,7 @@ export class RetourConsigneDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   valeurUnitaire?: number;
 }
 
@@ -67,19 +78,32 @@ export enum ModePaiement {
 }
 
 export class CreateVenteDto {
-  // Ces deux champs sont optionnels uniquement pour compatibilité avec les
-  // anciens clients. Ils ne constituent jamais une preuve d'identité/scope :
-  // le controller remplace leurs valeurs par le contexte authentifié.
+  // Compatibilité legacy uniquement. Le scope réel est toujours fourni par
+  // le serveur depuis req.depotScope.
   @IsOptional()
-  @IsString()
+  @IsUUID()
   depotId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   tenantId?: string;
 
+  // UUID client généré avant l'envoi : il sert de clé d'idempotence pour les
+  // retries réseau/offline. Il ne constitue jamais une autorité de scope.
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
+  // Référence externe facultative. Si absente, le backend doit en générer une
+  // non séquentielle afin d'éviter les collisions concurrentes de type count+1.
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  reference?: string;
+
+  @IsOptional()
+  @IsUUID()
   clientId?: string;
 
   @IsOptional()
@@ -88,18 +112,22 @@ export class CreateVenteDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   montantCash?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   montantOM?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   montantMoMo?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   montantCredit?: number;
 
   @IsArray()
