@@ -60,9 +60,6 @@ export class VentesController {
     @Req() req: any,
   ) {
     try {
-      // tenantId/depotId sont des données de contexte serveur, jamais des
-      // autorités fournies par le client. Même si le DTO les accepte encore
-      // pour compatibilité, ils sont explicitement retirés ici.
       const { tenantId: _clientTenantId, depotId: _clientDepotId, ...saleData } =
         createVenteDto as CreateVenteDto & {
           tenantId?: string;
@@ -95,6 +92,16 @@ export class VentesController {
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
   findEnAttenteValidation(@Req() req: any) {
     return this.ventesService.findEnAttenteValidation(
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
+  }
+
+  // Must stay before @Get(':id') so the literal "caisse" path is never
+  // interpreted as a vente identifier.
+  @Get('caisse')
+  async getCaisse(@Req() req: any) {
+    return this.ventesService.getCaisse(
       this.getTenantId(req),
       this.getDepotId(req),
     );
@@ -163,14 +170,6 @@ export class VentesController {
       this.getTenantId(req),
       this.getDepotId(req),
       user,
-    );
-  }
-
-  @Get('caisse')
-  async getCaisse(@Req() req: any) {
-    return this.ventesService.getCaisse(
-      this.getTenantId(req),
-      this.getDepotId(req),
     );
   }
 
