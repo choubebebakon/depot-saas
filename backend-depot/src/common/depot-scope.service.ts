@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 export interface ScopeContext {
@@ -9,38 +9,32 @@ export interface ScopeContext {
   metier?: string | null;
 }
 
+const EMPTY_SCOPE: ScopeContext = {
+  tenantId: null,
+  depotId: null,
+  role: null,
+  requestId: null,
+  metier: null,
+};
+
 @Injectable()
 export class DepotScopeService {
   private readonly als = new AsyncLocalStorage<ScopeContext>();
 
   /**
-   * Execute une requête dans un contexte tenant/dépôt isolé.
+   * Execute une requête dans un contexte tenant/dépôt authentifié.
+   *
+   * Cette classe ne fabrique jamais d'identité et ne fait aucune confiance aux
+   * headers ou au localStorage. Le contexte doit être construit par un Guard /
+   * interceptor après authentification.
    */
   run<T>(context: ScopeContext, next: () => T): T {
-    if (!context.tenantId) {
-      console.warn(
-        '⚠️ Requête sans tenantId détectée - aucun scope tenant ne sera appliqué.',
-      );
-    }
     return this.als.run(context, next);
   }
 
-  /**
-   * Retourne le contexte courant.
-   * Hors d'une requête HTTP authentifiée, le contexte reste explicitement
-   * anonyme. On n'utilise jamais une valeur fictive comme "PUBLIC" : une
-   * valeur sentinelle pourrait être confondue avec un véritable tenant.
-   */
+  /** Retourne le contexte courant, ou un contexte explicitement vide hors requête. */
   getScope(): ScopeContext {
-    return (
-      this.als.getStore() ?? {
-        tenantId: null,
-        depotId: null,
-        role: null,
-        requestId: null,
-        metier: null,
-      }
-    );
+    return this.als.getStore() ?? EMPTY_SCOPE;
   }
 
   getTenantId(): string | null {
@@ -57,5 +51,39 @@ export class DepotScopeService {
 
   getMetier(): string | null {
     return this.getScope().metier ?? null;
+  }
+
+  /**
+   * Utiliser pour les opérations strictement tenant-scopées.
+   * Fail-closed : absence de scope = refus, jamais fallback implicite.
+   */
+  requireTenantId(): string {
+    const tenantId = this.getTenantId();
+    if (!tenantId) throw new ForbiddenException('Contexte tenant requis.');
+    return tenantId;
+  }
+
+  /**
+   * Utiliser pour les opérations strictement dépôt-scopées.
+   */
+  requireDepotId(): string {
+    const depotId = this.getDepotId();
+    if (!depotId) throw new ForbiddenException('Dépôt actif requis.');
+    return depotId;
+  }
+
+  /**
+   * Utiliser quand une opération exige simultanément tenant + dépôt.
+   */
+  requireScope(): { tenantId: string; depotId: string; role: string | null } {
+    const scope = this.getScope();
+    if (!scope.tenantId || !scope.depotId) {
+      throw new ForbiddenException('Contexte tenant et dépôt requis.');
+    }
+    return {
+      tenantId: scope.tenantId,
+      depotId: scope.depotId,
+      role: scope.role,
+    };
   }
 }
