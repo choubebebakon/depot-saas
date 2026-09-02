@@ -38,28 +38,18 @@ const LignePanier = memo(function LignePanier({ field, idx, control, panierItem,
       <td className="py-3 text-slate-400 font-mono text-xs">{panierItem?.codeBarres || '—'}</td>
       <td className="text-white font-medium">{panierItem?.designation}</td>
       <td className="text-right">
-        <Controller
-          name={`panier.${idx}.quantite`}
-          control={control}
-          render={({ field: inputField }) => (
-            <input type="number" {...inputField} min={1} step={1} className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" />
-          )}
-        />
+        <Controller name={`panier.${idx}.quantite`} control={control} render={({ field: inputField }) => (
+          <input type="number" {...inputField} min={1} step={1} className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" />
+        )} />
       </td>
       <td className="text-right text-white font-mono">{Number(panierItem?.prixUnitaire || 0).toLocaleString('fr-FR')}</td>
       <td className="text-right">
-        <Controller
-          name={`panier.${idx}.remise`}
-          control={control}
-          render={({ field: inputField }) => (
-            <input type="number" {...inputField} min={0} max={100} step="0.01" className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" placeholder="%" />
-          )}
-        />
+        <Controller name={`panier.${idx}.remise`} control={control} render={({ field: inputField }) => (
+          <input type="number" {...inputField} min={0} max={100} step="0.01" className="w-16 bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-1 text-sm text-right" placeholder="%" />
+        )} />
       </td>
       <td className="text-right text-white font-bold font-mono">{ligneSousTotal.toLocaleString('fr-FR')}</td>
-      <td className="text-center">
-        <button type="button" onClick={() => onRemove(idx)} className="text-red-400 hover:text-red-300 text-xs" aria-label={`Supprimer ${panierItem?.designation || 'l’article'}`}>✕</button>
-      </td>
+      <td className="text-center"><button type="button" onClick={() => onRemove(idx)} className="text-red-400 hover:text-red-300 text-xs" aria-label={`Supprimer ${panierItem?.designation || 'l’article'}`}>✕</button></td>
     </tr>
   );
 });
@@ -70,14 +60,7 @@ export default function POSSupermarcheForm({ onSuccess, depotId }) {
 
   const { control, handleSubmit, watch, reset, getValues, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(venteSchema),
-    defaultValues: {
-      clientId: '',
-      depotId: depotId || '',
-      modePaiement: 'CASH',
-      remiseGlobale: 0,
-      montantRecu: '',
-      panier: [],
-    },
+    defaultValues: { clientId: '', depotId: depotId || '', modePaiement: 'CASH', remiseGlobale: 0, montantRecu: '', panier: [] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'panier' });
@@ -112,11 +95,17 @@ export default function POSSupermarcheForm({ onSuccess, depotId }) {
   }, [getValues, setValue, append]);
 
   const handleScan = useCallback(async (code) => {
+    const normalized = String(code || '').trim();
+    if (!normalized) return;
     try {
-      const r = await supermarcheApi.scanCodeBarres(code);
-      if (r.data?.article) ajouterAuPanier(r.data.article);
+      const r = await supermarcheApi.scanCodeBarres(normalized);
+      if (r.data?.article) {
+        ajouterAuPanier(r.data.article);
+        return;
+      }
+      notif.error(`Article introuvable pour le code ${normalized}`);
     } catch {
-      notif.error('Code-barres non reconnu');
+      notif.error('Impossible de lire ce code-barres. Vérifiez la connexion.');
     }
   }, [ajouterAuPanier, notif]);
 
@@ -135,9 +124,7 @@ export default function POSSupermarcheForm({ onSuccess, depotId }) {
   const mutation = useMutation({
     mutationFn: async (data) => {
       if (!depotId) throw new Error('Aucun dépôt actif sélectionné.');
-      if (data.modePaiement === 'CASH' && Number(data.montantRecu) < total) {
-        throw new Error('Le montant reçu est inférieur au total de la vente.');
-      }
+      if (data.modePaiement === 'CASH' && Number(data.montantRecu) < total) throw new Error('Le montant reçu est inférieur au total de la vente.');
 
       const payload = {
         id: crypto.randomUUID(),
@@ -173,7 +160,7 @@ export default function POSSupermarcheForm({ onSuccess, depotId }) {
       <div className="lg:col-span-2 space-y-4">
         {errors.panier?.message && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">{errors.panier.message}</div>}
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
-          <BarcodeScanner onScan={handleScan} placeholder="Scanner ou saisir le code-barres" mode="both" />
+          <BarcodeScanner onScan={handleScan} autoFocus placeholder="Scanner ou saisir le code-barres" />
         </div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
           <AutocompleteInput name="addArticle" fetchSuggestions={fetchArticles} displayKey="designation" placeholder="Rechercher un article..." onSelect={ajouterAuPanier} />
@@ -192,7 +179,6 @@ export default function POSSupermarcheForm({ onSuccess, depotId }) {
           </div>
         </div>
       </div>
-
       <div className="space-y-4">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 space-y-4">
           <h3 className="text-white font-bold text-sm">Paiement</h3>
@@ -203,24 +189,12 @@ export default function POSSupermarcheForm({ onSuccess, depotId }) {
               ))}
             </div>
           )} />
-
-          {modePaiement === 'CASH' && (
-            <Controller name="montantRecu" control={control} render={({ field }) => (
-              <div>
-                <input type="number" {...field} min={0} step={1} placeholder="Montant reçu (FCFA)" className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm" />
-                {montantInsuffisant && <p className="text-red-400 text-xs mt-1">Montant insuffisant : il manque {(total - montantRecu).toLocaleString('fr-FR')} FCFA.</p>}
-              </div>
-            )} />
-          )}
-
+          {modePaiement === 'CASH' && <Controller name="montantRecu" control={control} render={({ field }) => (
+            <div><input type="number" {...field} min={0} step={1} placeholder="Montant reçu (FCFA)" className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm" />{montantInsuffisant && <p className="text-red-400 text-xs mt-1">Montant insuffisant : il manque {(total - montantRecu).toLocaleString('fr-FR')} FCFA.</p>}</div>
+          )} />}
           {modePaiement === 'CASH' && montantRecu >= total && total > 0 && <p className="text-emerald-400 text-sm font-bold">Monnaie : {monnaie.toLocaleString('fr-FR')} FCFA</p>}
-
           <Controller name="remiseGlobale" control={control} render={({ field }) => <input type="number" {...field} min={0} max={100} step="0.01" placeholder="Remise globale %" className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm" />} />
-
-          <Controller name="clientId" control={control} render={({ field }) => (
-            <AutocompleteInput name="clientId" value={field.value} onChange={field.onChange} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Associer client (optionnel)" onSelect={(client) => field.onChange(client?.id || '')} />
-          )} />
-
+          <Controller name="clientId" control={control} render={({ field }) => <AutocompleteInput name="clientId" value={field.value} onChange={field.onChange} fetchSuggestions={fetchClients} displayKey="nom" placeholder="Associer client (optionnel)" onSelect={(client) => field.onChange(client?.id || '')} />} />
           <button type="button" onClick={handleSubmit((data) => mutation.mutate(data))} disabled={fields.length === 0 || mutation.isPending || total <= 0 || montantInsuffisant || !depotId} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-lg rounded-xl transition-all shadow-lg shadow-emerald-600/20">
             {mutation.isPending ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : 'ENCAISSER'}
           </button>
