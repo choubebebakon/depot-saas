@@ -9,11 +9,19 @@ import { PermissionService } from './permission.service';
 import { PermissionGuard } from './guards/permission.guard';
 import { AuditModule } from '../audit/audit.module';
 
+const jwtSecret = process.env.JWT_SECRET?.trim() || (
+  process.env.NODE_ENV === 'production' ? undefined : 'dev-only-jwt-secret-change-me'
+);
+
+if (!jwtSecret) {
+  throw new Error('JWT_SECRET est obligatoire en production.');
+}
+
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret_secure_2026',
+      secret: jwtSecret,
       signOptions: { expiresIn: '15m' },
     }),
     AuditModule,
