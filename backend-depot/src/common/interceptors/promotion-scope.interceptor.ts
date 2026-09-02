@@ -6,6 +6,7 @@ import {
   NestInterceptor,
   NotFoundException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { Observable, from } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { PrismaService } from '../../prisma.service';
