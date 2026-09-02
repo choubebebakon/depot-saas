@@ -16,11 +16,12 @@ export class TourneeWorkflowController {
   constructor(private readonly service: TourneeWorkflowService) {}
 
   private scope(req: any) {
-    const tenantId = req.user?.tenantId;
+    const userTenantId = req.user?.tenantId;
+    const scopeTenantId = req.depotScope?.tenantId;
     const depotId = req.depotScope?.depotId;
-    if (!tenantId) throw new BadRequestException('tenantId manquant dans le token.');
+    if (!userTenantId || !scopeTenantId || userTenantId !== scopeTenantId) throw new BadRequestException('Contexte tenant invalide.');
     if (!depotId) throw new BadRequestException('Dépôt actif requis.');
-    return { tenantId, depotId };
+    return { tenantId: scopeTenantId, depotId };
   }
 
   @Get()
