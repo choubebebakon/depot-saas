@@ -35,6 +35,7 @@ const LotsPage = lazy(() => import('../../shared/pages/LotsPage'));
 function Loader() { return <div className="flex items-center justify-center py-32"><div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-400 border-t-transparent" /></div>; }
 function gate(sousModule, Page) { return <PermissionGate sousModule={sousModule}><Page /></PermissionGate>; }
 function MetierGuard({ children }) { const { metier } = useAuth(); const stored = localStorage.getItem('gestock_metier'); if (metier && metier !== 'DEPOT_BOISSONS') return <Navigate to="/onboarding/metier" replace />; if (!metier && stored && stored !== 'DEPOT_BOISSONS') return <Navigate to="/onboarding/metier" replace />; return children; }
+function AchatsAccess() { const { user } = useAuth(); const role = user?.role; const allowed = role === 'PATRON' || role === 'GERANT' || role === 'MAGASINIER' || role === 'COMPTABLE' || user?.isSuperAdmin === true; return allowed ? <AchatsReceptionsPage /> : <div className="p-8 text-center"><h2 className="font-bold text-white">Accès restreint</h2><p className="mt-1 text-sm text-slate-400">Votre rôle ne permet pas de gérer les achats et réceptions.</p></div>; }
 
 function DepotLayout() {
   const { user, logout } = useAuth(); const { depots, depotActif, changerDepot } = useDepot(); const [sidebarOpen, setSidebarOpen] = useState(false); const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default function DepotBoissonsRoutes() {
   return <MetierGuard><DepotProvider><Routes><Route element={<DepotLayout />}>
     <Route path="dashboard" element={gate('dashboard', DashboardDepot)} />
     <Route path="stock" element={gate('stock_articles', StockArticlesPage)} />
-    <Route path="achats" element={gate('achats', AchatsReceptionsPage)} />
+    <Route path="achats" element={<AchatsAccess />} />
     <Route path="promotions" element={gate('promotions', PromotionsPage)} />
     <Route path="consignes" element={gate('consignes', ConsignesPage)} />
     <Route path="livraisons" element={gate('livraisons', LivraisonsPage)} />
