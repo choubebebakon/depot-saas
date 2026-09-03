@@ -37,6 +37,13 @@ export class FournisseursService {
     return `REC-${new Date().getFullYear()}-${digest.slice(0, 20)}`;
   }
 
+  private async findIdempotentReception(reference: string, tenantId: string, depotId: string) {
+    return this.prisma.receptionFournisseur.findFirst({
+      where: { reference, tenantId, depotId },
+      include: { lignes: true },
+    });
+  }
+
   async createFournisseur(dto: CreateFournisseurDto, tenantId: string, depotId: string) {
     const scope = this.requireScope(tenantId, depotId);
     const nom = dto.nom?.trim();
@@ -301,18 +308,21 @@ export class FournisseursService {
       return await create();
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        const existing = await this.prisma.receptionFournisseur.findFirst({
-          where: {
-            reference,
-            tenantId: scope.tenantId,
-            depotId: scope.depotId,
-          },
-          include: { lignes: true },
-        });
+        const existing = await this.findIdempotentReception(
+          reference,
+          scope.tenantId,
+          scope.depotId,
+        );
         if (existing) return existing;
         throw new ConflictException('Une réception concurrente utilise déjà cette référence.');
       }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        const existing = await this.findIdempotentReception(
+          reference,
+          scope.tenantId,
+          scope.depotId,
+        );
+        if (existing) return existing;
         throw new ConflictException(
           'La réception a rencontré une concurrence. Réessayez avec la même clé d’idempotence.',
         );
