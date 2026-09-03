@@ -202,9 +202,13 @@ export class CaisseService {
     try {
       return await this.prisma.$transaction(
         async (tx) => {
-          // L'identifiant est utilisé uniquement pour rendre les retries
-          // offline idempotents. Il ne permet jamais de changer le tenant ou
-          // le dépôt de la dépense existante.
+          const categorie = dto.categorie.trim();
+          const motif = dto.motif.trim();
+          const photoUrl = dto.photoUrl?.trim() || null;
+
+          // L'ID client sert uniquement de clé d'idempotence pour les retries
+          // offline. Une même clé avec un payload différent est un conflit,
+          // jamais une autorisation de réutiliser silencieusement une dépense.
           if (dto.id) {
             const existante = await tx.depense.findUnique({
               where: { id: dto.id },
@@ -219,6 +223,19 @@ export class CaisseService {
                   'Cette dépense appartient à un autre périmètre.',
                 );
               }
+
+              const memePayload =
+                existante.categorie === categorie &&
+                existante.montant === dto.montant &&
+                existante.motif === motif &&
+                (existante.photoUrl || null) === photoUrl;
+
+              if (!memePayload) {
+                throw new BadRequestException(
+                  'Identifiant de dépense déjà utilisé avec des données différentes.',
+                );
+              }
+
               return existante;
             }
           }
@@ -294,12 +311,12 @@ export class CaisseService {
           const depense = await tx.depense.create({
             data: {
               id: dto.id,
-              categorie: dto.categorie.trim(),
+              categorie,
               montant: dto.montant,
-              motif: dto.motif.trim(),
+              motif,
               depotId: dto.depotId,
               tenantId: dto.tenantId,
-              photoUrl: dto.photoUrl?.trim() || undefined,
+              photoUrl: photoUrl || undefined,
             },
           });
 
@@ -307,7 +324,7 @@ export class CaisseService {
             data: {
               type: 'DECAISSEMENT_DEPENSE',
               montant: dto.montant,
-              motif: `${dto.categorie.trim()} — ${dto.motif.trim()}`,
+              motif: `${categorie} — ${motif}`,
               reference: depense.id,
               sessionId: session.id,
             },
@@ -339,26 +356,35 @@ export class CaisseService {
 
     if (dateDebut || dateFin) {
       where.createdAt = {};
+      let debut: Date | undefined;
+      let fin: Date | undefined;
+
       if (dateDebut) {
-        const debut = new Date(dateDebut);
+        debut = new Date(dateDebut);
         if (Number.isNaN(debut.getTime())) {
           throw new BadRequestException('dateDebut invalide.');
         }
         where.createdAt.gte = debut;
       }
+
       if (dateFin) {
-        const fin = new Date(dateFin);
+        fin = new Date(dateFin);
         if (Number.isNaN(fin.getTime())) {
           throw new BadRequestException('dateFin invalide.');
         }
         fin.setHours(23, 59, 59, 999);
         where.createdAt.lte = fin;
       }
+
+      if (debut && fin && debut > fin) {
+        throw new BadRequestException('La dateDebut doit être antérieure à la dateFin.');
+      }
     }
 
     return this.prisma.depense.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      take: 200,
     });
   }
 
