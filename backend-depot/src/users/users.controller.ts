@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -66,7 +67,7 @@ export class UsersController {
       : req.user?.depotId;
 
     if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
-      return [];
+      throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
     }
 
     return this.usersService.findAll(tenantId, effectiveDepotId);
@@ -83,7 +84,7 @@ export class UsersController {
       : req.user?.depotId;
 
     if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
-      return [];
+      throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
     }
 
     return this.usersService.findCommerciaux(tenantId, effectiveDepotId);
@@ -92,14 +93,13 @@ export class UsersController {
   @Get(':id')
   async findOne(
     @Param('id') id: string,
-    @Query('tenantId') _ignoredTenantId: string | undefined,
     @Req() req: any,
   ) {
     const tenantId = req.user?.tenantId;
     const depotId = req.user?.role === RoleUser.PATRON ? undefined : req.user?.depotId;
 
     if (req.user?.role === RoleUser.GERANT && !depotId) {
-      return this.usersService.findOne('__no_tenant_access__', id);
+      throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
     }
 
     return this.usersService.findOne(tenantId, id, depotId);
