@@ -27,10 +27,9 @@ export default function ClientsPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
   }
 
-  // Fetch clients via useQuery
   const { data: clientsData, isLoading } = useQuery({
     queryKey: ['depot-clients', { search, filtreDebiteur }],
     queryFn: async () => {
@@ -63,22 +62,38 @@ export default function ClientsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-clients'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
-      notif.success('Paiement enregistrÃ© avec succÃ¨s');
+      queryClient.invalidateQueries({ queryKey: ['depot-client'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-client-history'] });
+      notif.success('Paiement enregistré avec succès');
       setShowModal(null);
       setSelectedClient(null);
       setPaiementData({ montant: '', modePaiement: 'CASH' });
     },
     onError: (err) => {
       notif.error(err.response?.data?.message || 'Erreur lors du paiement');
-    }
+    },
   });
 
   const handlePayerDette = (clientId) => {
-    if (!paiementData.montant || isNaN(paiementData.montant)) return;
+    if (payerDetteMutation.isPending) return;
+
+    const raw = String(paiementData.montant ?? '').trim().replace(',', '.');
+    const montant = Number(raw);
+    const solde = Number(selectedClient?.soldeCredit ?? 0);
+
+    if (!Number.isFinite(montant) || montant <= 0) {
+      notif.error('Le montant du paiement doit être supérieur à 0.');
+      return;
+    }
+    if (montant > solde + 0.01) {
+      notif.error('Le paiement ne peut pas dépasser la dette restante.');
+      return;
+    }
+
     payerDetteMutation.mutate({
       clientId,
-      montant: parseInt(paiementData.montant),
-      modePaiement: paiementData.modePaiement
+      montant: Number(montant.toFixed(2)),
+      modePaiement: paiementData.modePaiement,
     });
   };
 
@@ -88,14 +103,14 @@ export default function ClientsPage() {
       setHistorique(res.data?.data || res.data || []);
       setSelectedClient(client);
     } catch (err) {
-      notif.error(err.response?.data?.message || 'Erreur de chargement de l\'historique');
+      notif.error(err.response?.data?.message || "Erreur de chargement de l'historique");
     }
   };
 
   if (isLoading && totalItems === 0) {
     return (
       <div className="p-6 space-y-4 animate-pulse">
-        {[1,2,3,4].map(i => <div key={i} className="h-16 bg-slate-800/60 rounded-xl" />)}
+        {[1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-slate-800/60 rounded-xl" />)}
       </div>
     );
   }
@@ -110,19 +125,19 @@ export default function ClientsPage() {
         {canWrite && (
           <button onClick={openCreate}
             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-            âž• Nouveau client
+            Nouveau client
           </button>
         )}
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <input type="text" placeholder="ðŸ” Rechercher un client..." value={search}
+        <input type="text" placeholder="Rechercher un client..." value={search}
           onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 placeholder-slate-500" />
         <select value={filtreDebiteur} onChange={e => { setFiltreDebiteur(e.target.value); setCurrentPage(1); }}
           className="px-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-white text-sm focus:outline-none">
           <option value="">Tous les clients</option>
-          <option value="true">Clients dÃ©biteurs</option>
+          <option value="true">Clients débiteurs</option>
         </select>
       </div>
 
@@ -131,9 +146,9 @@ export default function ClientsPage() {
           <thead>
             <tr className="bg-slate-800/80 text-slate-400 text-xs uppercase tracking-wider">
               <th className="text-left p-4 font-semibold">Nom</th>
-              <th className="text-left p-4 font-semibold">TÃ©lÃ©phone</th>
+              <th className="text-left p-4 font-semibold">Téléphone</th>
               <th className="text-left p-4 font-semibold">Adresse</th>
-              <th className="text-right p-4 font-semibold">CrÃ©dit / Dette</th>
+              <th className="text-right p-4 font-semibold">Crédit / Dette</th>
               <th className="text-right p-4 font-semibold">Actions</th>
             </tr>
           </thead>
@@ -163,12 +178,12 @@ export default function ClientsPage() {
                     <div className="flex items-center justify-end gap-1">
                       {canWrite && soldeCredit > 0 && (
                         <button onClick={() => { setSelectedClient(c); setShowModal('paiement'); }}
-                          title="Paiement dette" className="px-2.5 py-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-xs">ðŸ’µ RÃ©gler</button>
+                          title="Paiement dette" className="px-2.5 py-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-xs">Régler</button>
                       )}
                       <button onClick={() => handleVoirHistorique(c)}
-                        title="Historique achats" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 transition-all text-xs">ðŸ“‹ Achats</button>
+                        title="Historique achats" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 transition-all text-xs">Achats</button>
                       {canWrite && (
-                        <button onClick={() => openEdit(c)} title="Modifier" className="px-2.5 py-1.5 hover:bg-orange-500/20 rounded-lg text-orange-400 hover:text-orange-300 transition-all text-xs">âœï¸ Modifier</button>
+                        <button onClick={() => openEdit(c)} title="Modifier" className="px-2.5 py-1.5 hover:bg-orange-500/20 rounded-lg text-orange-400 hover:text-orange-300 transition-all text-xs">Modifier</button>
                       )}
                     </div>
                   </td>
@@ -182,10 +197,10 @@ export default function ClientsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button disabled={currentPage <= 1} onClick={prevPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">â—€ PrÃ©cÃ©dent</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Précédent</button>
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
-            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant â–¶</button>
+            className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant</button>
         </div>
       )}
 
@@ -194,10 +209,10 @@ export default function ClientsPage() {
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-white">Historique - {selectedClient.nom}</h2>
-              <button onClick={() => setSelectedClient(null)} className="text-slate-500 hover:text-white transition-all">âœ•</button>
+              <button onClick={() => setSelectedClient(null)} className="text-slate-500 hover:text-white transition-all">Fermer</button>
             </div>
             {historique.length === 0 ? (
-              <p className="text-slate-500 text-center py-6">Aucun achat enregistrÃ©</p>
+              <p className="text-slate-500 text-center py-6">Aucun achat enregistré</p>
             ) : (
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {historique.map((h, i) => (
@@ -206,7 +221,7 @@ export default function ClientsPage() {
                       <p className="text-sm text-white">{new Date(h.date).toLocaleDateString('fr-FR')}</p>
                       <p className="text-xs text-slate-500">{h.type || 'Vente'}</p>
                     </div>
-                    <span className="text-white font-bold">{(h.montant || 0).toLocaleString('fr-FR')} FCFA</span>
+                    <span className="text-white font-bold">{Number(h.montant || 0).toLocaleString('fr-FR')} FCFA</span>
                   </div>
                 ))}
               </div>
@@ -221,10 +236,10 @@ export default function ClientsPage() {
             <h2 className="text-lg font-black text-white mb-2">Paiement dette</h2>
             <p className="text-sm text-slate-400 mb-4">Client: {selectedClient.nom} - Dette: {Number(selectedClient.soldeCredit || 0).toLocaleString('fr-FR')} FCFA</p>
             <div className="space-y-4">
-              <input type="number" placeholder="Montant Ã  payer" value={paiementData.montant}
-                onChange={e => setPaiementData({...paiementData, montant: e.target.value})}
+              <input type="number" min="0.01" max={Number(selectedClient.soldeCredit || 0)} step="0.01" inputMode="decimal" placeholder="Montant à payer" value={paiementData.montant}
+                onChange={e => setPaiementData({ ...paiementData, montant: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm" />
-              <select value={paiementData.modePaiement} onChange={e => setPaiementData({...paiementData, modePaiement: e.target.value})}
+              <select value={paiementData.modePaiement} onChange={e => setPaiementData({ ...paiementData, modePaiement: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
                 <option value="CASH">Cash</option>
                 <option value="ORANGE_MONEY">Orange Money</option>
@@ -245,8 +260,7 @@ export default function ClientsPage() {
 
       <ClientForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={() => setConfirmDelete(null)} onCancel={() => setConfirmDelete(null)}
-        title="Supprimer" message={`Supprimer ce client ? Cette action est irrÃ©versible.`} />
+        title="Supprimer" message="Supprimer ce client ? Cette action est irréversible." />
     </div>
   );
 }
-
