@@ -34,6 +34,16 @@ export class NotificationsService {
   }
 
   async create(tenantId: string, dto: CreateNotificationDto) {
+    if (dto.userId) {
+      const targetUser = await this.prisma.user.findFirst({
+        where: { id: dto.userId, tenantId, isActive: true },
+        select: { id: true },
+      });
+      if (!targetUser) {
+        throw new ForbiddenException('Destinataire de notification invalide');
+      }
+    }
+
     const tpl =
       dto.title && dto.message
         ? { title: dto.title, message: dto.message }
@@ -61,6 +71,7 @@ export class NotificationsService {
         where: {
           tenantId,
           groupKey: dto.groupKey,
+          userId: dto.userId ?? null,
           createdAt: { gte: new Date(Date.now() - 3600000) },
         },
       });
@@ -80,19 +91,17 @@ export class NotificationsService {
       notification = await this.prisma.notification.create({ data });
     }
 
-    // Émission temps réel (WebSocket) + canaux externes (email/WhatsApp/push).
-    // Volontairement non "awaité" : la création de la notification en base ne
-    // doit jamais échouer ou ralentir à cause d'un canal de diffusion externe.
+    // La diffusion est volontairement asynchrone : un fournisseur externe
+    // indisponible ne doit pas faire échouer la transaction métier.
     this.dispatchRealtime(notification, dto.userId).catch((e) =>
       this.logger.error(
-        `Échec dispatch temps réel pour notif ${notification.id}: ${(e as Error).message}`,
+        `Échec dispatch pour notif ${notification.id}: ${(e as Error).message}`,
       ),
     );
 
     return notification;
   }
 
- 
   private async dispatchRealtime(
     notification: any,
     userId?: string,
@@ -148,25 +157,34 @@ export class NotificationsService {
   }
 
   async findAll(tenantId: string, userId: string, filter: NotificationFilter) {
-    const where: any = { tenantId, ...this.buildUserFilter(userId) };
-    if (filter.isRead !== undefined) where.isRead = filter.isRead;
-    if (filter.type) where.type = filter.type;
-    if (filter.category) where.category = filter.category;
-    if (filter.priority) where.priority = filter.priority;
+    const and: any[] = [{ tenantId }, this.buildUserFilter(userId)];
+    if (filter.isRead !== undefined) and.push({ isRead: filter.isRead });
+    if (filter.type) and.push({ type: filter.type });
+    if (filter.category) and.push({ category: filter.category });
+    if (filter.priority) and.push({ priority: filter.priority });
+
     if (filter.search) {
-      where.OR = [
-        { title: { contains: filter.search, mode: 'insensitive' } },
-        { message: { contains: filter.search, mode: 'insensitive' } },
-      ];
-    }
-    if (filter.startDate || filter.endDate) {
-      where.createdAt = {};
-      if (filter.startDate) where.createdAt.gte = new Date(filter.startDate);
-      if (filter.endDate) where.createdAt.lte = new Date(filter.endDate);
+      const search = filter.search.trim();
+      if (search) {
+        and.push({
+          OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            { message: { contains: search, mode: 'insensitive' } },
+          ],
+        });
+      }
     }
 
-    const page = filter.page || 1;
-    const limit = filter.limit || 20;
+    if (filter.startDate || filter.endDate) {
+      const createdAt: Record<string, Date> = {};
+      if (filter.startDate) createdAt.gte = new Date(filter.startDate);
+      if (filter.endDate) createdAt.lte = new Date(filter.endDate);
+      and.push({ createdAt });
+    }
+
+    const where: any = { AND: and };
+    const page = Math.max(1, filter.page || 1);
+    const limit = Math.min(100, Math.max(1, filter.limit || 20));
     const skip = (page - 1) * limit;
 
     const [data, total, unread] = await Promise.all([
@@ -178,7 +196,13 @@ export class NotificationsService {
       }),
       this.prisma.notification.count({ where }),
       this.prisma.notification.count({
-        where: { tenantId, ...this.buildUserFilter(userId), isRead: false },
+        where: {
+          AND: [
+            { tenantId },
+            this.buildUserFilter(userId),
+            { isRead: false },
+          ],
+        },
       }),
     ]);
 
@@ -187,7 +211,13 @@ export class NotificationsService {
 
   async findUnread(tenantId: string, userId: string) {
     return this.prisma.notification.findMany({
-      where: { tenantId, ...this.buildUserFilter(userId), isRead: false },
+      where: {
+        AND: [
+          { tenantId },
+          this.buildUserFilter(userId),
+          { isRead: false },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -264,10 +294,13 @@ export class NotificationsService {
   }
 
   async deleteExpired(): Promise<void> {
-    const retentionDays = parseInt(
+    const parsedRetention = Number.parseInt(
       process.env.NOTIF_RETENTION_DAYS || '90',
       10,
     );
+    const retentionDays = Number.isFinite(parsedRetention) && parsedRetention > 0
+      ? Math.min(parsedRetention, 3650)
+      : 90;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - retentionDays);
     const result = await this.prisma.notification.deleteMany({
@@ -284,6 +317,7 @@ export class NotificationsService {
   ): Promise<void> {
     const notif = await this.prisma.notification.findUnique({
       where: { id: notifId },
+      select: { tenantId: true },
     });
     if (!notif) throw new NotFoundException('Notification introuvable');
     if (notif.tenantId !== tenantId)
@@ -296,6 +330,7 @@ export class NotificationsService {
   ): Promise<void> {
     const notif = await this.prisma.notification.findUnique({
       where: { id: notifId },
+      select: { userId: true },
     });
     if (!notif) throw new NotFoundException('Notification introuvable');
     if (notif.userId && notif.userId !== userId)
@@ -303,6 +338,12 @@ export class NotificationsService {
   }
 
   async getPreferences(tenantId: string, userId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId, isActive: true },
+      select: { id: true },
+    });
+    if (!user) throw new ForbiddenException('Utilisateur invalide');
+
     let prefs = await this.prisma.notificationPreference.findUnique({
       where: { userId },
     });
@@ -310,6 +351,8 @@ export class NotificationsService {
       prefs = await this.prisma.notificationPreference.create({
         data: { tenantId, userId },
       });
+    } else if (prefs.tenantId !== tenantId) {
+      throw new ForbiddenException('Préférences de notification invalides');
     }
     return prefs;
   }
