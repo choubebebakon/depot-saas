@@ -24,13 +24,6 @@ export interface AuditInput {
   ipAddress?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, unknown> | null;
-  // Champs "données obligatoires" du cahier des charges Audit Patron.
-  // motif/sessionId n'ont pas encore de source fiable partout (voir
-  // limites documentées dans le schéma) : laissés `undefined` la plupart
-  // du temps, ce n'est pas un oubli. requestId/metier, eux, sont
-  // automatiquement complétés depuis le contexte de requête (ALS) si non
-  // fournis explicitement — donc déjà renseignés rétroactivement pour
-  // tous les appels logEvent() existants sans y toucher.
   motif?: string | null;
   resultat?: AuditResultat;
   sessionId?: string | null;
@@ -47,13 +40,6 @@ export interface AuditJournalFilters {
   endDate?: string;
   limit?: number;
   depotId?: string | null;
-  // Recherche combinée précise (cahier des charges, section 18) : un
-  // Patron doit pouvoir taper "Jean stock modification Douala" et
-  // retrouver les lignes correspondantes. `search` filtre sur
-  // description/référence/email acteur ; combiné aux filtres structurés
-  // ci-dessus (action/dépôt/métier/date/sévérité) ça couvre le cas
-  // d'usage du document sans avoir à construire un moteur de recherche
-  // dédié.
   search?: string;
   montantMin?: number;
   montantMax?: number;
@@ -95,9 +81,7 @@ export class AuditService {
       },
     });
 
-    // Diffusion temps réel vers le dashboard patron connecté
     this.auditGateway.emitAuditUpdate(input.tenantId, entry);
-
     return entry;
   }
 
@@ -110,9 +94,7 @@ export class AuditService {
     let createdAtFilter: Prisma.DateTimeFilter | undefined;
     if (filters?.startDate || filters?.endDate) {
       createdAtFilter = {};
-      if (filters.startDate) {
-        createdAtFilter.gte = new Date(filters.startDate);
-      }
+      if (filters.startDate) createdAtFilter.gte = new Date(filters.startDate);
       if (filters.endDate) {
         const end = new Date(filters.endDate);
         end.setHours(23, 59, 59, 999);
@@ -151,6 +133,18 @@ export class AuditService {
     };
   }
 
+  private parseMetadata(metadataText: string | null): Record<string, unknown> | null {
+    if (!metadataText) return null;
+    try {
+      const parsed = JSON.parse(metadataText);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+    } catch {
+      // Une ligne d'audit ne doit jamais faire tomber tout le journal parce
+      // qu'un ancien metadataText est corrompu.
+      return null;
+    }
+  }
+
   async getJournalPatron(tenantId: string, filters?: AuditJournalFilters) {
     const where = this.buildWhere(tenantId, filters);
 
@@ -162,17 +156,18 @@ export class AuditService {
 
     return rows.map((row) => ({
       ...row,
-      metadata: row.metadataText ? JSON.parse(row.metadataText) : null,
+      metadata: this.parseMetadata(row.metadataText),
     }));
   }
 
-  /**
-   * Export CSV du journal — pas de limite de lignes (contrairement à
-   * getJournalPatron plafonné à 100 par défaut pour l'écran) : un export
-   * sert justement à sortir toutes les données correspondant aux filtres.
-   * Plafonné à 20 000 lignes par sécurité (évite un export accidentel
-   * démesuré qui bloquerait le processus Node).
-   */
+  /** Défense contre l'injection de formules lors de l'ouverture du CSV dans Excel/LibreOffice. */
+  private csvSafe(value: unknown): string | number {
+    if (value === null || value === undefined) return '';
+    const text = typeof value === 'string' ? value : JSON.stringify(value);
+    if (/^[=+\-@]/.test(text.trimStart())) return `'${text}`;
+    return text;
+  }
+
   async exportJournalCSV(tenantId: string, filters?: AuditJournalFilters) {
     const where = this.buildWhere(tenantId, filters);
     const rows = await this.prisma.journalAudit.findMany({
@@ -182,37 +177,29 @@ export class AuditService {
     });
 
     const lignes = rows.map((r) => ({
-      Date: r.createdAt.toISOString(),
-      Action: r.action,
-      Sévérité: r.severite,
-      // Résultat: (r as any).resultat ?? '',
-      // Métier: (r as any).metier ?? '',
-      Dépôt: r.depotId ?? '',
-      Utilisateur: r.actorEmail ?? '',
-      Rôle: r.actorRole ?? '',
-      Cible: r.targetType,
-      Référence: r.reference ?? '',
-      Description: r.description,
-      // Motif: (r as any).motif ?? '',
+      Date: this.csvSafe(r.createdAt.toISOString()),
+      Action: this.csvSafe(r.action),
+      Sévérité: this.csvSafe(r.severite),
+      Résultat: this.csvSafe(r.resultat),
+      Métier: this.csvSafe(r.metier),
+      Dépôt: this.csvSafe(r.depotId),
+      Utilisateur: this.csvSafe(r.actorEmail),
+      Rôle: this.csvSafe(r.actorRole),
+      Cible: this.csvSafe(r.targetType),
+      Référence: this.csvSafe(r.reference),
+      Description: this.csvSafe(r.description),
+      Motif: this.csvSafe(r.motif),
       Montant: r.montant ?? '',
-      'Valeur avant': r.valeurAvant ? JSON.stringify(r.valeurAvant) : '',
-      'Valeur après': r.valeurApres ? JSON.stringify(r.valeurApres) : '',
-      IP: r.ipAddress ?? '',
-      // RequestId: (r as any).requestId ?? '',
+      'Valeur avant': this.csvSafe(r.valeurAvant),
+      'Valeur après': this.csvSafe(r.valeurApres),
+      IP: this.csvSafe(r.ipAddress),
+      RequestId: this.csvSafe(r.requestId),
     }));
 
     const csv = unparse(lignes, { header: true });
-    // BOM UTF-8 : Excel (très majoritaire chez les Patrons) affiche mal
-    // les accents français sans ça.
     return Buffer.from('\uFEFF' + csv, 'utf-8');
   }
 
-  /**
-   * Export PDF du journal — plafonné à 500 lignes (contrairement au CSV) :
-   * un PDF est un format de lecture/impression, pas un format de données
-   * brutes. Au-delà, le document devient impraticable à consulter ; pour
-   * une extraction complète, le CSV est le bon outil.
-   */
   async exportJournalPDF(tenantId: string, filters?: AuditJournalFilters) {
     const where = this.buildWhere(tenantId, filters);
     const rows = await this.prisma.journalAudit.findMany({
@@ -225,7 +212,7 @@ export class AuditService {
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const pageWidth = 841.89; // A4 paysage
+    const pageWidth = 841.89;
     const pageHeight = 595.28;
     const margin = 30;
     const lineHeight = 14;
@@ -249,17 +236,9 @@ export class AuditService {
         color: rgb(0.4, 0.4, 0.4),
       });
       y -= 18;
-      const headerCols = [
-        'Date',
-        'Action',
-        'Sévérité',
-        'Utilisateur',
-        'Description',
-      ];
+      const headerCols = ['Date', 'Action', 'Sévérité', 'Utilisateur', 'Description'];
       const colX = [margin, margin + 90, margin + 190, margin + 260, margin + 400];
-      headerCols.forEach((h, i) => {
-        page.drawText(h, { x: colX[i], y, size: 9, font: fontBold });
-      });
+      headerCols.forEach((h, i) => page.drawText(h, { x: colX[i], y, size: 9, font: fontBold }));
       y -= lineHeight;
       page.drawLine({
         start: { x: margin, y: y + 4 },
@@ -278,9 +257,7 @@ export class AuditService {
         y = pageHeight - margin;
         drawHeader();
       }
-      const truncate = (s: string, n: number) =>
-        s.length > n ? s.slice(0, n - 1) + '…' : s;
-
+      const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
       const values = [
         r.createdAt.toISOString().slice(0, 16).replace('T', ' '),
         truncate(r.action, 22),
@@ -294,10 +271,7 @@ export class AuditService {
           y,
           size: 8,
           font,
-          color:
-            r.severite === AuditSeverite.CRITIQUE
-              ? rgb(0.7, 0, 0)
-              : rgb(0.1, 0.1, 0.1),
+          color: r.severite === AuditSeverite.CRITIQUE ? rgb(0.7, 0, 0) : rgb(0.1, 0.1, 0.1),
         });
       });
       y -= lineHeight;
@@ -307,7 +281,6 @@ export class AuditService {
     return Buffer.from(bytes);
   }
 
-  // GET /resume — Résumé financier période (inchangé)
   async getResume(tenantId: string, from: Date, to: Date) {
     const [revenus, depenses] = await Promise.all([
       this.prisma.vente.aggregate({
