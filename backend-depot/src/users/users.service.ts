@@ -218,6 +218,10 @@ export class UsersService {
     });
     if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
+    if (actor.role === RoleUser.GERANT && avant.depotId !== actor.depotId) {
+      throw new ForbiddenException('Un GERANT ne peut modifier que les utilisateurs de son dépôt.');
+    }
+
     await this.assertManagementScope(actor, avant.role, avant.depotId);
 
     const result = await this.prisma.user.updateMany({
@@ -279,6 +283,10 @@ export class UsersService {
     });
     if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
+    if (actor.role === RoleUser.GERANT && avant.depotId !== actor.depotId) {
+      throw new ForbiddenException('Un GERANT ne peut modifier que les utilisateurs de son dépôt.');
+    }
+
     const nextRole = data.role ?? avant.role;
     const nextDepotId = data.depotId !== undefined ? data.depotId : avant.depotId;
     const managedDepotId = await this.assertManagementScope(actor, nextRole, nextDepotId);
@@ -290,7 +298,13 @@ export class UsersService {
       safeData.depotId = managedDepotId;
     }
 
-    if (Object.keys(safeData).length === 0) return this.findOne(tenantId, id, actor.role === RoleUser.GERANT ? actor.depotId ?? undefined : undefined);
+    if (Object.keys(safeData).length === 0) {
+      return this.findOne(
+        tenantId,
+        id,
+        actor.role === RoleUser.GERANT ? actor.depotId ?? undefined : undefined,
+      );
+    }
 
     const result = await this.prisma.user.updateMany({
       where: { id, tenantId },
@@ -345,6 +359,10 @@ export class UsersService {
       select: { id: true, email: true, role: true, nom: true, depotId: true },
     });
     if (!avant) throw new NotFoundException('Utilisateur introuvable');
+
+    if (actor.role === RoleUser.GERANT && avant.depotId !== actor.depotId) {
+      throw new ForbiddenException('Un GERANT ne peut supprimer que les utilisateurs de son dépôt.');
+    }
 
     await this.assertManagementScope(actor, avant.role, avant.depotId);
 
