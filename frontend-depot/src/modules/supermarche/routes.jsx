@@ -18,7 +18,7 @@ const PromotionsPage        = lazy(() => import('./pages/PromotionsPage'));
 const ClientsPage           = lazy(() => import('./pages/ClientsPage'));
 const FournisseursPage      = lazy(() => import('./pages/FournisseursPage'));
 const ReceptionsPage        = lazy(() => import('./pages/ReceptionsPage'));
-const InventairePage        = lazy(() => import('./pages/InventaireProductionPage'));
+const InventairePage        = lazy(() => import('../../shared/pages/InventaireProductionPage'));
 const DepensesPage          = lazy(() => import('./pages/DepensesPage'));
 const RapportsPage          = lazy(() => import('./pages/RapportsPage'));
 const ParametresPage        = lazy(() => import('./pages/ParametresPage'));
@@ -90,7 +90,7 @@ function SupermarcheLayout() {
         </header>
         <main className="flex-1 overflow-y-auto relative custom-scrollbar"><div className="max-w-[1600px] mx-auto min-h-full"><Suspense fallback={<Loader />}><Outlet /></Suspense></div></main>
       </div>
-      {sidebarOpen && <div className="fixed inset-0 z-50 lg:hidden"><div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} /><div className="absolute left-0 top-0 h-full"><DynamicSidebar user={user} tenant={user?.tenant} onLogout={handleLogout} /></div></div>}
+      {sidebarOpen && <div className="fixed inset-0 z-50 lg:hidden"><div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} /><div className="absolute left-0 top-0 h-full"><DynamicSidebar user={user} tenant={user?.tenant} onLogout={handleLogout} /></div></div>}
       <GeStockChatbot metier={user?.metier} tenantNom={user?.nomEntreprise} />
       <SupportWidget />
     </div>
