@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { StatutAbonnement } from '@prisma/client';
+import { getDepotLimitForPlan } from '../common/plan-limits';
 
 interface TenantUserContext {
   userId: string;
@@ -117,6 +118,7 @@ export class TenantsService {
       tenant,
       depots,
       plan: String(tenant.planType).toLowerCase(),
+      depotLimit: getDepotLimitForPlan(tenant.planType),
       currentDepotId: user.depotId ?? null,
     };
   }
@@ -183,8 +185,6 @@ export class TenantsService {
       data.logo = updateTenantDto.logo;
     }
 
-    // Le GERANT peut gérer l'identité commerciale, mais pas l'adresse
-    // e-mail de référence du propriétaire. Cette donnée reste PATRON-only.
     if (updateTenantDto.emailPatron !== undefined) {
       if (user.role !== 'PATRON') {
         throw new ForbiddenException('Seul le PATRON peut modifier l’e-mail propriétaire.');
