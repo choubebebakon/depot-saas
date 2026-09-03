@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Patch,
   Post,
   Put,
+  Request,
 } from '@nestjs/common';
 import { StatutCommande } from '@prisma/client';
 import { ACCESS_LEVELS } from '../common/utils/rbac';
@@ -26,7 +28,7 @@ export class CommandesController {
     const tenantId = this.depotScope.getTenantId();
     const depotId = this.depotScope.getDepotId();
     if (!tenantId || !depotId) {
-      throw new Error('Contexte tenant/dépôt introuvable.');
+      throw new ForbiddenException('Contexte tenant/dépôt introuvable.');
     }
     return { tenantId, depotId };
   }
