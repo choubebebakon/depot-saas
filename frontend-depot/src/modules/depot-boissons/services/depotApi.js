@@ -37,10 +37,11 @@ export const depotApi = {
   retourConsigne: (data) => api.post('/depot-boissons/consignes/retour', data, getTenantHeaders(data?.depotId)),
   rembourserConsigne: (data) => api.post('/depot-boissons/consignes/remboursement', data, getTenantHeaders(data?.depotId)),
   historiqueConsignes: (clientId, depotIdOverride = null) => api.get(`/depot-boissons/consignes/${clientId}/historique`, getTenantHeaders(requireDepotId(depotIdOverride))),
-  // Les livraisons affichées sont les réceptions fournisseur validées/en cours.
-  // La création passe obligatoirement par le flux Achats/Réceptions sécurisé et idempotent.
   getLivraisons: () => api.get('/fournisseurs/receptions', getTenantHeaders()),
-  getLivraison: (id) => api.get(`/fournisseurs/receptions/${id}`, getTenantHeaders()),
+  getLivraison: (id) => api.get('/fournisseurs/receptions', getTenantHeaders()).then((res) => {
+    const rows = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+    return { ...res, data: rows.find((row) => row.id === id) || null };
+  }),
   createLivraison: () => Promise.reject(new Error('Utiliser le module Achats/Réceptions pour créer une livraison.')),
   updateLivraison: () => Promise.reject(new Error('Les réceptions sont immuables après création.')),
   deleteLivraison: () => Promise.reject(new Error('Une réception ne peut pas être supprimée depuis le suivi des livraisons.')),
