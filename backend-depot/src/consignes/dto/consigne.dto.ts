@@ -6,6 +6,7 @@ import {
   IsEnum,
   Min,
   Max,
+  MaxLength,
   IsArray,
   ArrayMaxSize,
   ValidateNested,
@@ -33,7 +34,7 @@ export class CreateTypeConsigneDto {
 
   @IsOptional()
   @IsString()
-  @Max(500)
+  @MaxLength(500)
   description?: string;
 }
 
@@ -45,7 +46,7 @@ export class UpdateTypeConsigneDto {
 
   @IsOptional()
   @IsString()
-  @Max(500)
+  @MaxLength(500)
   description?: string;
 }
 
@@ -71,7 +72,7 @@ export class MouvementConsigneDto {
 
   @IsOptional()
   @IsString()
-  @Max(500)
+  @MaxLength(500)
   motif?: string;
 }
 
