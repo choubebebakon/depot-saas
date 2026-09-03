@@ -44,11 +44,11 @@ export const boutiqueApi = {
   deleteFournisseur: (id) => api.delete(`/boutique/fournisseurs/${id}`, getTenantHeaders()),
 
   getDepenses: (params) =>
-    api.get('/boutique/depenses', { ...getTenantHeaders(), params: cleanParams(params) }),
-  getDepense: (id) => api.get(`/boutique/depenses/${id}`, getTenantHeaders()),
-  createDepense: (data) => api.post('/boutique/depenses', data, getTenantHeaders()),
-  updateDepense: (id, data) => api.patch(`/boutique/depenses/${id}`, data, getTenantHeaders()),
-  deleteDepense: (id) => api.delete(`/boutique/depenses/${id}`, getTenantHeaders()),
+    api.get('/boutique/depenses-production', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getDepense: (id) => api.get(`/boutique/depenses-production/${id}`, getTenantHeaders()),
+  createDepense: (data) => api.post('/boutique/depenses-production', data, getTenantHeaders()),
+  updateDepense: (id, data) => api.patch(`/boutique/depenses-production/${id}`, data, getTenantHeaders()),
+  deleteDepense: (id) => api.delete(`/boutique/depenses-production/${id}`, getTenantHeaders()),
 
   getFactures: (params) =>
     api.get('/boutique/factures', { ...getTenantHeaders(), params: cleanParams(params) }),
@@ -82,7 +82,6 @@ export const boutiqueApi = {
   deleteCategorie: (id) => api.delete(`/boutique/categories/${id}`, getTenantHeaders()),
   seedCategories: (type) => api.post(`/boutique/categories/seed/${type}`, {}, getTenantHeaders()),
 
-  // POS / Ventes
   createVente: (data) => api.post('/boutique/ventes', data, getTenantHeaders()),
   getVentes: (params) =>
     api.get('/boutique/ventes', { ...getTenantHeaders(), params: cleanParams(params) }),
