@@ -1,19 +1,18 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  Query,
+  Get,
+  Param,
+  Patch,
+  Post,
 } from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DepotsService } from './depots.service';
 import { CreateDepotDto } from './dto/create-depot.dto';
 import { UpdateDepotDto } from './dto/update-depot.dto';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('depots')
 export class DepotsController {
@@ -29,7 +28,7 @@ export class DepotsController {
     RoleUser.COMPTABLE,
   )
   findAll(@CurrentUser() user: any) {
-    return this.depotsService.findAll(user?.tenantId);
+    return this.depotsService.findAll(user);
   }
 
   @Get(':id')
@@ -41,29 +40,29 @@ export class DepotsController {
     RoleUser.MAGASINIER,
     RoleUser.COMPTABLE,
   )
-  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.depotsService.findOne(id, tenantId);
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.depotsService.findOne(id, user);
   }
 
   @Post()
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
   create(@Body() createDepotDto: CreateDepotDto, @CurrentUser() user: any) {
-    return this.depotsService.create(createDepotDto, user?.tenantId);
+    return this.depotsService.create(createDepotDto, user);
   }
 
   @Patch(':id')
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
   update(
     @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
     @Body() updateDepotDto: UpdateDepotDto,
+    @CurrentUser() user: any,
   ) {
-    return this.depotsService.update(id, tenantId, updateDepotDto);
+    return this.depotsService.update(id, updateDepotDto, user);
   }
 
   @Delete(':id')
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
-  remove(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.depotsService.remove(id, tenantId);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.depotsService.remove(id, user);
   }
 }
