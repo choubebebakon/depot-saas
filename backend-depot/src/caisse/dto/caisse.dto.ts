@@ -4,8 +4,10 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 
 export class OuvrirCaisseDto {
@@ -60,15 +62,20 @@ export class CreateDepenseDto {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(1)
   @MaxLength(100)
   categorie: string;
 
-  @IsNumber()
+  // Montant strictement positif et borné pour éviter les valeurs absurdes.
+  // IsNumber rejette par défaut NaN et Infinity.
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
+  @Max(1000000000)
   montant: number;
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(1)
   @MaxLength(500)
   motif: string;
 
