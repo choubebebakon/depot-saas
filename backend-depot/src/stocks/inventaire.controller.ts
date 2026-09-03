@@ -8,8 +8,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { ACCESS_LEVELS } from '../common/utils/rbac';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { InventaireService } from './inventaire.service';
 import { RealiserInventaireDto } from './dto/realiser-inventaire.dto';
 
@@ -43,7 +42,7 @@ export class InventaireController {
   }
 
   @Get()
-  @Roles(...ACCESS_LEVELS.GERANT)
+  @RequirePermission('inventaire', 'read')
   async getInventaire(
     @Req() req: any,
     @Headers('x-depot-id') headerDepotId?: string,
@@ -57,7 +56,7 @@ export class InventaireController {
   }
 
   @Post()
-  @Roles(...ACCESS_LEVELS.GERANT)
+  @RequirePermission('inventaire', 'write')
   async realiserInventaire(
     @Req() req: any,
     @Headers('x-depot-id') headerDepotId: string | undefined,
