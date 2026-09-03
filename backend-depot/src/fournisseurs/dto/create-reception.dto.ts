@@ -1,50 +1,65 @@
 import {
-  IsString,
   IsArray,
+  IsEnum,
+  IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
+  IsString,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ModePaiement } from '@prisma/client';
+
+const UNITES_RECEPTION = [
+  'PIECE',
+  'BOUTEILLE',
+  'CASIER',
+  'PACK',
+  'PALETTE',
+  'PLATEAU',
+] as const;
 
 export class LigneReceptionDto {
   @IsString()
+  @MaxLength(100)
   articleId: string;
 
-  @IsNumber()
-  @Min(0)
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   quantiteLivree: number;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(0)
-  quantiteGratuite: number;
+  quantiteGratuite: number = 0;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   prixAchatUnitaire: number;
 
   @IsOptional()
   @IsString()
-  unite?: string; // CASIER, PACK, PLATEAU, BOUTEILLE
+  @IsIn(UNITES_RECEPTION)
+  unite?: (typeof UNITES_RECEPTION)[number];
 }
 
 export class CreateReceptionDto {
   @IsString()
+  @MaxLength(100)
   fournisseurId: string;
 
-  @IsString()
-  depotId: string;
+  @IsEnum(ModePaiement)
+  modePaiement: ModePaiement;
 
-  @IsString()
-  tenantId: string;
-
-  @IsString()
-  modePaiement: string;
-
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  montantPaye: number;
+  montantPaye: number = 0;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -53,9 +68,11 @@ export class CreateReceptionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   numBordereau?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   note?: string;
 }
