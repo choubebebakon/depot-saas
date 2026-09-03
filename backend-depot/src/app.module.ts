@@ -21,7 +21,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { DepotsModule } from './depots/depots.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
-import { PermissionGuard } from './common/guards/permission.guard';
+import { PermissionGuard } from './auth/guards/permission.guard';
 import { AccessStatusGuard } from './common/guards/access-status.guard';
 import { QuotaDepotGuard } from './common/guards/quota-depot.guard';
 
