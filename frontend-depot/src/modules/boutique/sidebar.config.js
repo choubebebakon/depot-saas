@@ -2,7 +2,7 @@ export const SIDEBAR_MENUS = [
   { label: 'Tableau de bord', icon: 'BarChart3', path: '/boutique/dashboard' },
   { label: 'Ventes',          icon: 'DollarSign', path: '/boutique/ventes' },
   { label: 'Stock',           icon: 'Package', path: '/boutique/stock' },
-  { label: 'Inventaire',      icon: 'ClipboardList', path: '/boutique/inventaire' },
+  { label: 'Inventaire',      icon: 'Clipboard', path: '/boutique/inventaire' },
   { label: 'Clients',         icon: 'User', path: '/boutique/clients' },
   { label: 'Caisse',          icon: 'Wallet', path: '/boutique/caisse' },
   { label: 'Catégories',      icon: 'Tag', path: '/boutique/categories' },
