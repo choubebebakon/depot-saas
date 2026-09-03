@@ -31,6 +31,7 @@ const RapportsPage = lazy(() => import('./pages/RapportsPage'));
 const DepensesPage = lazy(() => import('./pages/DepensesPage'));
 const ParametresPage = lazy(() => import('./pages/ParametresPage'));
 const LotsPage = lazy(() => import('../../shared/pages/LotsPage'));
+const InventairePage = lazy(() => import('../../shared/pages/InventaireProductionPage'));
 
 function Loader() { return <div className="flex items-center justify-center py-32"><div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-400 border-t-transparent" /></div>; }
 function gate(sousModule, Page) { return <PermissionGate sousModule={sousModule}><Page /></PermissionGate>; }
@@ -47,6 +48,7 @@ export default function DepotBoissonsRoutes() {
   return <MetierGuard><DepotProvider><Routes><Route element={<DepotLayout />}>
     <Route path="dashboard" element={gate('dashboard', DashboardDepot)} />
     <Route path="stock" element={gate('stock_articles', StockArticlesPage)} />
+    <Route path="inventaire" element={gate('inventaire', InventairePage)} />
     <Route path="achats" element={<AchatsAccess />} />
     <Route path="promotions" element={gate('promotions', PromotionsPage)} />
     <Route path="consignes" element={gate('consignes', ConsignesPage)} />
