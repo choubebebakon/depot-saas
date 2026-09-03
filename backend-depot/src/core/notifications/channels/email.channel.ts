@@ -46,10 +46,30 @@ export class EmailChannel {
     return this.configService.get<string>('APP_NAME', 'GeStock SaaS');
   }
 
+  private escapeHtml(value: unknown): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private safeActionUrl(value: unknown): string | null {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    try {
+      const url = new URL(value, this.configService.get<string>('APP_URL', 'https://gestock.cm'));
+      if (!['http:', 'https:'].includes(url.protocol)) return null;
+      return this.escapeHtml(url.toString());
+    } catch {
+      return null;
+    }
+  }
+
   async send(to: string, subject: string, html: string): Promise<boolean> {
     if (!this.initialized || !this.transporter) {
-      this.logger.log(`[EMAIL LOG] To: ${to} | Subject: ${subject}`);
-      return true;
+      this.logger.warn('Email non envoyé : SMTP non configuré');
+      return false;
     }
 
     try {
@@ -84,9 +104,9 @@ export class EmailChannel {
       STOCK_EXPIRATION: "Produits proches de l'expiration",
       PAYMENT_SUCCESS: 'Paiement confirmé',
       PAYMENT_FAILED: 'Paiement échoué',
-      EXPIRY_J7: `Votre abonnement expire dans 7 jours`,
-      EXPIRY_J3: `Votre abonnement expire dans 3 jours`,
-      EXPIRY_J1: `Dernier jour — Abonnement expire demain`,
+      EXPIRY_J7: 'Votre abonnement expire dans 7 jours',
+      EXPIRY_J3: 'Votre abonnement expire dans 3 jours',
+      EXPIRY_J1: 'Dernier jour — Abonnement expire demain',
       RAPPORT_JOURNALIER: 'Votre rapport journalier GeStock',
       ALERTE_PREDICTIVE: 'Alerte prédictive GeStock',
     };
@@ -94,9 +114,13 @@ export class EmailChannel {
   }
 
   private buildHtml(type: NotifType, data: Record<string, unknown>): string {
-    const appName = this.getAppName();
-    const message =
-      data.message || 'Vous avez une nouvelle notification GeStock.';
+    const appName = this.escapeHtml(this.getAppName());
+    const message = this.escapeHtml(
+      data.message || 'Vous avez une nouvelle notification GeStock.',
+    );
+    const title = this.escapeHtml(data.title || 'Notification');
+    const actionLabel = this.escapeHtml(data.actionLabel || 'Voir');
+    const actionUrl = this.safeActionUrl(data.actionUrl);
 
     return `
 <!DOCTYPE html>
@@ -110,9 +134,9 @@ export class EmailChannel {
 <h1 style="color:#fff;font-size:20px;margin:0;font-weight:700">${appName}</h1>
 </td></tr>
 <tr><td style="padding:32px 40px">
-<h2 style="color:#1e293b;font-size:20px;margin:0 0 16px">${data.title || 'Notification'}</h2>
+<h2 style="color:#1e293b;font-size:20px;margin:0 0 16px">${title}</h2>
 <p style="color:#475569;font-size:16px;line-height:1.6;margin:0">${message}</p>
-${data.actionUrl ? `<div style="margin-top:24px"><a href="${data.actionUrl}" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600">${data.actionLabel || 'Voir'}</a></div>` : ''}
+${actionUrl ? `<div style="margin-top:24px"><a href="${actionUrl}" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600">${actionLabel}</a></div>` : ''}
 </td></tr>
 <tr><td style="background:#f8fafc;padding:24px 40px;border-top:1px solid #e2e8f0;text-align:center">
 <p style="color:#94a3b8;font-size:12px;margin:0">Cet email a été envoyé automatiquement par ${appName}. Merci de ne pas y répondre.</p>
