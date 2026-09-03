@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,41 +10,27 @@ import api from '../api/axios';
 import FormModal from '../shared/components/forms/FormModal';
 import FormField from '../shared/components/forms/FormField';
 import {
-  Plus, Edit, Trash2, MapPin, Building2, Save, X,
-  AlertTriangle, RefreshCw, Hash, Crown
+  Plus, Edit, Archive, MapPin, Building2, Save,
+  AlertTriangle, Hash, Crown
 } from 'lucide-react';
 
-// 🔥 CONFIGURATION DES LIMITES RÉELLES DE GESTOCK
-const PLAN_DEPOT_LIMITS = {
-  FREE: 1,
-  SOLO: 1,
-  PME: 10,       // 👈 Ton offre PME donne droit à 10 dépôts max !
-  PREMIUM: 20,
-  ENTERPRISE: Infinity
-};
-
-// Schéma de validation Zod
 const depotSchema = z.object({
-  nom: z.string().min(1, 'Le nom du dépôt est requis'),
-  adresse: z.string().optional(),
-  emplacement: z.string().optional(),
-  codePrefix: z.string().min(1, 'Le préfixe est requis').max(5, 'Le préfixe ne peut pas dépasser 5 caractères'),
+  nom: z.string().trim().min(2, 'Le nom du dépôt est requis').max(120),
+  adresse: z.string().trim().min(1, 'L’adresse est requise').max(255),
+  emplacement: z.string().trim().min(1, 'L’emplacement est requis').max(120),
+  codePrefix: z.string().trim().min(2, 'Le préfixe est requis').max(20),
 });
 
 export default function DepotsPage() {
-  const { metier: metierParam } = useParams();
-  const { metier: metierAuth, tenantId, planType, refreshUser } = useAuth();
+  const { planType, refreshUser, tenantId } = useAuth();
   const { depotActif, changerDepot } = useDepot();
-  const metier = metierParam || metierAuth;
-  const prefix = metier ? metier.toLowerCase().replace(/_/g, '-') : '';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDepot, setEditingDepot] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
 
-  const { success, error: notifError, info } = useNotif();
+  const { success, error: notifError } = useNotif();
 
-  // Configuration react-hook-form avec Zod
   const {
     register,
     handleSubmit: handleFormSubmit,
@@ -61,93 +46,97 @@ export default function DepotsPage() {
     },
   });
 
-  // Chargement des dépôts du tenant actuel
-  const { data: depots = [], loading, refetch } = useData('/depots', { params: { tenantId }, enabled: !!tenantId });
+  const { data: depots = [], loading, refetch } = useData('/depots', {
+    enabled: !!tenantId,
+  });
 
-  // 🔥 ACTION : Au chargement de la page, on va vérifier silencieusement en base de données si le plan a changé
+  const { data: tenantInfo, loading: tenantLoading } = useData('/tenant/info', {
+    enabled: !!tenantId,
+  });
+
   useEffect(() => {
-    if (refreshUser) {
-      refreshUser();
-    }
+    if (refreshUser) refreshUser();
   }, [refreshUser]);
 
-  // Calcul dynamique de la limite actuelle de l'utilisateur
-  const currentPlan = planType || 'FREE';
-  const maxAllowedDepots = PLAN_DEPOT_LIMITS[currentPlan] ?? 1;
+  const currentPlan = planType || tenantInfo?.tenant?.planType || 'FREE';
+  const rawLimit = tenantInfo?.depotLimit;
+  const maxAllowedDepots = Number.isFinite(Number(rawLimit))
+    ? Number(rawLimit)
+    : Infinity;
   const isLimitReached = depots.length >= maxAllowedDepots;
 
   const openModal = (depot = null) => {
     if (depot) {
       setEditingDepot(depot);
       reset({
-        nom: depot.nom,
-        adresse: depot.adresse,
-        emplacement: depot.emplacement,
+        nom: depot.nom || '',
+        adresse: depot.adresse || '',
+        emplacement: depot.emplacement || '',
         codePrefix: depot.codePrefix || 'DEP',
       });
       setIsModalOpen(true);
-    } else {
-      if (isLimitReached) {
-        notifError(`Votre formule actuelle (${currentPlan}) est limitée à ${maxAllowedDepots} dépôt(s). Veuillez améliorer votre abonnement.`, 'Limite atteinte');
-        return;
-      }
-      setEditingDepot(null);
-      reset({
-        nom: '',
-        adresse: '',
-        emplacement: '',
-        codePrefix: 'DEP',
-      });
-      setIsModalOpen(true);
+      return;
     }
+
+    if (isLimitReached) {
+      notifError(
+        `Votre formule actuelle (${currentPlan}) a atteint son quota de dépôts. Veuillez améliorer votre abonnement.`,
+        'Limite atteinte',
+      );
+      return;
+    }
+
+    setEditingDepot(null);
+    reset({ nom: '', adresse: '', emplacement: '', codePrefix: 'DEP' });
+    setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingDepot(null);
-    reset();
+    reset({ nom: '', adresse: '', emplacement: '', codePrefix: 'DEP' });
   };
 
   const onSubmit = async (data) => {
     setFormLoading(true);
     try {
       if (editingDepot) {
-        await api.patch(`/depots/${editingDepot.id}`, { ...data, tenantId });
+        await api.patch(`/depots/${editingDepot.id}`, data);
         success('Dépôt mis à jour');
       } else {
-        await api.post('/depots', { ...data, tenantId });
+        await api.post('/depots', data);
         success('Dépôt créé avec succès');
       }
       closeModal();
-      refetch();
+      await refetch();
     } catch (err) {
-      notifError(err.response?.data?.message || 'Erreur lors de l\'opération', 'Échec');
+      notifError(err.response?.data?.message || 'Erreur lors de l’opération', 'Échec');
     } finally {
       setFormLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleArchive = async (id) => {
+    if (!window.confirm('Archiver ce dépôt ? Son historique sera conservé.')) return;
+
     try {
-      await api.delete(`/depots/${id}`, { params: { tenantId } });
-      success('Dépôt supprimé');
-      refetch();
+      await api.delete(`/depots/${id}`);
+      success('Dépôt archivé');
+      await refetch();
     } catch (err) {
-      notifError(err.response?.data?.message || 'Erreur de suppression', 'Échec');
+      notifError(err.response?.data?.message || 'Erreur d’archivage', 'Échec');
     }
   };
 
   return (
     <div className="p-6 space-y-8 bg-slate-900 min-h-screen text-slate-200">
-      
-      {/* 📊 BANDEAU DE STATUT D'ABONNEMENT ET QUOTA */}
       <div className="bg-slate-800/40 border border-slate-700/60 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-amber-500/10 text-amber-400 rounded-xl flex items-center justify-center">
             <Crown size={20} />
           </div>
           <div>
-            <p className="font-bold text-white text-xs uppercase tracking-wider">Formule Actuelle</p>
+            <p className="font-bold text-white text-xs uppercase tracking-wider">Formule actuelle</p>
             <p className="text-slate-400 font-medium">Plan : <span className="text-amber-400 font-black">{currentPlan}</span></p>
           </div>
         </div>
@@ -155,7 +144,7 @@ export default function DepotsPage() {
         <div className="text-center sm:text-right">
           <p className="font-bold text-white text-xs uppercase tracking-wider">Quota d'utilisation</p>
           <p className="text-slate-400 font-medium">
-            <span className="text-white font-black">{depots.length}</span> sur <span className="text-indigo-400 font-black">{maxAllowedDepots === Infinity ? 'Illimité' : maxAllowedDepots}</span> dépôt(s) activé(s)
+            <span className="text-white font-black">{depots.length}</span> sur <span className="text-indigo-400 font-black">{tenantLoading ? '...' : (maxAllowedDepots === Infinity ? 'Illimité' : maxAllowedDepots)}</span> dépôt(s) actif(s)
           </p>
         </div>
       </div>
@@ -163,49 +152,41 @@ export default function DepotsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-            <Building2 className="text-indigo-500" size={32} />
-            Gestion des Dépôts
+            <Building2 className="text-indigo-500" size={32} /> Gestion des dépôts
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Configurez vos entrepôts de stockage et points de vente physiques.
-          </p>
+          <p className="text-slate-500 text-sm mt-1">Configurez vos entrepôts de stockage et points de vente physiques.</p>
         </div>
 
-        {/* Bouton stylisé ou bloqué selon la limite */}
         <button
+          type="button"
           onClick={() => openModal()}
-          disabled={!editingDepot && isLimitReached}
+          disabled={isLimitReached}
           className={`font-black px-6 py-3 rounded-2xl transition-all shadow-lg flex items-center gap-2 ${
-            isLimitReached 
-              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 shadow-none' 
+            isLimitReached
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 shadow-none'
               : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
           }`}
         >
-          <Plus size={20} />
-          Nouveau Dépôt
+          <Plus size={20} /> Nouveau dépôt
         </button>
       </div>
 
-      {/* Message d'avertissement si quota atteint */}
-      {isLimitReached && (
+      {isLimitReached && maxAllowedDepots !== Infinity && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 text-amber-400 text-xs font-semibold">
           <AlertTriangle size={18} className="shrink-0" />
-          <span>Vous avez atteint la limite maximale de votre plan actuel ({maxAllowedDepots} dépôt). Pour débloquer plus d'emplacements, passez à une offre supérieure.</span>
+          <span>Quota atteint : {depots.length}/{maxAllowedDepots} dépôt(s) actif(s). Le contrôle définitif reste effectué par le serveur.</span>
         </div>
       )}
 
-      {/* Grille des dépôts */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
-          [1, 2, 3].map(i => (
-            <div key={i} className="h-64 bg-slate-800/50 rounded-3xl animate-pulse border border-slate-700" />
-          ))
+          [1, 2, 3].map((i) => <div key={i} className="h-64 bg-slate-800/50 rounded-3xl animate-pulse border border-slate-700" />)
         ) : depots.length === 0 ? (
           <div className="col-span-full text-center py-20 text-slate-500">
             <Building2 size={48} className="mx-auto mb-4 opacity-50" />
             <p className="font-bold text-lg">Aucun dépôt configuré</p>
           </div>
-        ) : depots.map(depot => (
+        ) : depots.map((depot) => (
           <div
             key={depot.id}
             className={`group relative bg-slate-800/50 border rounded-3xl p-6 transition-all hover:shadow-2xl hover:shadow-indigo-500/5 ${
@@ -213,9 +194,7 @@ export default function DepotsPage() {
             }`}
           >
             {depotActif?.id === depot.id && (
-              <div className="absolute -top-3 left-6 px-3 py-1 bg-indigo-600 text-white text-[10px] font-black rounded-full shadow-lg uppercase tracking-widest">
-                Dépôt Actif
-              </div>
+              <div className="absolute -top-3 left-6 px-3 py-1 bg-indigo-600 text-white text-[10px] font-black rounded-full shadow-lg uppercase tracking-widest">Dépôt actif</div>
             )}
 
             <div className="flex justify-between items-start mb-6">
@@ -224,20 +203,20 @@ export default function DepotsPage() {
               </div>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => openModal(depot)}
+                  aria-label={`Modifier ${depot.nom}`}
                   className="p-2 bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl transition-all"
                 >
                   <Edit size={16} />
                 </button>
                 <button
-                  onClick={() => {
-                    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce dépôt ?')) {
-                      handleDelete(depot.id);
-                    }
-                  }}
-                  className="p-2 bg-slate-900/50 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                  type="button"
+                  onClick={() => handleArchive(depot.id)}
+                  aria-label={`Archiver ${depot.nom}`}
+                  className="p-2 bg-slate-900/50 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
                 >
-                  <Trash2 size={16} />
+                  <Archive size={16} />
                 </button>
               </div>
             </div>
@@ -246,7 +225,7 @@ export default function DepotsPage() {
               <div>
                 <h3 className="text-xl font-black text-white uppercase tracking-tight truncate">{depot.nom}</h3>
                 <p className="text-slate-500 text-xs mt-1 flex items-center gap-1">
-                  <Hash size={12} /> Prefix: <span className="text-indigo-400 font-bold">{depot.codePrefix}</span>
+                  <Hash size={12} /> Préfixe : <span className="text-indigo-400 font-bold">{depot.codePrefix}</span>
                 </p>
               </div>
 
@@ -262,11 +241,13 @@ export default function DepotsPage() {
               </div>
 
               <button
+                type="button"
                 onClick={() => changerDepot(depot)}
+                disabled={depotActif?.id === depot.id}
                 className={`w-full mt-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
                   depotActif?.id === depot.id
-                  ? 'bg-emerald-500/10 text-emerald-400 cursor-default border border-emerald-500/20'
-                  : 'bg-slate-900 text-slate-400 hover:bg-indigo-600 hover:text-white border border-slate-700 hover:border-indigo-500 shadow-inner'
+                    ? 'bg-emerald-500/10 text-emerald-400 cursor-default border border-emerald-500/20'
+                    : 'bg-slate-900 text-slate-400 hover:bg-indigo-600 hover:text-white border border-slate-700 hover:border-indigo-500 shadow-inner'
                 }`}
               >
                 {depotActif?.id === depot.id ? 'Sélectionné' : 'Définir comme actif'}
@@ -276,48 +257,22 @@ export default function DepotsPage() {
         ))}
       </div>
 
-      {/* Modal d'ajout / modification */}
       <FormModal
         isOpen={isModalOpen}
         onClose={closeModal}
         onSubmit={handleFormSubmit(onSubmit)}
-        title={editingDepot ? 'Modifier le Dépôt' : 'Nouveau Dépôt'}
+        title={editingDepot ? 'Modifier le dépôt' : 'Nouveau dépôt'}
         loading={formLoading}
-        submitLabel={editingDepot ? 'Mettre à jour' : 'Créer le Dépôt'}
+        submitLabel={editingDepot ? 'Mettre à jour' : 'Créer le dépôt'}
         submitIcon={<Save size={18} />}
       >
         <div className="space-y-4">
-          <FormField
-            label="Nom du Dépôt"
-            name="nom"
-            placeholder="ex: Entrepôt Nord"
-            error={errors.nom?.message}
-            {...register('nom')}
-          />
+          <FormField label="Nom du dépôt" name="nom" placeholder="Ex. Entrepôt Nord" error={errors.nom?.message} {...register('nom')} />
           <div className="grid grid-cols-2 gap-4">
-            <FormField
-              label="Préfixe Code"
-              name="codePrefix"
-              placeholder="DEP"
-              maxLength={5}
-              error={errors.codePrefix?.message}
-              {...register('codePrefix')}
-            />
-            <FormField
-              label="Emplacement"
-              name="emplacement"
-              placeholder="ex: Zone A"
-              {...register('emplacement')}
-            />
+            <FormField label="Préfixe code" name="codePrefix" placeholder="DEP" maxLength={20} error={errors.codePrefix?.message} {...register('codePrefix')} />
+            <FormField label="Emplacement" name="emplacement" placeholder="Ex. Zone A" error={errors.emplacement?.message} {...register('emplacement')} />
           </div>
-          <FormField
-            label="Adresse Physique"
-            name="adresse"
-            type="textarea"
-            rows={3}
-            placeholder="ex: Boulevard de la liberté, Douala"
-            {...register('adresse')}
-          />
+          <FormField label="Adresse physique" name="adresse" type="textarea" rows={3} placeholder="Ex. Boulevard de la Liberté, Douala" error={errors.adresse?.message} {...register('adresse')} />
         </div>
       </FormModal>
     </div>
