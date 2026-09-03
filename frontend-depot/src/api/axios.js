@@ -33,11 +33,23 @@ function pickDepotIdFromRequest(config) {
   return typeof depotId === 'string' && depotId.trim() && depotId !== 'all' ? depotId : null;
 }
 
+function isReceptionCreate(config) {
+  const method = (config.method || 'get').toLowerCase();
+  const url = config.url || '';
+  return method === 'post' && /\/fournisseurs\/receptions\/?$/.test(url);
+}
+
 api.defaults.headers.post['Content-Type'] = 'application/json';
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('depot_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  // Une même requête POST doit conserver la même clé pendant les retries Axios.
+  // Le backend utilise cette clé pour rendre la création d'une réception idempotente.
+  if (isReceptionCreate(config) && !config.headers['X-Idempotency-Key']) {
+    config.headers['X-Idempotency-Key'] = crypto.randomUUID();
+  }
 
   const depotId = pickDepotIdFromRequest(config) || getActiveDepotId();
   if (!depotId || shouldSkipDepotInjection(config.url || '')) return config;
