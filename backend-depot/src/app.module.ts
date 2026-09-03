@@ -12,6 +12,7 @@ import { ContextMiddleware } from './common/middleware/context.middleware';
 import { DepotScopeInterceptor } from './common/interceptors/depot-scope.interceptor';
 import { ClientDepotScopeInterceptor } from './common/interceptors/client-depot-scope.interceptor';
 import { ClientCreditSafetyInterceptor } from './common/interceptors/client-credit-safety.interceptor';
+import { AuditSafetyInterceptor } from './common/interceptors/audit-safety.interceptor';
 import { PromotionScopeInterceptor } from './common/interceptors/promotion-scope.interceptor';
 import { TourneeScopeInterceptor } from './common/interceptors/tournee-scope.interceptor';
 
@@ -124,6 +125,7 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
     { provide: APP_INTERCEPTOR, useClass: DepotScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: ClientDepotScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: ClientCreditSafetyInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditSafetyInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PromotionScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: TourneeScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: RealtimeMutationInterceptor },
