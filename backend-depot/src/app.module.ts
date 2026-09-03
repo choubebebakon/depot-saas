@@ -11,6 +11,7 @@ import { DepotScopeService } from './common/depot-scope.service';
 import { ContextMiddleware } from './common/middleware/context.middleware';
 import { DepotScopeInterceptor } from './common/interceptors/depot-scope.interceptor';
 import { ClientDepotScopeInterceptor } from './common/interceptors/client-depot-scope.interceptor';
+import { ClientCreditSafetyInterceptor } from './common/interceptors/client-credit-safety.interceptor';
 import { PromotionScopeInterceptor } from './common/interceptors/promotion-scope.interceptor';
 import { TourneeScopeInterceptor } from './common/interceptors/tournee-scope.interceptor';
 
@@ -20,7 +21,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { DepotsModule } from './depots/depots.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
-import { PermissionGuard } from './auth/guards/permission.guard';
+import { PermissionGuard } from './common/guards/permission.guard';
 import { AccessStatusGuard } from './common/guards/access-status.guard';
 import { QuotaDepotGuard } from './common/guards/quota-depot.guard';
 
@@ -122,6 +123,7 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
     { provide: APP_GUARD, useClass: PermissionGuard },
     { provide: APP_INTERCEPTOR, useClass: DepotScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: ClientDepotScopeInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: ClientCreditSafetyInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PromotionScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: TourneeScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: RealtimeMutationInterceptor },
