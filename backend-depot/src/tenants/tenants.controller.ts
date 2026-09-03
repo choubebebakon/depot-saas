@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseInterceptors } from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { Request } from 'express';
 import { TenantsService } from './tenants.service';
@@ -6,6 +6,8 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Audit } from '../audit/decorators/audit.decorator';
+import { AuditInterceptor } from '../audit/interceptors/audit.interceptor';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -18,6 +20,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 @Controller('tenant')
+@UseInterceptors(AuditInterceptor)
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
@@ -28,6 +31,7 @@ export class TenantsController {
   }
 
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
+  @Audit('MODIFICATION_PARAMETRES', 'Tenant')
   @Patch(':id')
   update(
     @Param('id') id: string,
