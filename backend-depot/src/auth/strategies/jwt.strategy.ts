@@ -55,13 +55,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         role: true,
         tenantId: true,
         depotId: true,
+        isActive: true,
         tenant: {
           select: { estActif: true },
         },
       },
     });
 
-    if (!user || !user.tenant.estActif) {
+    if (!user || !user.isActive || !user.tenant.estActif) {
       throw new UnauthorizedException('Session invalide ou compte indisponible.');
     }
 
