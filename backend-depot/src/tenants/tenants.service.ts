@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
@@ -24,13 +29,21 @@ export class TenantsService {
 
     return this.prisma.tenant.create({
       data: {
-        nomEntreprise: createTenantDto.nomEntreprise,
-        emailPatron: createTenantDto.emailPatron,
-        telephone: createTenantDto.telephone,
+        nomEntreprise: createTenantDto.nomEntreprise.trim(),
+        emailPatron: createTenantDto.emailPatron.trim().toLowerCase(),
+        telephone: createTenantDto.telephone?.trim() || null,
         dateEssaiFin: dateFinEssai,
         dateExpiration: dateFinEssai,
         statutAbonnement: StatutAbonnement.TRIAL,
         estActif: true,
+      },
+      select: {
+        id: true,
+        nomEntreprise: true,
+        emailPatron: true,
+        telephone: true,
+        statutAbonnement: true,
+        dateEssaiFin: true,
       },
     });
   }
@@ -46,11 +59,6 @@ export class TenantsService {
     });
   }
 
-  /**
-   * Retourne uniquement le tenant de l'utilisateur authentifié.
-   * Un employé ne reçoit que son dépôt assigné, tandis qu'un PATRON/GERANT
-   * peut voir les dépôts actifs de son propre tenant.
-   */
   async getInfo(user?: TenantUserContext) {
     if (!user?.tenantId) {
       throw new ForbiddenException('Contexte tenant absent.');
@@ -68,6 +76,11 @@ export class TenantsService {
         dateEssaiFin: true,
         dateExpiration: true,
         estActif: true,
+        slogan: true,
+        adresse: true,
+        logo: true,
+        messageFin: true,
+        metier: true,
       },
     });
 
@@ -75,7 +88,8 @@ export class TenantsService {
       throw new NotFoundException('Tenant introuvable.');
     }
 
-    const depotWhere = TENANT_MANAGERS.has(user.role)
+    const isManager = TENANT_MANAGERS.has(user.role);
+    const depotWhere = isManager
       ? { tenantId: user.tenantId, isArchived: false }
       : {
           tenantId: user.tenantId,
@@ -89,7 +103,8 @@ export class TenantsService {
         id: true,
         nom: true,
         adresse: true,
-        telephone: true,
+        emplacement: true,
+        codePrefix: true,
         isArchived: true,
         tenantId: true,
         createdAt: true,
@@ -101,8 +116,6 @@ export class TenantsService {
     return {
       tenant,
       depots,
-      // Le frontend historique attend les plans en minuscules.
-      // L'enum Prisma reste volontairement en majuscules dans `tenant`.
       plan: String(tenant.planType).toLowerCase(),
       currentDepotId: user.depotId ?? null,
     };
@@ -115,7 +128,19 @@ export class TenantsService {
 
     return this.prisma.tenant.findFirst({
       where: { id: tenantId },
-      include: { depots: true },
+      select: {
+        id: true,
+        nomEntreprise: true,
+        emailPatron: true,
+        telephone: true,
+        slogan: true,
+        adresse: true,
+        logo: true,
+        messageFin: true,
+        planType: true,
+        statutAbonnement: true,
+        estActif: true,
+      },
     });
   }
 
@@ -129,12 +154,73 @@ export class TenantsService {
     }
 
     if (!TENANT_MANAGERS.has(user.role)) {
-      throw new ForbiddenException('Droits insuffisants pour modifier le tenant.');
+      throw new ForbiddenException('Droits insuffisants pour modifier les paramètres.');
+    }
+
+    if (Object.keys(updateTenantDto).length === 0) {
+      throw new BadRequestException('Aucune modification fournie.');
+    }
+
+    const data: Record<string, string | null> = {};
+
+    if (updateTenantDto.nomEntreprise !== undefined) {
+      data.nomEntreprise = updateTenantDto.nomEntreprise.trim();
+    }
+    if (updateTenantDto.telephone !== undefined) {
+      data.telephone = updateTenantDto.telephone.trim() || null;
+    }
+    if (updateTenantDto.slogan !== undefined) {
+      data.slogan = updateTenantDto.slogan.trim() || null;
+    }
+    if (updateTenantDto.adresse !== undefined) {
+      data.adresse = updateTenantDto.adresse.trim() || null;
+    }
+    if (updateTenantDto.messageFin !== undefined) {
+      data.messageFin = updateTenantDto.messageFin.trim() || null;
+    }
+    if (updateTenantDto.logo !== undefined) {
+      this.validateLogo(updateTenantDto.logo);
+      data.logo = updateTenantDto.logo;
+    }
+
+    // Le GERANT peut gérer l'identité commerciale, mais pas l'adresse
+    // e-mail de référence du propriétaire. Cette donnée reste PATRON-only.
+    if (updateTenantDto.emailPatron !== undefined) {
+      if (user.role !== 'PATRON') {
+        throw new ForbiddenException('Seul le PATRON peut modifier l’e-mail propriétaire.');
+      }
+      data.emailPatron = updateTenantDto.emailPatron.trim().toLowerCase();
     }
 
     return this.prisma.tenant.update({
       where: { id: user.tenantId },
-      data: updateTenantDto,
+      data,
+      select: {
+        id: true,
+        nomEntreprise: true,
+        emailPatron: true,
+        telephone: true,
+        slogan: true,
+        adresse: true,
+        logo: true,
+        messageFin: true,
+        planType: true,
+        statutAbonnement: true,
+        estActif: true,
+      },
     });
+  }
+
+  private validateLogo(value: string) {
+    if (value.length > 500_000) {
+      throw new BadRequestException('Le logo est trop volumineux.');
+    }
+
+    const allowedDataUrl = /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i;
+    const allowedHttpUrl = /^https:\/\/[^\s]+$/i;
+
+    if (!allowedDataUrl.test(value) && !allowedHttpUrl.test(value)) {
+      throw new BadRequestException('Format de logo non autorisé.');
+    }
   }
 }
