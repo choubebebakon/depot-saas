@@ -1,20 +1,22 @@
-import { Module, Global } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { TenantsController } from './tenants.controller';
 import { PrismaService } from '../prisma.service';
-import { DepotScopeService } from '../common/depot-scope.service'; // Vérifie bien ce chemin
+import { DepotScopeService } from '../common/depot-scope.service';
+import { AuditModule } from '../audit/audit.module';
 
 @Global()
 @Module({
+  imports: [AuditModule],
   controllers: [TenantsController],
   providers: [
     TenantsService,
     PrismaService,
-    DepotScopeService, // On l'ajoute ici
+    DepotScopeService,
   ],
   exports: [
     PrismaService,
-    DepotScopeService, // INDISPENSABLE pour que Prisma puisse l'utiliser
+    DepotScopeService,
   ],
 })
 export class TenantsModule {}
