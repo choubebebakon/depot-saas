@@ -24,9 +24,9 @@ export class ClientDepotScopeInterceptor implements NestInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     const req = context.switchToHttp().getRequest();
     const method = String(req.method || '').toUpperCase();
-    const path = String(req.route?.path || req.path || '');
+    const path = String(req.originalUrl || req.path || req.route?.path || '');
 
-    if (!path.includes('depot-boissons/clients')) {
+    if (!path.includes('/depot-boissons/clients')) {
       return next.handle();
     }
 
@@ -79,12 +79,12 @@ export class ClientDepotScopeInterceptor implements NestInterceptor {
       delete req.body.tenantId;
     }
 
-    if (path.includes('payer-dette')) {
+    if (path.includes('/payer-dette')) {
       req.body = { ...(req.body || {}), depotId };
       delete req.body.tenantId;
     }
 
-    if (path.includes('historique-achats')) {
+    if (path.includes('/historique-achats')) {
       req.query = { ...(req.query || {}), depotId };
     }
 
