@@ -60,9 +60,10 @@ export default function DepotsPage() {
 
   const currentPlan = planType || tenantInfo?.tenant?.planType || 'FREE';
   const rawLimit = tenantInfo?.depotLimit;
-  const maxAllowedDepots = Number.isFinite(Number(rawLimit))
-    ? Number(rawLimit)
-    : Infinity;
+  const numericLimit = Number(rawLimit);
+  const maxAllowedDepots = rawLimit == null || !Number.isFinite(numericLimit) || numericLimit >= Number.MAX_SAFE_INTEGER
+    ? Infinity
+    : numericLimit;
   const isLimitReached = depots.length >= maxAllowedDepots;
 
   const openModal = (depot = null) => {
