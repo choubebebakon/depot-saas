@@ -82,15 +82,14 @@ export function useOfflineSync() {
 
       for (const item of items) {
         // Never replay a mutation under a different authenticated user/tenant/depot.
-        if (!sameIdentity(item.identity, identity)) {
-          continue;
-        }
+        if (!sameIdentity(item.identity, identity)) continue;
 
         try {
           await api({
             method: item.method,
             url: item.url,
-            data: { ...item.data, createdAt: item.timestamp }
+            data: { ...item.data, createdAt: item.timestamp },
+            headers: { 'X-Idempotency-Key': item.id }
           });
 
           await syncQueue.removeItem(item.id);
@@ -100,9 +99,7 @@ export function useOfflineSync() {
           const status = error.response?.status;
 
           // Authentication/authorization failures must not silently discard business data.
-          if (status === 401 || status === 403) {
-            break;
-          }
+          if (status === 401 || status === 403) break;
 
           // Client-side validation/not-found errors cannot succeed by retrying unchanged.
           if (status >= 400 && status < 500) {
