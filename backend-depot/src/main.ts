@@ -25,6 +25,14 @@ async function bootstrap() {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction && configuredOrigins.length === 0) {
+    throw new Error(
+      'Configuration de production invalide: FRONTEND_URLS doit contenir au moins une origine frontend autorisée.',
+    );
+  }
+
   const corsOrigins = configuredOrigins.length > 0
     ? configuredOrigins
     : [
@@ -71,7 +79,7 @@ async function bootstrap() {
 
   // Swagger peut rester disponible en développement. En production, il faut
   // l'activer explicitement avec SWAGGER_ENABLED=true.
-  if (process.env.NODE_ENV !== 'production' || process.env.SWAGGER_ENABLED === 'true') {
+  if (!isProduction || process.env.SWAGGER_ENABLED === 'true') {
     const config = new DocumentBuilder()
       .setTitle('GeStock SaaS API')
       .setDescription(
@@ -112,7 +120,12 @@ async function bootstrap() {
     console.warn('⚠️ '.repeat(20) + '\n');
   }
 
-  await app.listen(3000);
-  console.log(`🚀 Backend GeStock SaaS stabilisé sur http://localhost:3000`);
+  const port = Number(process.env.PORT ?? 3000);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('PORT invalide: utiliser un entier entre 1 et 65535.');
+  }
+
+  await app.listen(port);
+  console.log(`🚀 Backend GeStock SaaS stabilisé sur le port ${port}`);
 }
 bootstrap();
