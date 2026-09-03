@@ -5,7 +5,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, UnauthorizedException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 
 interface JwtPayload {
@@ -15,10 +15,19 @@ interface JwtPayload {
   [key: string]: unknown;
 }
 
+function getAllowedOrigins(): string[] | string {
+  const configured = process.env.FRONTEND_URL?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (configured?.length) return configured;
+  return process.env.NODE_ENV === 'production' ? [] : '*';
+}
+
 @WebSocketGateway({
   namespace: '/notifications',
   cors: {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: getAllowedOrigins(),
     credentials: true,
   },
 })
@@ -30,40 +39,45 @@ export class NotificationsGateway
 
   private readonly logger = new Logger(NotificationsGateway.name);
   private readonly tenantConnections = new Map<string, Set<string>>();
-  private readonly maxConnectionsPerTenant = 100;
+  private readonly maxConnectionsPerTenant = Number.parseInt(
+    process.env.NOTIFICATION_WS_MAX_CONNECTIONS_PER_TENANT || '100',
+    10,
+  );
 
   handleConnection(client: Socket): void {
     try {
-      const token =
-        client.handshake.auth?.token || client.handshake.query?.token;
-      if (!token) {
-        this.logger.warn(`Connexion refusée : pas de token (${client.id})`);
-        client.emit('error', { message: 'Authentification requise' });
-        client.disconnect();
+      // Le JWT est accepté uniquement via Socket.IO auth pour éviter son exposition
+      // dans les URLs, les historiques et certains logs/proxies.
+      const token = client.handshake.auth?.token;
+      if (typeof token !== 'string' || !token.trim()) {
+        this.reject(client, 'Authentification requise');
         return;
       }
 
       const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET;
       if (!secret) {
         this.logger.error('JWT_SECRET non défini');
-        client.disconnect();
+        this.reject(client, 'Service d’authentification indisponible');
         return;
       }
 
-      const decoded = jwt.verify(token as string, secret) as JwtPayload;
+      const decoded = jwt.verify(token, secret) as JwtPayload;
       const tenantId = decoded.tenantId;
       const userId = decoded.sub;
 
       if (!tenantId || !userId) {
-        client.disconnect();
+        this.reject(client, 'Token invalide');
         return;
       }
 
+      const currentLimit =
+        Number.isFinite(this.maxConnectionsPerTenant) && this.maxConnectionsPerTenant > 0
+          ? this.maxConnectionsPerTenant
+          : 100;
       const tenantCount = this.tenantConnections.get(tenantId)?.size || 0;
-      if (tenantCount >= this.maxConnectionsPerTenant) {
+      if (tenantCount >= currentLimit) {
         this.logger.warn(`Limite atteinte pour tenant ${tenantId}`);
-        client.emit('error', { message: 'Limite de connexions atteinte' });
-        client.disconnect();
+        this.reject(client, 'Limite de connexions atteinte');
         return;
       }
 
@@ -82,11 +96,15 @@ export class NotificationsGateway
       this.logger.log(
         `Client connecté: ${client.id} | tenant: ${tenantId} | user: ${userId}`,
       );
-    } catch (err) {
+    } catch {
       this.logger.warn(`Connexion rejetée (token invalide): ${client.id}`);
-      client.emit('error', { message: 'Token invalide' });
-      client.disconnect();
+      this.reject(client, 'Token invalide');
     }
+  }
+
+  private reject(client: Socket, message: string): void {
+    client.emit('error', { message });
+    client.disconnect(true);
   }
 
   handleDisconnect(client: Socket): void {
