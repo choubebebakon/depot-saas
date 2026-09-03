@@ -6,14 +6,10 @@ import {
   NestInterceptor,
   CallHandler,
 } from '@nestjs/common';
+import { AuditResultat, AuditSeverite } from '@prisma/client';
 import { Observable } from 'rxjs';
 import { PrismaService } from '../../prisma.service';
 
-/**
- * Defense-in-depth for the Patron audit endpoints.
- * The controller already derives tenantId from req.user; this interceptor
- * validates every user-controlled filter before it reaches Prisma/export.
- */
 @Injectable()
 export class AuditSafetyInterceptor implements NestInterceptor {
   constructor(private readonly prisma: PrismaService) {}
@@ -46,25 +42,38 @@ export class AuditSafetyInterceptor implements NestInterceptor {
       if (value === undefined || value === null || String(value).trim() === '') return undefined;
       const raw = String(value).trim();
       const date = new Date(raw);
-      if (Number.isNaN(date.getTime())) {
-        throw new BadRequestException(`${field} est invalide.`);
-      }
+      if (Number.isNaN(date.getTime())) throw new BadRequestException(`${field} est invalide.`);
       return raw;
     };
 
-    query.startDate = validateDate(query.startDate, 'startDate');
-    query.endDate = validateDate(query.endDate, 'endDate');
-
-    if (query.startDate && query.endDate) {
-      if (new Date(query.startDate).getTime() > new Date(query.endDate).getTime()) {
-        throw new BadRequestException('La date de début doit précéder la date de fin.');
-      }
+    const startDate = validateDate(query.startDate, 'startDate');
+    const endDate = validateDate(query.endDate, 'endDate');
+    if (startDate && endDate && new Date(startDate).getTime() > new Date(endDate).getTime()) {
+      throw new BadRequestException('La date de début doit précéder la date de fin.');
     }
+    if (startDate) query.startDate = startDate;
+    else delete query.startDate;
+    if (endDate) query.endDate = endDate;
+    else delete query.endDate;
+
+    const validateEnum = <T extends string>(value: unknown, field: string, allowed: readonly T[]): T | undefined => {
+      if (value === undefined || value === null || String(value).trim() === '') return undefined;
+      const normalized = String(value).trim();
+      if (!allowed.includes(normalized as T)) throw new BadRequestException(`${field} est invalide.`);
+      return normalized as T;
+    };
+
+    const severite = validateEnum(query.severite, 'severite', Object.values(AuditSeverite));
+    const resultat = validateEnum(query.resultat, 'resultat', Object.values(AuditResultat));
+    if (severite) query.severite = severite;
+    else delete query.severite;
+    if (resultat) query.resultat = resultat;
+    else delete query.resultat;
 
     const validateNumber = (value: unknown, field: string): number | undefined => {
       if (value === undefined || value === null || String(value).trim() === '') return undefined;
       const number = Number(String(value).trim().replace(',', '.'));
-      if (!Number.isFinite(number) || number < 0) {
+      if (!Number.isFinite(number) || number < 0 || number > 1_000_000_000_000) {
         throw new BadRequestException(`${field} est invalide.`);
       }
       return number;
@@ -87,8 +96,14 @@ export class AuditSafetyInterceptor implements NestInterceptor {
       query.search = search.length > 120 ? search.slice(0, 120) : search;
     }
 
-    if (query.action !== undefined) query.action = String(query.action).trim().slice(0, 100);
-    if (query.metier !== undefined) query.metier = String(query.metier).trim().slice(0, 80);
+    if (query.action !== undefined) {
+      query.action = String(query.action).trim().slice(0, 100);
+      if (!query.action) delete query.action;
+    }
+    if (query.metier !== undefined) {
+      query.metier = String(query.metier).trim().slice(0, 80);
+      if (!query.metier) delete query.metier;
+    }
 
     if (montantMin !== undefined) query.montantMin = String(montantMin);
     else delete query.montantMin;
