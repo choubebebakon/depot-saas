@@ -43,50 +43,6 @@ export class FournisseursService {
     return `REC-${new Date().getFullYear()}-${digest.slice(0, 20)}`;
   }
 
-  private buildReceptionFingerprint(dto: CreateReceptionDto) {
-    const payload = {
-      fournisseurId: dto.fournisseurId.trim(),
-      modePaiement: dto.modePaiement,
-      montantPaye: Number(dto.montantPaye ?? 0),
-      numBordereau: dto.numBordereau?.trim() || null,
-      lignes: [...dto.lignes]
-        .map((ligne) => ({
-          articleId: ligne.articleId.trim(),
-          quantiteLivree: Number(ligne.quantiteLivree),
-          quantiteGratuite: Number(ligne.quantiteGratuite ?? 0),
-          prixAchatUnitaire: Number(ligne.prixAchatUnitaire),
-          unite: (ligne.unite || 'PIECE').toUpperCase(),
-        }))
-        .sort((a, b) => a.articleId.localeCompare(b.articleId)),
-    };
-    return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
-  }
-
-  private async getReceptionFingerprint(receptionId: string, tx: Prisma.TransactionClient) {
-    const reception = await tx.receptionFournisseur.findUnique({
-      where: { id: receptionId },
-      include: { lignes: true },
-    });
-    if (!reception) return null;
-
-    const payload = {
-      fournisseurId: reception.fournisseurId,
-      modePaiement: reception.modePaiement,
-      montantPaye: Number(reception.montantPaye),
-      numBordereau: reception.numBordereau || null,
-      lignes: reception.lignes
-        .map((ligne) => ({
-          articleId: ligne.articleId,
-          quantiteLivree: ligne.quantiteLivree,
-          quantiteGratuite: ligne.quantiteGratuite,
-          prixAchatUnitaire: Number(ligne.prixAchatUnitaire),
-          unite: (ligne.uniteUsed || 'PIECE').toUpperCase(),
-        }))
-        .sort((a, b) => a.articleId.localeCompare(b.articleId)),
-    };
-    return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
-  }
-
   async createFournisseur(dto: CreateFournisseurDto, tenantId: string, depotId: string) {
     const scope = this.requireScope(tenantId, depotId);
     const nom = dto.nom?.trim();
@@ -195,7 +151,6 @@ export class FournisseursService {
       );
     }
 
-    const fingerprint = this.buildReceptionFingerprint(dto);
     const reference = this.buildReceptionReference(scope.tenantId, scope.depotId, normalizedKey);
 
     const create = async () => this.prisma.$transaction(async (tx) => {
@@ -303,6 +258,22 @@ export class FournisseursService {
         throw new BadRequestException('Le montant payé ne peut pas dépasser le total de la réception.');
       }
 
+      if (dto.modePaiement === ModePaiement.CREDIT && montantPaye !== 0) {
+        throw new BadRequestException('Une réception en crédit ne peut pas avoir de paiement immédiat.');
+      }
+      if (dto.modePaiement === ModePaiement.MIXTE && (montantPaye <= 0 || montantPaye >= totalReception)) {
+        throw new BadRequestException('Une réception mixte doit comporter un paiement partiel strictement positif.');
+      }
+      if (
+        dto.modePaiement !== ModePaiement.CREDIT &&
+        dto.modePaiement !== ModePaiement.MIXTE &&
+        montantPaye !== totalReception
+      ) {
+        throw new BadRequestException(
+          'Pour un paiement CASH, ORANGE_MONEY ou MTN_MOMO, le montant payé doit couvrir la totalité de la réception. Utilisez MIXTE pour un paiement partiel.',
+        );
+      }
+
       const montantDette = totalReception - montantPaye;
 
       const reception = await tx.receptionFournisseur.create({
@@ -310,7 +281,7 @@ export class FournisseursService {
           reference,
           numBordereau: dto.numBordereau?.trim() || null,
           statut: 'VALIDEE',
-          modePaiement: dto.modePaiement as ModePaiement,
+          modePaiement: dto.modePaiement,
           montantPaye,
           montantDette,
           fournisseurId: fournisseur.id,
@@ -356,22 +327,21 @@ export class FournisseursService {
       return await create();
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        const existing = await this.prisma.receptionFournisseur.findUnique({
-          where: { reference },
+        const existing = await this.prisma.receptionFournisseur.findFirst({
+          where: {
+            reference,
+            tenantId: scope.tenantId,
+            depotId: scope.depotId,
+          },
           include: { lignes: true },
         });
         if (existing) {
-          if (existing.tenantId !== scope.tenantId || existing.depotId !== scope.depotId) {
-            throw new ForbiddenException('Réception inaccessible pour ce dépôt.');
-          }
-          const existingFingerprint = await this.getReceptionFingerprint(existing.id, this.prisma as any);
-          if (existingFingerprint === fingerprint) {
-            return existing;
-          }
-          throw new ConflictException(
-            'Cette clé d’idempotence a déjà été utilisée avec des données différentes.',
-          );
+          return existing;
         }
+        throw new ConflictException('Une réception concurrente utilise déjà cette référence.');
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('La réception a rencontré une concurrence. Réessayez avec la même clé d’idempotence.');
       }
       throw error;
     }
