@@ -18,14 +18,24 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
 
-  // CORS en premier — avant pipes, guards et middlewares métier
+  // CORS: les origines de production doivent être explicitement déclarées
+  // via FRONTEND_URLS (séparées par des virgules). Les URLs localhost restent
+  // disponibles pour le développement local.
+  const configuredOrigins = (process.env.FRONTEND_URLS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const corsOrigins = configuredOrigins.length > 0
+    ? configuredOrigins
+    : [
+        'http://localhost:5173',
+        'http://localhost:4173',
+        'http://localhost:3000',
+        'http://localhost:3001',
+      ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:4173',
-      'http://localhost:3000',
-      'http://localhost:3001',
-    ],
+    origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
@@ -59,16 +69,20 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  const config = new DocumentBuilder()
-    .setTitle('GeStock SaaS API')
-    .setDescription(
-      "Documentation de l'API GeStock pour la gestion de stocks multi-tenant",
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger peut rester disponible en développement. En production, il faut
+  // l'activer explicitement avec SWAGGER_ENABLED=true.
+  if (process.env.NODE_ENV !== 'production' || process.env.SWAGGER_ENABLED === 'true') {
+    const config = new DocumentBuilder()
+      .setTitle('GeStock SaaS API')
+      .setDescription(
+        "Documentation de l'API GeStock pour la gestion de stocks multi-tenant",
+      )
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   app.use(
     json({
