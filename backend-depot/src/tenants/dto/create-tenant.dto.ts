@@ -1,4 +1,12 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  Matches,
+} from 'class-validator';
 
 export class CreateTenantDto {
   @IsString()
@@ -14,5 +22,6 @@ export class CreateTenantDto {
   @IsString()
   @IsOptional()
   @MaxLength(40)
+  @Matches(/^[0-9+().\s-]*$/, { message: 'Téléphone invalide.' })
   telephone?: string;
 }
