@@ -16,12 +16,8 @@ export class FournisseursService {
   constructor(private readonly prisma: PrismaService) {}
 
   private requireScope(tenantId?: string, depotId?: string) {
-    if (!tenantId) {
-      throw new ForbiddenException('Contexte tenant introuvable.');
-    }
-    if (!depotId) {
-      throw new BadRequestException('Un dépôt actif est obligatoire.');
-    }
+    if (!tenantId) throw new ForbiddenException('Contexte tenant introuvable.');
+    if (!depotId) throw new BadRequestException('Un dépôt actif est obligatoire.');
     return { tenantId, depotId };
   }
 
@@ -30,9 +26,7 @@ export class FournisseursService {
       where: { id: depotId, tenantId, isArchived: false },
       select: { id: true },
     });
-    if (!depot) {
-      throw new ForbiddenException('Dépôt invalide ou inaccessible.');
-    }
+    if (!depot) throw new ForbiddenException('Dépôt invalide ou inaccessible.');
     return depot.id;
   }
 
@@ -46,10 +40,7 @@ export class FournisseursService {
   async createFournisseur(dto: CreateFournisseurDto, tenantId: string, depotId: string) {
     const scope = this.requireScope(tenantId, depotId);
     const nom = dto.nom?.trim();
-    if (!nom) {
-      throw new BadRequestException('Le nom du fournisseur est obligatoire.');
-    }
-
+    if (!nom) throw new BadRequestException('Le nom du fournisseur est obligatoire.');
     await this.assertDepotInTenant(scope.tenantId, scope.depotId);
 
     const initialAmount = dto.soldeInitial === undefined ? 0 : Number(dto.soldeInitial);
@@ -74,15 +65,16 @@ export class FournisseursService {
 
   async findAllFournisseurs(tenantId: string, depotId: string) {
     const scope = this.requireScope(tenantId, depotId);
-    return this.prisma.fournisseur.findMany({
+    const fournisseurs = await this.prisma.fournisseur.findMany({
       where: { tenantId: scope.tenantId, depotId: scope.depotId },
       include: { depot: true },
       orderBy: { createdAt: 'desc' },
-    }).then((fournisseurs) => fournisseurs.map((f) => ({
+    });
+    return fournisseurs.map((f) => ({
       ...f,
       depotName: f.depot?.nom || 'Aucun',
       solde: f.solde || 0,
-    })));
+    }));
   }
 
   async updateFournisseur(
@@ -187,9 +179,7 @@ export class FournisseursService {
 
       for (const ligne of dto.lignes) {
         const articleId = ligne.articleId?.trim();
-        if (!articleId) {
-          throw new BadRequestException('Chaque ligne doit référencer un article.');
-        }
+        if (!articleId) throw new BadRequestException('Chaque ligne doit référencer un article.');
         if (seenArticles.has(articleId)) {
           throw new BadRequestException(
             `L'article ${articleId} apparaît plusieurs fois dans la même réception. Regroupez les quantités sur une seule ligne.`,
@@ -232,7 +222,6 @@ export class FournisseursService {
         else if (unite !== 'PIECE' && unite !== 'BOUTEILLE') {
           throw new BadRequestException(`Unité de réception non supportée: ${unite}.`);
         }
-
         if (!Number.isInteger(mult) || mult <= 0) {
           throw new BadRequestException(`Coefficient de conversion invalide pour l'article ${article.id}.`);
         }
@@ -257,21 +246,8 @@ export class FournisseursService {
       if (montantPaye > totalReception) {
         throw new BadRequestException('Le montant payé ne peut pas dépasser le total de la réception.');
       }
-
       if (dto.modePaiement === ModePaiement.CREDIT && montantPaye !== 0) {
         throw new BadRequestException('Une réception en crédit ne peut pas avoir de paiement immédiat.');
-      }
-      if (dto.modePaiement === ModePaiement.MIXTE && (montantPaye <= 0 || montantPaye >= totalReception)) {
-        throw new BadRequestException('Une réception mixte doit comporter un paiement partiel strictement positif.');
-      }
-      if (
-        dto.modePaiement !== ModePaiement.CREDIT &&
-        dto.modePaiement !== ModePaiement.MIXTE &&
-        montantPaye !== totalReception
-      ) {
-        throw new BadRequestException(
-          'Pour un paiement CASH, ORANGE_MONEY ou MTN_MOMO, le montant payé doit couvrir la totalité de la réception. Utilisez MIXTE pour un paiement partiel.',
-        );
       }
 
       const montantDette = totalReception - montantPaye;
@@ -295,9 +271,7 @@ export class FournisseursService {
       for (const [articleId, totalQte] of stockUpdates) {
         if (totalQte <= 0) continue;
         await tx.stock.upsert({
-          where: {
-            articleId_depotId: { articleId, depotId: scope.depotId },
-          },
+          where: { articleId_depotId: { articleId, depotId: scope.depotId } },
           update: { quantite: { increment: totalQte } },
           create: { articleId, depotId: scope.depotId, quantite: totalQte },
         });
@@ -335,13 +309,13 @@ export class FournisseursService {
           },
           include: { lignes: true },
         });
-        if (existing) {
-          return existing;
-        }
+        if (existing) return existing;
         throw new ConflictException('Une réception concurrente utilise déjà cette référence.');
       }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
-        throw new ConflictException('La réception a rencontré une concurrence. Réessayez avec la même clé d’idempotence.');
+        throw new ConflictException(
+          'La réception a rencontré une concurrence. Réessayez avec la même clé d’idempotence.',
+        );
       }
       throw error;
     }
