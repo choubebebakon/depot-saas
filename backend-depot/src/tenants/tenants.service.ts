@@ -128,7 +128,7 @@ export class TenantsService {
       throw new NotFoundException('Tenant introuvable.');
     }
 
-    return this.prisma.tenant.findFirst({
+    const tenant = await this.prisma.tenant.findFirst({
       where: { id: tenantId },
       select: {
         id: true,
@@ -144,6 +144,12 @@ export class TenantsService {
         estActif: true,
       },
     });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant introuvable.');
+    }
+
+    return tenant;
   }
 
   async update(
@@ -167,6 +173,9 @@ export class TenantsService {
 
     if (updateTenantDto.nomEntreprise !== undefined) {
       data.nomEntreprise = updateTenantDto.nomEntreprise.trim();
+      if (data.nomEntreprise.length < 2) {
+        throw new BadRequestException('Le nom de l’entreprise est invalide.');
+      }
     }
     if (updateTenantDto.telephone !== undefined) {
       data.telephone = updateTenantDto.telephone.trim() || null;
@@ -218,6 +227,10 @@ export class TenantsService {
 
     const allowedDataUrl = /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i;
     const allowedHttpUrl = /^https:\/\/[^\s]+$/i;
+
+    if (allowedHttpUrl.test(value) && value.length > 2_048) {
+      throw new BadRequestException('L’URL du logo est trop longue.');
+    }
 
     if (!allowedDataUrl.test(value) && !allowedHttpUrl.test(value)) {
       throw new BadRequestException('Format de logo non autorisé.');
