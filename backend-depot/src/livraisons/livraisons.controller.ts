@@ -1,30 +1,20 @@
-import { Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { RoleUser } from '@prisma/client';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { LivraisonsService } from './livraisons.service';
+import { Controller, Get, GoneException, Param, Post } from '@nestjs/common';
 
+/**
+ * Ancien endpoint de livraison BTP.
+ * Le flux de livraison fournisseur de GesTock passe désormais par
+ * FournisseursController /fournisseurs/receptions, qui utilise le scope
+ * tenant+dépôt autoritaire et l'idempotence des réceptions.
+ */
 @Controller('livraisons')
-@Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
 export class LivraisonsController {
-  constructor(private readonly livraisonsService: LivraisonsService) {}
-
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string,
-  ) {
-    return this.livraisonsService.findOne(id, tenantId, depotId);
+  findOne(@Param('id') _id: string): never {
+    throw new GoneException('Ancien endpoint de livraison désactivé. Utilisez le module Achats/Réceptions.');
   }
 
   @Post(':id/confirmer')
-  confirmer(
-    @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId: string,
-    @CurrentUser() user: any,
-  ) {
-    return this.livraisonsService.confirmer(id, tenantId, depotId, user);
+  confirmer(@Param('id') _id: string): never {
+    throw new GoneException('Ancien endpoint de livraison désactivé. Utilisez le module Achats/Réceptions.');
   }
 }
