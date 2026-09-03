@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from '../../prisma.module';
 import { AuditModule } from '../../audit/audit.module';
 import {
@@ -29,7 +30,10 @@ import { LegacyBoutiqueDepensesGuard } from '../../common/guards/legacy-boutique
     FournisseursService,
     DepensesService,
     DepensesProductionService,
-    LegacyBoutiqueDepensesGuard,
+    {
+      provide: APP_GUARD,
+      useClass: LegacyBoutiqueDepensesGuard,
+    },
     ProductionBoutiqueVentesService,
     {
       provide: VentesService,
