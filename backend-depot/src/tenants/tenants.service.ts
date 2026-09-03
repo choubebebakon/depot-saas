@@ -169,6 +169,19 @@ export class TenantsService {
       throw new BadRequestException('Aucune modification fournie.');
     }
 
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: user.tenantId },
+      select: { id: true, estActif: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant introuvable.');
+    }
+
+    if (!tenant.estActif) {
+      throw new ForbiddenException('Ce compte entreprise est désactivé.');
+    }
+
     const data: Record<string, string | null> = {};
 
     if (updateTenantDto.nomEntreprise !== undefined) {
@@ -199,6 +212,10 @@ export class TenantsService {
         throw new ForbiddenException('Seul le PATRON peut modifier l’e-mail propriétaire.');
       }
       data.emailPatron = updateTenantDto.emailPatron.trim().toLowerCase();
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('Aucune modification valide fournie.');
     }
 
     return this.prisma.tenant.update({
