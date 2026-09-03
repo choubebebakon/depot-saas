@@ -7,8 +7,8 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
   Req,
+  NotFoundException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { NotificationsService } from './notifications.service';
@@ -36,10 +36,6 @@ export class NotificationsController {
     await this.ai.predictRuptures(tenantId);
     return { success: true, message: 'Analyses IA exécutées' };
   }
-
-  // ==========================================
-  //        ROUTES STATIQUES GLOBALES
-  // ==========================================
 
   @Get()
   async findAll(@Req() req: any, @Query() filter: NotificationFilter) {
@@ -96,19 +92,15 @@ export class NotificationsController {
 
   @Post('test')
   async createTest(@Req() req: any, @Body() dto: CreateNotificationDto) {
-    const tenantId = req.user.tenantId;
-    const notif = await this.notifs.create(tenantId, dto);
-    if (dto.userId) {
-      this.gateway.emitToUser(dto.userId, 'notification:new', notif);
-    } else {
-      this.gateway.emitToTenant(tenantId, 'notification:new', notif);
+    // Endpoint conservé pour les environnements de développement/staging,
+    // mais jamais exposé en production.
+    if (process.env.NODE_ENV === 'production') {
+      throw new NotFoundException();
     }
-    return notif;
-  }
 
-  // ==========================================
-  //        ROUTES DYNAMIQUES A PARAMETRES (:id)
-  // ==========================================
+    const tenantId = req.user.tenantId;
+    return this.notifs.create(tenantId, dto);
+  }
 
   @Get(':id')
   async findOne(@Req() req: any, @Param('id') id: string) {
