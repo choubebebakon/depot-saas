@@ -34,7 +34,7 @@ export class ConsignesService {
   ) {
     const client = await this.prisma.client.findFirst({
       where: { id: clientId, tenantId, depotId },
-      select: { id: true, nom: true, depotId: true },
+      select: { id: true, nom: true, telephone: true, depotId: true },
     });
     if (!client) {
       throw new NotFoundException('Client introuvable dans le dépôt actif');
@@ -63,17 +63,47 @@ export class ConsignesService {
     return vente;
   }
 
-  // ── Configuration des types de consignes ─────────────────
-  // Les types restent une configuration au niveau du tenant.
-
-  async createTypeConsigne(
+  private async lockConsigneScope(
+    tx: any,
     tenantId: string,
-    dto: CreateTypeConsigneDto,
+    depotId: string,
+    typeConsigneId: string,
+    clientId?: string,
   ) {
+    const key = [
+      'consigne',
+      tenantId,
+      depotId,
+      typeConsigneId,
+      clientId || 'DEPOT',
+    ].join(':');
+    await tx.$executeRaw`
+      SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))
+    `;
+  }
+
+  private validateConsigneLines(lines: VenteAvecConsignesDto['lignesConsignes']) {
+    const seen = new Set<string>();
+    for (const line of lines) {
+      if (seen.has(line.typeConsigneId)) {
+        throw new BadRequestException(
+          'Un même type de consigne ne peut apparaître qu’une seule fois par opération',
+        );
+      }
+      seen.add(line.typeConsigneId);
+      if (line.quantiteSortie === 0 && line.quantiteRendue === 0) {
+        throw new BadRequestException(
+          'Chaque ligne de consigne doit contenir une quantité non nulle',
+        );
+      }
+    }
+  }
+
+  // ── Configuration des types de consignes ─────────────────
+
+  async createTypeConsigne(tenantId: string, dto: CreateTypeConsigneDto) {
     const existant = await this.prisma.typeConsigneConfig.findUnique({
-      where: {
-        tenantId_type: { tenantId, type: dto.type as any },
-      },
+      where: { tenantId_type: { tenantId, type: dto.type as any } },
     });
     if (existant) {
       throw new BadRequestException(
@@ -217,15 +247,25 @@ export class ConsignesService {
       throw new NotFoundException('Type de consigne introuvable');
     }
 
-    if (dto.clientId) {
-      await this.assertClientScope(tenantId, depotId, dto.clientId);
-    }
+    if (dto.clientId) await this.assertClientScope(tenantId, depotId, dto.clientId);
+    const vente = dto.venteId
+      ? await this.assertVenteScope(tenantId, depotId, dto.venteId, dto.clientId)
+      : null;
 
-    if (dto.venteId) {
-      await this.assertVenteScope(tenantId, depotId, dto.venteId, dto.clientId);
+    const effectiveClientId = dto.clientId ?? vente?.clientId ?? undefined;
+    if (dto.venteId && dto.estSortie && !effectiveClientId) {
+      // Une vente sans client peut avoir des consignes dépôt, sans portefeuille client.
     }
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockConsigneScope(
+        tx,
+        tenantId,
+        depotId,
+        dto.typeConsigneId,
+        effectiveClientId,
+      );
+
       const mouvement = await tx.mouvementConsigne.create({
         data: {
           quantite: dto.quantite,
@@ -239,19 +279,16 @@ export class ConsignesService {
         include: { typeConsigne: true },
       });
 
-      if (dto.clientId) {
+      if (effectiveClientId) {
         const portefeuille = await tx.portefeuilleConsigne.findFirst({
           where: {
-            clientId: dto.clientId,
+            clientId: effectiveClientId,
             typeConsigneId: dto.typeConsigneId,
             depotId,
           },
         });
 
         if (portefeuille) {
-          if (portefeuille.depotId !== depotId) {
-            throw new BadRequestException('Portefeuille hors du dépôt actif');
-          }
           const newQte = dto.estSortie
             ? portefeuille.quantite + dto.quantite
             : portefeuille.quantite - dto.quantite;
@@ -269,7 +306,7 @@ export class ConsignesService {
         } else if (dto.estSortie) {
           await tx.portefeuilleConsigne.create({
             data: {
-              clientId: dto.clientId,
+              clientId: effectiveClientId,
               typeConsigneId: dto.typeConsigneId,
               quantite: dto.quantite,
               depotId,
@@ -294,10 +331,23 @@ export class ConsignesService {
     dto: VenteAvecConsignesDto,
   ) {
     await this.assertDepotScope(tenantId, depotId);
-    await this.assertVenteScope(tenantId, depotId, dto.venteId, dto.clientId);
+    const vente = await this.assertVenteScope(
+      tenantId,
+      depotId,
+      dto.venteId,
+      dto.clientId,
+    );
 
     if (!dto.lignesConsignes.length) {
       return { mouvements: [], caution: 0 };
+    }
+    this.validateConsigneLines(dto.lignesConsignes);
+
+    const effectiveClientId = vente.clientId ?? undefined;
+    if (dto.clientId && dto.clientId !== effectiveClientId) {
+      throw new BadRequestException(
+        'Le client fourni ne correspond pas au client de la vente',
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -305,11 +355,13 @@ export class ConsignesService {
       const mouvements: MouvementConsigne[] = [];
 
       for (const ligne of dto.lignesConsignes) {
-        if (ligne.quantiteSortie === 0 && ligne.quantiteRendue === 0) continue;
-        if (ligne.quantiteRendue > ligne.quantiteSortie && ligne.quantiteSortie === 0) {
-          // Un retour sans sortie est possible uniquement si le client possède
-          // déjà les vides dans son portefeuille.
-        }
+        await this.lockConsigneScope(
+          tx,
+          tenantId,
+          depotId,
+          ligne.typeConsigneId,
+          effectiveClientId,
+        );
 
         const typeConsigne = await tx.typeConsigneConfig.findFirst({
           where: { id: ligne.typeConsigneId, tenantId },
@@ -354,10 +406,10 @@ export class ConsignesService {
           caution += netSortie * typeConsigne.valeurXAF;
         }
 
-        if (dto.clientId && netSortie !== 0) {
+        if (effectiveClientId && netSortie !== 0) {
           const portefeuille = await tx.portefeuilleConsigne.findFirst({
             where: {
-              clientId: dto.clientId,
+              clientId: effectiveClientId,
               typeConsigneId: ligne.typeConsigneId,
               depotId,
             },
@@ -378,7 +430,7 @@ export class ConsignesService {
           } else if (netSortie > 0) {
             await tx.portefeuilleConsigne.create({
               data: {
-                clientId: dto.clientId,
+                clientId: effectiveClientId,
                 typeConsigneId: ligne.typeConsigneId,
                 quantite: netSortie,
                 depotId,
@@ -414,6 +466,14 @@ export class ConsignesService {
       : 0;
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockConsigneScope(
+        tx,
+        tenantId,
+        depotId,
+        dto.typeConsigneId,
+        dto.clientId,
+      );
+
       const portefeuille = await tx.portefeuilleConsigne.findFirst({
         where: {
           clientId: dto.clientId,
