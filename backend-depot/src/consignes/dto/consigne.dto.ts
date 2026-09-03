@@ -5,9 +5,12 @@ import {
   IsOptional,
   IsEnum,
   Min,
+  Max,
   IsArray,
+  ArrayMaxSize,
   ValidateNested,
   IsInt,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -23,58 +26,65 @@ export class CreateTypeConsigneDto {
   @IsEnum(TypeConsigneEnum)
   type: TypeConsigneEnum;
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(100000000)
   valeurXAF: number;
 
   @IsOptional()
   @IsString()
+  @Max(500)
   description?: string;
 }
 
 export class UpdateTypeConsigneDto {
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(100000000)
   valeurXAF: number;
 
   @IsOptional()
   @IsString()
+  @Max(500)
   description?: string;
 }
 
 export class MouvementConsigneDto {
-  @IsString()
+  @IsUUID()
   typeConsigneId: string;
 
   @IsInt()
   @Min(1)
+  @Max(1000000)
   quantite: number;
 
   @IsBoolean()
   estSortie: boolean;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   clientId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   venteId?: string;
 
   @IsOptional()
   @IsString()
+  @Max(500)
   motif?: string;
 }
 
 export class RenduSansAchatDto {
-  @IsString()
+  @IsUUID()
   clientId: string;
 
-  @IsString()
+  @IsUUID()
   typeConsigneId: string;
 
   @IsInt()
   @Min(1)
+  @Max(1000000)
   quantite: number;
 
   @IsBoolean()
@@ -82,28 +92,31 @@ export class RenduSansAchatDto {
 }
 
 export class VenteConsigneLineDto {
-  @IsString()
+  @IsUUID()
   typeConsigneId: string;
 
   @IsInt()
   @Min(0)
+  @Max(1000000)
   quantiteSortie: number;
 
   @IsInt()
   @Min(0)
+  @Max(1000000)
   quantiteRendue: number;
 }
 
 export class VenteAvecConsignesDto {
-  @IsString()
+  @IsUUID()
   venteId: string;
 
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => VenteConsigneLineDto)
   lignesConsignes: VenteConsigneLineDto[];
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   clientId?: string;
 }
