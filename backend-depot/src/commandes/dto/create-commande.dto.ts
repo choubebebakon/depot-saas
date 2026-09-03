@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsInt,
   IsNotEmpty,
@@ -45,6 +47,8 @@ export class CreateCommandeDto {
   note?: string;
 
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(200)
   @ValidateNested({ each: true })
   @Type(() => LigneCommandeDto)
   lignes: LigneCommandeDto[];
