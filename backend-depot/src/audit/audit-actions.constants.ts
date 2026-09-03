@@ -1,9 +1,6 @@
 /**
  * Catalogue des actions d'audit utilisées dans GeStock.
- * `action` reste un String en base (pas un enum Prisma strict) pour rester
- * compatible avec l'historique et flexible pour les futurs métiers — mais
- * toute nouvelle instrumentation DOIT piocher dans cette liste pour garder
- * le journal patron cohérent et filtrable.
+ * `action` reste un String en base pour rester compatible avec l'historique.
  */
 export const AUDIT_ACTIONS = {
   // Stock
@@ -38,6 +35,8 @@ export const AUDIT_ACTIONS = {
 
   // Caisse / dépenses
   DEPENSE_ENREGISTREE: 'DEPENSE_ENREGISTREE',
+  DEPENSE_MODIFIEE: 'DEPENSE_MODIFIEE',
+  DEPENSE_SUPPRIMEE: 'DEPENSE_SUPPRIMEE',
   CAISSE_OUVERTE: 'CAISSE_OUVERTE',
   CAISSE_FERMEE: 'CAISSE_FERMEE',
   ENTREE_CAISSE: 'ENTREE_CAISSE',
@@ -47,8 +46,7 @@ export const AUDIT_ACTIONS = {
   DETTE_FOURNISSEUR_REGLEE: 'DETTE_FOURNISSEUR_REGLEE',
   DETTE_CLIENT_REGLEE: 'DETTE_CLIENT_REGLEE',
 
-  // Inventaires (comptage physique périodique — distinct d'un ajustement
-  // ponctuel unitaire : couvre plusieurs articles en une seule opération)
+  // Inventaires
   INVENTAIRE_REALISE: 'INVENTAIRE_REALISE',
 
   // Authentification / sécurité du compte
