@@ -1,74 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { LivraisonBTPStatut } from '@prisma/client';
+import { GoneException, Injectable } from '@nestjs/common';
 
+/**
+ * Service conservé uniquement pour compatibilité avec d'anciens imports.
+ *
+ * Le flux historique LivraisonBTP est désactivé. Les réceptions fournisseur
+ * sont désormais traitées exclusivement par FournisseursService, avec scope
+ * tenant+dépôt autoritaire et idempotence.
+ *
+ * IMPORTANT : aucune opération de lecture ou d'écriture n'est conservée ici,
+ * afin qu'un ancien appel interne ne puisse contourner les contrôles du flux
+ * moderne.
+ */
 @Injectable()
 export class LivraisonsService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async findOne(id: string, tenantId: string, depotId?: string) {
-    const livraison = await this.prisma.livraisonBTP.findFirst({
-      where: {
-        id,
-        tenantId,
-      },
-      include: {
-        lignes: {
-          include: {
-            article: true,
-          },
-        },
-        chantier: true,
-        vehicule: true,
-      },
-    });
-
-    if (!livraison) {
-      throw new NotFoundException('Livraison non trouvée');
-    }
-
-    return livraison;
+  private disabled(): never {
+    throw new GoneException(
+      'Le service historique de livraison est désactivé. Utilisez le module Achats/Réceptions.',
+    );
   }
 
-  async confirmer(id: string, tenantId: string, depotId: string, user: any) {
-    const livraison = await this.prisma.livraisonBTP.findFirst({
-      where: {
-        id,
-        tenantId,
-      },
-    });
+  findOne(_id: string, _tenantId?: string, _depotId?: string): never {
+    return this.disabled();
+  }
 
-    if (!livraison) {
-      throw new NotFoundException('Livraison non trouvée');
-    }
-
-    const updatedLivraison = await this.prisma.livraisonBTP.update({
-      where: { id },
-      data: {
-        statut: LivraisonBTPStatut.LIVREE,
-        dateLivraison: new Date(),
-      },
-    });
-
-    // Loguer l'action dans le journal d'audit
-    await this.prisma.journalAudit.create({
-      data: {
-        tenantId,
-        depotId,
-        actorUserId: user.id,
-        actorEmail: user.email,
-        actorRole: user.role,
-        action: 'CONFIRMATION_LIVRAISON',
-        targetType: 'LivraisonBTP',
-        targetId: id,
-        description: `Livraison ${id} confirmée par ${user.email}`,
-        metadataText: JSON.stringify({
-          livraisonId: id,
-          statut: LivraisonBTPStatut.LIVREE,
-        }),
-      },
-    });
-
-    return updatedLivraison;
+  confirmer(_id: string, _tenantId?: string, _depotId?: string, _user?: unknown): never {
+    return this.disabled();
   }
 }
