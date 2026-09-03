@@ -74,8 +74,34 @@ export class AuditGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   emitAuditUpdate(tenantId: string, payload: any): void {
-    if (!this.server) return;
-    this.server.to(`tenant_${tenantId}`).emit('audit_update', payload);
+    if (!this.server || !tenantId) return;
+
+    // Ne jamais pousser au navigateur les champs bruts pouvant contenir des
+    // données techniques/sensibles (IP, user-agent, valeurs avant/après,
+    // metadataText). Le Patron peut les retrouver via l'API HTTP autorisée.
+    const safePayload = {
+      id: payload?.id,
+      tenantId: payload?.tenantId,
+      depotId: payload?.depotId ?? null,
+      actorUserId: payload?.actorUserId ?? null,
+      actorEmail: payload?.actorEmail ?? null,
+      actorRole: payload?.actorRole ?? null,
+      action: payload?.action,
+      severite: payload?.severite,
+      resultat: payload?.resultat,
+      targetType: payload?.targetType,
+      targetId: payload?.targetId ?? null,
+      reference: payload?.reference ?? null,
+      description: payload?.description,
+      montant: payload?.montant ?? null,
+      motif: payload?.motif ?? null,
+      sessionId: payload?.sessionId ?? null,
+      requestId: payload?.requestId ?? null,
+      metier: payload?.metier ?? null,
+      createdAt: payload?.createdAt,
+    };
+
+    this.server.to(`tenant_${tenantId}`).emit('audit_update', safePayload);
   }
 
   private extractToken(client: Socket): string | null {
