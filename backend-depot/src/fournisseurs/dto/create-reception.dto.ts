@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsEnum,
   IsIn,
@@ -62,6 +64,8 @@ export class CreateReceptionDto {
   montantPaye: number = 0;
 
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(200)
   @ValidateNested({ each: true })
   @Type(() => LigneReceptionDto)
   lignes: LigneReceptionDto[];
