@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsString } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { StatutCommande } from '@prisma/client';
 
 export class UpdateCommandeDto {
@@ -8,8 +8,10 @@ export class UpdateCommandeDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   note?: string;
 
   @IsOptional()
-  dateReceptionPrev?: Date;
+  @IsDateString()
+  dateReceptionPrev?: string;
 }
