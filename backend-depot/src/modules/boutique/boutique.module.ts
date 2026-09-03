@@ -11,6 +11,7 @@ import {
   DepensesService,
   VentesService,
 } from './boutique.service';
+import { DepensesProductionService } from './depenses-production.service';
 import { ProductionBoutiqueVentesService } from './production-stock.service';
 import { BoutiqueController } from './boutique.controller';
 
@@ -25,6 +26,7 @@ import { BoutiqueController } from './boutique.controller';
     ClientsService,
     FournisseursService,
     DepensesService,
+    DepensesProductionService,
     ProductionBoutiqueVentesService,
     {
       provide: VentesService,
@@ -38,7 +40,7 @@ import { BoutiqueController } from './boutique.controller';
     StockService,
     ClientsService,
     FournisseursService,
-    DepensesService,
+    DepensesProductionService,
     VentesService,
   ],
 })
