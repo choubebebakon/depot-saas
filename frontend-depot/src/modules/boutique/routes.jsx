@@ -28,6 +28,7 @@ const DepensesPage      = lazy(() => import('./pages/DepensesPage'));
 const RapportsPage      = lazy(() => import('./pages/RapportsPage'));
 const ParametresPage    = lazy(() => import('./pages/ParametresPage'));
 const CategoriesPage    = lazy(() => import('./pages/CategoriesPage'));
+const InventairePage    = lazy(() => import('../../shared/pages/InventaireProductionPage'));
 
 function Loader() { return <div className="flex items-center justify-center py-32"><div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>; }
 
@@ -70,26 +71,11 @@ function BoutiqueLayout() {
                 <span className="text-cyan-400 font-bold text-sm leading-none mt-1">{depotActif?.nom || 'Global'}</span>
               </div>
               <div className="relative group">
-                <select
-                  value={depotActif?.id || ''}
-                  onChange={(e) => {
-                    const depot = depots.find((s) => s.id === e.target.value);
-                    if (depot) changerDepot(depot);
-                  }}
-                  className="appearance-none bg-slate-800 border border-slate-700 hover:border-cyan-500/50 text-white text-xs font-bold rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer shadow-lg shadow-black/20"
-                >
+                <select value={depotActif?.id || ''} onChange={(e) => { const depot = depots.find((s) => s.id === e.target.value); if (depot) changerDepot(depot); }} className="appearance-none bg-slate-800 border border-slate-700 hover:border-cyan-500/50 text-white text-xs font-bold rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer shadow-lg shadow-black/20">
                   {depots.length === 0 && <option value="">Aucun dépôt disponible</option>}
-                  {depots.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      📍 {s.nom}
-                    </option>
-                  ))}
+                  {depots.map((s) => <option key={s.id} value={s.id}>📍 {s.nom}</option>)}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-hover:text-cyan-400 transition-colors">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-hover:text-cyan-400 transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
               </div>
             </div>
             <div className="h-8 w-px bg-slate-800 hidden sm:block" />
@@ -117,6 +103,7 @@ export default function BoutiqueRoutes() {
           <Route path="dashboard"    element={gate('dashboard', DashboardBoutique)} />
           <Route path="ventes"       element={gate('ventes', VentesPage)} />
           <Route path="stock"        element={gate('stock', StockPage)} />
+          <Route path="inventaire"   element={gate('inventaire', InventairePage)} />
           <Route path="clients"      element={gate('clients', ClientsPage)} />
           <Route path="caisse"       element={gate('caisse', CaissePage)} />
           <Route path="promotions"   element={gate('promotions', PromotionsPage)} />
