@@ -71,6 +71,7 @@ export const PERMISSION_MATRIX = {
       dashboard: { canRead: true, canWrite: false },
       ventes: { canRead: true, canWrite: true },
       stock: { canRead: true, canWrite: true },
+      inventaire: { canRead: true, canWrite: true },
       clients: { canRead: true, canWrite: false },
       categories: { canRead: true, canWrite: true },
     },
@@ -84,6 +85,7 @@ export const PERMISSION_MATRIX = {
     COMPTABLE: {
       dashboard: { canRead: true, canWrite: false },
       stock: { canRead: true, canWrite: false },
+      inventaire: { canRead: true, canWrite: false },
       factures: { canRead: true, canWrite: true },
       fournisseurs: { canRead: true, canWrite: true },
       depenses: { canRead: true, canWrite: true },
@@ -101,6 +103,7 @@ export const PERMISSION_MATRIX = {
     MAGASINIER: {
       dashboard: { canRead: true, canWrite: false },
       stock_articles: { canRead: true, canWrite: true },
+      inventaire: { canRead: true, canWrite: true },
       consignes: { canRead: true, canWrite: true },
       livraisons: { canRead: true, canWrite: true },
       tournees: { canRead: true, canWrite: true },
@@ -116,6 +119,7 @@ export const PERMISSION_MATRIX = {
     COMPTABLE: {
       dashboard: { canRead: true, canWrite: false },
       stock_articles: { canRead: true, canWrite: false },
+      inventaire: { canRead: true, canWrite: false },
       consignes: { canRead: true, canWrite: false },
       fournisseurs: { canRead: true, canWrite: true },
       depenses: { canRead: true, canWrite: true },
@@ -233,10 +237,8 @@ export function pathToSousModule(path, metierSlug) {
   if (!path) return null;
   const clean = String(path).split('?')[0].replace(/\/+$/, '');
   const parts = clean.split('/').filter(Boolean);
-  // dernier segment significatif
   let segment = parts[parts.length - 1] || '';
 
-  // préfixes métier à ignorer
   const prefixes = new Set([
     'boutique',
     'supermarche',
