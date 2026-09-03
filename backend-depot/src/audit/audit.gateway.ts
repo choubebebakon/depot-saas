@@ -49,11 +49,10 @@ export class AuditGateway implements OnGatewayConnection, OnGatewayDisconnect {
           id: true,
           tenantId: true,
           role: true,
-          actif: true,
         },
       });
 
-      if (!user || !user.actif || user.role !== 'PATRON') {
+      if (!user || user.role !== 'PATRON') {
         throw new UnauthorizedException('Accès au journal d’audit refusé');
       }
 
