@@ -32,6 +32,7 @@ export class UsersController {
     },
     @Req() req: any,
   ) {
+    // tenantId fourni par le client volontairement ignoré : l'identité JWT/DB est l'autorité.
     const tenantId = req.user?.tenantId;
     return this.usersService.create({ ...body, tenantId }, buildAuditActor(req));
   }
@@ -56,20 +57,52 @@ export class UsersController {
 
   @Get()
   async findAll(
-    @Query('tenantId') tenantId: string,
-    @Query('depotId') depotId?: string,
+    @Query('depotId') depotId: string | undefined,
+    @Req() req: any,
   ) {
-    return this.usersService.findAll(tenantId, depotId);
+    const tenantId = req.user?.tenantId;
+    const effectiveDepotId = req.user?.role === RoleUser.PATRON
+      ? depotId
+      : req.user?.depotId;
+
+    if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
+      return [];
+    }
+
+    return this.usersService.findAll(tenantId, effectiveDepotId);
   }
 
   @Get('commerciaux')
-  async findCommerciaux(@Query('tenantId') tenantId: string) {
-    return this.usersService.findCommerciaux(tenantId);
+  async findCommerciaux(
+    @Query('depotId') depotId: string | undefined,
+    @Req() req: any,
+  ) {
+    const tenantId = req.user?.tenantId;
+    const effectiveDepotId = req.user?.role === RoleUser.PATRON
+      ? depotId
+      : req.user?.depotId;
+
+    if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
+      return [];
+    }
+
+    return this.usersService.findCommerciaux(tenantId, effectiveDepotId);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.usersService.findOne(tenantId, id);
+  async findOne(
+    @Param('id') id: string,
+    @Query('tenantId') _ignoredTenantId: string | undefined,
+    @Req() req: any,
+  ) {
+    const tenantId = req.user?.tenantId;
+    const depotId = req.user?.role === RoleUser.PATRON ? undefined : req.user?.depotId;
+
+    if (req.user?.role === RoleUser.GERANT && !depotId) {
+      return this.usersService.findOne('__no_tenant_access__', id);
+    }
+
+    return this.usersService.findOne(tenantId, id, depotId);
   }
 
   // Activation / Désactivation d'un utilisateur
