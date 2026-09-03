@@ -21,10 +21,10 @@ export class ClientCreditSafetyInterceptor implements NestInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     const req = context.switchToHttp().getRequest();
     const method = String(req.method || '').toUpperCase();
-    const path = String(req.route?.path || req.path || '');
+    const path = String(req.originalUrl || req.path || req.route?.path || '');
 
-    const isDebtPayment = method === 'POST' && path.includes('depot-boissons/clients/:id/payer-dette');
-    const isSale = method === 'POST' && (path === '/ventes' || path.endsWith('/ventes'));
+    const isDebtPayment = method === 'POST' && path.includes('/depot-boissons/clients/') && path.includes('/payer-dette');
+    const isSale = method === 'POST' && (path === '/ventes' || path.endsWith('/ventes') || path.includes('/ventes?'));
 
     if (!isDebtPayment && !isSale) {
       return next.handle();
