@@ -4,6 +4,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
@@ -71,9 +72,12 @@ export class FournisseursController {
   }
 
   @Post('receptions')
-  createReception(@Body() dto: CreateReceptionDto) {
+  createReception(
+    @Body() dto: CreateReceptionDto,
+    @Headers('x-idempotency-key') idempotencyKey: string,
+  ) {
     const { tenantId, depotId } = this.getScope();
-    return this.service.createReception(dto, tenantId, depotId);
+    return this.service.createReception(dto, tenantId, depotId, idempotencyKey);
   }
 
   @Get('receptions')
