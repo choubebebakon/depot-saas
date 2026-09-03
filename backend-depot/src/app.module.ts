@@ -10,6 +10,7 @@ import { PrismaService } from './prisma.service';
 import { DepotScopeService } from './common/depot-scope.service';
 import { ContextMiddleware } from './common/middleware/context.middleware';
 import { DepotScopeInterceptor } from './common/interceptors/depot-scope.interceptor';
+import { ClientDepotScopeInterceptor } from './common/interceptors/client-depot-scope.interceptor';
 import { PromotionScopeInterceptor } from './common/interceptors/promotion-scope.interceptor';
 import { TourneeScopeInterceptor } from './common/interceptors/tournee-scope.interceptor';
 
@@ -120,6 +121,7 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionGuard },
     { provide: APP_INTERCEPTOR, useClass: DepotScopeInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: ClientDepotScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PromotionScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: TourneeScopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: RealtimeMutationInterceptor },
