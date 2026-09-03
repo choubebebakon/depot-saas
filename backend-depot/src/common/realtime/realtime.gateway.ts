@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { JwtPayload } from '../../auth/strategies/jwt.strategy';
 import { DepotsService } from '../../depots/depots.service';
+import { PrismaService } from '../../prisma.service';
 import { RealtimeEvent } from './realtime.service';
 
 const TENANT_ROOM = (tenantId: string) => `tenant:${tenantId}`;
@@ -36,6 +37,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   constructor(
     private readonly jwtService: JwtService,
     private readonly depotsService: DepotsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async handleConnection(socket: Socket): Promise<void> {
@@ -48,21 +50,45 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         throw new UnauthorizedException('Identité temps réel invalide');
       }
 
+      // Le JWT sert à authentifier la session, mais la base reste l'autorité
+      // pour le rôle, le tenant, le dépôt et l'état actif du compte.
+      const user = await this.prisma.user.findFirst({
+        where: { id: payload.sub, tenantId: payload.tenantId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          tenantId: true,
+          depotId: true,
+          isActive: true,
+          tenant: { select: { estActif: true } },
+        },
+      });
+
+      if (!user || !user.isActive || !user.tenant.estActif) {
+        throw new UnauthorizedException('Session temps réel invalide ou compte indisponible');
+      }
+
       const requestedDepotId = this.readOptionalString(socket.handshake.auth?.depotId);
-      const depotId = await this.resolveAuthorizedDepot(payload, requestedDepotId);
+      const depotId = await this.resolveAuthorizedDepot(user, requestedDepotId);
 
-      socket.data.userId = payload.sub;
-      socket.data.tenantId = payload.tenantId;
+      socket.data.userId = user.id;
+      socket.data.tenantId = user.tenantId;
       socket.data.depotId = depotId;
-      socket.data.role = payload.role;
+      socket.data.role = user.role;
+      socket.data.email = user.email;
 
-      await socket.join(TENANT_ROOM(payload.tenantId));
+      // Un utilisateur métier ne rejoint jamais le room tenant-wide.
+      // Seul le PATRON peut recevoir les événements sans dépôt ciblé.
+      if (user.role === 'PATRON') {
+        await socket.join(TENANT_ROOM(user.tenantId));
+      }
       if (depotId) {
-        await socket.join(DEPOT_ROOM(payload.tenantId, depotId));
+        await socket.join(DEPOT_ROOM(user.tenantId, depotId));
       }
 
       socket.emit('realtime:ready', {
-        tenantId: payload.tenantId,
+        tenantId: user.tenantId,
         depotId,
       });
     } catch (error) {
@@ -87,25 +113,35 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       return;
     }
 
+    // Les événements tenant-wide sont réservés au PATRON.
     this.server.to(TENANT_ROOM(event.tenantId)).emit('realtime:event', envelope);
   }
 
   private async resolveAuthorizedDepot(
-    payload: JwtPayload,
+    user: { role: string; tenantId: string; depotId: string | null },
     requestedDepotId: string | null,
   ): Promise<string | null> {
-    const tokenDepotId = this.readOptionalString(payload.depotId);
-
-    if (!MULTI_DEPOT_ROLES.has(payload.role)) {
-      if (requestedDepotId && requestedDepotId !== tokenDepotId) {
+    if (!MULTI_DEPOT_ROLES.has(user.role)) {
+      if (!user.depotId) {
+        if (requestedDepotId) throw new UnauthorizedException('Dépôt non autorisé');
+        return null;
+      }
+      if (requestedDepotId && requestedDepotId !== user.depotId) {
         throw new UnauthorizedException('Dépôt non autorisé');
       }
-      return tokenDepotId;
+      const depot = await this.depotsService.findOne(user.depotId, user.tenantId);
+      if (!depot || depot.isArchived) throw new UnauthorizedException('Dépôt non autorisé');
+      return depot.id;
     }
 
-    if (!requestedDepotId) return tokenDepotId;
+    if (!requestedDepotId) {
+      if (!user.depotId) return null;
+      const depot = await this.depotsService.findOne(user.depotId, user.tenantId);
+      if (!depot || depot.isArchived) throw new UnauthorizedException('Dépôt non autorisé');
+      return depot.id;
+    }
 
-    const depot = await this.depotsService.findOne(requestedDepotId, payload.tenantId);
+    const depot = await this.depotsService.findOne(requestedDepotId, user.tenantId);
     if (!depot || depot.isArchived) {
       throw new UnauthorizedException('Dépôt non autorisé');
     }
