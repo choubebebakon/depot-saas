@@ -2,6 +2,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  NestInterceptor,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Observable, Subscription } from 'rxjs';
@@ -18,14 +19,6 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-/**
- * Le Patron peut sélectionner n'importe quel dépôt actif de son tenant.
- *
- * Pour un Gérant, user.depotId constitue actuellement l'unique périmètre
- * explicite disponible dans le modèle. Tant qu'un modèle de membership
- * User↔Depot n'existe pas, autoriser un Gérant à choisir arbitrairement un
- * dépôt du tenant créerait une élévation de privilèges inter-dépôts.
- */
 const MULTI_DEPOT_ROLES = new Set(['PATRON']);
 
 function normalizeDepotId(value: unknown): string | null {
