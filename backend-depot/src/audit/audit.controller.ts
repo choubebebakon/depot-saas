@@ -18,13 +18,6 @@ import { AuditService, AuditJournalFilters } from './audit.service';
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
-  /**
-   * SÉCURITÉ : le tenantId ne doit JAMAIS venir d'un paramètre fourni par
-   * le client (query/body) — un PATRON authentifié pour le tenant A pourrait
-   * sinon lire le journal d'audit du tenant B en changeant juste la query
-   * string. La seule source de vérité est le token JWT décodé par
-   * JwtAuthGuard, qui peuple req.user.
-   */
   private getTenantId(req: any): string {
     if (!req.user?.tenantId) {
       throw new BadRequestException('Accès refusé : tenantId manquant dans le token.');
@@ -119,6 +112,18 @@ export class AuditController {
     @Query('from') from: string,
     @Query('to') to: string,
   ) {
-    return this.auditService.getResume(this.getTenantId(req), new Date(from), new Date(to));
+    const fromDate = this.parseDate(from, 'from');
+    const toDate = this.parseDate(to, 'to');
+    if (fromDate > toDate) {
+      throw new BadRequestException('La date de début doit précéder la date de fin.');
+    }
+    return this.auditService.getResume(this.getTenantId(req), fromDate, toDate);
+  }
+
+  private parseDate(value: string | undefined, field: string): Date {
+    if (!value?.trim()) throw new BadRequestException(`${field} est obligatoire.`);
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) throw new BadRequestException(`${field} est invalide.`);
+    return date;
   }
 }
