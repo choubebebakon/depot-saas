@@ -3,6 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { AppleAuthController } from './apple-auth.controller';
+import { AppleAuthService } from './apple-auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma.service';
 import { PermissionService } from './permission.service';
@@ -26,9 +28,10 @@ if (!jwtSecret) {
     }),
     AuditModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AppleAuthController],
   providers: [
     AuthService,
+    AppleAuthService,
     JwtStrategy,
     PrismaService,
     PermissionService,
