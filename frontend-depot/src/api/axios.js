@@ -1,6 +1,8 @@
 import axios from 'axios';
+import localforage from 'localforage';
 import { registerQuotaForbiddenInterceptor } from './api-interceptor';
 import { normalizeApiError } from '../shared/utils/apiError';
+import { generateId } from '../utils/offline';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
@@ -8,6 +10,11 @@ const api = axios.create({
   withCredentials: true,
 });
 
+const offlineQueue = localforage.createInstance({
+  name: 'GesTock',
+  storeName: 'syncQueue',
+});
+const MAX_OFFLINE_QUEUE_SIZE = 100;
 const GLOBAL_DEPOT_FREE_PATHS = ['/auth/login', '/auth/register', '/auth/me', '/depots', '/tenants', '/settings'];
 
 function shouldSkipDepotInjection(url = '') {
@@ -39,9 +46,58 @@ function isReceptionCreate(config) {
   return method === 'post' && /\/fournisseurs\/receptions\/?$/.test(url);
 }
 
+function getOfflineIdentity() {
+  try {
+    const rawUser = localStorage.getItem('depot_user');
+    const user = rawUser ? JSON.parse(rawUser) : null;
+    const userId = user?.id || user?.userId || null;
+    const tenantId = user?.tenantId || user?.tenant?.id || null;
+    const depotId = getActiveDepotId();
+    if (!userId || !tenantId || !depotId) return null;
+    return { userId: String(userId), tenantId: String(tenantId), depotId: String(depotId) };
+  } catch {
+    return null;
+  }
+}
+
+async function queueReceptionWhileOffline(config) {
+  const identity = getOfflineIdentity();
+  if (!identity) {
+    throw new Error('Impossible de mettre la réception hors ligne en file sans contexte utilisateur/tenant/dépôt.');
+  }
+
+  const keys = await offlineQueue.keys();
+  if (keys.length >= MAX_OFFLINE_QUEUE_SIZE) {
+    throw new Error('La file hors ligne a atteint sa limite. Reconnectez-vous pour synchroniser les actions en attente.');
+  }
+
+  const id = generateId();
+  const timestamp = new Date().toISOString();
+  const data = config.data instanceof FormData ? null : config.data;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('La réception hors ligne nécessite une charge JSON valide.');
+  }
+
+  await offlineQueue.setItem(id, {
+    id,
+    method: 'post',
+    url: config.url,
+    data,
+    timestamp,
+    identity,
+    status: 'pending',
+  });
+
+  window.dispatchEvent(new CustomEvent('gestock:offline-queued', {
+    detail: { id, type: 'reception', timestamp },
+  }));
+
+  return { id, timestamp };
+}
+
 api.defaults.headers.post['Content-Type'] = 'application/json';
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const token = localStorage.getItem('depot_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
@@ -52,20 +108,33 @@ api.interceptors.request.use((config) => {
   }
 
   const depotId = pickDepotIdFromRequest(config) || getActiveDepotId();
-  if (!depotId || shouldSkipDepotInjection(config.url || '')) return config;
+  if (depotId && !shouldSkipDepotInjection(config.url || '')) {
+    config.headers['X-Depot-Id'] = depotId;
+    if (['get', 'delete'].includes((config.method || 'get').toLowerCase())) {
+      config.params = { ...(config.params || {}), depotId: config.params?.depotId || depotId };
+    } else if (config.data instanceof FormData) {
+      if (!config.data.has('depotId')) config.data.append('depotId', depotId);
+    } else if (config.data && typeof config.data === 'object' && !Array.isArray(config.data)) {
+      config.data = { ...config.data, depotId: config.data.depotId ?? depotId };
+    }
+  }
 
-  config.headers['X-Depot-Id'] = depotId;
-  if (['get', 'delete'].includes((config.method || 'get').toLowerCase())) {
-    config.params = { ...(config.params || {}), depotId: config.params?.depotId || depotId };
-    return config;
+  // Seule la création de réception est automatiquement mise en file ici :
+  // son endpoint backend est idempotent et rejouable avec X-Idempotency-Key.
+  // Nous ne mettons pas arbitrairement toutes les mutations en file afin d'éviter
+  // les doubles ventes, paiements ou suppressions lors d'une reconnexion.
+  if (isReceptionCreate(config) && typeof navigator !== 'undefined' && !navigator.onLine) {
+    await queueReceptionWhileOffline(config);
+    config.adapter = async () => ({
+      data: { queuedOffline: true },
+      status: 202,
+      statusText: 'Accepted',
+      headers: {},
+      config,
+      request: null,
+    });
   }
-  if (config.data instanceof FormData) {
-    if (!config.data.has('depotId')) config.data.append('depotId', depotId);
-    return config;
-  }
-  if (config.data && typeof config.data === 'object' && !Array.isArray(config.data)) {
-    config.data = { ...config.data, depotId: config.data.depotId ?? depotId };
-  }
+
   return config;
 });
 
