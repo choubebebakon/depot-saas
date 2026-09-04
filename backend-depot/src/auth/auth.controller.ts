@@ -15,6 +15,7 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { GoogleAuthService } from './google-auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -36,6 +37,7 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly googleAuthService: GoogleAuthService,
     private readonly permissionService: PermissionService,
   ) {}
 
@@ -74,11 +76,38 @@ export class AuthController {
     return { access_token: result.access_token, user: result.user };
   }
 
-  /**
-   * Le refresh token est volontairement lu uniquement depuis le cookie
-   * httpOnly. Il ne doit pas être accepté dans le body afin de ne pas exposer
-   * le secret de session aux logs, proxies ou outils de debug HTTP.
-   */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 300000 } })
+  @Post('google')
+  async googleLogin(
+    @Body('credential') credential: string,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const origin = req.headers?.origin;
+    const configuredOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+      .split(',')
+      .map((value: string) => value.trim().replace(/\/$/, ''))
+      .filter(Boolean);
+    if (origin && configuredOrigins.length > 0 && !configuredOrigins.includes(origin.replace(/\/$/, ''))) {
+      throw new BadRequestException('Origine non autorisée.');
+    }
+
+    const result = await this.googleAuthService.loginWithGoogle(credential, {
+      ip: req.ip ?? null,
+      userAgent: req.headers?.['user-agent'] ?? null,
+    });
+
+    res.cookie('refreshToken', result.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return { access_token: result.access_token, user: result.user };
+  }
+
   @Public()
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('refresh')
