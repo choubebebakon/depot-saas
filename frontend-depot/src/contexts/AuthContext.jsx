@@ -11,17 +11,11 @@ const ACTIVE_DEPOT_STORAGE_KEY = 'depot_actif_id';
 function loadStoredUser() {
     const token = localStorage.getItem('depot_token');
     const savedUser = localStorage.getItem('depot_user') || localStorage.getItem('user');
-
     if (!token || !savedUser) return null;
-
     try {
         const parsedUser = JSON.parse(savedUser);
         api.defaults.headers.common.Authorization = `Bearer ${token}`;
-
-        if (parsedUser?.metier) {
-            localStorage.setItem('gestock_metier', parsedUser.metier);
-        }
-
+        if (parsedUser?.metier) localStorage.setItem('gestock_metier', parsedUser.metier);
         return parsedUser;
     } catch (e) {
         console.error('Erreur de parsing de l utilisateur sauvegarde:', e);
@@ -40,30 +34,19 @@ function RealtimeSessionBridge() {
     const token = isAuthenticated ? localStorage.getItem('depot_token') : null;
 
     useEffect(() => {
-        const syncActiveDepot = () => {
-            setActiveDepotId(
-                localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY) || user?.depotId || null,
-            );
-        };
-
+        const syncActiveDepot = () => setActiveDepotId(
+            localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY) || user?.depotId || null,
+        );
         window.addEventListener('gestock:depot-changed', syncActiveDepot);
         window.addEventListener('storage', syncActiveDepot);
         syncActiveDepot();
-
         return () => {
             window.removeEventListener('gestock:depot-changed', syncActiveDepot);
             window.removeEventListener('storage', syncActiveDepot);
         };
     }, [user?.depotId]);
 
-    useRealtimeSync({
-        token,
-        tenantId,
-        depotId: activeDepotId,
-        queryClient,
-        enabled: isAuthenticated,
-    });
-
+    useRealtimeSync({ token, tenantId, depotId: activeDepotId, queryClient, enabled: isAuthenticated });
     return null;
 }
 
@@ -95,15 +78,11 @@ export function AuthProvider({ children }) {
     const refreshUser = useCallback(async () => {
         const token = localStorage.getItem('depot_token');
         if (!token) return null;
-
         try {
             const response = await api.get('/auth/me');
             const userData = response.data;
-
             localStorage.setItem('depot_user', JSON.stringify(userData));
-            if (userData?.metier) {
-                localStorage.setItem('gestock_metier', userData.metier);
-            }
+            if (userData?.metier) localStorage.setItem('gestock_metier', userData.metier);
             setUser(userData);
             await loadPermissions();
             return userData;
@@ -149,7 +128,6 @@ export function AuthProvider({ children }) {
             }
             setLoading(false);
         };
-
         verifyAuth();
     }, [refreshUser]);
 
@@ -159,22 +137,28 @@ export function AuthProvider({ children }) {
         if (slug) setLibellePoste(roleLabel(user.role, slug));
     }, [user, libellePoste]);
 
-    const login = async (email, password) => {
-        const response = await api.post('/auth/login', { email, password });
+    const storeAuthenticatedUser = useCallback(async (response) => {
         const { access_token, accessToken, user: userData } = response.data;
         const token = access_token || accessToken;
-
+        if (!token || !userData) throw new Error('Réponse d’authentification invalide.');
         localStorage.setItem('depot_token', token);
         localStorage.setItem('depot_user', JSON.stringify(userData));
         api.defaults.headers.common.Authorization = `Bearer ${token}`;
-
-        if (userData?.metier) {
-            localStorage.setItem('gestock_metier', userData.metier);
-        }
-
+        if (userData?.metier) localStorage.setItem('gestock_metier', userData.metier);
         setUser(userData);
         await loadPermissions();
         return userData;
+    }, [loadPermissions]);
+
+    const login = async (email, password) => {
+        const response = await api.post('/auth/login', { email, password });
+        return storeAuthenticatedUser(response);
+    };
+
+    const loginWithGoogle = async (credential) => {
+        if (!credential || typeof credential !== 'string') throw new Error('Identifiant Google manquant.');
+        const response = await api.post('/auth/google', { credential });
+        return storeAuthenticatedUser(response);
     };
 
     const logout = async () => {
@@ -197,11 +181,8 @@ export function AuthProvider({ children }) {
 
     return (
         <AuthContext.Provider value={{
-            user, login, logout, loading,
-            refreshUser,
-            updateUser,
-            permissionsState,
-            libellePoste,
+            user, login, loginWithGoogle, logout, loading,
+            refreshUser, updateUser, permissionsState, libellePoste,
             tenantId: user?.tenantId || null,
             role: user?.role || null,
             metier: user?.metier || null,
