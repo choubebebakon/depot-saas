@@ -58,10 +58,10 @@ export const boutiqueApi = {
   deleteFacture: (id) => api.delete(`/boutique/factures/${id}`, getTenantHeaders()),
 
   getPromotions: (params) =>
-    api.get('/boutique/promotions', { ...getTenantHeaders(), params: cleanParams(params) }),
-  createPromotion: (data) => api.post('/boutique/promotions', data, getTenantHeaders()),
-  updatePromotion: (id, data) => api.patch(`/boutique/promotions/${id}`, data, getTenantHeaders()),
-  deletePromotion: (id) => api.delete(`/boutique/promotions/${id}`, getTenantHeaders()),
+    api.get('/boutique/promotions-production', { ...getTenantHeaders(), params: cleanParams(params) }),
+  createPromotion: (data) => api.post('/boutique/promotions-production', data, getTenantHeaders()),
+  updatePromotion: (id, data) => api.patch(`/boutique/promotions-production/${id}`, data, getTenantHeaders()),
+  deletePromotion: (id) => api.delete(`/boutique/promotions-production/${id}`, getTenantHeaders()),
 
   getRapports: (params) =>
     api.get('/boutique/rapports', { ...getTenantHeaders(), params: cleanParams(params) }),
