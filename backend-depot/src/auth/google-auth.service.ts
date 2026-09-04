@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { createPublicKey, verify as verifySignature } from 'crypto';
+import { createPublicKey, verify as verifySignature, randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as argon2 from 'argon2';
-import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions.constants';
 import { AuditSeverite } from '@prisma/client';
@@ -44,13 +43,25 @@ export class GoogleAuthService {
     return clientId;
   }
 
+  private getRefreshSecret(): string {
+    const secret = process.env.JWT_REFRESH_SECRET?.trim() || (
+      process.env.NODE_ENV === 'production' ? undefined : 'dev-only-refresh-secret-change-me'
+    );
+    if (!secret) throw new Error('JWT_REFRESH_SECRET est obligatoire en production.');
+    return secret;
+  }
+
   private async getGoogleKeys(forceRefresh = false): Promise<GoogleJwk[]> {
     if (!forceRefresh && this.jwksCache && this.jwksCache.expiresAt > Date.now()) return this.jwksCache.keys;
-
-    const response = await fetch('https://www.googleapis.com/oauth2/v3/certs', {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(5000),
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://www.googleapis.com/oauth2/v3/certs', {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+      throw new UnauthorizedException('Impossible de vérifier le compte Google.');
+    }
     if (!response.ok) throw new UnauthorizedException('Impossible de vérifier le compte Google.');
 
     const cacheControl = response.headers.get('cache-control') || '';
@@ -58,7 +69,6 @@ export class GoogleAuthService {
     const maxAgeSeconds = Math.min(Math.max(Number(maxAgeMatch?.[1] || 3600), 300), 86400);
     const body = (await response.json()) as { keys?: GoogleJwk[] };
     if (!Array.isArray(body.keys) || body.keys.length === 0) throw new UnauthorizedException('Clés Google indisponibles.');
-
     this.jwksCache = { keys: body.keys, expiresAt: Date.now() + maxAgeSeconds * 1000 };
     return body.keys;
   }
@@ -69,7 +79,6 @@ export class GoogleAuthService {
 
   private async verifyIdToken(idToken: string): Promise<GoogleClaims> {
     if (!idToken || idToken.length > 8192) throw new UnauthorizedException('Identifiant Google invalide.');
-
     const parts = idToken.split('.');
     if (parts.length !== 3) throw new UnauthorizedException('Identifiant Google invalide.');
 
@@ -118,7 +127,6 @@ export class GoogleAuthService {
       valid = false;
     }
     if (!valid) throw new UnauthorizedException('Signature Google invalide.');
-
     return { ...claims, email };
   }
 
@@ -133,10 +141,7 @@ export class GoogleAuthService {
       depotId: user.depotId ?? undefined,
     };
     const access_token = this.jwtService.sign(payload);
-    const refresh_token = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET?.trim() || 'dev-only-refresh-secret-change-me',
-      expiresIn: '30d',
-    });
+    const refresh_token = this.jwtService.sign(payload, { secret: this.getRefreshSecret(), expiresIn: '30d' });
     const refreshTokenHash = await argon2.hash(refresh_token);
 
     await this.prisma.$transaction(async (tx) => {
@@ -184,12 +189,8 @@ export class GoogleAuthService {
   async loginWithGoogle(idToken: string, meta?: { ip?: string | null; userAgent?: string | null }) {
     const claims = await this.verifyIdToken(idToken);
     const user = await this.prisma.user.findUnique({ where: { email: claims.email }, include: { tenant: true } });
-
-    // Google Sign-In is deliberately login/link-only here. A new tenant must still
-    // be created through the existing onboarding flow, where métier and company data are collected.
     if (!user) throw new UnauthorizedException('Aucun compte GesTock associé à cette adresse. Créez d’abord votre compte GesTock.');
     if (!user.isActive) throw new UnauthorizedException('Compte utilisateur désactivé.');
-
     return this.issueSession(user, meta);
   }
 }
