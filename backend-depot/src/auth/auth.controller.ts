@@ -14,6 +14,7 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -25,6 +26,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { PermissionService } from './permission.service';
+import { PrismaService } from '../prisma.service';
+import { AuditService } from '../audit/audit.service';
 import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -34,12 +37,17 @@ import { extname } from 'path';
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
+  private readonly googleAuthService: GoogleAuthService;
 
   constructor(
     private readonly authService: AuthService,
-    private readonly googleAuthService: GoogleAuthService,
     private readonly permissionService: PermissionService,
-  ) {}
+    prisma: PrismaService,
+    jwtService: JwtService,
+    auditService: AuditService,
+  ) {
+    this.googleAuthService = new GoogleAuthService(prisma, jwtService, auditService);
+  }
 
   @Public()
   @Post('register')
