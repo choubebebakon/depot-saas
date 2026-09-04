@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import api from '../../../api';
+import api from '../../../api/axios';
 import { useDepot } from '../../../contexts/DepotContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
 
-const initialState = { libelle: '', type: 'REMISE', valeur: '', dateDebut: '', dateFin: '', articleId: '' };
+const initialState = { libelle: '', type: 'POURCENTAGE', valeur: '', prixPromo: '', dateDebut: '', dateFin: '', articleId: '' };
 
 export default function PromotionBoutiqueForm({ isOpen, onClose, onSuccess, edit, metier = 'boutique' }) {
   const [form, setForm] = useState({ ...initialState });
@@ -29,7 +29,8 @@ export default function PromotionBoutiqueForm({ isOpen, onClose, onSuccess, edit
     if (edit) {
       setForm({
         libelle: edit.libelle || edit.nom || '',
-        type: edit.type || 'REMISE',
+        type: edit.type || 'POURCENTAGE',
+        prixPromo: edit.prixPromo ?? '',
         valeur: edit.valeur ?? '',
         dateDebut: edit.dateDebut ? String(edit.dateDebut).slice(0, 16) : '',
         dateFin: edit.dateFin ? String(edit.dateFin).slice(0, 16) : '',
@@ -49,7 +50,7 @@ export default function PromotionBoutiqueForm({ isOpen, onClose, onSuccess, edit
     if (!form.libelle?.trim()) errs.libelle = 'Le libellé est requis';
     if (!form.articleId?.trim()) errs.articleId = "L'article est requis";
     if (form.valeur === '' || !Number.isFinite(valeur) || valeur < 0) errs.valeur = 'La valeur doit être un nombre positif';
-    if (form.type === 'REMISE' && valeur > 100) errs.valeur = 'Une remise ne peut pas dépasser 100 %';
+    if (form.type === 'POURCENTAGE' && valeur > 100) errs.valeur = 'Une remise ne peut pas dépasser 100 %';
     if (form.dateDebut && form.dateFin && new Date(form.dateFin) < new Date(form.dateDebut)) errs.dateFin = 'La date de fin doit être postérieure au début';
     return errs;
   };
@@ -62,12 +63,16 @@ export default function PromotionBoutiqueForm({ isOpen, onClose, onSuccess, edit
     setLoading(true);
     try {
       const payload = {
-        ...form,
-        depotId,
+        nom: form.libelle.trim(),
+        type: form.type,
         valeur: Number(form.valeur),
+        prixPromo: form.type === 'PRIX_FIXE' ? Number(form.valeur) : Number(form.prixPromo || 0),
+        dateDebut: new Date(form.dateDebut).toISOString(),
+        dateFin: new Date(form.dateFin).toISOString(),
+        articleId: form.articleId,
       };
-      if (edit) await api.patch(`${prefix}/promotions/${edit.id}`, payload);
-      else await api.post(`${prefix}/promotions`, payload);
+      if (edit) await api.patch(`${prefix}/promotions-production/${edit.id}`, payload);
+      else await api.post(`${prefix}/promotions-production`, payload);
       onSuccess();
       onClose();
     } catch (err) {
@@ -91,7 +96,7 @@ export default function PromotionBoutiqueForm({ isOpen, onClose, onSuccess, edit
         {errors.articleId && <span className="text-red-400 text-xs mt-1">{errors.articleId}</span>}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} options={['REMISE', 'OFFRE_SPECIALE']} />
+        <FormField label="Type" name="type" type="select" value={form.type} onChange={set('type')} options={['POURCENTAGE', 'MONTANT_FIXE', 'PRIX_FIXE']} />
         <FormField label="Valeur" name="valeur" type="number" value={form.valeur} onChange={set('valeur')} min="0" error={errors.valeur} placeholder="0" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
