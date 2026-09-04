@@ -19,5 +19,6 @@ export class RealtimeService {
   publish<T>(event: RealtimeEvent<T>): void {
     if (!event.tenantId) return;
     this.gateway.publish(event);
+    this.gateway.publishPlatform(event);
   }
 }
