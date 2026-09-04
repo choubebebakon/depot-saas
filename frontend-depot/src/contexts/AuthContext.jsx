@@ -160,9 +160,6 @@ export function AuthProvider({ children }) {
         const response = await api.post('/auth/google', { credential });
         return storeAuthenticatedUser(response);
     };
-
-    const loginWithApple = async ({ code, state, nonce }) => {
-        if (!code || !state || !nonce) throw new Error('Réponse Apple incomplète.');
         const response = await api.post('/auth/apple', { code, state, nonce });
         return storeAuthenticatedUser(response);
     };
