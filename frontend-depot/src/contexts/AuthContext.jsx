@@ -161,6 +161,12 @@ export function AuthProvider({ children }) {
         return storeAuthenticatedUser(response);
     };
 
+    const loginWithApple = async ({ code, state, nonce }) => {
+        if (!code || !state || !nonce) throw new Error('Réponse Apple incomplète.');
+        const response = await api.post('/auth/apple', { code, state, nonce });
+        return storeAuthenticatedUser(response);
+    };
+
     const logout = async () => {
         try {
             await api.post('/auth/logout');
@@ -181,7 +187,7 @@ export function AuthProvider({ children }) {
 
     return (
         <AuthContext.Provider value={{
-            user, login, loginWithGoogle, logout, loading,
+            user, login, loginWithGoogle, loginWithApple, logout, loading,
             refreshUser, updateUser, permissionsState, libellePoste,
             tenantId: user?.tenantId || null,
             role: user?.role || null,
