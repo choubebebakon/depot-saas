@@ -39,25 +39,60 @@ function sameIdentity(a, b) {
   );
 }
 
+function isRetryableStatus(status) {
+  return !status || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
 export function useOfflineSync() {
   const [pendingCount, setPendingCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const isSyncingRef = useRef(false);
 
   const updateCount = useCallback(async () => {
+    const identity = getQueueIdentity();
+    if (!identity) {
+      setPendingCount(0);
+      setFailedCount(0);
+      return;
+    }
+
     const keys = await syncQueue.keys();
-    setPendingCount(keys.length);
+    let pending = 0;
+    let failed = 0;
+
+    for (const key of keys) {
+      const item = await syncQueue.getItem(key);
+      if (!item || !sameIdentity(item.identity, identity)) continue;
+      if (item.status === 'failed') failed += 1;
+      else pending += 1;
+    }
+
+    setPendingCount(pending);
+    setFailedCount(failed);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    void syncQueue.keys().then((keys) => {
-      if (!cancelled) setPendingCount(keys.length);
+    void updateCount().finally(() => {
+      if (cancelled) return;
     });
+
+    const handleIdentityChange = () => {
+      void updateCount();
+    };
+
+    window.addEventListener('storage', handleIdentityChange);
+    window.addEventListener('gestock:auth-changed', handleIdentityChange);
+    window.addEventListener('gestock:depot-changed', handleIdentityChange);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('storage', handleIdentityChange);
+      window.removeEventListener('gestock:auth-changed', handleIdentityChange);
+      window.removeEventListener('gestock:depot-changed', handleIdentityChange);
     };
-  }, []);
+  }, [updateCount]);
 
   const processQueue = useCallback(async () => {
     if (isSyncingRef.current || !navigator.onLine) return;
@@ -66,7 +101,10 @@ export function useOfflineSync() {
     if (!identity) return;
 
     const keys = await syncQueue.keys();
-    if (keys.length === 0) return;
+    if (keys.length === 0) {
+      await updateCount();
+      return;
+    }
 
     isSyncingRef.current = true;
     setIsSyncing(true);
@@ -84,6 +122,10 @@ export function useOfflineSync() {
         // Never replay a mutation under a different authenticated user/tenant/depot.
         if (!sameIdentity(item.identity, identity)) continue;
 
+        // A non-retryable business error is retained for explicit recovery instead
+        // of being silently discarded or retried forever.
+        if (item.status === 'failed') continue;
+
         try {
           await api({
             method: item.method,
@@ -99,24 +141,62 @@ export function useOfflineSync() {
           const status = error.response?.status;
 
           // Authentication/authorization failures must not silently discard business data.
-          if (status === 401 || status === 403) break;
-
-          // Client-side validation/not-found errors cannot succeed by retrying unchanged.
-          if (status >= 400 && status < 500) {
-            await syncQueue.removeItem(item.id);
+          // Keep the item so it can be recovered after the authenticated context is fixed.
+          if (status === 401 || status === 403) {
+            await syncQueue.setItem(item.id, {
+              ...item,
+              status: 'failed',
+              failedAt: new Date().toISOString(),
+              errorCode: status
+            });
             await updateCount();
-          } else {
-            // Network/server failures: preserve ordering and retry later.
             break;
           }
+
+          // Validation/conflict errors are not expected to succeed by automatic retry.
+          // Preserve the payload and record only a small, non-sensitive error marker.
+          if (status >= 400 && status < 500 && !isRetryableStatus(status)) {
+            await syncQueue.setItem(item.id, {
+              ...item,
+              status: 'failed',
+              failedAt: new Date().toISOString(),
+              errorCode: status
+            });
+            await updateCount();
+            continue;
+          }
+
+          // Network/server/rate-limit failures: preserve ordering and retry later.
+          break;
         }
       }
     } finally {
       isSyncingRef.current = false;
       setIsSyncing(false);
+      await updateCount();
       window.dispatchEvent(new CustomEvent('sync-end'));
     }
   }, [updateCount]);
+
+  const retryFailed = useCallback(async () => {
+    const identity = getQueueIdentity();
+    if (!identity) return;
+
+    const keys = await syncQueue.keys();
+    for (const key of keys) {
+      const item = await syncQueue.getItem(key);
+      if (!item || !sameIdentity(item.identity, identity) || item.status !== 'failed') continue;
+      await syncQueue.setItem(item.id, {
+        ...item,
+        status: 'pending',
+        failedAt: undefined,
+        errorCode: undefined
+      });
+    }
+
+    await updateCount();
+    if (navigator.onLine) await processQueue();
+  }, [processQueue, updateCount]);
 
   const addToQueue = useCallback(async (method, url, data) => {
     const identity = getQueueIdentity();
@@ -136,7 +216,8 @@ export function useOfflineSync() {
       url,
       data,
       timestamp: new Date().toISOString(),
-      identity
+      identity,
+      status: 'pending'
     };
 
     await syncQueue.setItem(id, action);
@@ -153,5 +234,5 @@ export function useOfflineSync() {
     return () => window.removeEventListener('online', handleOnline);
   }, [processQueue]);
 
-  return { addToQueue, pendingCount, isSyncing, processQueue };
+  return { addToQueue, pendingCount, failedCount, isSyncing, processQueue, retryFailed };
 }
