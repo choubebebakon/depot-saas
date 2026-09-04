@@ -4,6 +4,8 @@ import type { Request, Response } from 'express';
 import { Public } from './decorators/public.decorator';
 import { AppleAuthService } from './apple-auth.service';
 
+type RequestWithCookies = Request & { cookies?: Record<string, string | undefined> };
+
 @Controller('auth/apple')
 export class AppleAuthController {
   constructor(private readonly appleAuthService: AppleAuthService) {}
@@ -31,7 +33,7 @@ export class AppleAuthController {
   @Post()
   async login(
     @Body() body: { code?: string; state?: string; nonce?: string },
-    @Req() req: Request,
+    @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: Response,
   ) {
     const expectedState = req.cookies?.appleOAuthState;
