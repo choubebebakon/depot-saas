@@ -9,15 +9,26 @@ import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma.service';
 
+function getAllowedOrigins(): string[] {
+  const configured = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (configured.length > 0) return configured;
+  if (process.env.NODE_ENV === 'production') return [];
+  return ['http://localhost:5173', 'http://localhost:4173'];
+}
+
+const allowedOrigins = getAllowedOrigins();
+
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL?.split(',').map((value) => value.trim()).filter(Boolean) ?? [
-      'http://localhost:5173',
-      'http://localhost:4173',
-    ],
+    origin: allowedOrigins,
     credentials: true,
   },
   transports: ['websocket', 'polling'],
+  maxHttpBufferSize: 256 * 1024,
 })
 export class AuditGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -33,7 +44,9 @@ export class AuditGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket): Promise<void> {
     try {
       const token = this.extractToken(client);
-      if (!token) throw new UnauthorizedException('Token temps réel manquant');
+      if (!token || token.length > 8192) {
+        throw new UnauthorizedException('Token temps réel manquant ou invalide');
+      }
 
       const payload = await this.jwtService.verifyAsync<Record<string, any>>(token);
       if (!payload?.sub || !payload?.tenantId) {
@@ -76,9 +89,6 @@ export class AuditGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitAuditUpdate(tenantId: string, payload: any): void {
     if (!this.server || !tenantId) return;
 
-    // Ne jamais pousser au navigateur les champs bruts pouvant contenir des
-    // données techniques/sensibles (IP, user-agent, valeurs avant/après,
-    // metadataText). Le Patron peut les retrouver via l'API HTTP autorisée.
     const safePayload = {
       id: payload?.id,
       tenantId: payload?.tenantId,
