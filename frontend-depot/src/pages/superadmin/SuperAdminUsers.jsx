@@ -45,6 +45,7 @@ const METIER_LABELS = {
 };
 
 export default function SuperAdminUsers() {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   useSuperAdminRealtime({ token: user?.isSuperAdmin ? localStorage.getItem('depot_token') : null, queryClient, enabled: !!user?.isSuperAdmin });
   const [filters, setFilters] = useState({
