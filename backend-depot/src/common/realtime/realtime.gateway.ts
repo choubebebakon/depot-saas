@@ -66,12 +66,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         },
       });
 
-      if (!user || !user.isActive || !user.tenant.estActif) {
+      if (!user || !user.isActive || (!user.tenant.estActif && !user.isSuperAdmin)) {
         throw new UnauthorizedException('Session temps réel invalide ou compte indisponible');
       }
 
       const requestedDepotId = this.readOptionalString(socket.handshake.auth?.depotId);
-      const depotId = await this.resolveAuthorizedDepot(user, requestedDepotId);
+      const depotId = user.isSuperAdmin ? null : await this.resolveAuthorizedDepot(user, requestedDepotId);
 
       socket.data.userId = user.id;
       socket.data.tenantId = user.tenantId;
