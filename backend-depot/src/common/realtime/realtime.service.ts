@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { RealtimeGateway } from './realtime.gateway';
 
+const PLATFORM_REALTIME_RESOURCES = new Set([
+  'admin:users', 'admin:tenants', 'admin:transactions',
+  'users', 'tenants', 'payments', 'payment', 'ventes', 'vente',
+  'articles', 'article', 'depots', 'depot', 'subscriptions', 'subscription',
+]);
+
 export interface RealtimeEvent<T = unknown> {
   type: string;
   resource: string;
@@ -19,6 +25,8 @@ export class RealtimeService {
   publish<T>(event: RealtimeEvent<T>): void {
     if (!event.tenantId) return;
     this.gateway.publish(event);
-    this.gateway.publishPlatform(event);
+    if (PLATFORM_REALTIME_RESOURCES.has(event.resource)) {
+      this.gateway.publishPlatform(event);
+    }
   }
 }
