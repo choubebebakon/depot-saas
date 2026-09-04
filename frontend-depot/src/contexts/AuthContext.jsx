@@ -160,10 +160,6 @@ export function AuthProvider({ children }) {
         const response = await api.post('/auth/google', { credential });
         return storeAuthenticatedUser(response);
     };
-        const response = await api.post('/auth/apple', { code, state, nonce });
-        return storeAuthenticatedUser(response);
-    };
-
     const logout = async () => {
         try {
             await api.post('/auth/logout');
@@ -184,7 +180,7 @@ export function AuthProvider({ children }) {
 
     return (
         <AuthContext.Provider value={{
-            user, login, loginWithGoogle, loginWithApple, logout, loading,
+            user, login, loginWithGoogle, logout, loading,
             refreshUser, updateUser, permissionsState, libellePoste,
             tenantId: user?.tenantId || null,
             role: user?.role || null,
