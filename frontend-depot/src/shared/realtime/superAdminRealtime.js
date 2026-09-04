@@ -4,7 +4,7 @@ function resolveRealtimeUrl() {
   const explicit = import.meta.env.VITE_REALTIME_URL;
   if (explicit) return explicit.replace(/\/$/, '');
   const apiUrl = import.meta.env.VITE_API_URL;
-  if (apiUrl) return apiUrl.replace(/\/api\/v\\d+\/?$/, '').replace(/\/$/, '');
+  if (apiUrl) return apiUrl.replace(/\/api\/v\d+\/?$/, '').replace(/\/$/, '');
   return window.location.origin;
 }
 
