@@ -22,6 +22,7 @@ import { AdminService } from './admin.service';
 import { AuditService } from '../audit/audit.service';
 
 const MAX_PAGE_SIZE = 100;
+const MAX_PAGE_OFFSET = 100_000;
 const MAX_AUDIT_PAGE_SIZE = 500;
 const ALLOWED_ANALYTICS_PERIODS = new Set(['7d', '30d', '90d', '1y']);
 
@@ -79,51 +80,27 @@ export class AdminController {
     }
   }
 
-  @Get('stats')
-  getPlatformStats() {
-    return this.adminService.getPlatformStats();
-  }
-
-  @Get('metrics')
-  getRevenueMetrics() {
-    return this.adminService.getRevenueMetrics();
-  }
-
-  @Get('users-by-metier')
-  getUsersByMetier() {
-    return this.adminService.getUsersByMetier();
-  }
-
-  @Get('subscribers-by-plan')
-  getSubscribersByPlan() {
-    return this.adminService.getSubscribersByPlan();
-  }
+  @Get('stats') getPlatformStats() { return this.adminService.getPlatformStats(); }
+  @Get('metrics') getRevenueMetrics() { return this.adminService.getRevenueMetrics(); }
+  @Get('users-by-metier') getUsersByMetier() { return this.adminService.getUsersByMetier(); }
+  @Get('subscribers-by-plan') getSubscribersByPlan() { return this.adminService.getSubscribersByPlan(); }
 
   @Get('transactions')
-  getTransactions(
-    @Query('status') status?: string,
-    @Query('method') method?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ) {
+  getTransactions(@Query('status') status?: string, @Query('method') method?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
     return this.adminService.getTransactions({
       status: this.parseEnum(status, Object.values(PaymentStatus), 'status'),
       method: this.parseEnum(method, Object.values(PaymentMethod), 'method'),
       limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
-      offset: this.parsePageValue(offset, 'offset', Number.MAX_SAFE_INTEGER, 0),
+      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
     });
   }
 
   @Get('tenants')
-  getTenants(
-    @Query('status') status?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ) {
+  getTenants(@Query('status') status?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
     return this.adminService.getTenants({
       status: this.parseEnum(status, Object.values(TenantStatus), 'status'),
       limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
-      offset: this.parsePageValue(offset, 'offset', Number.MAX_SAFE_INTEGER, 0),
+      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
     });
   }
 
@@ -135,12 +112,7 @@ export class AdminController {
   }
 
   @Get('audit/journal')
-  getTenantJournal(
-    @Query('tenantId') tenantId?: string,
-    @Query('action') action?: string,
-    @Query('severite') severite?: string,
-    @Query('limit') limit?: string,
-  ) {
+  getTenantJournal(@Query('tenantId') tenantId?: string, @Query('action') action?: string, @Query('severite') severite?: string, @Query('limit') limit?: string) {
     const safeTenantId = this.parseText(tenantId, 'tenantId', 100);
     if (!safeTenantId) throw new BadRequestException('tenantId est obligatoire.');
     return this.auditService.getJournalPatron(safeTenantId, {
@@ -151,19 +123,13 @@ export class AdminController {
   }
 
   @Get('users')
-  getAllUsers(
-    @Query('tenantId') tenantId?: string,
-    @Query('role') role?: string,
-    @Query('isActive') isActive?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ) {
+  getAllUsers(@Query('tenantId') tenantId?: string, @Query('role') role?: string, @Query('isActive') isActive?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
     return this.adminService.getAllUsers({
       tenantId: this.parseText(tenantId, 'tenantId', 100),
       role: this.parseRole(role),
       isActive: this.parseBoolean(isActive),
       limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
-      offset: this.parsePageValue(offset, 'offset', Number.MAX_SAFE_INTEGER, 0),
+      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
     });
   }
 
@@ -208,28 +174,14 @@ export class AdminController {
     return this.adminService.deleteUser(id);
   }
 
-  @Get('analytics/overview')
-  getAnalyticsOverview() {
-    return this.adminService.getAnalyticsOverview();
-  }
+  @Get('analytics/overview') getAnalyticsOverview() { return this.adminService.getAnalyticsOverview(); }
 
   @Get('analytics/usage')
-  getUsageMetrics(@Query('period') period?: string) {
-    return this.adminService.getUsageMetrics(this.parsePeriod(period));
-  }
+  getUsageMetrics(@Query('period') period?: string) { return this.adminService.getUsageMetrics(this.parsePeriod(period)); }
 
   @Get('analytics/revenue')
-  getRevenueAnalytics(@Query('period') period?: string) {
-    return this.adminService.getRevenueAnalytics(this.parsePeriod(period));
-  }
+  getRevenueAnalytics(@Query('period') period?: string) { return this.adminService.getRevenueAnalytics(this.parsePeriod(period)); }
 
-  @Get('analytics/churn')
-  getChurnAnalytics() {
-    return this.adminService.getChurnAnalytics();
-  }
-
-  @Get('analytics/feature-usage')
-  getFeatureUsage() {
-    return this.adminService.getFeatureUsage();
-  }
+  @Get('analytics/churn') getChurnAnalytics() { return this.adminService.getChurnAnalytics(); }
+  @Get('analytics/feature-usage') getFeatureUsage() { return this.adminService.getFeatureUsage(); }
 }
