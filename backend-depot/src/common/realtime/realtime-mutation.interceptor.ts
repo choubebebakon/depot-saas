@@ -4,11 +4,6 @@ import { DepotScopeService } from '../depot-scope.service';
 import { RealtimeService } from './realtime.service';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-const PLATFORM_REALTIME_RESOURCES = new Set([
-  'admin:users', 'admin:tenants', 'admin:transactions',
-  'users', 'tenants', 'payments', 'payment', 'ventes', 'vente',
-  'articles', 'article', 'depots', 'depot', 'subscriptions', 'subscription',
-]);
 
 @Injectable()
 export class RealtimeMutationInterceptor implements NestInterceptor {
