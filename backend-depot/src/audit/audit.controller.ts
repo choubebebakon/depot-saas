@@ -19,8 +19,11 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   private getTenantId(req: any): string {
-    if (!req.user?.tenantId) throw new BadRequestException('Accès refusé : tenantId manquant dans le token.');
-    return req.user.tenantId;
+    const tenantId = req.user?.tenantId;
+    if (typeof tenantId !== 'string' || !tenantId.trim()) {
+      throw new BadRequestException('Accès refusé : tenantId manquant dans le token.');
+    }
+    return tenantId.trim();
   }
 
   private parseHours(value?: string): number {
@@ -32,35 +35,89 @@ export class AuditController {
     return hours;
   }
 
+  private parseLimit(value?: string): number {
+    if (value === undefined || value.trim() === '') return 100;
+    const limit = Number(value);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+      throw new BadRequestException('limit doit être un entier compris entre 1 et 500.');
+    }
+    return limit;
+  }
+
+  private parseOptionalNumber(value: string | undefined, field: string): number | undefined {
+    if (value === undefined || value.trim() === '') return undefined;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      throw new BadRequestException(`${field} est invalide.`);
+    }
+    return parsed;
+  }
+
+  private parseOptionalDate(value: string | undefined, field: string): string | undefined {
+    if (value === undefined || value.trim() === '') return undefined;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(`${field} est invalide.`);
+    }
+    return date.toISOString();
+  }
+
+  private parseOptionalText(value: string | undefined, field: string, maxLength = 200): string | undefined {
+    if (value === undefined) return undefined;
+    const text = value.trim();
+    if (!text) return undefined;
+    if (text.length > maxLength) {
+      throw new BadRequestException(`${field} est trop long (maximum ${maxLength} caractères).`);
+    }
+    return text;
+  }
+
   private buildFiltersFromQuery(query: any): AuditJournalFilters {
+    const startDate = this.parseOptionalDate(query.startDate, 'startDate');
+    const endDate = this.parseOptionalDate(query.endDate, 'endDate');
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      throw new BadRequestException('La date de début doit précéder la date de fin.');
+    }
+
     return {
-      depotId: query.depotId, action: query.action, severite: query.severite, resultat: query.resultat,
-      metier: query.metier, startDate: query.startDate, endDate: query.endDate, search: query.search,
-      montantMin: query.montantMin ? parseFloat(query.montantMin) : undefined,
-      montantMax: query.montantMax ? parseFloat(query.montantMax) : undefined,
+      depotId: this.parseOptionalText(query.depotId, 'depotId', 100),
+      action: this.parseOptionalText(query.action, 'action', 100),
+      severite: query.severite,
+      resultat: query.resultat,
+      metier: this.parseOptionalText(query.metier, 'metier', 100),
+      startDate,
+      endDate,
+      search: this.parseOptionalText(query.search, 'search', 200),
+      montantMin: this.parseOptionalNumber(query.montantMin, 'montantMin'),
+      montantMax: this.parseOptionalNumber(query.montantMax, 'montantMax'),
     };
+  }
+
+  private validateEnum(value: unknown, allowed: readonly string[], field: string): void {
+    if (value !== undefined && value !== null && !allowed.includes(String(value))) {
+      throw new BadRequestException(`${field} est invalide.`);
+    }
+  }
+
+  private buildJournalFilters(query: any): AuditJournalFilters {
+    const filters = this.buildFiltersFromQuery(query);
+    this.validateEnum(filters.severite, Object.values(AuditSeverite), 'severite');
+    this.validateEnum(filters.resultat, Object.values(AuditResultat), 'resultat');
+    if (filters.montantMin !== undefined && filters.montantMax !== undefined && filters.montantMin > filters.montantMax) {
+      throw new BadRequestException('montantMin doit être inférieur ou égal à montantMax.');
+    }
+    return filters;
   }
 
   @Get('journal')
   getJournalPatron(
     @Req() req: any,
-    @Query('depotId') depotId?: string,
-    @Query('action') action?: string,
-    @Query('severite') severite?: AuditSeverite,
-    @Query('resultat') resultat?: AuditResultat,
-    @Query('metier') metier?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('search') search?: string,
-    @Query('montantMin') montantMin?: string,
-    @Query('montantMax') montantMax?: string,
-    @Query('limit') limit?: string,
+    @Query() query: any,
   ) {
+    const filters = this.buildJournalFilters(query);
     return this.auditService.getJournalPatron(this.getTenantId(req), {
-      depotId, action, severite, resultat, metier, startDate, endDate, search,
-      montantMin: montantMin ? parseFloat(montantMin) : undefined,
-      montantMax: montantMax ? parseFloat(montantMax) : undefined,
-      limit: limit ? parseInt(limit, 10) : 100,
+      ...filters,
+      limit: this.parseLimit(query.limit),
     });
   }
 
@@ -82,7 +139,7 @@ export class AuditController {
   @Get('export/csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   async exportCSV(@Req() req: any, @Query() query: any, @Res({ passthrough: true }) res: Response): Promise<StreamableFile> {
-    const buffer = await this.auditService.exportJournalCSV(this.getTenantId(req), this.buildFiltersFromQuery(query));
+    const buffer = await this.auditService.exportJournalCSV(this.getTenantId(req), this.buildJournalFilters(query));
     const date = new Date().toISOString().slice(0, 10);
     res.set({ 'Content-Disposition': `attachment; filename="journal-audit-${date}.csv"` });
     return new StreamableFile(buffer);
@@ -91,7 +148,7 @@ export class AuditController {
   @Get('export/pdf')
   @Header('Content-Type', 'application/pdf')
   async exportPDF(@Req() req: any, @Query() query: any, @Res({ passthrough: true }) res: Response): Promise<StreamableFile> {
-    const buffer = await this.auditService.exportJournalPDF(this.getTenantId(req), this.buildFiltersFromQuery(query));
+    const buffer = await this.auditService.exportJournalPDF(this.getTenantId(req), this.buildJournalFilters(query));
     const date = new Date().toISOString().slice(0, 10);
     res.set({ 'Content-Disposition': `attachment; filename="journal-audit-${date}.pdf"` });
     return new StreamableFile(buffer);
