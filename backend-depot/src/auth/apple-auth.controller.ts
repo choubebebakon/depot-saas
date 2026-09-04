@@ -46,12 +46,19 @@ export class AppleAuthController {
       return res.status(400).json({ message: 'Origine non autorisée.' });
     }
 
+    const code = body.code || '';
+    const state = body.state || '';
+    const nonce = body.nonce || '';
+    if (!expectedState || !expectedNonce || state.length !== expectedState.length || nonce.length !== expectedNonce.length) {
+      return res.status(401).json({ message: 'Session Apple invalide ou expirée.' });
+    }
+
     const result = await this.appleAuthService.loginWithApple(
-      body.code || '',
-      body.state || '',
-      body.nonce || '',
-      expectedState || '',
-      expectedNonce || '',
+      code,
+      state,
+      nonce,
+      expectedState,
+      expectedNonce,
       { ip: req.ip ?? null, userAgent: req.headers['user-agent'] ?? null },
     );
 
