@@ -9,6 +9,7 @@ import {
   Query,
   Req,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { NotificationsService } from './notifications.service';
@@ -23,6 +24,10 @@ import {
 @Controller('notifications')
 @Throttle({ default: { limit: 30, ttl: 60000 } })
 export class NotificationsController {
+  // Empêche deux analyses coûteuses de s'exécuter simultanément pour le même tenant
+  // sur une même instance. Le rate-limit HTTP reste la protection principale
+  // lorsque plusieurs instances sont déployées.
+  private readonly aiRunsInProgress = new Set<string>();
   constructor(
     private readonly notifs: NotificationsService,
     private readonly gateway: NotificationsGateway,
@@ -30,11 +35,25 @@ export class NotificationsController {
   ) {}
 
   @Post('ai/run')
+  @Throttle({ default: { limit: 2, ttl: 60000 } })
   async runAiAnalysis(@Req() req: any) {
-    const tenantId = req.user.tenantId;
-    await this.ai.analyseVentes(tenantId);
-    await this.ai.predictRuptures(tenantId);
-    return { success: true, message: 'Analyses IA exécutées' };
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException('Contexte entreprise manquant');
+    }
+
+    if (this.aiRunsInProgress.has(tenantId)) {
+      throw new BadRequestException('Une analyse IA est déjà en cours pour cette entreprise');
+    }
+
+    this.aiRunsInProgress.add(tenantId);
+    try {
+      await this.ai.analyseVentes(tenantId);
+      await this.ai.predictRuptures(tenantId);
+      return { success: true, message: 'Analyses IA exécutées' };
+    } finally {
+      this.aiRunsInProgress.delete(tenantId);
+    }
   }
 
   @Get()
