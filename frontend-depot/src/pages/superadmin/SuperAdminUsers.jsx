@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSuperAdminRealtime } from '../../shared/realtime/useSuperAdminRealtime';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Filter, MoreVertical, Shield, UserCheck, UserX, Trash2, Crown, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../api/axios';
@@ -43,7 +45,8 @@ const METIER_LABELS = {
 };
 
 export default function SuperAdminUsers() {
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  useSuperAdminRealtime({ token: user?.isSuperAdmin ? localStorage.getItem('depot_token') : null, queryClient, enabled: !!user?.isSuperAdmin });
   const [filters, setFilters] = useState({
     tenantId: '',
     role: '',
