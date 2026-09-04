@@ -61,6 +61,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
           tenantId: true,
           depotId: true,
           isActive: true,
+          isSuperAdmin: true,
           tenant: { select: { estActif: true } },
         },
       });
@@ -77,11 +78,15 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       socket.data.depotId = depotId;
       socket.data.role = user.role;
       socket.data.email = user.email;
+      socket.data.isSuperAdmin = user.isSuperAdmin;
 
       // Un utilisateur métier ne rejoint jamais le room tenant-wide.
       // Seul le PATRON peut recevoir les événements sans dépôt ciblé.
       if (user.role === 'PATRON') {
         await socket.join(TENANT_ROOM(user.tenantId));
+      }
+      if (user.isSuperAdmin) {
+        await socket.join('platform:superadmin');
       }
       if (depotId) {
         await socket.join(DEPOT_ROOM(user.tenantId, depotId));
@@ -115,6 +120,18 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     // Les événements tenant-wide sont réservés au PATRON.
     this.server.to(TENANT_ROOM(event.tenantId)).emit('realtime:event', envelope);
+  }
+
+  publishPlatform<T>(event: RealtimeEvent<T>): void {
+    if (!this.server || !event?.type) return;
+    this.server.to('platform:superadmin').emit('realtime:platform-event', {
+      type: event.type,
+      resource: event.resource,
+      action: event.action,
+      occurredAt: event.occurredAt,
+      actorUserId: event.actorUserId,
+      payload: event.payload ?? null,
+    });
   }
 
   private async resolveAuthorizedDepot(
