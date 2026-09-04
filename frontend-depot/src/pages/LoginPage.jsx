@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import GoogleSignInButton from '../components/auth/GoogleSignInButton';
-import AppleSignInButton from '../components/auth/AppleSignInButton';
 import logoNeon from '../assets/logo-neon.png';
 
 export default function LoginPage() {
-  const { login, loginWithGoogle, loginWithApple } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message || '';
@@ -42,20 +41,6 @@ export default function LoginPage() {
       redirectAfterLogin(userData);
     } catch (err) {
       setError(err.response?.data?.message || 'Connexion avec Google impossible');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAppleCredential = async (credential) => {
-    if (loading || !credential) return;
-    setError('');
-    setLoading(true);
-    try {
-      const userData = await loginWithApple(credential);
-      redirectAfterLogin(userData);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Connexion avec Apple impossible');
     } finally {
       setLoading(false);
     }
@@ -109,7 +94,6 @@ export default function LoginPage() {
 
           <div className="space-y-3 mb-6">
             <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
-            <AppleSignInButton onCredential={handleAppleCredential} disabled={loading} />
           </div>
 
           <div className="flex items-center gap-3 my-6" aria-hidden="true">
