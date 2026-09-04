@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import logoNeon from '../assets/logo-neon.png';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message || '';
@@ -12,26 +13,34 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const redirectAfterLogin = (userData) => {
+    if (userData?.metier) localStorage.setItem('gestock_metier', userData.metier);
+    navigate(userData?.isSuperAdmin ? '/admin/dashboard' : '/dashboard');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       const userData = await login(form.email, form.password);
-
-      // Le backend renvoie user.metier dans la réponse login
-      // Le backend renvoie user.metier dans la réponse login
-      if (userData?.metier) {
-        localStorage.setItem('gestock_metier', userData.metier);
-      }
-
-      if (userData?.isSuperAdmin) {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      redirectAfterLogin(userData);
     } catch (err) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    if (loading || !credential) return;
+    setError('');
+    setLoading(true);
+    try {
+      const userData = await loginWithGoogle(credential);
+      redirectAfterLogin(userData);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Connexion avec Google impossible');
     } finally {
       setLoading(false);
     }
@@ -72,122 +81,60 @@ export default function LoginPage() {
           <h2 className="text-lg font-bold text-white mb-6">Connexion</h2>
 
           {successMessage && (
-            <div style={{
-              background: 'rgba(34,197,94,0.15)',
-              border: '1px solid rgba(34,197,94,0.3)',
-              color: '#22c55e',
-              fontSize: '0.875rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '12px',
-              marginBottom: '1.25rem',
-              textAlign: 'center',
-              fontWeight: 700
-            }}>
+            <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', fontSize: '0.875rem', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1.25rem', textAlign: 'center', fontWeight: 700 }}>
               ✅ {successMessage}
             </div>
           )}
 
           {error && (
-            <div style={{
-              background: 'rgba(239,68,68,0.15)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              color: '#ef4444',
-              fontSize: '0.875rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '12px',
-              marginBottom: '1.25rem',
-              textAlign: 'center',
-              fontWeight: 700
-            }}>
+            <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontSize: '0.875rem', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1.25rem', textAlign: 'center', fontWeight: 700 }}>
               {error}
             </div>
           )}
 
+          <div className="mb-6">
+            <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
+          </div>
+
+          <div className="flex items-center gap-3 my-6" aria-hidden="true">
+            <div className="h-px flex-1" style={{ background: 'rgba(171,202,255,.17)' }} />
+            <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">ou</span>
+            <div className="h-px flex-1" style={{ background: 'rgba(171,202,255,.17)' }} />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-300 mb-2">
-                Adresse email
-              </label>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Adresse email</label>
               <input
                 type="email"
                 required
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="patron@exemple.cm"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(171,202,255,.17)',
-                  color: '#fff',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '12px',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                  transition: 'all 0.3s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'rgba(34,211,238,0.5)';
-                  e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(171,202,255,.17)';
-                  e.target.style.boxShadow = 'none';
-                }}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(171,202,255,.17)', color: '#fff', padding: '0.75rem 1rem', borderRadius: '12px', fontSize: '0.875rem', outline: 'none', transition: 'all 0.3s ease' }}
+                onFocus={(e) => { e.target.style.borderColor = 'rgba(34,211,238,0.5)'; e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'rgba(171,202,255,.17)'; e.target.style.boxShadow = 'none'; }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-300 mb-2">
-                Mot de passe
-              </label>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Mot de passe</label>
               <input
                 type="password"
                 required
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="••••••••"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(171,202,255,.17)',
-                  color: '#fff',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '12px',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                  transition: 'all 0.3s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'rgba(34,211,238,0.5)';
-                  e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(171,202,255,.17)';
-                  e.target.style.boxShadow = 'none';
-                }}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(171,202,255,.17)', color: '#fff', padding: '0.75rem 1rem', borderRadius: '12px', fontSize: '0.875rem', outline: 'none', transition: 'all 0.3s ease' }}
+                onFocus={(e) => { e.target.style.borderColor = 'rgba(34,211,238,0.5)'; e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'rgba(171,202,255,.17)'; e.target.style.boxShadow = 'none'; }}
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              style={{
-                width: '100%',
-                background: 'linear-gradient(135deg, #22d3ee, #06b6d4)',
-                color: '#fff',
-                fontWeight: 900,
-                padding: '0.875rem 1.5rem',
-                borderRadius: '12px',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 20px rgba(34,211,238,0.4)',
-                marginTop: '0.5rem',
-                textTransform: 'uppercase',
-                fontSize: '0.875rem',
-                letterSpacing: '0.1em',
-                border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.5 : 1
-              }}
+              style={{ width: '100%', background: 'linear-gradient(135deg, #22d3ee, #06b6d4)', color: '#fff', fontWeight: 900, padding: '0.875rem 1.5rem', borderRadius: '12px', transition: 'all 0.3s ease', boxShadow: '0 4px 20px rgba(34,211,238,0.4)', marginTop: '0.5rem', textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: '0.1em', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1 }}
             >
               {loading ? 'Connexion en cours...' : 'Se connecter'}
             </button>
@@ -197,26 +144,9 @@ export default function LoginPage() {
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-4">Nouveau sur GesTock ?</p>
             <Link
               to="/register"
-              style={{
-                display: 'inline-block',
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '12px',
-                border: '1px solid rgba(34,211,238,0.3)',
-                color: '#22d3ee',
-                fontSize: '0.75rem',
-                fontWeight: 900,
-                transition: 'all 0.3s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                textDecoration: 'none'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'rgba(34,211,238,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'transparent';
-              }}
+              style={{ display: 'inline-block', width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgba(34,211,238,0.3)', color: '#22d3ee', fontSize: '0.75rem', fontWeight: 900, transition: 'all 0.3s ease', textTransform: 'uppercase', letterSpacing: '0.1em', textDecoration: 'none' }}
+              onMouseEnter={(e) => { e.target.style.background = 'rgba(34,211,238,0.1)'; }}
+              onMouseLeave={(e) => { e.target.style.background = 'transparent'; }}
             >
               Créer mon compte
             </Link>
