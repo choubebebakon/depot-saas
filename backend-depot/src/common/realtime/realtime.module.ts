@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
 import { DepotsModule } from '../../depots/depots.module';
-import { DepotScopeService } from '../depot-scope.service';
 import { PrismaService } from '../../prisma.service';
 import { RealtimeGateway } from './realtime.gateway';
 import { RealtimeMutationInterceptor } from './realtime-mutation.interceptor';
@@ -14,7 +13,6 @@ import { RealtimeService } from './realtime.service';
     RealtimeGateway,
     RealtimeService,
     RealtimeMutationInterceptor,
-    DepotScopeService,
   ],
   exports: [RealtimeService, RealtimeMutationInterceptor],
 })
