@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,12 +9,14 @@ import { TypeMouvement } from '@prisma/client';
 import { SignalerAvarieDto } from './dto/signaler-avarie.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { AuditService } from '../audit/audit.service';
+import { DepotScopeService } from '../common/depot-scope.service';
 
 @Injectable()
 export class StocksService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private depotScope: DepotScopeService,
   ) {}
 
   private requireDepotId(depotId?: string) {
@@ -26,9 +29,57 @@ export class StocksService {
     return depotId;
   }
 
+  private assertScopedTenant(tenantId: string): string {
+    const scope = this.depotScope.requireTenantId();
+    if (scope !== tenantId) {
+      throw new ForbiddenException('Accès refusé au tenant demandé.');
+    }
+    return scope;
+  }
+
+  private async assertScopedDepot(tenantId: string, depotId: string): Promise<string> {
+    this.assertScopedTenant(tenantId);
+    const scopeDepotId = this.depotScope.requireDepotId();
+    if (scopeDepotId !== depotId) {
+      throw new ForbiddenException('Accès refusé à ce dépôt.');
+    }
+
+    const depot = await this.prisma.depot.findFirst({
+      where: { id: depotId, tenantId, isArchived: false },
+      select: { id: true },
+    });
+    if (!depot) throw new ForbiddenException('Accès refusé à ce dépôt.');
+    return depot.id;
+  }
+
+  private async assertTenantArticle(
+    tx: any,
+    tenantId: string,
+    articleId: string,
+  ): Promise<void> {
+    const article = await tx.article.findFirst({
+      where: { id: articleId, tenantId },
+      select: { id: true },
+    });
+    if (!article) throw new NotFoundException('Article introuvable dans ce tenant.');
+  }
+
+  private validateNonNegativeQuantity(value: number, field: string): void {
+    if (!Number.isInteger(value) || value < 0) {
+      throw new BadRequestException(`${field} doit être un entier supérieur ou égal à 0.`);
+    }
+  }
+
+  private validatePositiveQuantity(value: number, field: string): void {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new BadRequestException(`${field} doit être un entier strictement positif.`);
+    }
+  }
+
   // 1. Liste des stocks
   async obtenirTousLesStocks(tenantId: string, depotId?: string) {
     const selectedDepotId = this.requireDepotId(depotId);
+    await this.assertScopedDepot(tenantId, selectedDepotId);
 
     return this.prisma.stock.findMany({
       where: {
@@ -46,6 +97,7 @@ export class StocksService {
   // 2. Statistiques (Valeur stock, Ruptures, Critiques)
   async obtenirStats(tenantId: string, depotId?: string) {
     const selectedDepotId = this.requireDepotId(depotId);
+    await this.assertScopedDepot(tenantId, selectedDepotId);
 
     const stocks = await this.prisma.stock.findMany({
       where: { depotId: selectedDepotId, depot: { tenantId } },
@@ -70,6 +122,7 @@ export class StocksService {
   // 3. Alertes critiques
   async obtenirAlertes(tenantId: string, depotId?: string) {
     const selectedDepotId = this.requireDepotId(depotId);
+    await this.assertScopedDepot(tenantId, selectedDepotId);
 
     const stocks = await this.prisma.stock.findMany({
       where: { depotId: selectedDepotId, depot: { tenantId } },
@@ -92,7 +145,16 @@ export class StocksService {
     motif?: string;
     actor: { userId: string; email: string; role: string };
   }) {
-    return this.prisma.$transaction(async (tx) => {
+    this.validateNonNegativeQuantity(data.nouvelleQuantite, 'nouvelleQuantite');
+    if (data.seuilCritique !== undefined) {
+      this.validateNonNegativeQuantity(data.seuilCritique, 'seuilCritique');
+    }
+    await this.assertScopedDepot(data.tenantId, data.depotId);
+
+    let auditAfterCommit: any = null;
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.assertTenantArticle(tx, data.tenantId, data.articleId);
+
       const stockActuel = await tx.stock.findUnique({
         where: {
           articleId_depotId: {
@@ -139,9 +201,9 @@ export class StocksService {
           },
         });
 
-        // Audit Avancé
-        await this.auditService.logEvent({
+        auditAfterCommit = await this.auditService.logEventInTransaction(tx, {
           tenantId: data.tenantId,
+          depotId: data.depotId,
           actorUserId: data.actor.userId,
           actorEmail: data.actor.email,
           actorRole: data.actor.role,
@@ -156,6 +218,12 @@ export class StocksService {
 
       return stockMisAJour;
     });
+
+    if (auditAfterCommit) {
+      this.auditService.emitAuditUpdate(data.tenantId, auditAfterCommit);
+    }
+
+    return result;
   }
 
   // 5. Transfert entre dépôts
@@ -167,16 +235,47 @@ export class StocksService {
     tenantId: string;
     motif?: string;
   }) {
+    this.validatePositiveQuantity(data.quantite, 'quantite');
+    this.assertScopedTenant(data.tenantId);
+
+    if (data.sourceDepotId === data.destDepotId) {
+      throw new BadRequestException('Le dépôt source et le dépôt destination doivent être différents.');
+    }
+
+    const scope = this.depotScope.getScope();
+    if (scope.role !== 'PATRON') {
+      await this.assertScopedDepot(data.tenantId, data.sourceDepotId);
+      if (data.destDepotId !== data.sourceDepotId) {
+        throw new ForbiddenException('Seul le patron peut transférer entre dépôts.');
+      }
+    }
+
+    const depots = await this.prisma.depot.findMany({
+      where: {
+        tenantId: data.tenantId,
+        id: { in: [data.sourceDepotId, data.destDepotId] },
+        isArchived: false,
+      },
+      select: { id: true },
+    });
+    if (depots.length !== 2) {
+      throw new ForbiddenException('Les dépôts source et destination doivent appartenir au tenant et être actifs.');
+    }
+
     return this.prisma.$transaction(async (tx) => {
-      await tx.stock.update({
+      await this.assertTenantArticle(tx, data.tenantId, data.articleId);
+
+      const source = await tx.stock.updateMany({
         where: {
-          articleId_depotId: {
-            articleId: data.articleId,
-            depotId: data.sourceDepotId,
-          },
+          articleId: data.articleId,
+          depotId: data.sourceDepotId,
+          quantite: { gte: data.quantite },
         },
         data: { quantite: { decrement: data.quantite } },
       });
+      if (source.count !== 1) {
+        throw new BadRequestException('Stock source insuffisant ou introuvable.');
+      }
 
       await tx.stock.upsert({
         where: {
@@ -221,6 +320,7 @@ export class StocksService {
   // 6. Historique avec filtres
   async obtenirMouvements(tenantId: string, filters: any) {
     const selectedDepotId = this.requireDepotId(filters.depotId);
+    await this.assertScopedDepot(tenantId, selectedDepotId);
 
     return this.prisma.mouvementStock.findMany({
       where: {
@@ -237,15 +337,32 @@ export class StocksService {
 
   // 7. Signalement d'Avarie (Casse/Perte)
   async signalerAvarie(data: SignalerAvarieDto, actor: any) {
-    return this.prisma.$transaction(async (tx) => {
-      const stock = await tx.stock.update({
+    this.validatePositiveQuantity(data.quantite, 'quantite');
+    await this.assertScopedDepot(data.tenantId, data.depotId);
+
+    let auditAfterCommit: any = null;
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.assertTenantArticle(tx, data.tenantId, data.articleId);
+
+      const stockUpdate = await tx.stock.updateMany({
+        where: {
+          articleId: data.articleId,
+          depotId: data.depotId,
+          quantite: { gte: data.quantite },
+        },
+        data: { quantite: { decrement: data.quantite } },
+      });
+      if (stockUpdate.count !== 1) {
+        throw new BadRequestException('Stock insuffisant ou introuvable pour déclarer cette avarie.');
+      }
+
+      const stock = await tx.stock.findUniqueOrThrow({
         where: {
           articleId_depotId: {
             articleId: data.articleId,
             depotId: data.depotId,
           },
         },
-        data: { quantite: { decrement: data.quantite } },
         include: { article: true },
       });
 
@@ -261,9 +378,9 @@ export class StocksService {
         },
       });
 
-      // Audit Avancé
-      await this.auditService.logEvent({
+      auditAfterCommit = await this.auditService.logEventInTransaction(tx, {
         tenantId: data.tenantId,
+        depotId: data.depotId,
         actorUserId: actor.userId,
         actorEmail: actor.email,
         actorRole: actor.role,
@@ -277,12 +394,20 @@ export class StocksService {
 
       return stock;
     });
+
+    if (auditAfterCommit) {
+      this.auditService.emitAuditUpdate(data.tenantId, auditAfterCommit);
+    }
+
+    return result;
   }
 
   // 8. GET /:id — Détail d'un article (Phase 4)
   async findOne(tenantId: string, id: string) {
+    this.assertScopedTenant(tenantId);
+    const scopeDepotId = this.depotScope.requireDepotId();
     const stock = await this.prisma.stock.findFirst({
-      where: { id, depot: { tenantId } },
+      where: { id, depotId: scopeDepotId, depot: { tenantId, isArchived: false } },
       include: { article: true, depot: true, tricycle: true },
     });
 
@@ -295,8 +420,10 @@ export class StocksService {
 
   // 9. PUT /:id — Mise à jour d'un article (Phase 4)
   async update(tenantId: string, id: string, dto: UpdateStockDto) {
+    this.assertScopedTenant(tenantId);
+    const scopeDepotId = this.depotScope.requireDepotId();
     const stock = await this.prisma.stock.findFirst({
-      where: { id, depot: { tenantId } },
+      where: { id, depotId: scopeDepotId, depot: { tenantId, isArchived: false } },
     });
 
     if (!stock) {
@@ -311,8 +438,7 @@ export class StocksService {
 
   // 10. GET /config — Configuration du module stock (Phase 4)
   async getConfig(tenantId: string) {
-    // Retourne une configuration par défaut pour le tenant
-    // Peut être étendu pour inclure une table StockConfig si nécessaire
+    this.assertScopedTenant(tenantId);
     return {
       alertesStockBas: true,
       seuilAlerteDefaut: 10,
@@ -325,6 +451,7 @@ export class StocksService {
   // 11. GET /caisse — État de la caisse du jour (Phase 4)
   async getCaisse(tenantId: string, depotId: string) {
     const selectedDepotId = this.requireDepotId(depotId);
+    await this.assertScopedDepot(tenantId, selectedDepotId);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -349,12 +476,15 @@ export class StocksService {
   // === GESTION DES LOTS ===
 
   async getLots(tenantId: string, articleId?: string, depotId?: string) {
-    const where: any = { tenantId };
-    if (articleId) where.articleId = articleId;
-    if (depotId) where.depotId = depotId;
+    this.assertScopedTenant(tenantId);
+    const scopeDepotId = this.depotScope.requireDepotId();
+    if (depotId && depotId !== scopeDepotId) {
+      throw new ForbiddenException('Accès refusé à ce dépôt.');
+    }
+    const selectedDepotId = depotId || scopeDepotId;
 
     return this.prisma.lotStock.findMany({
-      where,
+      where: { tenantId, depotId: selectedDepotId, ...(articleId ? { articleId } : {}) },
       include: {
         article: true,
         depot: true,
@@ -364,8 +494,10 @@ export class StocksService {
   }
 
   async getLotById(tenantId: string, lotId: string) {
+    this.assertScopedTenant(tenantId);
+    const scopeDepotId = this.depotScope.requireDepotId();
     const lot = await this.prisma.lotStock.findFirst({
-      where: { id: lotId, tenantId },
+      where: { id: lotId, tenantId, depotId: scopeDepotId },
       include: {
         article: true,
         depot: true,
@@ -388,7 +520,13 @@ export class StocksService {
     numeroLot?: string;
     actor: { userId: string; email: string; role: string };
   }) {
-    return this.prisma.$transaction(async (tx) => {
+    this.validatePositiveQuantity(data.quantite, 'quantite');
+    await this.assertScopedDepot(data.tenantId, data.depotId);
+
+    let auditAfterCommit: any = null;
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.assertTenantArticle(tx, data.tenantId, data.articleId);
+
       const lot = await tx.lotStock.create({
         data: {
           articleId: data.articleId,
@@ -421,9 +559,9 @@ export class StocksService {
         },
       });
 
-      // Audit
-      await this.auditService.logEvent({
+      auditAfterCommit = await this.auditService.logEventInTransaction(tx, {
         tenantId: data.tenantId,
+        depotId: data.depotId,
         actorUserId: data.actor.userId,
         actorEmail: data.actor.email,
         actorRole: data.actor.role,
@@ -437,6 +575,12 @@ export class StocksService {
 
       return lot;
     });
+
+    if (auditAfterCommit) {
+      this.auditService.emitAuditUpdate(data.tenantId, auditAfterCommit);
+    }
+
+    return result;
   }
 
   async updateLot(tenantId: string, lotId: string, data: {
@@ -444,8 +588,12 @@ export class StocksService {
     dlc?: Date;
     numeroLot?: string;
   }) {
+    this.assertScopedTenant(tenantId);
+    const scopeDepotId = this.depotScope.requireDepotId();
+    if (data.quantite !== undefined) this.validateNonNegativeQuantity(data.quantite, 'quantite');
+
     const lot = await this.prisma.lotStock.findFirst({
-      where: { id: lotId, tenantId },
+      where: { id: lotId, tenantId, depotId: scopeDepotId },
     });
 
     if (!lot) {
@@ -488,8 +636,10 @@ export class StocksService {
   }
 
   async deleteLot(tenantId: string, lotId: string) {
+    this.assertScopedTenant(tenantId);
+    const scopeDepotId = this.depotScope.requireDepotId();
     const lot = await this.prisma.lotStock.findFirst({
-      where: { id: lotId, tenantId },
+      where: { id: lotId, tenantId, depotId: scopeDepotId },
     });
 
     if (!lot) {
@@ -498,15 +648,17 @@ export class StocksService {
 
     return this.prisma.$transaction(async (tx) => {
       // Déduire du stock global
-      await tx.stock.update({
+      const stockUpdate = await tx.stock.updateMany({
         where: {
-          articleId_depotId: {
-            articleId: lot.articleId,
-            depotId: lot.depotId,
-          },
+          articleId: lot.articleId,
+          depotId: lot.depotId,
+          quantite: { gte: lot.quantite },
         },
         data: { quantite: { decrement: lot.quantite } },
       });
+      if (stockUpdate.count !== 1) {
+        throw new BadRequestException('Stock global insuffisant pour supprimer ce lot.');
+      }
 
       await tx.lotStock.delete({
         where: { id: lotId },
@@ -517,14 +669,24 @@ export class StocksService {
   }
 
   async getDLCAlertes(tenantId: string, depotId?: string, jours: number = 30) {
+    this.assertScopedTenant(tenantId);
+    if (!Number.isInteger(jours) || jours < 0 || jours > 3650) {
+      throw new BadRequestException('jours doit être un entier compris entre 0 et 3650.');
+    }
+    const scopeDepotId = this.depotScope.requireDepotId();
+    if (depotId && depotId !== scopeDepotId) {
+      throw new ForbiddenException('Accès refusé à ce dépôt.');
+    }
+    const selectedDepotId = depotId || scopeDepotId;
+
     const dateLimite = new Date();
     dateLimite.setDate(dateLimite.getDate() + jours);
 
     const where: any = {
       tenantId,
+      depotId: selectedDepotId,
       dlc: { lte: dateLimite },
     };
-    if (depotId) where.depotId = depotId;
 
     const lots = await this.prisma.lotStock.findMany({
       where,
