@@ -74,12 +74,8 @@ export class AuditService {
 
   private assertAuthoritativeScope(input: AuditInput): { tenantId: string; depotId: string | null } {
     const scope = this.depotScope.getScope();
-    if (!scope.tenantId) {
-      throw new ForbiddenException('Contexte tenant requis pour écrire un audit.');
-    }
-    if (input.tenantId !== scope.tenantId) {
-      throw new ForbiddenException('Le tenant de l’audit ne correspond pas au contexte authentifié.');
-    }
+    if (!scope.tenantId) throw new ForbiddenException('Contexte tenant requis pour écrire un audit.');
+    if (input.tenantId !== scope.tenantId) throw new ForbiddenException('Le tenant de l’audit ne correspond pas au contexte authentifié.');
 
     const scopedDepotId = scope.depotId;
     if (scopedDepotId && input.depotId && input.depotId !== scopedDepotId) {
@@ -88,7 +84,6 @@ export class AuditService {
     if (!scopedDepotId && input.depotId) {
       throw new ForbiddenException('Un dépôt ne peut pas être injecté hors du périmètre dépôt authentifié.');
     }
-
     return { tenantId: scope.tenantId, depotId: input.depotId ?? scopedDepotId };
   }
 
@@ -108,47 +103,72 @@ export class AuditService {
     };
   }
 
-  async logEvent(input: AuditInput) {
-    const authoritative = this.assertAuthoritativeScope(input);
+  private async persistEvent(tx: Prisma.TransactionClient, input: AuditInput, authoritativeDepotId?: string | null) {
+    const tenantId = input.tenantId.trim();
+    if (!tenantId) throw new ForbiddenException('Tenant invalide pour l’audit.');
+
+    const depotId = input.depotId ?? authoritativeDepotId ?? null;
     const safeBefore = sanitizeAuditValue(input.valeurAvant);
     const safeAfter = sanitizeAuditValue(input.valeurApres);
     const safeMetadata = input.metadata ? sanitizeAuditValue(input.metadata) : null;
-    const entry = await this.prisma.$transaction(async (tx) => {
-      // Verrou PostgreSQL par tenant : aucune écriture concurrente ne peut bifurquer la chaîne.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${authoritative.tenantId}, 0))`;
-      const previous = await tx.$queryRaw<Array<{ hash: string }>>`
-        SELECT "hash" FROM "AuditIntegrity"
-        WHERE "tenantId" = ${authoritative.tenantId}
-        ORDER BY "createdAt" DESC, "id" DESC LIMIT 1
-      `;
-      const previousHash = previous[0]?.hash ?? null;
-      const created = await tx.journalAudit.create({
-        data: {
-          tenantId: authoritative.tenantId, depotId: authoritative.depotId,
-          actorUserId: input.actorUserId ?? null, actorEmail: input.actorEmail ?? null,
-          actorRole: input.actorRole ?? null, action: input.action,
-          severite: input.severite ?? AuditSeverite.INFO, targetType: input.targetType,
-          targetId: input.targetId ?? null, reference: input.reference ?? null,
-          description: input.description,
-          valeurAvant: (safeBefore ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-          valeurApres: (safeAfter ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-          montant: input.montant ?? null, ipAddress: input.ipAddress ?? null,
-          userAgent: input.userAgent ?? null,
-          metadataText: safeMetadata ? JSON.stringify(safeMetadata) : null,
-          motif: input.motif ?? null, resultat: input.resultat ?? AuditResultat.SUCCES,
-          sessionId: input.sessionId ?? null, requestId: input.requestId ?? this.depotScope.getRequestId(),
-          metier: input.metier ?? this.depotScope.getMetier(),
-        },
-      });
-      const hash = hashAuditEntry(this.auditHashPayload(created), previousHash);
-      await tx.$executeRaw`
-        INSERT INTO "AuditIntegrity" ("id", "tenantId", "journalAuditId", "previousHash", "hash")
-        VALUES (${randomUUID()}, ${created.tenantId}, ${created.id}, ${previousHash}, ${hash})
-      `;
-      return created;
+
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${tenantId}, 0))`;
+    const previous = await tx.$queryRaw<Array<{ hash: string }>>`
+      SELECT "hash" FROM "AuditIntegrity"
+      WHERE "tenantId" = ${tenantId}
+      ORDER BY "createdAt" DESC, "id" DESC LIMIT 1
+    `;
+    const previousHash = previous[0]?.hash ?? null;
+
+    const created = await tx.journalAudit.create({
+      data: {
+        tenantId,
+        depotId,
+        actorUserId: input.actorUserId ?? null,
+        actorEmail: input.actorEmail ?? null,
+        actorRole: input.actorRole ?? null,
+        action: input.action,
+        severite: input.severite ?? AuditSeverite.INFO,
+        targetType: input.targetType,
+        targetId: input.targetId ?? null,
+        reference: input.reference ?? null,
+        description: input.description,
+        valeurAvant: (safeBefore ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        valeurApres: (safeAfter ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        montant: input.montant ?? null,
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+        metadataText: safeMetadata ? JSON.stringify(safeMetadata) : null,
+        motif: input.motif ?? null,
+        resultat: input.resultat ?? AuditResultat.SUCCES,
+        sessionId: input.sessionId ?? null,
+        requestId: input.requestId ?? this.depotScope.getRequestId(),
+        metier: input.metier ?? this.depotScope.getMetier(),
+      },
     });
+
+    const hash = hashAuditEntry(this.auditHashPayload(created), previousHash);
+    await tx.$executeRaw`
+      INSERT INTO "AuditIntegrity" ("id", "tenantId", "journalAuditId", "previousHash", "hash")
+      VALUES (${randomUUID()}, ${created.tenantId}, ${created.id}, ${previousHash}, ${hash})
+    `;
+    return created;
+  }
+
+  async logEvent(input: AuditInput) {
+    const authoritative = this.assertAuthoritativeScope(input);
+    const entry = await this.prisma.$transaction((tx) => this.persistEvent(tx, input, authoritative.depotId));
     this.auditGateway.emitAuditUpdate(authoritative.tenantId, entry);
     return entry;
+  }
+
+  /**
+   * Usage strictement interne : rattache l’audit à une transaction métier déjà ouverte.
+   * Aucun événement WebSocket n’est émis ici : il ne doit l’être qu’après commit.
+   * Les appels HTTP ordinaires doivent utiliser logEvent(), qui impose le scope authentifié.
+   */
+  async logEventInTransaction(tx: Prisma.TransactionClient, input: AuditInput) {
+    return this.persistEvent(tx, input);
   }
 
   private buildWhere(tenantId: string, filters?: AuditJournalFilters): Prisma.JournalAuditWhereInput {
