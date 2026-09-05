@@ -10,15 +10,27 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma.service';
 import { CreateFournisseurDto } from './dto/create-fournisseur.dto';
 import { CreateReceptionDto } from './dto/create-reception.dto';
+import { DepotScopeService } from '../common/depot-scope.service';
 
 @Injectable()
 export class FournisseursService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly depotScope: DepotScopeService,
+  ) {}
 
   private requireScope(tenantId?: string, depotId?: string) {
-    if (!tenantId) throw new ForbiddenException('Contexte tenant introuvable.');
-    if (!depotId) throw new BadRequestException('Un dépôt actif est obligatoire.');
-    return { tenantId, depotId };
+    const authoritativeTenantId = this.depotScope.requireTenantId();
+    const authoritativeDepotId = this.depotScope.requireDepotId();
+
+    if (!tenantId || tenantId !== authoritativeTenantId) {
+      throw new ForbiddenException('Accès refusé au tenant demandé.');
+    }
+    if (!depotId || depotId !== authoritativeDepotId) {
+      throw new ForbiddenException('Accès refusé à ce dépôt.');
+    }
+
+    return { tenantId: authoritativeTenantId, depotId: authoritativeDepotId };
   }
 
   private async assertDepotInTenant(tenantId: string, depotId: string, tx = this.prisma) {
