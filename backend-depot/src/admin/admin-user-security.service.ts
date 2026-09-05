@@ -123,7 +123,7 @@ export class AdminUserSecurityService {
         return { target, updated };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, result.target, result.updated.isActive ? AUDIT_ACTIONS.UTILISATEUR_MODIFIE : AUDIT_ACTIONS.UTILISATEUR_DESACTIVE,
+      await this.audit(actor, result.target, result.updated.isActive ? AUDIT_ACTIONS.USER_ACTIVATED : AUDIT_ACTIONS.USER_DEACTIVATED,
         `${result.updated.isActive ? 'Activation' : 'Désactivation'} du compte ${result.target.email}`,
         safeReason, { isActive: result.target.isActive }, { isActive: result.updated.isActive });
 
@@ -153,7 +153,7 @@ export class AdminUserSecurityService {
         return { target, updated };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, result.target, AUDIT_ACTIONS.UTILISATEUR_MODIFIE,
+      await this.audit(actor, result.target, AUDIT_ACTIONS.USER_ROLE_CHANGED,
         `Changement de rôle de ${result.target.email}: ${result.target.role} → ${result.updated.role}`,
         safeReason, { role: result.target.role }, { role: result.updated.role });
       return { success: true, user: result.updated, message: `Rôle mis à jour: ${result.updated.role}` };
@@ -183,7 +183,7 @@ export class AdminUserSecurityService {
         return { target, updated };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, result.target, AUDIT_ACTIONS.UTILISATEUR_MODIFIE,
+      await this.audit(actor, result.target, result.updated.isSuperAdmin ? AUDIT_ACTIONS.SUPERADMIN_GRANTED : AUDIT_ACTIONS.SUPERADMIN_REVOKED,
         `${result.updated.isSuperAdmin ? 'Attribution' : 'Retrait'} du statut SuperAdmin pour ${result.target.email}`,
         safeReason, { isSuperAdmin: result.target.isSuperAdmin }, { isSuperAdmin: result.updated.isSuperAdmin });
       return { success: true, user: result.updated, message: `Statut SuperAdmin ${result.updated.isSuperAdmin ? 'accordé' : 'retiré'}` };
@@ -218,7 +218,7 @@ export class AdminUserSecurityService {
         return user;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, target, AUDIT_ACTIONS.SUPPRESSION_UTILISATEUR,
+      await this.audit(actor, target, AUDIT_ACTIONS.USER_DELETED,
         `Suppression définitive du compte ${target.email}`,
         safeReason, { id: target.id, email: target.email, role: target.role, isSuperAdmin: target.isSuperAdmin }, null);
       return { success: true, message: 'Utilisateur supprimé définitivement.' };
