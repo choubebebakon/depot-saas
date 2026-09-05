@@ -52,7 +52,11 @@ export class RealtimeMutationInterceptor implements NestInterceptor {
   private resourceFromPath(path: string): string {
     const segments = path.split('/').filter(Boolean);
     if (segments.length === 0) return 'unknown';
-    return segments.slice(0, 2).join(':').toLowerCase();
+
+    // Le premier segment est la ressource métier stable. Inclure un identifiant
+    // de route (ex: ventes:123) transformait ensuite la ressource en "123"
+    // côté frontend et empêchait l'invalidation des requêtes concernées.
+    return segments[0].toLowerCase();
   }
 
   private actionFromMethod(method: string): 'created' | 'updated' | 'deleted' | 'changed' {
