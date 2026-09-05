@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Users, Building2, TrendingUp, DollarSign, Activity, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import api from '../../api/axios';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSuperAdminRealtime } from '../../shared/realtime/useSuperAdminRealtime';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
 
@@ -22,14 +24,34 @@ const KPICard = ({ title, value, sub, icon: Icon }) => {
 };
 
 export default function SuperAdminDashboard() {
-  const { data: metrics, isLoading, refetch } = useQuery({
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [realtimeStatus, setRealtimeStatus] = useState('disconnected');
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const handleRealtimeStatus = useCallback((status) => setRealtimeStatus(status), []);
+
+  useSuperAdminRealtime({
+    token: user?.isSuperAdmin ? localStorage.getItem('depot_token') : null,
+    queryClient,
+    enabled: !!user?.isSuperAdmin,
+    onStatus: handleRealtimeStatus,
+  });
+
+  const { data: metrics, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['platform-metrics'],
     queryFn: async () => {
       const res = await api.get('/platform/metrics');
       return res.data;
     },
     refetchInterval: 30000,
+    staleTime: 15000,
+    retry: 2,
   });
+
+  const handleRefresh = async () => {
+    const result = await refetch();
+    if (result.data) setLastUpdated(new Date());
+  };
 
   // Regroupe sectorStats: [{name, status, count}] -> [{metier, count}]
   const metierData = useMemo(() => {
@@ -61,17 +83,27 @@ export default function SuperAdminDashboard() {
           <p className="text-slate-400 text-sm mt-1">Vue d'ensemble de la plateforme GesTock</p>
         </div>
         <button
-          onClick={() => refetch()}
+          onClick={handleRefresh}
+          disabled={isFetching}
           className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl transition-all border border-slate-600"
         >
-          <RefreshCw size={18} />
-          Actualiser
+          <RefreshCw size={18} className={isFetching ? 'animate-spin' : ''} />
+          {isFetching ? 'Actualisation...' : 'Actualiser'}
         </button>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : isError ? (
+        <div className="min-h-[360px] flex flex-col items-center justify-center text-center px-6">
+          <Activity size={42} className="text-red-400 mb-4" />
+          <h2 className="text-white text-lg font-black">Impossible de charger le Dashboard</h2>
+          <p className="text-slate-400 text-sm mt-2 max-w-md">{error?.response?.data?.message || 'L’API SuperAdmin est momentanément indisponible.'}</p>
+          <button onClick={handleRefresh} disabled={isFetching} className="mt-5 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl transition-all">
+            <RefreshCw size={18} className={isFetching ? 'animate-spin' : ''} /> Réessayer
+          </button>
         </div>
       ) : (
         <div className="space-y-6">
@@ -200,6 +232,13 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
       )}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+        <span className="inline-flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${realtimeStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+          {realtimeStatus === 'connected' ? 'Temps réel connecté' : 'Temps réel en reconnexion'}
+        </span>
+        <span>{lastUpdated ? `Dernière actualisation : ${lastUpdated.toLocaleTimeString('fr-FR')}` : 'Synchronisation automatique active'}</span>
+      </div>
     </div>
   );
 }
