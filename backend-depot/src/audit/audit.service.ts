@@ -158,17 +158,18 @@ export class AuditService {
   async logEvent(input: AuditInput) {
     const authoritative = this.assertAuthoritativeScope(input);
     const entry = await this.prisma.$transaction((tx) => this.persistEvent(tx, input, authoritative.depotId));
-    this.auditGateway.emitAuditUpdate(authoritative.tenantId, entry);
+    this.emitAuditUpdate(authoritative.tenantId, entry);
     return entry;
   }
 
-  /**
-   * Usage strictement interne : rattache l’audit à une transaction métier déjà ouverte.
-   * Aucun événement WebSocket n’est émis ici : il ne doit l’être qu’après commit.
-   * Les appels HTTP ordinaires doivent utiliser logEvent(), qui impose le scope authentifié.
-   */
+  /** Usage strictement interne : ajoute l’audit à une transaction métier déjà ouverte. */
   async logEventInTransaction(tx: Prisma.TransactionClient, input: AuditInput) {
     return this.persistEvent(tx, input);
+  }
+
+  /** Émission uniquement après validation du commit de la transaction métier. */
+  emitAuditUpdate(tenantId: string, entry: unknown): void {
+    this.auditGateway.emitAuditUpdate(tenantId, entry);
   }
 
   private buildWhere(tenantId: string, filters?: AuditJournalFilters): Prisma.JournalAuditWhereInput {
@@ -177,9 +178,7 @@ export class AuditService {
     if (filters?.startDate || filters?.endDate) {
       createdAtFilter = {};
       if (filters.startDate) createdAtFilter.gte = new Date(filters.startDate);
-      if (filters.endDate) {
-        const end = new Date(filters.endDate); end.setHours(23, 59, 59, 999); createdAtFilter.lte = end;
-      }
+      if (filters.endDate) { const end = new Date(filters.endDate); end.setHours(23, 59, 59, 999); createdAtFilter.lte = end; }
     }
     let montantFilter: Prisma.FloatNullableFilter | undefined;
     if (filters?.montantMin !== undefined || filters?.montantMax !== undefined) {
@@ -193,19 +192,13 @@ export class AuditService {
       ...(filters?.severite ? { severite: filters.severite } : {}), ...(filters?.resultat ? { resultat: filters.resultat } : {}),
       ...(filters?.metier ? { metier: filters.metier } : {}), ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
       ...(montantFilter ? { montant: montantFilter } : {}),
-      ...(search ? { OR: [
-        { description: { contains: search, mode: 'insensitive' } },
-        { reference: { contains: search, mode: 'insensitive' } },
-        { actorEmail: { contains: search, mode: 'insensitive' } },
-        { motif: { contains: search, mode: 'insensitive' } },
-      ] } : {}),
+      ...(search ? { OR: [{ description: { contains: search, mode: 'insensitive' } }, { reference: { contains: search, mode: 'insensitive' } }, { actorEmail: { contains: search, mode: 'insensitive' } }, { motif: { contains: search, mode: 'insensitive' } }] } : {}),
     };
   }
 
   private parseMetadata(metadataText: string | null): Record<string, unknown> | null {
     if (!metadataText) return null;
-    try { const parsed = JSON.parse(metadataText); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null; }
-    catch { return null; }
+    try { const parsed = JSON.parse(metadataText); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null; } catch { return null; }
   }
 
   async getJournalPatron(tenantId: string, filters?: AuditJournalFilters) {
@@ -215,12 +208,7 @@ export class AuditService {
 
   async verifyIntegrity(tenantId: string) {
     const rows = await this.prisma.$queryRaw<Array<any>>`
-      SELECT ai."journalAuditId", ai."previousHash", ai."hash",
-        ja."id" AS "journalId", ja."createdAt" AS "journalCreatedAt", ja."tenantId" AS "journalTenantId",
-        ja."depotId" AS "journalDepotId", ja."actorUserId", ja."actorEmail", ja."actorRole", ja."action",
-        ja."targetType", ja."targetId", ja."reference", ja."description", ja."valeurAvant", ja."valeurApres",
-        ja."metadataText", ja."severite", ja."resultat", ja."metier", ja."motif", ja."requestId", ja."sessionId",
-        ja."ipAddress", ja."userAgent", ja."montant"
+      SELECT ai."journalAuditId", ai."previousHash", ai."hash", ja."id" AS "journalId", ja."createdAt" AS "journalCreatedAt", ja."tenantId" AS "journalTenantId", ja."depotId" AS "journalDepotId", ja."actorUserId", ja."actorEmail", ja."actorRole", ja."action", ja."targetType", ja."targetId", ja."reference", ja."description", ja."valeurAvant", ja."valeurApres", ja."metadataText", ja."severite", ja."resultat", ja."metier", ja."motif", ja."requestId", ja."sessionId", ja."ipAddress", ja."userAgent", ja."montant"
       FROM "AuditIntegrity" ai INNER JOIN "JournalAudit" ja ON ja."id" = ai."journalAuditId"
       WHERE ai."tenantId" = ${tenantId} ORDER BY ai."createdAt" ASC, ai."id" ASC
     `;
@@ -229,15 +217,7 @@ export class AuditService {
     const failures: Array<{ journalAuditId: string; reason: string }> = [];
     for (const row of rows) {
       if (row.previousHash !== previousHash) failures.push({ journalAuditId: row.journalAuditId, reason: 'Chaînage précédent incohérent.' });
-      const entry = {
-        id: row.journalId, tenantId: row.journalTenantId, depotId: row.journalDepotId,
-        actorUserId: row.actorUserId, actorEmail: row.actorEmail, actorRole: row.actorRole,
-        action: row.action, targetType: row.targetType, targetId: row.targetId, reference: row.reference,
-        description: row.description, valeurAvant: row.valeurAvant, valeurApres: row.valeurApres,
-        metadataText: row.metadataText, severite: row.severite, resultat: row.resultat, metier: row.metier,
-        motif: row.motif, requestId: row.requestId, sessionId: row.sessionId, ipAddress: row.ipAddress,
-        userAgent: row.userAgent, montant: row.montant, createdAt: row.journalCreatedAt.toISOString(),
-      };
+      const entry = { id: row.journalId, tenantId: row.journalTenantId, depotId: row.journalDepotId, actorUserId: row.actorUserId, actorEmail: row.actorEmail, actorRole: row.actorRole, action: row.action, targetType: row.targetType, targetId: row.targetId, reference: row.reference, description: row.description, valeurAvant: row.valeurAvant, valeurApres: row.valeurApres, metadataText: row.metadataText, severite: row.severite, resultat: row.resultat, metier: row.metier, motif: row.motif, requestId: row.requestId, sessionId: row.sessionId, ipAddress: row.ipAddress, userAgent: row.userAgent, montant: row.montant, createdAt: row.journalCreatedAt.toISOString() };
       if (hashAuditEntry(entry, row.previousHash) !== row.hash) failures.push({ journalAuditId: row.journalAuditId, reason: 'Empreinte SHA-256 invalide.' });
       previousHash = row.hash;
     }
@@ -247,49 +227,27 @@ export class AuditService {
   async detectUnusualActivity(tenantId: string, hours = 24) {
     const safeHours = Math.min(Math.max(Number.isFinite(hours) ? Math.floor(hours) : 24, 1), 168);
     const since = new Date(Date.now() - safeHours * 60 * 60 * 1000);
-    const rows = await this.prisma.journalAudit.findMany({
-      where: { tenantId, createdAt: { gte: since } }, orderBy: { createdAt: 'desc' }, take: 5000,
-      select: { id: true, actorUserId: true, actorEmail: true, action: true, severite: true, resultat: true, createdAt: true, ipAddress: true, description: true },
-    });
+    const rows = await this.prisma.journalAudit.findMany({ where: { tenantId, createdAt: { gte: since } }, orderBy: { createdAt: 'desc' }, take: 5000, select: { id: true, actorUserId: true, actorEmail: true, action: true, severite: true, resultat: true, createdAt: true, ipAddress: true, description: true } });
     const byActor = new Map<string, number>(); const byActorIp = new Map<string, Set<string>>();
-    for (const row of rows) {
-      const actor = row.actorUserId || row.actorEmail || 'unknown'; byActor.set(actor, (byActor.get(actor) ?? 0) + 1);
-      if (row.ipAddress) { if (!byActorIp.has(actor)) byActorIp.set(actor, new Set()); byActorIp.get(actor)!.add(row.ipAddress); }
-    }
+    for (const row of rows) { const actor = row.actorUserId || row.actorEmail || 'unknown'; byActor.set(actor, (byActor.get(actor) ?? 0) + 1); if (row.ipAddress) { if (!byActorIp.has(actor)) byActorIp.set(actor, new Set()); byActorIp.get(actor)!.add(row.ipAddress); } }
     const alerts: Array<Record<string, unknown>> = [];
-    for (const [actor, count] of byActor) {
-      if (count >= 100) alerts.push({ type: 'BURST', actor, score: 90, detail: `${count} événements en ${safeHours}h.` });
-      const ips = byActorIp.get(actor)?.size ?? 0;
-      if (ips >= 4) alerts.push({ type: 'MULTI_IP', actor, score: 75, detail: `${ips} adresses IP distinctes sur la période.` });
-    }
-    const failed = rows.filter((row) => row.resultat === AuditResultat.ECHEC).length;
-    const critical = rows.filter((row) => row.severite === AuditSeverite.CRITIQUE).length;
+    for (const [actor, count] of byActor) { if (count >= 100) alerts.push({ type: 'BURST', actor, score: 90, detail: `${count} événements en ${safeHours}h.` }); const ips = byActorIp.get(actor)?.size ?? 0; if (ips >= 4) alerts.push({ type: 'MULTI_IP', actor, score: 75, detail: `${ips} adresses IP distinctes sur la période.` }); }
+    const failed = rows.filter((row) => row.resultat === AuditResultat.ECHEC).length; const critical = rows.filter((row) => row.severite === AuditSeverite.CRITIQUE).length;
     if (failed >= 10) alerts.push({ type: 'FAILURES', score: 80, detail: `${failed} opérations en échec.` });
     if (critical >= 5) alerts.push({ type: 'CRITICAL_SPIKE', score: 85, detail: `${critical} événements critiques.` });
     return { periodHours: safeHours, scannedEvents: rows.length, unusual: alerts.sort((a, b) => Number(b.score) - Number(a.score)).slice(0, 50), generatedAt: new Date().toISOString() };
   }
 
   async getDashboard(tenantId: string, hours = 24) {
-    const safeHours = Math.min(Math.max(Number.isFinite(hours) ? Math.floor(hours) : 24, 1), 168);
-    const since = new Date(Date.now() - safeHours * 60 * 60 * 1000);
+    const safeHours = Math.min(Math.max(Number.isFinite(hours) ? Math.floor(hours) : 24, 1), 168); const since = new Date(Date.now() - safeHours * 60 * 60 * 1000);
     const [total, successes, failures, critical, attention, info, actors] = await Promise.all([
-      this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since } } }),
-      this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, resultat: AuditResultat.SUCCES } }),
-      this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, resultat: AuditResultat.ECHEC } }),
-      this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, severite: AuditSeverite.CRITIQUE } }),
-      this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, severite: AuditSeverite.ATTENTION } }),
-      this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, severite: AuditSeverite.INFO } }),
-      this.prisma.journalAudit.findMany({ where: { tenantId, createdAt: { gte: since }, actorUserId: { not: null } }, distinct: ['actorUserId'], select: { actorUserId: true } }),
+      this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since } } }), this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, resultat: AuditResultat.SUCCES } }), this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, resultat: AuditResultat.ECHEC } }), this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, severite: AuditSeverite.CRITIQUE } }), this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, severite: AuditSeverite.ATTENTION } }), this.prisma.journalAudit.count({ where: { tenantId, createdAt: { gte: since }, severite: AuditSeverite.INFO } }), this.prisma.journalAudit.findMany({ where: { tenantId, createdAt: { gte: since }, actorUserId: { not: null } }, distinct: ['actorUserId'], select: { actorUserId: true } }),
     ]);
     const anomalies = await this.detectUnusualActivity(tenantId, safeHours);
     return { periodHours: safeHours, total, successes, failures, successRate: total ? Number(((successes / total) * 100).toFixed(2)) : 100, severity: { critical, attention, info }, activeActors: actors.length, anomalyCount: anomalies.unusual.length, generatedAt: new Date().toISOString() };
   }
 
-  private csvSafe(value: unknown): string | number {
-    if (value === null || value === undefined) return '';
-    const text = typeof value === 'string' ? value : JSON.stringify(value);
-    return /^[=+\-@]/.test(text.trimStart()) ? `'${text}` : text;
-  }
+  private csvSafe(value: unknown): string | number { if (value === null || value === undefined) return ''; const text = typeof value === 'string' ? value : JSON.stringify(value); return /^[=+\-@]/.test(text.trimStart()) ? `'${text}` : text; }
 
   async exportJournalCSV(tenantId: string, filters?: AuditJournalFilters) {
     const rows = await this.prisma.journalAudit.findMany({ where: this.buildWhere(tenantId, filters), orderBy: { createdAt: 'desc' }, take: 20000 });
@@ -299,8 +257,7 @@ export class AuditService {
 
   async exportJournalPDF(tenantId: string, filters?: AuditJournalFilters) {
     const rows = await this.prisma.journalAudit.findMany({ where: this.buildWhere(tenantId, filters), orderBy: { createdAt: 'desc' }, take: 500 });
-    const pdfDoc = await PDFDocument.create(); const font = await pdfDoc.embedFont(StandardFonts.Helvetica); const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const pageWidth = 841.89; const pageHeight = 595.28; const margin = 30; const lineHeight = 14; let page = pdfDoc.addPage([pageWidth, pageHeight]); let y = pageHeight - margin;
+    const pdfDoc = await PDFDocument.create(); const font = await pdfDoc.embedFont(StandardFonts.Helvetica); const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold); const pageWidth = 841.89; const pageHeight = 595.28; const margin = 30; const lineHeight = 14; let page = pdfDoc.addPage([pageWidth, pageHeight]); let y = pageHeight - margin;
     const drawHeader = () => { page.drawText('Journal Audit Patron — GeStock', { x: margin, y, size: 14, font: fontBold }); y -= 20; page.drawText(`Exporté le ${new Date().toLocaleString('fr-FR')}`, { x: margin, y, size: 8, font }); y -= 18; ['Date','Action','Sévérité','Utilisateur','Description'].forEach((h,i) => page.drawText(h,{x:[margin,margin+90,margin+190,margin+260,margin+400][i],y,size:9,font:fontBold})); y -= lineHeight; };
     drawHeader(); const colX = [margin, margin + 90, margin + 190, margin + 260, margin + 400];
     for (const r of rows) { if (y < margin + lineHeight) { page = pdfDoc.addPage([pageWidth, pageHeight]); y = pageHeight - margin; drawHeader(); } const truncate=(s:string,n:number)=>s.length>n?s.slice(0,n-1)+'…':s; [r.createdAt.toISOString().slice(0,16).replace('T',' '),truncate(r.action,22),r.severite,truncate(r.actorEmail??'—',26),truncate(r.description,60)].forEach((v,i)=>page.drawText(v,{x:colX[i],y,size:8,font})); y -= lineHeight; }
@@ -308,10 +265,7 @@ export class AuditService {
   }
 
   async getResume(tenantId: string, from: Date, to: Date) {
-    const [revenus, depenses] = await Promise.all([
-      this.prisma.vente.aggregate({ where: { tenantId, date: { gte: from, lte: to }, statut: 'PAYE' }, _sum: { total: true } }),
-      this.prisma.commandeFournisseur.aggregate({ where: { tenantId, dateCommande: { gte: from, lte: to } }, _sum: { total: true } }),
-    ]);
+    const [revenus, depenses] = await Promise.all([this.prisma.vente.aggregate({ where: { tenantId, date: { gte: from, lte: to }, statut: 'PAYE' }, _sum: { total: true } }), this.prisma.commandeFournisseur.aggregate({ where: { tenantId, dateCommande: { gte: from, lte: to } }, _sum: { total: true } })]);
     return { revenus: revenus._sum.total ?? 0, depenses: depenses._sum.total ?? 0, resultat: (revenus._sum.total ?? 0) - (depenses._sum.total ?? 0) };
   }
 }
