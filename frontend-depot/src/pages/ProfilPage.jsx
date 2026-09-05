@@ -99,8 +99,7 @@ export default function ProfilPage() {
     });
     setIsEditing(false);
   };
-
-  const handleAvatarUpload = async (e) => {
+const handleAvatarUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -120,12 +119,21 @@ export default function ProfilPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result);
+        
+        // CORRECTION : On force la mise à jour immédiate du user global 
+        // avec la nouvelle image pour que la Sidebar réagisse instantanément.
+        updateUser({ 
+          ...user, 
+          avatar: reader.result,
+          avatarUrl: reader.result 
+        });
       };
       reader.readAsDataURL(file);
 
-      // Upload vers le serveur puis resynchronisation depuis la source de vérité
+      // Upload vers le serveur puis resynchronisation
       await userApi.uploadAvatar(file);
       await refreshUser();
+      
       success('Photo de profil mise à jour');
     } catch (err) {
       error('Erreur lors du téléchargement de la photo');

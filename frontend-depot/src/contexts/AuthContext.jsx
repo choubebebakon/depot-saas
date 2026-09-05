@@ -61,6 +61,15 @@ export function AuthProvider({ children }) {
             const response = await api.get('/auth/me');
             const userData = response.data;
 
+            // Astuce anti-cache : on ajoute un paramètre temporel à l'URL de l'image
+            const timeStamp = new Date().getTime();
+            if (userData.avatarUrl) {
+                userData.avatarUrl = `${userData.avatarUrl.split('?')[0]}?t=${timeStamp}`;
+            }
+            if (userData.avatar) {
+                userData.avatar = `${userData.avatar.split('?')[0]}?t=${timeStamp}`;
+            }
+
             localStorage.setItem('depot_user', JSON.stringify(userData));
             if (userData?.metier) {
                 localStorage.setItem('gestock_metier', userData.metier);
@@ -72,8 +81,7 @@ export function AuthProvider({ children }) {
             console.error('[AuthContext] Échec du rafraîchissement du profil:', error);
             return null;
         }
-    }, [loadPermissions]);
-
+    }, [loadPermissions]); 
     const updateUser = useCallback((updatedFields) => {
         setUser((prev) => {
             const merged = { ...prev, ...updatedFields };

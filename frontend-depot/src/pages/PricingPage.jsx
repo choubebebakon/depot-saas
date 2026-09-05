@@ -24,7 +24,7 @@ const PLANS = [
   {
     id: 'PME', name: 'PME', icon: 'Trophy', color: 'amber',
     monthly: 50000, annual: 498000, depots: 10,
-    badge: 'RECOMMANDÉ',
+    badge: 'OPTION RECOMMANDÉ',
     desc: 'La référence multi-structures',
     features: ['10 structures', 'Multi-stock avancé', 'Rapports détaillés', 'Support prioritaire', 'Gestion du personnel illimité', 'Gestion des rôles dans l\'entreprise', 'Notification — alerte stock — rupture', 'IA avancée'],
   },
