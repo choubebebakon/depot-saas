@@ -32,7 +32,7 @@ const KPICard = ({ title, value, sub, icon: Icon, trend }) => {
 export default function SuperAdminAnalytics() {
   const [period, setPeriod] = useState('30d');
 
-  const { data: overview, isLoading: overviewLoading, refetch } = useQuery({
+  const { data: overview, isLoading: overviewLoading, refetch: refetchOverview } = useQuery({
     queryKey: ['admin-analytics-overview'],
     queryFn: async () => {
       const res = await api.get('/admin/analytics/overview');
@@ -88,6 +88,10 @@ export default function SuperAdminAnalytics() {
     amount,
   }));
 
+  const handleRefresh = () => queryClient.invalidateQueries({
+    predicate: ({ queryKey }) => Array.isArray(queryKey) && String(queryKey[0]).startsWith('admin-analytics'),
+  });
+
   return (
     <div>
       <div className="flex items-center justify-between gap-4 mb-8">
@@ -110,7 +114,7 @@ export default function SuperAdminAnalytics() {
             <option value="1y">1 an</option>
           </select>
           <button
-            onClick={() => refetch()}
+            onClick={handleRefresh}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl transition-all border border-slate-600"
           >
             <RefreshCw size={18} />
