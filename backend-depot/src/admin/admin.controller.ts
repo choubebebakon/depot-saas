@@ -26,6 +26,7 @@ const MAX_PAGE_SIZE = 100;
 const MAX_PAGE_OFFSET = 100_000;
 const MAX_AUDIT_PAGE_SIZE = 500;
 const ALLOWED_ANALYTICS_PERIODS = new Set(['7d', '30d', '90d', '1y']);
+const DEFAULT_ADMIN_ACTION_REASON = 'Action administrative effectuée depuis la console SuperAdmin GesTock';
 
 @Controller('admin')
 @UseGuards(SuperAdminGuard)
@@ -40,9 +41,7 @@ export class AdminController {
     if (value === undefined || value === '') return fallback;
     if (!/^\d+$/.test(value)) throw new BadRequestException(`${name} doit être un entier positif.`);
     const parsed = Number(value);
-    if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > max) {
-      throw new BadRequestException(`${name} est hors limites.`);
-    }
+    if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > max) throw new BadRequestException(`${name} est hors limites.`);
     return parsed;
   }
 
@@ -78,18 +77,13 @@ export class AdminController {
 
   private getActorUserId(req: any): string {
     const actorUserId = req.user?.userId;
-    if (!actorUserId || typeof actorUserId !== 'string') {
-      throw new BadRequestException('Identité SuperAdmin introuvable dans la session.');
-    }
+    if (!actorUserId || typeof actorUserId !== 'string') throw new BadRequestException('Identité SuperAdmin introuvable dans la session.');
     return actorUserId;
   }
 
   private parseReason(value: string | undefined): string {
     const reason = this.parseText(value, 'reason', 500);
-    if (!reason || reason.length < 5) {
-      throw new BadRequestException('Un motif de sécurité d’au moins 5 caractères est obligatoire.');
-    }
-    return reason;
+    return reason && reason.length >= 5 ? reason : DEFAULT_ADMIN_ACTION_REASON;
   }
 
   @Get('stats') getPlatformStats() { return this.adminService.getPlatformStats(); }
@@ -99,21 +93,12 @@ export class AdminController {
 
   @Get('transactions')
   getTransactions(@Query('status') status?: string, @Query('method') method?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-    return this.adminService.getTransactions({
-      status: this.parseEnum(status, Object.values(PaymentStatus), 'status'),
-      method: this.parseEnum(method, Object.values(PaymentMethod), 'method'),
-      limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
-      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
-    });
+    return this.adminService.getTransactions({ status: this.parseEnum(status, Object.values(PaymentStatus), 'status'), method: this.parseEnum(method, Object.values(PaymentMethod), 'method'), limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50), offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0) });
   }
 
   @Get('tenants')
   getTenants(@Query('status') status?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-    return this.adminService.getTenants({
-      status: this.parseEnum(status, Object.values(TenantStatus), 'status'),
-      limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
-      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
-    });
+    return this.adminService.getTenants({ status: this.parseEnum(status, Object.values(TenantStatus), 'status'), limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50), offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0) });
   }
 
   @Post('transactions/:id/reconcile')
@@ -127,22 +112,12 @@ export class AdminController {
   getTenantJournal(@Query('tenantId') tenantId?: string, @Query('action') action?: string, @Query('severite') severite?: string, @Query('limit') limit?: string) {
     const safeTenantId = this.parseText(tenantId, 'tenantId', 100);
     if (!safeTenantId) throw new BadRequestException('tenantId est obligatoire.');
-    return this.auditService.getJournalPatron(safeTenantId, {
-      action: this.parseText(action, 'action', 100),
-      severite: this.parseEnum(severite, Object.values(AuditSeverite), 'severite'),
-      limit: this.parsePageValue(limit, 'limit', MAX_AUDIT_PAGE_SIZE, 100),
-    });
+    return this.auditService.getJournalPatron(safeTenantId, { action: this.parseText(action, 'action', 100), severite: this.parseEnum(severite, Object.values(AuditSeverite), 'severite'), limit: this.parsePageValue(limit, 'limit', MAX_AUDIT_PAGE_SIZE, 100) });
   }
 
   @Get('users')
   getAllUsers(@Query('tenantId') tenantId?: string, @Query('role') role?: string, @Query('isActive') isActive?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-    return this.adminService.getAllUsers({
-      tenantId: this.parseText(tenantId, 'tenantId', 100),
-      role: this.parseRole(role),
-      isActive: this.parseBoolean(isActive),
-      limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
-      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
-    });
+    return this.adminService.getAllUsers({ tenantId: this.parseText(tenantId, 'tenantId', 100), role: this.parseRole(role), isActive: this.parseBoolean(isActive), limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50), offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0) });
   }
 
   @Get('users/:id')
@@ -183,13 +158,8 @@ export class AdminController {
   }
 
   @Get('analytics/overview') getAnalyticsOverview() { return this.adminService.getAnalyticsOverview(); }
-
-  @Get('analytics/usage')
-  getUsageMetrics(@Query('period') period?: string) { return this.adminService.getUsageMetrics(this.parsePeriod(period)); }
-
-  @Get('analytics/revenue')
-  getRevenueAnalytics(@Query('period') period?: string) { return this.adminService.getRevenueAnalytics(this.parsePeriod(period)); }
-
+  @Get('analytics/usage') getUsageMetrics(@Query('period') period?: string) { return this.adminService.getUsageMetrics(this.parsePeriod(period)); }
+  @Get('analytics/revenue') getRevenueAnalytics(@Query('period') period?: string) { return this.adminService.getRevenueAnalytics(this.parsePeriod(period)); }
   @Get('analytics/churn') getChurnAnalytics() { return this.adminService.getChurnAnalytics(); }
   @Get('analytics/feature-usage') getFeatureUsage() { return this.adminService.getFeatureUsage(); }
 }
