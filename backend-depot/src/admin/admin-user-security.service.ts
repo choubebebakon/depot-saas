@@ -54,7 +54,8 @@ export class AdminUserSecurityService {
     await tx.refreshToken.deleteMany({ where: { userId } });
   }
 
-  private async audit(
+  private async auditInTransaction(
+    tx: Prisma.TransactionClient,
     actor: any,
     target: any,
     action: string,
@@ -63,7 +64,7 @@ export class AdminUserSecurityService {
     before: unknown,
     after: unknown,
   ) {
-    await this.auditService.logEvent({
+    return this.auditService.logEventInTransaction(tx, {
       tenantId: target.tenantId,
       depotId: target.depotId ?? null,
       actorUserId: actor.id,
@@ -108,9 +109,7 @@ export class AdminUserSecurityService {
 
         if (target.isActive && target.isSuperAdmin) {
           const activeSuperAdmins = await tx.user.count({ where: { isSuperAdmin: true, isActive: true } });
-          if (activeSuperAdmins <= 1) {
-            throw new ConflictException('Impossible de désactiver le dernier SuperAdmin actif.');
-          }
+          if (activeSuperAdmins <= 1) throw new ConflictException('Impossible de désactiver le dernier SuperAdmin actif.');
         }
 
         const updated = await tx.user.update({
@@ -120,13 +119,20 @@ export class AdminUserSecurityService {
         });
 
         if (target.isActive && !updated.isActive) await this.revokeSessions(tx, target.id);
-        return { target, updated };
+        const audit = await this.auditInTransaction(
+          tx,
+          actor,
+          resultTarget(target, updated),
+          updated.isActive ? AUDIT_ACTIONS.USER_ACTIVATED : AUDIT_ACTIONS.USER_DEACTIVATED,
+          `${updated.isActive ? 'Activation' : 'Désactivation'} du compte ${target.email}`,
+          safeReason,
+          { isActive: target.isActive },
+          { isActive: updated.isActive },
+        );
+        return { target, updated, audit };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, result.target, result.updated.isActive ? AUDIT_ACTIONS.USER_ACTIVATED : AUDIT_ACTIONS.USER_DEACTIVATED,
-        `${result.updated.isActive ? 'Activation' : 'Désactivation'} du compte ${result.target.email}`,
-        safeReason, { isActive: result.target.isActive }, { isActive: result.updated.isActive });
-
+      this.auditService.emitAuditUpdate(result.target.tenantId, result.audit);
       return { success: true, user: result.updated, message: `Utilisateur ${result.updated.isActive ? 'activé' : 'désactivé'}` };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
@@ -150,12 +156,13 @@ export class AdminUserSecurityService {
         if (target.role === Role.PATRON && target.isSuperAdmin && role !== Role.PATRON) throw new BadRequestException('Retirez d’abord le statut SuperAdmin avant de changer ce rôle.');
         const updated = await tx.user.update({ where: { id: target.id }, data: { role }, select: ADMIN_USER_SELECT });
         await this.revokeSessions(tx, target.id);
-        return { target, updated };
+        const audit = await this.auditInTransaction(tx, actor, target, AUDIT_ACTIONS.USER_ROLE_CHANGED,
+          `Changement de rôle de ${target.email}: ${target.role} → ${updated.role}`,
+          safeReason, { role: target.role }, { role: updated.role });
+        return { target, updated, audit };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, result.target, AUDIT_ACTIONS.USER_ROLE_CHANGED,
-        `Changement de rôle de ${result.target.email}: ${result.target.role} → ${result.updated.role}`,
-        safeReason, { role: result.target.role }, { role: result.updated.role });
+      this.auditService.emitAuditUpdate(result.target.tenantId, result.audit);
       return { success: true, user: result.updated, message: `Rôle mis à jour: ${result.updated.role}` };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') throw new ConflictException('Modification concurrente détectée. Veuillez réessayer.');
@@ -172,7 +179,6 @@ export class AdminUserSecurityService {
       const result = await this.prisma.$transaction(async (tx) => {
         const target = await tx.user.findUnique({ where: { id: targetUserId }, select: { id: true, email: true, role: true, tenantId: true, depotId: true, isActive: true, isSuperAdmin: true } });
         if (!target) throw new NotFoundException('Utilisateur introuvable.');
-
         if (!target.isSuperAdmin && !target.isActive) throw new BadRequestException('Un compte inactif doit être activé avant de recevoir le statut SuperAdmin.');
         if (target.isSuperAdmin && target.isActive) {
           const activeSuperAdmins = await tx.user.count({ where: { isSuperAdmin: true, isActive: true } });
@@ -180,12 +186,14 @@ export class AdminUserSecurityService {
         }
         const updated = await tx.user.update({ where: { id: target.id }, data: { isSuperAdmin: !target.isSuperAdmin }, select: ADMIN_USER_SELECT });
         await this.revokeSessions(tx, target.id);
-        return { target, updated };
+        const audit = await this.auditInTransaction(tx, actor, target,
+          updated.isSuperAdmin ? AUDIT_ACTIONS.SUPERADMIN_GRANTED : AUDIT_ACTIONS.SUPERADMIN_REVOKED,
+          `${updated.isSuperAdmin ? 'Attribution' : 'Retrait'} du statut SuperAdmin pour ${target.email}`,
+          safeReason, { isSuperAdmin: target.isSuperAdmin }, { isSuperAdmin: updated.isSuperAdmin });
+        return { target, updated, audit };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, result.target, result.updated.isSuperAdmin ? AUDIT_ACTIONS.SUPERADMIN_GRANTED : AUDIT_ACTIONS.SUPERADMIN_REVOKED,
-        `${result.updated.isSuperAdmin ? 'Attribution' : 'Retrait'} du statut SuperAdmin pour ${result.target.email}`,
-        safeReason, { isSuperAdmin: result.target.isSuperAdmin }, { isSuperAdmin: result.updated.isSuperAdmin });
+      this.auditService.emitAuditUpdate(result.target.tenantId, result.audit);
       return { success: true, user: result.updated, message: `Statut SuperAdmin ${result.updated.isSuperAdmin ? 'accordé' : 'retiré'}` };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') throw new ConflictException('Modification concurrente détectée. Veuillez réessayer.');
@@ -199,7 +207,7 @@ export class AdminUserSecurityService {
     const actor = await this.getActor(actorUserId);
 
     try {
-      const target = await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.findUnique({ where: { id: targetUserId }, select: { id: true, email: true, role: true, tenantId: true, depotId: true, isActive: true, isSuperAdmin: true } });
         if (!user) throw new NotFoundException('Utilisateur introuvable.');
         if (user.isSuperAdmin && user.isActive) {
@@ -215,16 +223,21 @@ export class AdminUserSecurityService {
           }
           throw error;
         }
-        return user;
+        const audit = await this.auditInTransaction(tx, actor, user, AUDIT_ACTIONS.USER_DELETED,
+          `Suppression définitive du compte ${user.email}`,
+          safeReason, { id: user.id, email: user.email, role: user.role, isSuperAdmin: user.isSuperAdmin }, null);
+        return { user, audit };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-      await this.audit(actor, target, AUDIT_ACTIONS.USER_DELETED,
-        `Suppression définitive du compte ${target.email}`,
-        safeReason, { id: target.id, email: target.email, role: target.role, isSuperAdmin: target.isSuperAdmin }, null);
+      this.auditService.emitAuditUpdate(result.user.tenantId, result.audit);
       return { success: true, message: 'Utilisateur supprimé définitivement.' };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') throw new ConflictException('Suppression concurrente détectée. Veuillez réessayer.');
       throw error;
     }
   }
+}
+
+function resultTarget(target: any, updated: any): any {
+  return { ...target, depotId: target.depotId ?? updated.depotId ?? null };
 }
