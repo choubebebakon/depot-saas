@@ -11,13 +11,17 @@ import {
 } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { StocksService } from './stocks.service';
+import { TransferStockService } from './transfer-stock.service';
 import { SignalerAvarieDto } from './dto/signaler-avarie.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { ACCESS_LEVELS } from '../common/utils/rbac';
 
 @Controller('stocks')
 export class StocksController {
-  constructor(private readonly stocksService: StocksService) {}
+  constructor(
+    private readonly stocksService: StocksService,
+    private readonly transferStockService: TransferStockService,
+  ) {}
 
   @Get()
   @Roles(...ACCESS_LEVELS.GERANT)
@@ -71,6 +75,7 @@ export class StocksController {
   @Post('transferer')
   @Roles(...ACCESS_LEVELS.GERANT)
   async transferer(
+    @Request() req: any,
     @Body()
     data: {
       articleId: string;
@@ -81,7 +86,10 @@ export class StocksController {
       motif?: string;
     },
   ) {
-    return this.stocksService.transfererStock(data);
+    return this.transferStockService.transfererStock({
+      ...data,
+      actor: req.user,
+    });
   }
 
   @Post('avarie')
