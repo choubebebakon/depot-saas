@@ -19,6 +19,7 @@ import {
 } from '@prisma/client';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { AdminService } from './admin.service';
+import { AdminUserSecurityService } from './admin-user-security.service';
 import { AuditService } from '../audit/audit.service';
 
 const MAX_PAGE_SIZE = 100;
@@ -31,6 +32,7 @@ const ALLOWED_ANALYTICS_PERIODS = new Set(['7d', '30d', '90d', '1y']);
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
+    private readonly adminUserSecurity: AdminUserSecurityService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -74,10 +76,20 @@ export class AdminController {
     return normalized;
   }
 
-  private ensureNotSelf(targetUserId: string, req: any): void {
-    if (req.user?.userId === targetUserId) {
-      throw new BadRequestException('Un SuperAdmin ne peut pas modifier ou supprimer son propre compte depuis cet espace.');
+  private getActorUserId(req: any): string {
+    const actorUserId = req.user?.userId;
+    if (!actorUserId || typeof actorUserId !== 'string') {
+      throw new BadRequestException('Identité SuperAdmin introuvable dans la session.');
     }
+    return actorUserId;
+  }
+
+  private parseReason(value: string | undefined): string {
+    const reason = this.parseText(value, 'reason', 500);
+    if (!reason || reason.length < 5) {
+      throw new BadRequestException('Un motif de sécurité d’au moins 5 caractères est obligatoire.');
+    }
+    return reason;
   }
 
   @Get('stats') getPlatformStats() { return this.adminService.getPlatformStats(); }
@@ -141,37 +153,33 @@ export class AdminController {
   }
 
   @Post('users/:id/toggle-active')
-  toggleUserActive(@Param('id') userId: string, @Req() req: any) {
+  toggleUserActive(@Param('id') userId: string, @Body('reason') reason: string, @Req() req: any) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
-    this.ensureNotSelf(id, req);
-    return this.adminService.toggleUserActive(id);
+    return this.adminUserSecurity.toggleUserActive(this.getActorUserId(req), id, this.parseReason(reason));
   }
 
   @Post('users/:id/role')
-  updateUserRole(@Param('id') userId: string, @Body('role') role: string, @Req() req: any) {
+  updateUserRole(@Param('id') userId: string, @Body('role') role: string, @Body('reason') reason: string, @Req() req: any) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
-    this.ensureNotSelf(id, req);
     const safeRole = this.parseRole(role);
     if (!safeRole) throw new BadRequestException('role est obligatoire.');
-    return this.adminService.updateUserRole(id, safeRole);
+    return this.adminUserSecurity.updateUserRole(this.getActorUserId(req), id, safeRole, this.parseReason(reason));
   }
 
   @Post('users/:id/super-admin')
-  toggleSuperAdmin(@Param('id') userId: string, @Req() req: any) {
+  toggleSuperAdmin(@Param('id') userId: string, @Body('reason') reason: string, @Req() req: any) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
-    this.ensureNotSelf(id, req);
-    return this.adminService.toggleSuperAdmin(id);
+    return this.adminUserSecurity.toggleSuperAdmin(this.getActorUserId(req), id, this.parseReason(reason));
   }
 
   @Delete('users/:id')
-  deleteUser(@Param('id') userId: string, @Req() req: any) {
+  deleteUser(@Param('id') userId: string, @Query('reason') reason: string, @Req() req: any) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
-    this.ensureNotSelf(id, req);
-    return this.adminService.deleteUser(id);
+    return this.adminUserSecurity.deleteUser(this.getActorUserId(req), id, this.parseReason(reason));
   }
 
   @Get('analytics/overview') getAnalyticsOverview() { return this.adminService.getAnalyticsOverview(); }
