@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CampayService } from '../payments/campay.service';
 import { StripePaymentsService } from '../payments/stripe.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -284,11 +285,15 @@ export class AdminService {
   }
 
   async toggleUserActive(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error('Utilisateur introuvable');
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, isActive: true, isSuperAdmin: true } });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
     if (user.isSuperAdmin && user.isActive) {
       const otherSuperAdmins = await this.prisma.user.count({ where: { isSuperAdmin: true, isActive: true, id: { not: userId } } });
-      if (otherSuperAdmins === 0) throw new Error('Impossible de désactiver le dernier super admin actif');
+      if (otherSuperAdmins === 0) throw new BadRequestException('Impossible de désactiver le dernier super admin actif');
+    }
+    if (user.isSuperAdmin && user.isActive) {
+      const otherSuperAdmins = await this.prisma.user.count({ where: { isSuperAdmin: true, isActive: true, id: { not: userId } } });
+      if (otherSuperAdmins === 0) throw new BadRequestException('Impossible de désactiver le dernier super admin actif');
     }
     const updated = await this.prisma.user.update({ where: { id: userId }, data: { isActive: !user.isActive }, select: ADMIN_USER_SELECT });
     return { success: true, user: updated, message: `Utilisateur ${updated.isActive ? 'activé' : 'désactivé'}` };
