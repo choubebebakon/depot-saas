@@ -1,11 +1,12 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma, TypeMouvement } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import { TypeMouvement } from '@prisma/client';
 import { SignalerAvarieDto } from './dto/signaler-avarie.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { AuditService } from '../audit/audit.service';
@@ -592,80 +593,111 @@ export class StocksService {
     const scopeDepotId = this.depotScope.requireDepotId();
     if (data.quantite !== undefined) this.validateNonNegativeQuantity(data.quantite, 'quantite');
 
-    const lot = await this.prisma.lotStock.findFirst({
-      where: { id: lotId, tenantId, depotId: scopeDepotId },
-    });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const lot = await tx.lotStock.findFirst({
+          where: { id: lotId, tenantId, depotId: scopeDepotId },
+        });
 
-    if (!lot) {
-      throw new NotFoundException(`Lot with ID ${lotId} not found`);
-    }
+        if (!lot) {
+          throw new NotFoundException(`Lot with ID ${lotId} not found`);
+        }
 
-    const ancienneQuantite = lot.quantite;
-    const nouvelleQuantite = data.quantite !== undefined ? data.quantite : ancienneQuantite;
-    const difference = nouvelleQuantite - ancienneQuantite;
+        const nouvelleQuantite = data.quantite !== undefined ? data.quantite : lot.quantite;
+        const difference = nouvelleQuantite - lot.quantite;
 
-    return this.prisma.$transaction(async (tx) => {
-      const updatedLot = await tx.lotStock.update({
-        where: { id: lotId },
-        data: {
-          ...(data.quantite !== undefined && { quantite: data.quantite }),
-          ...(data.dlc && { dlc: data.dlc }),
-          ...(data.numeroLot && { numeroLot: data.numeroLot }),
-        },
-        include: {
-          article: true,
-          depot: true,
-        },
-      });
+        if (difference < 0) {
+          const stockUpdate = await tx.stock.updateMany({
+            where: {
+              articleId: lot.articleId,
+              depotId: lot.depotId,
+              quantite: { gte: Math.abs(difference) },
+            },
+            data: { quantite: { decrement: Math.abs(difference) } },
+          });
 
-      // Ajuster le stock global si la quantité a changé
-      if (difference !== 0) {
-        await tx.stock.update({
-          where: {
-            articleId_depotId: {
+          if (stockUpdate.count !== 1) {
+            throw new BadRequestException(
+              'Stock global insuffisant pour réduire ce lot à cette quantité.',
+            );
+          }
+        } else if (difference > 0) {
+          const stockUpdate = await tx.stock.updateMany({
+            where: {
               articleId: lot.articleId,
               depotId: lot.depotId,
             },
-          },
-          data: { quantite: { increment: difference } },
-        });
-      }
+            data: { quantite: { increment: difference } },
+          });
 
-      return updatedLot;
-    });
+          if (stockUpdate.count !== 1) {
+            throw new BadRequestException('Stock global introuvable pour augmenter ce lot.');
+          }
+        }
+
+        return tx.lotStock.update({
+          where: { id: lotId },
+          data: {
+            ...(data.quantite !== undefined && { quantite: data.quantite }),
+            ...(data.dlc && { dlc: data.dlc }),
+            ...(data.numeroLot && { numeroLot: data.numeroLot }),
+          },
+          include: {
+            article: true,
+            depot: true,
+          },
+        });
+      }, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('Le lot a été modifié simultanément. Réessayez.');
+      }
+      throw error;
+    }
   }
 
   async deleteLot(tenantId: string, lotId: string) {
     this.assertScopedTenant(tenantId);
     const scopeDepotId = this.depotScope.requireDepotId();
-    const lot = await this.prisma.lotStock.findFirst({
-      where: { id: lotId, tenantId, depotId: scopeDepotId },
-    });
 
-    if (!lot) {
-      throw new NotFoundException(`Lot with ID ${lotId} not found`);
-    }
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const lot = await tx.lotStock.findFirst({
+          where: { id: lotId, tenantId, depotId: scopeDepotId },
+        });
 
-    return this.prisma.$transaction(async (tx) => {
-      // Déduire du stock global
-      const stockUpdate = await tx.stock.updateMany({
-        where: {
-          articleId: lot.articleId,
-          depotId: lot.depotId,
-          quantite: { gte: lot.quantite },
-        },
-        data: { quantite: { decrement: lot.quantite } },
+        if (!lot) {
+          throw new NotFoundException(`Lot with ID ${lotId} not found`);
+        }
+
+        const stockUpdate = await tx.stock.updateMany({
+          where: {
+            articleId: lot.articleId,
+            depotId: lot.depotId,
+            quantite: { gte: lot.quantite },
+          },
+          data: { quantite: { decrement: lot.quantite } },
+        });
+        if (stockUpdate.count !== 1) {
+          throw new BadRequestException('Stock global insuffisant pour supprimer ce lot.');
+        }
+
+        await tx.lotStock.delete({
+          where: { id: lotId },
+        });
+
+        return { success: true, message: 'Lot supprimé' };
+      }, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       });
-      if (stockUpdate.count !== 1) {
-        throw new BadRequestException('Stock global insuffisant pour supprimer ce lot.');
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('Le lot a été modifié simultanément. Réessayez.');
       }
-
-      await tx.lotStock.delete({
-        where: { id: lotId },
-      });
-
-      return { success: true, message: 'Lot supprimé' };
-    });
+      throw error;
+    }
   }
 
   async getDLCAlertes(tenantId: string, depotId?: string, jours: number = 30) {
