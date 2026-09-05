@@ -10,40 +10,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { AuditService } from '../audit.service';
 import { AUDIT_KEY, AuditMeta } from '../decorators/audit.decorator';
-
-const REDACTED_KEYS = new Set([
-  'password',
-  'passwordHash',
-  'refreshToken',
-  'refreshTokenHash',
-  'accessToken',
-  'twoFASecret',
-  'secret',
-  'apiKey',
-  'logo',
-]);
-
-function sanitizeAuditValue(value: unknown, depth = 0): unknown {
-  if (value === null || value === undefined) return value;
-  if (depth > 4) return '[profondeur masquée]';
-
-  if (typeof value === 'string') {
-    return value.length > 2_000 ? `${value.slice(0, 2_000)}…[tronqué]` : value;
-  }
-
-  if (typeof value !== 'object') return value;
-
-  if (Array.isArray(value)) {
-    return value.slice(0, 100).map((item) => sanitizeAuditValue(item, depth + 1));
-  }
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, child]) => [
-      key,
-      REDACTED_KEYS.has(key) ? '[masqué]' : sanitizeAuditValue(child, depth + 1),
-    ]),
-  );
-}
+import { sanitizeAuditValue } from '../audit-sanitizer';
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
