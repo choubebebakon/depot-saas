@@ -60,7 +60,9 @@ export class VentesService {
     const selectedDepotId = this.requireDepotId(depotId);
     if (!tenantId) throw new BadRequestException('tenantId est obligatoire.');
 
-    return await this.prisma.$transaction(async (tx) => {
+    let auditAfterCommit: any = null;
+
+    const result = await this.prisma.$transaction(async (tx) => {
       if (!Array.isArray(lignes) || lignes.length === 0) {
         throw new BadRequestException('Une vente doit contenir au moins une ligne.');
       }
@@ -293,8 +295,9 @@ export class VentesService {
 
       const remiseTotale = lignes.reduce((acc: number, l: any) => acc + Number(l.remise || 0), 0);
       if (remiseTotale > 0) {
-        await this.auditService.logEvent({
+        auditAfterCommit = await this.auditService.logEventInTransaction(tx, {
           tenantId,
+          depotId: selectedDepotId,
           actorUserId: actor.userId,
           actorEmail: actor.email,
           actorRole: actor.role,
@@ -308,11 +311,17 @@ export class VentesService {
       }
       return vente;
     });
+
+    if (auditAfterCommit) {
+      this.auditService.emitAuditUpdate(tenantId, auditAfterCommit);
+    }
+    return result;
   }
 
   async validerSortieVente(id: string, tenantId: string, depotId: string, actor: any) {
     const selectedDepotId = this.requireDepotId(depotId);
-    return await this.prisma.$transaction(async (tx) => {
+    let auditAfterCommit: any = null;
+    const result = await this.prisma.$transaction(async (tx) => {
       const vente = await tx.vente.findFirst({ where: { id, tenantId, depotId: selectedDepotId }, include: { lignes: true } });
       if (!vente || vente.statut !== StatutVente.ATTENTE) throw new BadRequestException('Vente introuvable ou déjà validée.');
       for (const ligne of vente.lignes) {
@@ -338,10 +347,12 @@ export class VentesService {
         }
       }
       const venteUpdated = await tx.vente.update({ where: { id }, data: { statut: StatutVente.PAYE } });
-      await this.auditService.logEvent({ tenantId, actorUserId: actor.userId, actorEmail: actor.email, actorRole: actor.role, action: 'VALIDATION_STOCK_MAGASINIER', targetType: 'VENTE', targetId: id, reference: vente.reference, description: `Validation sortie de stock ${vente.reference}`, metadata: { venteId: id } });
+      auditAfterCommit = await this.auditService.logEventInTransaction(tx, { tenantId, depotId: selectedDepotId, actorUserId: actor.userId, actorEmail: actor.email, actorRole: actor.role, action: 'VALIDATION_STOCK_MAGASINIER', targetType: 'VENTE', targetId: id, reference: vente.reference, description: `Validation sortie de stock ${vente.reference}`, metadata: { venteId: id } });
       this.notifService.createFromTemplate(tenantId, NotifType.LIVRAISON_TERMINEE, { client: vente.clientId || 'Client', montant: vente.total }).catch((e) => this.logger.error(`Erreur notif vente: ${e.message}`));
       return venteUpdated;
     });
+    if (auditAfterCommit) this.auditService.emitAuditUpdate(tenantId, auditAfterCommit);
+    return result;
   }
 
   async getStats(tenantId: string, depotId: string) {
@@ -359,7 +370,7 @@ export class VentesService {
   }
 
   async findOne(id: string, tenantId: string, depotId: string) {
-    return this.prisma.vente.findFirst({ where: { id, tenantId, depotId }, include: { lignes: { include: { article: true } }, client: true } });
+    return this.prisma.vente.findFirst({ where: { id, tenantId, depotId }, include: { lignes: { include: { article: true } }, client: true });
   }
 
   async findEnAttenteValidation(tenantId: string, depotId?: string) {
@@ -369,16 +380,19 @@ export class VentesService {
 
   async annulerVente(id: string, motif: string, tenantId: string, depotId: string, actor: any) {
     const selectedDepotId = this.requireDepotId(depotId);
-    return await this.prisma.$transaction(async (tx) => {
+    let auditAfterCommit: any = null;
+    const result = await this.prisma.$transaction(async (tx) => {
       const vente = await tx.vente.findFirst({ where: { id, tenantId, depotId: selectedDepotId }, include: { lignes: true } });
       if (!vente || vente.statut === StatutVente.ANNULE) throw new BadRequestException('Action impossible');
       if (vente.statut === StatutVente.PAYE) {
         throw new BadRequestException('Une vente déjà payée ne peut pas être annulée par cette opération. Utilisez le workflow de remboursement pour inverser les paiements.');
       }
       const venteUpdated = await tx.vente.update({ where: { id }, data: { statut: StatutVente.ANNULE, motifAnnulation: motif } });
-      await this.auditService.logEvent({ tenantId, actorUserId: actor.userId, actorEmail: actor.email, actorRole: actor.role, action: 'VENTE_ANNULEE', targetType: 'VENTE', targetId: id, reference: vente.reference, description: `Annulation vente ${vente.reference}`, metadata: { motif, venteId: id } });
+      auditAfterCommit = await this.auditService.logEventInTransaction(tx, { tenantId, depotId: selectedDepotId, actorUserId: actor.userId, actorEmail: actor.email, actorRole: actor.role, action: 'VENTE_ANNULEE', targetType: 'VENTE', targetId: id, reference: vente.reference, description: `Annulation vente ${vente.reference}`, metadata: { motif, venteId: id } });
       return venteUpdated;
     });
+    if (auditAfterCommit) this.auditService.emitAuditUpdate(tenantId, auditAfterCommit);
+    return result;
   }
 
   async update(tenantId: string, depotId: string, id: string, dto: UpdateVenteDto) {
