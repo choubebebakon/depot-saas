@@ -7,7 +7,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
-import { DepotScopeService } from './common/depot-scope.service';
+import { CommonModule } from './common/common.module';
 import { ContextMiddleware } from './common/middleware/context.middleware';
 import { DepotScopeInterceptor } from './common/interceptors/depot-scope.interceptor';
 import { ClientDepotScopeInterceptor } from './common/interceptors/client-depot-scope.interceptor';
@@ -73,6 +73,7 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    CommonModule,
     AuthModule,
     TenantsModule,
     ConsignesModule,
@@ -116,7 +117,6 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
   providers: [
     AppService,
     PrismaService,
-    DepotScopeService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: AccessStatusGuard },
