@@ -58,6 +58,7 @@ export default function SuperAdminUsers() {
   const [limit] = useState(20);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showMenu, setShowMenu] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   const { data: usersData, isLoading, refetch } = useQuery({
     queryKey: ['admin-users', filters, page, limit],
@@ -80,9 +81,11 @@ export default function SuperAdminUsers() {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-users']);
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setShowMenu(null);
+      setActionError('');
     },
+    onError: (error) => setActionError(error?.response?.data?.message || 'Impossible de modifier le statut de cet utilisateur.'),
   });
 
   const toggleSuperAdminMutation = useMutation({
@@ -139,6 +142,12 @@ export default function SuperAdminUsers() {
           Actualiser
         </button>
       </div>
+
+      {actionError && (
+        <div role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {actionError}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 mb-6">
@@ -261,8 +270,12 @@ export default function SuperAdminUsers() {
                         {showMenu === user.id && (
                           <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-600 rounded-xl shadow-xl z-10">
                             <button
-                              onClick={() => toggleActiveMutation.mutate(user.id)}
-                              disabled={toggleActiveMutation.isLoading}
+                              onClick={() => {
+                                setActionError('');
+                                const action = user.isActive ? 'désactiver' : 'activer';
+                                if (window.confirm(`Voulez-vous vraiment ${action} ${user.email} ?`)) toggleActiveMutation.mutate(user.id);
+                              }}
+                              disabled={toggleActiveMutation.isPending}
                               className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-white hover:bg-slate-700 transition-colors rounded-t-xl"
                             >
                               {user.isActive ? <UserX size={16} className="text-red-400" /> : <UserCheck size={16} className="text-green-400" />}
