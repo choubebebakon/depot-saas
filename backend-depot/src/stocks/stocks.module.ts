@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { StocksService } from './stocks.service';
+import { TransferStockService } from './transfer-stock.service';
 import { StocksController } from './stocks.controller';
 import { InventaireService } from './inventaire.service';
 import { InventaireController } from './inventaire.controller';
@@ -13,6 +14,7 @@ import { AuditModule } from '../audit/audit.module';
   controllers: [StocksController, InventaireController],
   providers: [
     StocksService,
+    TransferStockService,
     InventaireService,
     PrismaService,
     {
