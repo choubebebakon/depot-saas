@@ -370,7 +370,8 @@ export class VentesService {
   }
 
   async findOne(id: string, tenantId: string, depotId: string) {
-    return this.prisma.vente.findFirst({ where: { id, tenantId, depotId }, include: { lignes: { include: { article: true } }, client: true });
+    return this.prisma.vente.findFirst({ where: { id, tenantId, depotId }, include: { lignes: { include: { article: true } }, client: true },
+    });
   }
 
   async findEnAttenteValidation(tenantId: string, depotId?: string) {
