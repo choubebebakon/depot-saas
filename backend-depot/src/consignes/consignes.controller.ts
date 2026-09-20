@@ -33,7 +33,9 @@ export class ConsignesController {
   private getTenantId(req: any): string {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      throw new BadRequestException('Tenant introuvable dans le contexte authentifié');
+      throw new BadRequestException(
+        'Tenant introuvable dans le contexte authentifié',
+      );
     }
     return tenantId;
   }
@@ -92,7 +94,10 @@ export class ConsignesController {
 
   @Get('portefeuilles')
   @RequirePermission('consignes', 'read')
-  getAllPortefeuilles(@Req() req: any, @Headers('x-depot-id') depotId?: string) {
+  getAllPortefeuilles(
+    @Req() req: any,
+    @Headers('x-depot-id') depotId?: string,
+  ) {
     return this.service.getAllPortefeuilles(
       this.getTenantId(req),
       this.getDepotId(req, depotId),

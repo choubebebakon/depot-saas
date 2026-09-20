@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseInterceptors,
+} from '@nestjs/common';
 import { RoleUser } from '@prisma/client';
 import { Request } from 'express';
 import { TenantsService } from './tenants.service';

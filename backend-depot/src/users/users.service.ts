@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RoleUser, AuditSeverite } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -28,12 +33,19 @@ export class UsersService {
     }
 
     if (actor.role !== RoleUser.PATRON && actor.role !== RoleUser.GERANT) {
-      throw new ForbiddenException('Vous n\'avez pas le droit de gérer les utilisateurs.');
+      throw new ForbiddenException(
+        "Vous n'avez pas le droit de gérer les utilisateurs.",
+      );
     }
 
     // Un GERANT ne peut ni créer/promouvoir un PATRON, ni toucher à un GERANT.
-    if (actor.role === RoleUser.GERANT && (targetRole === RoleUser.PATRON || targetRole === RoleUser.GERANT)) {
-      throw new ForbiddenException('Un GERANT ne peut pas gérer un PATRON ou un GERANT.');
+    if (
+      actor.role === RoleUser.GERANT &&
+      (targetRole === RoleUser.PATRON || targetRole === RoleUser.GERANT)
+    ) {
+      throw new ForbiddenException(
+        'Un GERANT ne peut pas gérer un PATRON ou un GERANT.',
+      );
     }
 
     const depotId = requestedDepotId?.trim() || null;
@@ -56,15 +68,66 @@ export class UsersService {
     // Un GERANT reste confiné à son propre dépôt.
     if (actor.role === RoleUser.GERANT) {
       if (!actor.depotId) {
-        throw new ForbiddenException('Ce GERANT n\'est affecté à aucun dépôt.');
+        throw new ForbiddenException("Ce GERANT n'est affecté à aucun dépôt.");
       }
       if (depotId && depotId !== actor.depotId) {
-        throw new ForbiddenException('Un GERANT ne peut affecter un utilisateur à un autre dépôt.');
+        throw new ForbiddenException(
+          'Un GERANT ne peut affecter un utilisateur à un autre dépôt.',
+        );
       }
       return actor.depotId;
     }
 
     return depotId;
+  }
+
+  /**
+   * Valide les affectations multi-établissements (§13 matrice d'accès) :
+   * chaque dépôt doit appartenir au tenant et être actif ; un GERANT ne peut
+   * affecter que son propre dépôt. Retourne la liste normalisée (sans doublons).
+   */
+  private async assertDepotsAcces(
+    actor: AuditActor,
+    depotsAcces?: string[] | null,
+  ): Promise<string[]> {
+    if (depotsAcces === undefined || depotsAcces === null) return [];
+    if (!Array.isArray(depotsAcces)) {
+      throw new BadRequestException('depotsAcces doit être un tableau d’identifiants de dépôts.');
+    }
+
+    const uniques = [...new Set(depotsAcces.map((d) => String(d).trim()).filter(Boolean))];
+    if (uniques.length === 0) return [];
+
+    const depots = await this.prisma.depot.findMany({
+      where: { id: { in: uniques }, tenantId: actor.tenantId!, isArchived: false },
+      select: { id: true },
+    });
+    if (depots.length !== uniques.length) {
+      throw new BadRequestException('Un ou plusieurs dépôts sont invalides, inexistants ou archivés.');
+    }
+
+    // Un GERANT reste confiné à son propre dépôt.
+    if (actor.role === RoleUser.GERANT) {
+      const horsPerimetre = uniques.filter((d) => d !== actor.depotId);
+      if (horsPerimetre.length > 0) {
+        throw new ForbiddenException(
+          'Un GERANT ne peut affecter des utilisateurs qu’à son propre dépôt.',
+        );
+      }
+    }
+
+    return uniques;
+  }
+
+  /** Remplace les affectations multi-établissements d'un utilisateur. */
+  private async replaceDepotsAcces(userId: string, tenantId: string, depots: string[]) {
+    await this.prisma.userDepot.deleteMany({ where: { userId } });
+    if (depots.length > 0) {
+      await this.prisma.userDepot.createMany({
+        data: depots.map((depotId) => ({ userId, depotId, tenantId })),
+        skipDuplicates: true,
+      });
+    }
   }
 
   // Création d'un user avec mot de passe hashé automatiquement
@@ -76,6 +139,7 @@ export class UsersService {
       tenantId: string;
       nom?: string;
       depotId?: string;
+      depotsAcces?: string[];
     },
     actor?: AuditActor,
   ) {
@@ -83,8 +147,13 @@ export class UsersService {
       throw new ForbiddenException('Création inter-tenant interdite.');
     }
 
-    const depotId = await this.assertManagementScope(actor, data.role, data.depotId);
+    const depotId = await this.assertManagementScope(
+      actor,
+      data.role,
+      data.depotId,
+    );
     const hashedPassword = await bcrypt.hash(data.password, 12);
+    const depotsAcces = await this.assertDepotsAcces(actor, data.depotsAcces);
     const user = await this.prisma.user.create({
       data: {
         email: data.email,
@@ -93,7 +162,18 @@ export class UsersService {
         nom: data.nom,
         tenantId: actor.tenantId,
         depotId,
+        ...(depotsAcces.length > 0
+          ? {
+              depotsAcces: {
+                create: depotsAcces.map((depotId) => ({
+                  depotId,
+                  tenantId: actor.tenantId as string,
+                })),
+              },
+            }
+          : {}),
       },
+      include: { depotsAcces: { select: { depotId: true } } },
     });
 
     await this.auditService
@@ -109,11 +189,17 @@ export class UsersService {
         targetId: user.id,
         reference: user.email,
         description: `Utilisateur ${user.email} créé (rôle ${user.role})`,
-        valeurApres: { email: user.email, role: user.role, depotId: user.depotId },
+        valeurApres: {
+          email: user.email,
+          role: user.role,
+          depotId: user.depotId,
+        },
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log UTILISATEUR_CREE:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log UTILISATEUR_CREE:', err),
+      );
 
     return user;
   }
@@ -148,6 +234,7 @@ export class UsersService {
         depotId: true,
         isActive: true,
         createdAt: true,
+        depotsAcces: { select: { depotId: true } },
         // password exclu
       },
       orderBy: { createdAt: 'desc' },
@@ -191,6 +278,7 @@ export class UsersService {
         depotId: true,
         isActive: true,
         createdAt: true,
+        depotsAcces: { select: { depotId: true } },
       },
     });
 
@@ -214,12 +302,20 @@ export class UsersService {
 
     const avant = await this.prisma.user.findFirst({
       where: { id, tenantId },
-      select: { id: true, isActive: true, email: true, role: true, depotId: true },
+      select: {
+        id: true,
+        isActive: true,
+        email: true,
+        role: true,
+        depotId: true,
+      },
     });
     if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
     if (actor.role === RoleUser.GERANT && avant.depotId !== actor.depotId) {
-      throw new ForbiddenException('Un GERANT ne peut modifier que les utilisateurs de son dépôt.');
+      throw new ForbiddenException(
+        'Un GERANT ne peut modifier que les utilisateurs de son dépôt.',
+      );
     }
 
     await this.assertManagementScope(actor, avant.role, avant.depotId);
@@ -228,7 +324,8 @@ export class UsersService {
       where: { id, tenantId },
       data: { isActive: Boolean(isActive) },
     });
-    if (result.count === 0) throw new NotFoundException('Utilisateur introuvable');
+    if (result.count === 0)
+      throw new NotFoundException('Utilisateur introuvable');
 
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -261,7 +358,9 @@ export class UsersService {
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log UTILISATEUR_DESACTIVE:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log UTILISATEUR_DESACTIVE:', err),
+      );
 
     return user;
   }
@@ -269,7 +368,7 @@ export class UsersService {
   // Mise à jour partielle (rôle, nom, dépôt)
   async update(
     id: string,
-    data: { nom?: string; role?: RoleUser; depotId?: string },
+    data: { nom?: string; role?: RoleUser; depotId?: string; depotsAcces?: string[] },
     tenantId: string,
     actor?: AuditActor,
   ) {
@@ -284,14 +383,22 @@ export class UsersService {
     if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
     if (actor.role === RoleUser.GERANT && avant.depotId !== actor.depotId) {
-      throw new ForbiddenException('Un GERANT ne peut modifier que les utilisateurs de son dépôt.');
+      throw new ForbiddenException(
+        'Un GERANT ne peut modifier que les utilisateurs de son dépôt.',
+      );
     }
 
     const nextRole = data.role ?? avant.role;
-    const nextDepotId = data.depotId !== undefined ? data.depotId : avant.depotId;
-    const managedDepotId = await this.assertManagementScope(actor, nextRole, nextDepotId);
+    const nextDepotId =
+      data.depotId !== undefined ? data.depotId : avant.depotId;
+    const managedDepotId = await this.assertManagementScope(
+      actor,
+      nextRole,
+      nextDepotId,
+    );
 
-    const safeData: { nom?: string; role?: RoleUser; depotId?: string | null } = {};
+    const safeData: { nom?: string; role?: RoleUser; depotId?: string | null } =
+      {};
     if (data.nom !== undefined) safeData.nom = data.nom;
     if (data.role !== undefined) safeData.role = data.role;
     if (data.depotId !== undefined || actor.role === RoleUser.GERANT) {
@@ -302,7 +409,9 @@ export class UsersService {
       return this.findOne(
         tenantId,
         id,
-        actor.role === RoleUser.GERANT ? actor.depotId ?? undefined : undefined,
+        actor.role === RoleUser.GERANT
+          ? (actor.depotId ?? undefined)
+          : undefined,
       );
     }
 
@@ -310,7 +419,15 @@ export class UsersService {
       where: { id, tenantId },
       data: safeData,
     });
-    if (result.count === 0) throw new NotFoundException('Utilisateur introuvable');
+    if (result.count === 0)
+      throw new NotFoundException('Utilisateur introuvable');
+
+    // Multi-établissements (§13) : remplacement complet des affectations si
+    // le champ est fourni (null/[] = retrait de tous les accès additionnels).
+    if (data.depotsAcces !== undefined) {
+      const depotsAcces = await this.assertDepotsAcces(actor, data.depotsAcces);
+      await this.replaceDepotsAcces(id, tenantId, depotsAcces);
+    }
 
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -343,7 +460,9 @@ export class UsersService {
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log UTILISATEUR_MODIFIE:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log UTILISATEUR_MODIFIE:', err),
+      );
 
     return user;
   }
@@ -361,13 +480,16 @@ export class UsersService {
     if (!avant) throw new NotFoundException('Utilisateur introuvable');
 
     if (actor.role === RoleUser.GERANT && avant.depotId !== actor.depotId) {
-      throw new ForbiddenException('Un GERANT ne peut supprimer que les utilisateurs de son dépôt.');
+      throw new ForbiddenException(
+        'Un GERANT ne peut supprimer que les utilisateurs de son dépôt.',
+      );
     }
 
     await this.assertManagementScope(actor, avant.role, avant.depotId);
 
     const user = await this.prisma.user.deleteMany({ where: { id, tenantId } });
-    if (user.count === 0) throw new NotFoundException('Utilisateur introuvable');
+    if (user.count === 0)
+      throw new NotFoundException('Utilisateur introuvable');
 
     await this.auditService
       .logEvent({
@@ -386,7 +508,9 @@ export class UsersService {
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log SUPPRESSION_UTILISATEUR:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log SUPPRESSION_UTILISATEUR:', err),
+      );
 
     return { id, deleted: true };
   }

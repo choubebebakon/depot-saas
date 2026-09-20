@@ -82,7 +82,9 @@ export class ConsignesService {
     `;
   }
 
-  private validateConsigneLines(lines: VenteAvecConsignesDto['lignesConsignes']) {
+  private validateConsigneLines(
+    lines: VenteAvecConsignesDto['lignesConsignes'],
+  ) {
     const seen = new Set<string>();
     for (const line of lines) {
       if (seen.has(line.typeConsigneId)) {
@@ -247,9 +249,15 @@ export class ConsignesService {
       throw new NotFoundException('Type de consigne introuvable');
     }
 
-    if (dto.clientId) await this.assertClientScope(tenantId, depotId, dto.clientId);
+    if (dto.clientId)
+      await this.assertClientScope(tenantId, depotId, dto.clientId);
     const vente = dto.venteId
-      ? await this.assertVenteScope(tenantId, depotId, dto.venteId, dto.clientId)
+      ? await this.assertVenteScope(
+          tenantId,
+          depotId,
+          dto.venteId,
+          dto.clientId,
+        )
       : null;
 
     const effectiveClientId = dto.clientId ?? vente?.clientId ?? undefined;

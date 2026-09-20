@@ -6,6 +6,8 @@ import { useDepot } from '../contexts/DepotContext';
 import api from '../api/axios';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { generateId } from '../utils/offline';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import ClientFicheModal, { BadgeCanal, canauxClient } from '../components/ClientFicheModal';
 
 function BadgeSolde({ solde, plafond }) {
   if (solde <= 0)
@@ -20,14 +22,35 @@ function BadgeSolde({ solde, plafond }) {
   return <span className={`text-xs font-bold border px-2 py-1 rounded-lg ${classes[couleur]}`}>{solde.toLocaleString('fr-FR')} FCFA</span>;
 }
 
-function ModalNouveauClient({ tenantId, depotId, onSuccess, onClose }) {
-  const [form, setForm] = useState({ nom: '', telephone: '', adresse: '', plafondCredit: 0 });
+/**
+ * Formulaire unifié de création ET d'édition manuelle d'un client
+ * (client enregistré en boutique physique, jamais passé par un canal digital).
+ *
+ * metaData n'apparaît PAS ici : propriété exclusive du service CRM/IA.
+ */
+function ModalClient({ tenantId, depotId, clientProp, onSuccess, onClose }) {
+  const edition = !!clientProp;
+  const [form, setForm] = useState({
+    nom: clientProp?.nom || '',
+    telephone: clientProp?.telephone || '',
+    instagramId: clientProp?.instagramId || '',
+    messengerId: clientProp?.messengerId || '',
+    adresse: clientProp?.adresse || '',
+    plafondCredit: clientProp?.plafondCredit || 0,
+  });
+  const [erreurLocale, setErreurLocale] = useState('');
   const { success, error: notifError } = useNotif();
   const { addToQueue } = useOfflineSync();
   const queryClient = useQueryClient();
 
-  const createClientMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async (payload) => {
+      if (edition) {
+        // Édition : uniquement en ligne (pas de file offline pour un PATCH,
+        // l'ordre des mutations ne serait pas garanti).
+        const res = await api.patch(`/clients/${clientProp.id}`, payload);
+        return res.data;
+      }
       if (!navigator.onLine) {
         await addToQueue('POST', '/clients', payload);
         return { ...payload, status: 'QUEUED_OFFLINE' };
@@ -38,23 +61,44 @@ function ModalNouveauClient({ tenantId, depotId, onSuccess, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['clients-stats'] });
-      success('Client créé');
+      success(edition ? 'Client modifié' : 'Client créé');
       onSuccess();
       onClose();
     },
-    onError: (err) => notifError(err.response?.data?.message || 'Erreur création', 'Échec'),
+    onError: (err) => notifError(err.response?.data?.message || (edition ? 'Erreur modification' : 'Erreur création'), 'Échec'),
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createClientMutation.mutate({ id: generateId(), ...form, tenantId, depotId });
+    setErreurLocale('');
+    if (!form.nom.trim()) {
+      setErreurLocale('Le nom du client est obligatoire.');
+      return;
+    }
+    if (!form.telephone.trim() && !form.instagramId.trim() && !form.messengerId.trim()) {
+      setErreurLocale('Renseignez au moins un identifiant : téléphone, Instagram ou Messenger.');
+      return;
+    }
+    const plafond = Number(form.plafondCredit);
+    if (Number.isNaN(plafond) || plafond < 0) {
+      setErreurLocale('Le plafond de crédit doit être un nombre positif.');
+      return;
+    }
+    saveMutation.mutate(
+      edition
+        ? { ...form, plafondCredit: plafond }
+        : { id: generateId(), ...form, plafondCredit: plafond, tenantId, depotId },
+    );
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-        <h3 className="text-white font-black text-xl mb-6">Nouveau Client</h3>
+        <h3 className="text-white font-black text-xl mb-6">{edition ? 'Modifier le client' : 'Nouveau Client'}</h3>
+        {erreurLocale && (
+          <div className="mb-4 text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">{erreurLocale}</div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Nom *</label>
@@ -67,6 +111,20 @@ function ModalNouveauClient({ tenantId, depotId, onSuccess, onClose }) {
             <input value={form.telephone} onChange={e => setForm({ ...form, telephone: e.target.value })}
               placeholder="+237 6XX XXX XXX"
               className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Instagram</label>
+              <input value={form.instagramId} onChange={e => setForm({ ...form, instagramId: e.target.value })}
+                placeholder="nom_utilisateur"
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Messenger</label>
+              <input value={form.messengerId} onChange={e => setForm({ ...form, messengerId: e.target.value })}
+                placeholder="ID Facebook Messenger"
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
+            </div>
           </div>
           <div>
             <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 block">Adresse</label>
@@ -82,9 +140,9 @@ function ModalNouveauClient({ tenantId, depotId, onSuccess, onClose }) {
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-all">Annuler</button>
-            <button type="submit" disabled={createClientMutation.isPending}
+            <button type="submit" disabled={saveMutation.isPending}
               className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
-              {createClientMutation.isPending ? 'Création...' : 'Créer le client'}
+              {saveMutation.isPending ? (edition ? 'Enregistrement...' : 'Création...') : (edition ? 'Enregistrer' : 'Créer le client')}
             </button>
           </div>
         </form>
@@ -163,7 +221,7 @@ function ModalPaiement({ client, tenantId, onSuccess, onClose }) {
 }
 
 export default function ClientsPage() {
-  const { metier: metierAuth, tenantId } = useAuth();
+  const { tenantId } = useAuth();
   const { depotId } = useDepot();
   const queryClient = useQueryClient();
   const { success, error: notifError } = useNotif();
@@ -172,6 +230,10 @@ export default function ClientsPage() {
   const [modalNouvel, setModalNouvel] = useState(false);
   const [clientPaiement, setClientPaiement] = useState(null);
   const [filtreDetteOnly, setFiltreDetteOnly] = useState(false);
+  const [filtreCanal, setFiltreCanal] = useState('TOUS');
+  const [clientFiche, setClientFiche] = useState(null);
+  const [clientEdition, setClientEdition] = useState(null);
+  const [clientSuppression, setClientSuppression] = useState(null);
 
   const { data: clients = [], isLoading: loadingClients } = useQuery({
     queryKey: ['clients', tenantId, depotId],
@@ -209,13 +271,22 @@ export default function ClientsPage() {
   const loading = loadingClients || loadingStats;
 
   const clientsFiltres = useMemo(() => {
+    const q = recherche.trim().toLowerCase();
     return clients.filter(c => {
-      const matchRecherche = c.nom.toLowerCase().includes(recherche.toLowerCase()) ||
-        (c.telephone || '').includes(recherche);
+      // Recherche multicanal : nom, téléphone (WhatsApp) mais aussi
+      // identifiants Instagram / Messenger rattachés par le CRM.
+      const matchRecherche = !q ||
+        c.nom.toLowerCase().includes(q) ||
+        (c.telephone || '').includes(recherche.trim()) ||
+        (c.instagramId || '').toLowerCase().includes(q) ||
+        (c.messengerId || '').toLowerCase().includes(q);
       const matchDette = filtreDetteOnly ? c.soldeCredit > 0 : true;
-      return matchRecherche && matchDette;
+      const canaux = canauxClient(c);
+      const matchCanal = filtreCanal === 'TOUS' ||
+        (filtreCanal === 'AUCUN' ? canaux.length === 0 : canaux.includes(filtreCanal));
+      return matchRecherche && matchDette && matchCanal;
     });
-  }, [clients, recherche, filtreDetteOnly]);
+  }, [clients, recherche, filtreDetteOnly, filtreCanal]);
 
   return (
     <div>
@@ -247,8 +318,16 @@ export default function ClientsPage() {
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <input value={recherche} onChange={e => setRecherche(e.target.value)}
-          placeholder="Rechercher par nom ou téléphone..."
+          placeholder="Rechercher : nom, téléphone, Instagram, Messenger..."
           className="flex-1 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
+        <select value={filtreCanal} onChange={e => setFiltreCanal(e.target.value)}
+          className="bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-indigo-500">
+          <option value="TOUS">Tous les canaux</option>
+          <option value="WHATSAPP">WhatsApp</option>
+          <option value="INSTAGRAM">Instagram</option>
+          <option value="MESSENGER">Messenger</option>
+          <option value="AUCUN">Sans canal</option>
+        </select>
         <button onClick={() => setFiltreDetteOnly(!filtreDetteOnly)}
           className={`px-5 py-3 rounded-xl text-sm font-bold border transition-all ${filtreDetteOnly
             ? 'bg-red-500/20 border-red-500/40 text-red-400'
@@ -303,12 +382,29 @@ export default function ClientsPage() {
                   <td className="px-6 py-4"><BadgeSolde solde={client.soldeCredit} plafond={client.plafondCredit} /></td>
                   <td className="px-6 py-4 text-slate-400 text-sm">{client._count?.ventes || 0} vente(s)</td>
                   <td className="px-6 py-4 text-right">
-                    {client.soldeCredit > 0 && (
-                      <button onClick={() => setClientPaiement(client)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
-                        Encaisser
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => setClientFiche(client)} title="Voir la fiche"
+                        className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-white p-2 rounded-lg transition-all"
+                        aria-label={`Fiche de ${client.nom}`}>
+                        <Eye className="w-3.5 h-3.5" />
                       </button>
-                    )}
+                      <button onClick={() => setClientEdition(client)} title="Modifier"
+                        className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-indigo-400 hover:text-white p-2 rounded-lg transition-all"
+                        aria-label={`Modifier ${client.nom}`}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setClientSuppression(client)} title="Supprimer"
+                        className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-red-400 hover:text-red-300 p-2 rounded-lg transition-all"
+                        aria-label={`Supprimer ${client.nom}`}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      {client.soldeCredit > 0 && (
+                        <button onClick={() => setClientPaiement(client)}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
+                          Encaisser
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -317,10 +413,61 @@ export default function ClientsPage() {
         )}
       </div>
 
-      {modalNouvel && <ModalNouveauClient tenantId={tenantId} depotId={depotId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['clients'] })} onClose={() => setModalNouvel(false)} />}
+      {modalNouvel && <ModalClient tenantId={tenantId} depotId={depotId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['clients'] })} onClose={() => setModalNouvel(false)} />}
+      {clientEdition && (
+        <ModalClient tenantId={tenantId} depotId={depotId} clientProp={clientEdition} onSuccess={() => { setClientFiche(null); queryClient.invalidateQueries({ queryKey: ['clients'] }); }} onClose={() => setClientEdition(null)} />
+      )}
+      {clientFiche && (
+        <ClientFicheModal client={clientFiche} onClose={() => setClientFiche(null)} onEdit={(c) => { setClientFiche(null); setClientEdition(c); }} />
+      )}
+      {clientSuppression && (
+        <ModalSuppression client={clientSuppression} deleteMutation={deleteMutation} onClose={() => setClientSuppression(null)} />
+      )}
       {clientPaiement && (
         <ModalPaiement client={clientPaiement} tenantId={tenantId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['clients'] })} onClose={() => setClientPaiement(null)} />
       )}
+    </div>
+  );
+}
+
+/**
+ * Confirmation de suppression : le backend refuse (409) tout client avec un
+ * historique commercial — le message d'erreur serveur est affiché tel quel.
+ */
+function ModalSuppression({ client, deleteMutation, onClose }) {
+  const { error: notifError } = useNotif();
+  const [erreurLocale, setErreurLocale] = useState('');
+
+  const confirmer = () => {
+    deleteMutation.mutate(client.id, {
+      onError: (err) => {
+        setErreurLocale(err.response?.data?.message || 'Suppression impossible.');
+        notifError(err.response?.data?.message || 'Suppression impossible.', 'Échec');
+      },
+      onSuccess: () => onClose(),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+        <h3 className="text-white font-black text-xl mb-2">Supprimer le client</h3>
+        <p className="text-slate-400 text-sm mb-6">
+          Confirmer la suppression de <strong className="text-white">{client.nom}</strong> ?
+          Les clients ayant un historique commercial ne peuvent pas être supprimés.
+        </p>
+        {erreurLocale && (
+          <div className="mb-4 text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">{erreurLocale}</div>
+        )}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-all">Annuler</button>
+          <button onClick={confirmer} disabled={deleteMutation.isPending}
+            className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
+            {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

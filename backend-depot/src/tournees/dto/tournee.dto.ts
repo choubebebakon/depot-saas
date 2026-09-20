@@ -4,9 +4,11 @@ import {
   IsNumber,
   IsOptional,
   Min,
+  MinLength,
+  MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class OuvrirTourneeDto {
   @IsString()
@@ -83,13 +85,39 @@ export class ValidationMagasinierDto {
   noteValidation?: string;
 }
 
+const trimString = ({ value }: { value: unknown }) =>
+  String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 export class CreateTricycleDto {
   @IsString()
+  @Transform(trimString)
+  @MinLength(1, { message: 'Le nom / immatriculation du tricycle est requis.' })
+  @MaxLength(80, {
+    message: 'Le nom du tricycle ne peut pas dépasser 80 caractères.',
+  })
   nom: string;
 
+  // Ces deux champs sont TOUJOURS écrasés côté contrôleur par le scope
+  // serveur (req.user.tenantId / req.depotScope.depotId). Ils restent
+  // optionnels dans le DTO : un client malveillant ne peut ni les omitir
+  // (400) ni en injecter un autre (écrasement serveur).
+  @IsOptional()
   @IsString()
-  tenantId: string;
+  tenantId?: string;
 
+  @IsOptional()
   @IsString()
-  depotId: string;
+  depotId?: string;
+}
+
+export class UpdateTricycleDto {
+  @IsString()
+  @Transform(trimString)
+  @MinLength(1, { message: 'Le nom / immatriculation du tricycle est requis.' })
+  @MaxLength(80, {
+    message: 'Le nom du tricycle ne peut pas dépasser 80 caractères.',
+  })
+  nom: string;
 }

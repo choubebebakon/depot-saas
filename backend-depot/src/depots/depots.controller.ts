@@ -49,7 +49,7 @@ export class DepotsController {
   }
 
   @Post()
-  @Roles(RoleUser.PATRON, RoleUser.GERANT)
+  @Roles(RoleUser.PATRON)
   @Audit('CREATION_DEPOT', 'Depot')
   create(@Body() createDepotDto: CreateDepotDto, @CurrentUser() user: any) {
     return this.depotsService.create(createDepotDto, user);
@@ -67,7 +67,7 @@ export class DepotsController {
   }
 
   @Delete(':id')
-  @Roles(RoleUser.PATRON, RoleUser.GERANT)
+  @Roles(RoleUser.PATRON)
   @Audit('ARCHIVAGE_DEPOT', 'Depot')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.depotsService.remove(id, user);

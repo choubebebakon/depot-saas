@@ -1,4 +1,14 @@
-import { IsBoolean, IsDateString, IsInt, IsNumber, IsOptional, IsString, IsNotEmpty, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateArticleDto {
@@ -53,8 +63,36 @@ export class CreateArticleDto {
   @IsString()
   photoUrl?: string;
 
+  @IsOptional()
+  @IsString()
+  codeBarres?: string;
+
+  @IsOptional()
+  @IsString()
+  unite?: string;
+
+  @IsOptional()
+  @IsString()
+  categorieId?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  prixGros?: number;
+
+  /** Type de famille en TEXTE LIBRE — résolu (find-or-create) par le service. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  familleNom?: string;
+
   /** Date et heure de péremption de l'article, transmises en ISO 8601. */
   @IsOptional()
   @IsDateString()
   datePeremption?: string;
+
+  @IsOptional()
+  @IsString()
+  depotId?: string;
 }

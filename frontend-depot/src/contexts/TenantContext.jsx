@@ -1,99 +1,32 @@
-import { createContext, useCallback, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { fetchTenant } from '../services/tenantService';
 
 export const TenantContext = createContext(null);
 
-const ACTIVE_DEPOT_STORAGE_KEY = 'depot_actif_id';
-
-function normalizeDepotId(value) {
-  if (typeof value !== 'string') return null;
-  const normalized = value.trim();
-  return normalized && !['all', 'null', 'undefined'].includes(normalized)
-    ? normalized
-    : null;
-}
-
-function getStoredRole() {
-  try {
-    const raw = localStorage.getItem('depot_user');
-    return raw ? JSON.parse(raw)?.role ?? null : null;
-  } catch {
-    return null;
-  }
-}
-
-function resolveInitialDepot(depots, currentDepotId, role) {
-  if (!Array.isArray(depots) || depots.length === 0) return null;
-
-  // Seul le Patron dispose actuellement d'un droit explicite de sélection
-  // inter-dépôts. Le backend reste l'autorité finale et revérifie le dépôt.
-  if (role === 'PATRON') {
-    const savedDepotId = normalizeDepotId(localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY));
-    if (savedDepotId) {
-      const savedDepot = depots.find((depot) => depot.id === savedDepotId);
-      if (savedDepot) return savedDepot;
-    }
-  }
-
-  const jwtDepotId = normalizeDepotId(currentDepotId);
-  if (jwtDepotId) {
-    return depots.find((depot) => depot.id === jwtDepotId) ?? null;
-  }
-
-  return depots[0];
-}
-
-function notifyDepotChanged(depotId) {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('gestock:depot-changed', {
-      detail: { depotId: depotId ?? null },
-    }));
-  }
-}
-
+// NOTE (correctif du 9 septembre 2026) : ce contexte ne gère plus la
+// sélection du dépôt actif. DepotContext (src/contexts/DepotContext.jsx)
+// est désormais l'UNIQUE source de vérité pour depotActif / la clé
+// localStorage 'depot_actif_id'. Avoir deux contextes qui écrivaient tous
+// les deux cette même clé en parallèle créait une condition de course qui
+// faisait réapparaître les erreurs 403 "Accès refusé à ce dépôt" de façon
+// intermittente pour PATRON. Ne pas réintroduire de logique de dépôt ici —
+// utiliser useDepot() pour tout ce qui concerne le dépôt actif.
 export function TenantProvider({ children }) {
   const [tenant, setTenant] = useState(null);
-  const [currentDepot, setCurrentDepotState] = useState(null);
   const [depots, setDepots] = useState([]);
   const [plan, setPlan] = useState('free');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const setCurrentDepot = useCallback((depot) => {
-    setCurrentDepotState(depot ?? null);
-
-    if (depot?.id) {
-      localStorage.setItem(ACTIVE_DEPOT_STORAGE_KEY, depot.id);
-    } else {
-      localStorage.removeItem(ACTIVE_DEPOT_STORAGE_KEY);
-    }
-
-    notifyDepotChanged(depot?.id ?? null);
-  }, []);
-
   useEffect(() => {
     let mounted = true;
-    const role = getStoredRole();
 
     fetchTenant()
       .then((data) => {
         if (!mounted) return;
-
-        const nextDepots = Array.isArray(data?.depots) ? data.depots : [];
-        const nextDepot = resolveInitialDepot(nextDepots, data?.currentDepotId, role);
-
         setTenant(data?.tenant ?? null);
-        setDepots(nextDepots);
-        setCurrentDepotState(nextDepot);
+        setDepots(Array.isArray(data?.depots) ? data.depots : []);
         setPlan(data?.plan ?? 'free');
-
-        if (nextDepot?.id) {
-          localStorage.setItem(ACTIVE_DEPOT_STORAGE_KEY, nextDepot.id);
-        } else {
-          localStorage.removeItem(ACTIVE_DEPOT_STORAGE_KEY);
-        }
-
-        notifyDepotChanged(nextDepot?.id ?? null);
       })
       .catch((err) => {
         if (mounted) setError(err);
@@ -107,31 +40,10 @@ export function TenantProvider({ children }) {
     };
   }, []);
 
-  const switchDepot = useCallback((depotId) => {
-    const normalizedDepotId = normalizeDepotId(depotId);
-    const role = getStoredRole();
-
-    if (role !== 'PATRON') {
-      console.warn('[TenantContext] Changement de dépôt refusé pour ce rôle.');
-      return;
-    }
-
-    const depot = depots.find((item) => item.id === normalizedDepotId);
-    if (!depot) {
-      console.warn(`[TenantContext] Depot "${depotId}" not found in authenticated tenant.`);
-      return;
-    }
-
-    setCurrentDepot(depot);
-  }, [depots, setCurrentDepot]);
-
   return (
     <TenantContext.Provider
       value={{
         tenant,
-        currentDepot,
-        setCurrentDepot,
-        switchDepot,
         depots,
         plan,
         isLoading,

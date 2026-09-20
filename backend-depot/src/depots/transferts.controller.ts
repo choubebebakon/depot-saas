@@ -19,29 +19,38 @@ export class TransfertsController {
 
   @Post()
   @Roles(...ACCESS_LEVELS.GERANT)
-  create(@Body() dto: CreateTransfertDto, @Query('tenantId') tenantId: string) {
-    return this.transfertsService.createTransfert(dto, tenantId);
+  create(
+    @Body() dto: CreateTransfertDto,
+    @Request() req: any,
+  ) {
+    const tenantId = req.user?.tenantId;
+    return this.transfertsService.createTransfert(dto, tenantId, req.user);
   }
 
   @Patch(':id/valider')
   @Roles(...ACCESS_LEVELS.GERANT)
   valider(
     @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
     @Request() req: any,
   ) {
+    const tenantId = req.user?.tenantId;
     return this.transfertsService.validerTransfert(id, tenantId, req.user);
   }
 
   @Get()
   @Roles(...ACCESS_LEVELS.GERANT)
-  findAll(@Query('tenantId') tenantId: string) {
-    return this.transfertsService.findAll(tenantId);
+  findAll(@Request() req: any) {
+    const tenantId = req.user?.tenantId;
+    return this.transfertsService.findAll(tenantId, req.user);
   }
 
   @Get(':id')
   @Roles(...ACCESS_LEVELS.GERANT)
-  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.transfertsService.findOne(id, tenantId);
+  findOne(
+    @Param('id') id: string,
+    @Request() req: any,
+  ) {
+    const tenantId = req.user?.tenantId;
+    return this.transfertsService.findOne(id, tenantId, req.user);
   }
 }

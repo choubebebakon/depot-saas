@@ -5,7 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AuditSeverite, Prisma } from '@prisma/client';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { PrismaService } from '../../prisma.service';
+import { DepotScopeService } from '../../common/depot-scope.service';
+import {
+  mapUniqueViolation,
+  normalizeChannelId,
+} from '../../common/customer-channel.util';
 import { AuditService } from '../../audit/audit.service';
 import { AUDIT_ACTIONS } from '../../audit/audit-actions.constants';
 import { AuditActor } from '../../audit/audit-actor.util';
@@ -15,6 +21,7 @@ export class DepotBoissonsService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private readonly depotScope: DepotScopeService,
   ) {}
 
   private toPositiveInt(value: unknown, fallback: number) {
@@ -256,10 +263,24 @@ export class DepotBoissonsService {
     if (query.search)
       where.designation = { contains: query.search, mode: 'insensitive' };
     if (query.famille) where.famille = { nom: query.famille };
-    if (query.stock === 'critique')
+    if (query.stock === 'critique') {
+      // Le seuil critique est un attribut de l'article, pas du stock.
+      // On filtre les articles dont le stock total est <= seuilCritique.
+      const articlesCritiques = await this.prisma.article.findMany({
+        where: { tenantId },
+        select: { id: true, seuilCritique: true },
+      });
+      const idsCritiques = articlesCritiques
+        .filter((a) => a.seuilCritique > 0)
+        .map((a) => a.id);
+      if (idsCritiques.length === 0) {
+        return { data: [], total: 0, page, limit };
+      }
+      where.id = { in: idsCritiques };
       where.stocks = {
-        some: { quantite: { lte: this.prisma.stock.fields.seuilCritique } },
+        some: { quantite: { lte: 0 } },
       };
+    }
 
     const [total, data] = await Promise.all([
       this.prisma.article.count({ where }),
@@ -282,6 +303,7 @@ export class DepotBoissonsService {
       famille: a.famille?.nom || '',
       marque: '',
       prix: a.prixVente,
+      photoUrl: a.photoUrl || null,
       seuil: a.seuilCritique,
       quantite: a.stocks?.reduce((s, st) => s + st.quantite, 0) || 0,
     }));
@@ -297,33 +319,214 @@ export class DepotBoissonsService {
   }
 
   async createArticle(tenantId: string, data: any) {
+    const designation = this.requireString(data.designation, 'designation');
+    const prixVente = Number(data.prixVente ?? data.prix);
+    if (!Number.isFinite(prixVente) || prixVente < 0) {
+      throw new BadRequestException(
+        'prixVente doit être un nombre positif ou nul.',
+      );
+    }
+    const seuilCritique = Number(data.seuilCritique ?? data.seuil ?? 10);
+    if (!Number.isInteger(seuilCritique) || seuilCritique < 0) {
+      throw new BadRequestException(
+        'seuilCritique doit être un entier positif ou nul.',
+      );
+    }
+    const existing = await this.prisma.article.findFirst({
+      where: {
+        tenantId,
+        designation: { equals: designation, mode: 'insensitive' },
+        format: data.format || '',
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `Un article "${designation}" (${data.format || 'sans format'}) existe déjà.`,
+      );
+    }
     return this.prisma.article.create({
       data: {
-        designation: data.designation,
+        designation,
         format: data.format || '',
-        prixVente: parseFloat(data.prix) || 0,
-        seuilCritique: parseInt(data.seuil) || 10,
+        prixVente,
+        prixAchat: Number(data.prixAchat) || 0,
+        seuilCritique,
+        estConsigne: Boolean(data.estConsigne),
+        uniteParCasier: Number(data.uniteParCasier) || 12,
+        uniteParPack: Number(data.uniteParPack) || 6,
+        uniteParPalette: Number(data.uniteParPalette) || 120,
         familleId: data.familleId || undefined,
+        marqueId: data.marqueId || undefined,
+        categorieId: data.categorieId || undefined,
         photoUrl: data.photoUrl || undefined,
+        codeBarres: data.codeBarres || undefined,
+        prixGros:
+          data.prixGros !== undefined ? Number(data.prixGros) : undefined,
+        unite: data.unite || 'PIECE',
         tenantId,
       },
     });
   }
 
   async updateArticle(tenantId: string, id: string, data: any) {
-    return this.prisma.article.updateMany({ where: { id, tenantId }, data });
+    const allowedFields = [
+      'designation',
+      'format',
+      'prixVente',
+      'prixAchat',
+      'seuilCritique',
+      'familleId',
+      'marqueId',
+      'categorieId',
+      'photoUrl',
+      'codeBarres',
+      'prixGros',
+      'unite',
+      'estConsigne',
+    ];
+
+    const cleanData: Record<string, any> = {};
+
+    for (const key of allowedFields) {
+      if (data[key] === undefined || data[key] === null || data[key] === '')
+        continue;
+
+      if (['prixVente', 'prixAchat', 'prixGros'].includes(key)) {
+        const num = Number(data[key]);
+        if (Number.isFinite(num) && num >= 0) {
+          cleanData[key] = num;
+        } else {
+          throw new BadRequestException(
+            `${key} doit être un nombre positif ou nul.`,
+          );
+        }
+      } else if (key === 'seuilCritique') {
+        const num = parseInt(data[key], 10);
+        if (Number.isFinite(num) && num >= 0) {
+          cleanData[key] = num;
+        } else {
+          throw new BadRequestException(
+            'seuilCritique doit être un entier positif ou nul.',
+          );
+        }
+      } else if (key === 'estConsigne') {
+        cleanData[key] = Boolean(data[key]);
+      } else {
+        cleanData[key] = String(data[key]).trim();
+      }
+    }
+
+    if (Object.keys(cleanData).length === 0) {
+      throw new BadRequestException('Aucune donnée à mettre à jour.');
+    }
+
+    try {
+      const result = await this.prisma.article.updateMany({
+        where: { id, tenantId },
+        data: cleanData,
+      });
+
+      if (result.count === 0) {
+        throw new NotFoundException('Article introuvable.');
+      }
+
+      return { success: true, updated: result.count };
+    } catch (error: any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Article introuvable.');
+        }
+        throw new BadRequestException(
+          `Requête base de données invalide : ${error.message}`,
+        );
+      }
+      if (error instanceof Prisma.PrismaClientValidationError) {
+        throw new BadRequestException(
+          `Données invalides pour la base de données : ${error.message}`,
+        );
+      }
+      throw error;
+    }
   }
 
-  async archiveArticle(tenantId: string, id: string) {
-    return this.prisma.article.deleteMany({ where: { id, tenantId } });
-  }
-
-  async getStockHistory(tenantId: string, articleId: string) {
-    return this.prisma.mouvementStock.findMany({
-      where: { articleId, tenantId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
+  async deleteArticle(tenantId: string, id: string) {
+    const article = await this.prisma.article.findFirst({
+      where: { id, tenantId },
+      select: { id: true, designation: true },
     });
+    if (!article) throw new NotFoundException('Article introuvable.');
+
+    // Suppression réelle. Elle est refusée dès que l'article est référencé par
+    // une opération qui ne supprime pas en cascade (réceptions, commandes,
+    // chargements, transferts) ou par une vente : supprimer ces lignes
+    // corromprait l'historique du dépôt.
+    const [
+      ventes,
+      receptions,
+      commandes,
+      chargements,
+      transferts,
+    ] = await Promise.all([
+      this.prisma.ligneVente.count({ where: { articleId: id } }),
+      this.prisma.ligneReception.count({ where: { articleId: id } }),
+      this.prisma.ligneCommandeFournisseur.count({ where: { articleId: id } }),
+      this.prisma.ligneChargement.count({ where: { articleId: id } }),
+      this.prisma.ligneTransfert.count({ where: { articleId: id } }),
+    ]);
+
+    if (ventes > 0) {
+      throw new BadRequestException(
+        `Impossible de supprimer « ${article.designation} » : l'article est utilisé dans ${ventes} ligne(s) de vente. Supprimez d'abord les ventes associées.`,
+      );
+    }
+    if (receptions > 0 || commandes > 0 || chargements > 0 || transferts > 0) {
+      throw new BadRequestException(
+        `Impossible de supprimer « ${article.designation} » : l'article est encore référencé par des réceptions, commandes, chargements ou transferts.`,
+      );
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.lotStock.deleteMany({ where: { articleId: id } });
+        await tx.mouvementStock.deleteMany({ where: { articleId: id } });
+        await tx.conditionnement.deleteMany({ where: { articleId: id } });
+        await tx.stock.deleteMany({ where: { articleId: id } });
+        await tx.codeBarresArticle.deleteMany({ where: { articleId: id } });
+        await tx.article.delete({ where: { id } });
+        return { success: true, deleted: true, id };
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new BadRequestException(
+          `Impossible de supprimer « ${article.designation} » : l'article est encore référencé par d'autres opérations.`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  async getStockHistory(
+    tenantId: string,
+    articleId: string,
+    query: { page?: number; limit?: number } = {},
+  ) {
+    const page = this.toPositiveInt(query.page, 1);
+    const limit = Math.min(this.toPositiveInt(query.limit, 50), 200);
+    const where = { articleId, tenantId };
+    const [total, data] = await Promise.all([
+      this.prisma.mouvementStock.count({ where }),
+      this.prisma.mouvementStock.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+    return { data, total, page, limit };
   }
 
   async entreStock(tenantId: string, data: any, actor: AuditActor) {
@@ -334,7 +537,9 @@ export class DepotBoissonsService {
     if (!qty)
       throw new BadRequestException('quantite doit etre superieure a 0');
 
-    const avant = await this.prisma.stock.findFirst({ where: { articleId, depotId } });
+    const avant = await this.prisma.stock.findFirst({
+      where: { articleId, depotId },
+    });
     await this.prisma.stock.upsert({
       where: { articleId_depotId: { articleId, depotId } },
       update: { quantite: { increment: qty } },
@@ -383,7 +588,9 @@ export class DepotBoissonsService {
     if (!qty)
       throw new BadRequestException('quantite doit etre superieure a 0');
 
-    const avant = await this.prisma.stock.findFirst({ where: { articleId, depotId } });
+    const avant = await this.prisma.stock.findFirst({
+      where: { articleId, depotId },
+    });
     const updated = await this.prisma.stock.updateMany({
       where: { articleId, depotId, quantite: { gte: qty } },
       data: { quantite: { decrement: qty } },
@@ -490,7 +697,8 @@ export class DepotBoissonsService {
           articleId,
           depotId: destDepotId,
           tenantId,
-          motif: data.motif || `Transfert ${t.reference} depuis ${sourceDepotId}`,
+          motif:
+            data.motif || `Transfert ${t.reference} depuis ${sourceDepotId}`,
         },
       });
 
@@ -543,13 +751,69 @@ export class DepotBoissonsService {
     if (!data.articleId) {
       throw new BadRequestException('articleId est requis');
     }
-    return this.prisma.conditionnement.create({ data: { ...data, tenantId } });
+    if (!data.nom || !data.nom.trim()) {
+      throw new BadRequestException('nom est requis');
+    }
+    if (!data.type || !data.type.trim()) {
+      throw new BadRequestException('type est requis');
+    }
+    if (!Number.isInteger(data.quantiteUnitaire) || data.quantiteUnitaire <= 0) {
+      throw new BadRequestException('quantiteUnitaire doit être un entier > 0');
+    }
+    const prixVente = Number(data.prixVente);
+    if (!Number.isFinite(prixVente) || prixVente < 0) {
+      throw new BadRequestException('prixVente doit être un nombre >= 0');
+    }
+    // IMPORTANT : ne PAS réutiliser `...data` — l'intercepteur axios frontend
+    // injecte automatiquement `depotId` dans le body des mutations POST, et ce
+    // champ n'existe pas sur le modèle Conditionnement. Le propager à Prisma
+    // déclencherait une PrismaClientValidationError (PRISMA_VALIDATION_ERROR).
+    // On ne construit donc l'objet create qu'à partir des champs validés.
+    return this.prisma.conditionnement.create({
+      data: {
+        nom: data.nom.trim(),
+        type: data.type.trim(),
+        quantiteUnitaire: data.quantiteUnitaire,
+        prixVente,
+        articleId: data.articleId,
+        tenantId,
+      },
+    });
   }
 
   async updateConditionnement(tenantId: string, id: string, data: any) {
+    const updateData: any = {};
+    if (data.nom !== undefined) {
+      if (!data.nom || !data.nom.trim()) throw new BadRequestException('nom est requis');
+      updateData.nom = data.nom;
+    }
+    if (data.type !== undefined) {
+      if (!data.type || !data.type.trim()) throw new BadRequestException('type est requis');
+      updateData.type = data.type;
+    }
+    if (data.quantiteUnitaire !== undefined) {
+      if (!Number.isInteger(data.quantiteUnitaire) || data.quantiteUnitaire <= 0) {
+        throw new BadRequestException('quantiteUnitaire doit être un entier > 0');
+      }
+      updateData.quantiteUnitaire = data.quantiteUnitaire;
+    }
+    if (data.prixVente !== undefined) {
+      const prixVente = Number(data.prixVente);
+      if (!Number.isFinite(prixVente) || prixVente < 0) {
+        throw new BadRequestException('prixVente doit être un nombre >= 0');
+      }
+      updateData.prixVente = prixVente;
+    }
+    if (data.articleId !== undefined) {
+      if (!data.articleId) throw new BadRequestException('articleId est requis');
+      updateData.articleId = data.articleId;
+    }
+    if (!Object.keys(updateData).length) {
+      throw new BadRequestException('Aucune modification fournie');
+    }
     return this.prisma.conditionnement.updateMany({
       where: { id, tenantId },
-      data,
+      data: updateData,
     });
   }
 
@@ -583,6 +847,17 @@ export class DepotBoissonsService {
   }
 
   async sortirConsigne(tenantId: string, data: any) {
+    this.requireString(data.clientId, 'clientId');
+    const quantite = Number.parseInt(String(data.quantite), 10);
+    if (!Number.isInteger(quantite) || quantite <= 0)
+      throw new BadRequestException(
+        'quantite doit être un entier supérieur à 0',
+      );
+    const client = await this.prisma.client.findFirst({
+      where: { id: data.clientId, tenantId },
+      select: { id: true },
+    });
+    if (!client) throw new NotFoundException('Client introuvable');
     const typeConfig = await this.prisma.typeConsigneConfig.findFirst({
       where: { tenantId, type: data.typeConsigne },
     });
@@ -595,17 +870,17 @@ export class DepotBoissonsService {
           typeConsigneId: typeConfig.id,
         },
       },
-      update: { quantite: { increment: parseInt(data.quantite) } },
+      update: { quantite: { increment: quantite } },
       create: {
         clientId: data.clientId,
         typeConsigneId: typeConfig.id,
-        quantite: parseInt(data.quantite),
+        quantite,
         depotId: data.depotId,
       },
     });
     return this.prisma.mouvementConsigne.create({
       data: {
-        quantite: parseInt(data.quantite),
+        quantite,
         estSortie: true,
         typeConsigneId: typeConfig.id,
         tenantId,
@@ -615,22 +890,40 @@ export class DepotBoissonsService {
   }
 
   async retourConsigne(tenantId: string, data: any) {
+    this.requireString(data.clientId, 'clientId');
+    const quantite = Number.parseInt(String(data.quantite), 10);
+    if (!Number.isInteger(quantite) || quantite <= 0)
+      throw new BadRequestException(
+        'quantite doit être un entier supérieur à 0',
+      );
+    const client = await this.prisma.client.findFirst({
+      where: { id: data.clientId, tenantId },
+      select: { id: true },
+    });
+    if (!client) throw new NotFoundException('Client introuvable');
     const typeConfig = await this.prisma.typeConsigneConfig.findFirst({
       where: { tenantId, type: data.typeConsigne },
     });
     if (!typeConfig)
       throw new BadRequestException('Type consigne non configure');
-    await this.prisma.portefeuilleConsigne.updateMany({
+    // Décrément atomique : on ne décrémente que si le portefeuille
+    // contient assez de consignes. Si count === 0, le solde est insuffisant.
+    const decremented = await this.prisma.portefeuilleConsigne.updateMany({
       where: {
         clientId: data.clientId,
         typeConsigneId: typeConfig.id,
-        quantite: { gte: parseInt(data.quantite) },
+        quantite: { gte: quantite },
       },
-      data: { quantite: { decrement: parseInt(data.quantite) } },
+      data: { quantite: { decrement: quantite } },
     });
+    if (decremented.count === 0) {
+      throw new BadRequestException(
+        'Portefeuille de consignes insuffisant pour ce client.',
+      );
+    }
     return this.prisma.mouvementConsigne.create({
       data: {
-        quantite: parseInt(data.quantite),
+        quantite,
         estSortie: false,
         estRemboursementCash: false,
         typeConsigneId: typeConfig.id,
@@ -641,8 +934,9 @@ export class DepotBoissonsService {
   }
 
   async rembourserConsigne(tenantId: string, data: any) {
+    // Le type de consigne fourni est respecté s'il existe, sinon on refuse.
     const typeConfig = await this.prisma.typeConsigneConfig.findFirst({
-      where: { tenantId },
+      where: { tenantId, type: data.typeConsigne },
     });
     if (!typeConfig)
       throw new BadRequestException('Type consigne non configure');
@@ -787,28 +1081,56 @@ export class DepotBoissonsService {
   }
 
   async cloturerTournee(tenantId: string, id: string, data: any) {
-    return this.prisma.tournee.updateMany({
+    const tournee = await this.prisma.tournee.findFirst({
       where: { id, tenantId },
+      select: { id: true, statut: true },
+    });
+    if (!tournee) throw new NotFoundException('Tournée introuvable');
+    if (tournee.statut === 'CLOTURE_COMMERCIALE') {
+      throw new ConflictException('Cette tournée est déjà clôturée.');
+    }
+    return this.prisma.tournee.updateMany({
+      where: { id, tenantId, statut: { not: 'CLOTURE_COMMERCIALE' } },
       data: {
         statut: 'CLOTURE_COMMERCIALE',
         dateCloture: new Date(),
-        cashRemis: data.montant || 0,
+        cashRemis: Number(data.montant) || 0,
       },
     });
   }
 
   async chargerArticlesTournee(tenantId: string, id: string, data: any) {
-    const articles = data.articles || [];
+    const tournee = await this.prisma.tournee.findFirst({
+      where: { id, tenantId },
+      select: { id: true, statut: true },
+    });
+    if (!tournee) throw new NotFoundException('Tournée introuvable');
+    if (tournee.statut !== 'OUVERTE') {
+      throw new ConflictException(
+        'Le chargement est réservé aux tournées ouvertes.',
+      );
+    }
+    const articles = Array.isArray(data.articles) ? data.articles : [];
+    if (articles.length === 0) {
+      throw new BadRequestException('articles est requis');
+    }
     for (const ligne of articles) {
+      const articleId = this.requireString(ligne.articleId, 'articleId');
+      const quantite = Number.parseInt(String(ligne.quantite), 10);
+      if (!Number.isInteger(quantite) || quantite <= 0) {
+        throw new BadRequestException(
+          'quantite doit être un entier supérieur à 0',
+        );
+      }
       await this.prisma.ligneChargement.create({
         data: {
           tourneeId: id,
-          articleId: ligne.articleId,
-          quantiteChargee: parseInt(ligne.quantite),
+          articleId,
+          quantiteChargee: quantite,
         },
       });
     }
-    return { success: true };
+    return { success: true, charged: articles.length };
   }
 
   async getRecapTournee(tenantId: string, id: string) {
@@ -849,26 +1171,38 @@ export class DepotBoissonsService {
       depotId?: string;
     },
   ) {
-    const page = this.toPositiveInt(query.page, 1);
-    const limit = this.toPositiveInt(query.limit, 20);
-    const where: any = { tenantId };
-    if (query.search)
-      where.OR = [
-        { nom: { contains: query.search, mode: 'insensitive' } },
-        { telephone: { contains: query.search } },
-      ];
-    if (query.debiteur === 'true') where.soldeCredit = { gt: 0 };
-    if (query.depotId) where.depotId = query.depotId;
-    const [total, data] = await Promise.all([
-      this.prisma.client.count({ where }),
-      this.prisma.client.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-    ]);
-    return { data, total, page, limit };
+    try {
+      const page = this.toPositiveInt(query.page, 1);
+      const limit = this.toPositiveInt(query.limit, 20);
+      const where: any = { tenantId };
+      if (query.search)
+        where.OR = [
+          { nom: { contains: query.search, mode: 'insensitive' } },
+          { telephone: { contains: query.search } },
+        ];
+      if (query.debiteur === 'true') where.soldeCredit = { gt: 0 };
+      if (query.depotId) where.depotId = query.depotId;
+      // §7 : un commercial ne voit que SON portefeuille de clients.
+      if (this.depotScope.isCommercial() && this.depotScope.getUserId())
+        where.commercialId = this.depotScope.getUserId();
+      const [total, data] = await Promise.all([
+        this.prisma.client.count({ where }),
+        this.prisma.client.findMany({
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+      return { data, total, page, limit };
+    } catch (error: any) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      const stack = error instanceof Error ? error.stack : undefined;
+      console.error('[DepotBoissonsService.getClients]', message, stack);
+      throw new BadRequestException(
+        `Impossible de charger les clients : ${message}`,
+      );
+    }
   }
 
   async getClient(tenantId: string, id: string) {
@@ -876,58 +1210,107 @@ export class DepotBoissonsService {
   }
 
   async createClient(tenantId: string, data: any) {
-    return this.prisma.client.create({
-      data: {
-        nom: data.nom,
-        telephone: data.telephone,
-        adresse: data.adresse,
-        soldeCredit: parseFloat(data.soldeCredit) || 0,
-        depotId: data.depotId,
-        tenantId,
-      },
+    const nom = this.requireString(data.nom, 'nom');
+    const soldeCredit = Number(data.soldeCredit);
+    const existing = await this.prisma.client.findFirst({
+      where: { tenantId, nom: { equals: nom, mode: 'insensitive' } },
+      select: { id: true },
     });
+    if (existing) {
+      throw new ConflictException(`Un client "${nom}" existe déjà.`);
+    }
+    return this.prisma.client
+      .create({
+        data: {
+          nom,
+          telephone: normalizeChannelId(data.telephone),
+          adresse: data.adresse ? String(data.adresse).trim() : undefined,
+          // Canaux CRM : '' ou espaces => NULL (aucun rattachement).
+          instagramId: normalizeChannelId(data.instagramId),
+          messengerId: normalizeChannelId(data.messengerId),
+          soldeCredit:
+            Number.isFinite(soldeCredit) && soldeCredit > 0 ? soldeCredit : 0,
+          plafondCredit: Number(data.plafondCredit) || 0,
+          depotId: data.depotId,
+          // §7 : client créé par un commercial → rattaché à son portefeuille.
+          commercialId:
+            this.depotScope.isCommercial() && this.depotScope.getUserId()
+              ? this.depotScope.getUserId()
+              : null,
+          tenantId,
+        },
+      })
+      .catch(mapUniqueViolation);
   }
 
   async updateClient(tenantId: string, id: string, data: any) {
     const validData: any = {};
     if (data.nom !== undefined) validData.nom = data.nom;
-    if (data.telephone !== undefined) validData.telephone = data.telephone;
+    if (data.telephone !== undefined)
+      validData.telephone = normalizeChannelId(data.telephone);
     if (data.adresse !== undefined) validData.adresse = data.adresse;
     if (data.plafondCredit !== undefined)
       validData.plafondCredit = parseFloat(data.plafondCredit) || 0;
     if (data.depotId !== undefined) validData.depotId = data.depotId;
+    // Canaux CRM : '' efface le rattachement, undefined laisse inchangé.
+    if (data.instagramId !== undefined)
+      validData.instagramId = normalizeChannelId(data.instagramId);
+    if (data.messengerId !== undefined)
+      validData.messengerId = normalizeChannelId(data.messengerId);
     const client = await this.prisma.client.findFirst({
       where: { id, tenantId },
     });
     if (!client) throw new NotFoundException('Client introuvable');
-    return this.prisma.client.update({
-      where: { id },
-      data: validData,
-    });
+    return this.prisma.client
+      .update({
+        where: { id },
+        data: validData,
+      })
+      .catch(mapUniqueViolation);
   }
 
-  async payerDette(tenantId: string, clientId: string, data: any, actor: AuditActor) {
+  async payerDette(
+    tenantId: string,
+    clientId: string,
+    data: any,
+    actor: AuditActor,
+  ) {
     const montant = parseFloat(data.montant);
     if (!Number.isFinite(montant) || montant <= 0)
       throw new BadRequestException('montant invalide');
-    const client = await this.prisma.client.findFirst({ where: { id: clientId, tenantId } });
-    if (!client) throw new NotFoundException('Client introuvable');
-    const result = await this.prisma.client.updateMany({
+    const client = await this.prisma.client.findFirst({
       where: { id: clientId, tenantId },
-      data: { soldeCredit: { decrement: montant } },
     });
-    if (result.count === 0) {
-      throw new NotFoundException('Client introuvable');
+    if (!client) throw new NotFoundException('Client introuvable');
+    // On ne peut pas payer plus que la dette : le solde ne doit jamais
+    // devenir négatif (anciennement possible, créait des crédits fantômes).
+    if (montant > client.soldeCredit) {
+      throw new BadRequestException(
+        `Montant supérieur à la dette en cours (${client.soldeCredit} FCFA).`,
+      );
     }
-    const dette = await this.prisma.detteClient.create({
-      data: {
-        montant,
-        montantPaye: montant,
-        statut: 'SOLDEE',
-        clientId,
-        tenantId,
-        depotId: data.depotId,
-      },
+    // Transaction atomique : décrément + enregistrement de la dette réglée
+    // doivent réussir ensemble (avant : deux opérations indépendantes).
+    const dette = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.client.updateMany({
+        where: { id: clientId, tenantId, soldeCredit: { gte: montant } },
+        data: { soldeCredit: { decrement: montant } },
+      });
+      if (result.count === 0) {
+        throw new ConflictException(
+          'Solde de dette modifié entre-temps, veuillez réessayer.',
+        );
+      }
+      return tx.detteClient.create({
+        data: {
+          montant,
+          montantPaye: montant,
+          statut: 'SOLDEE',
+          clientId,
+          tenantId,
+          depotId: data.depotId,
+        },
+      });
     });
 
     await this.auditService
@@ -949,25 +1332,36 @@ export class DepotBoissonsService {
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log DETTE_CLIENT_REGLEE:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log DETTE_CLIENT_REGLEE:', err),
+      );
 
     return dette;
   }
 
   async historiqueAchats(tenantId: string, clientId: string, query: any) {
-    const ventes = await this.prisma.vente.findMany({
-      where: { clientId, tenantId },
-      orderBy: { date: 'desc' },
-      take: parseInt(query.limit) || 50,
-      select: { id: true, date: true, total: true },
-    });
-    return {
-      data: ventes.map((v) => ({
-        date: v.date,
-        montant: v.total,
-        type: 'Vente',
-      })),
-    };
+    try {
+      const rawLimit = parseInt(String(query?.limit), 10);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50;
+      const ventes = await this.prisma.vente.findMany({
+        where: { clientId, tenantId },
+        orderBy: { date: 'desc' },
+        take: limit,
+        select: { id: true, date: true, total: true, reference: true },
+      });
+      return {
+        data: ventes.map((v) => ({
+          id: v.id,
+          date: v.date,
+          montant: v.total,
+          reference: v.reference,
+          type: 'Vente',
+        })),
+      };
+    } catch (error: any) {
+      console.error('[DepotBoissonsService.historiqueAchats]', error?.message || error);
+      return { data: [] };
+    }
   }
 
   // ── Fournisseurs ───────────────────────────────────────────────
@@ -997,8 +1391,23 @@ export class DepotBoissonsService {
   }
 
   async createFournisseur(tenantId: string, data: any) {
+    const nom = this.requireString(data.nom, 'nom');
+    const existing = await this.prisma.fournisseur.findFirst({
+      where: { tenantId, nom: { equals: nom, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException(`Un fournisseur "${nom}" existe déjà.`);
+    }
     return this.prisma.fournisseur.create({
-      data: { nom: data.nom, telephone: data.telephone, tenantId },
+      data: {
+        nom,
+        telephone: data.telephone ? String(data.telephone).trim() : undefined,
+        email: data.email ? String(data.email).trim() : undefined,
+        adresse: data.adresse ? String(data.adresse).trim() : undefined,
+        depotId: data.depotId,
+        tenantId,
+      },
     });
   }
 
@@ -1025,8 +1434,15 @@ export class DepotBoissonsService {
     });
   }
 
-  async receptionnerLivraison(tenantId: string, id: string, data: any, actor: AuditActor) {
-    const fournisseur = await this.prisma.fournisseur.findFirst({ where: { id, tenantId } });
+  async receptionnerLivraison(
+    tenantId: string,
+    id: string,
+    data: any,
+    actor: AuditActor,
+  ) {
+    const fournisseur = await this.prisma.fournisseur.findFirst({
+      where: { id, tenantId },
+    });
     const reception = await this.prisma.receptionFournisseur.create({
       data: {
         reference: `REC-${Date.now()}`,
@@ -1054,7 +1470,9 @@ export class DepotBoissonsService {
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log RECEPTION_VALIDEE:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log RECEPTION_VALIDEE:', err),
+      );
 
     return reception;
   }
@@ -1073,15 +1491,24 @@ export class DepotBoissonsService {
     });
     if (!fournisseur) throw new NotFoundException('Fournisseur introuvable');
 
+    // On ne peut pas régler plus que la dette fournisseur : le solde ne doit
+    // jamais devenir négatif (protège aussi contre la concurrence).
+    if (montant > (fournisseur.solde || 0)) {
+      throw new BadRequestException(
+        `Montant supérieur à la dette en cours (${fournisseur.solde || 0} FCFA).`,
+      );
+    }
     const result = await this.prisma.fournisseur.updateMany({
-      where: { id: fournisseurId, tenantId },
+      where: { id: fournisseurId, tenantId, solde: { gte: montant } },
       data: { solde: { decrement: montant } },
     });
     if (result.count === 0) {
       // Auparavant ce cas passait silencieusement (ni erreur, ni confirmation
       // que le solde a vraiment été débité) — même défaut que celui déjà
       // corrigé ailleurs sur les fermetures de caisse.
-      throw new NotFoundException('Fournisseur introuvable');
+      throw new ConflictException(
+        'Solde fournisseur modifié entre-temps, veuillez réessayer.',
+      );
     }
 
     await this.auditService
@@ -1103,7 +1530,9 @@ export class DepotBoissonsService {
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log DETTE_FOURNISSEUR_REGLEE:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log DETTE_FOURNISSEUR_REGLEE:', err),
+      );
 
     return { success: true };
   }
@@ -1150,6 +1579,9 @@ export class DepotBoissonsService {
     const limit = this.toPositiveInt(query.limit, 20);
     const where: any = { tenantId };
     if (query.depotId) where.depotId = query.depotId;
+    // §7 : un commercial ne voit que SES ventes (createurId).
+    if (this.depotScope.isCommercial() && this.depotScope.getUserId())
+      where.createurId = this.depotScope.getUserId();
     if (query.startDate || query.endDate) {
       where.date = {};
       if (query.startDate) where.date.gte = new Date(query.startDate);
@@ -1172,6 +1604,8 @@ export class DepotBoissonsService {
       total: v.total,
       modePaiement: v.modePaiement,
       statut: v.statut,
+      montantRecu: v.montantRecu,
+      monnaie: v.monnaie,
       client: v.client,
       nbArticles: v.lignes.reduce((s, l) => s + l.quantite, 0),
     }));
@@ -1230,10 +1664,14 @@ export class DepotBoissonsService {
           where: { articleId, depotId: data.depotId },
         });
         if (!stock) {
-          throw new BadRequestException(`Stock introuvable pour l'article ${articleId}`);
+          throw new BadRequestException(
+            `Stock introuvable pour l'article ${articleId}`,
+          );
         }
         if (stock.quantite < qte) {
-          throw new BadRequestException(`Stock insuffisant pour l'article ${articleId}`);
+          throw new BadRequestException(
+            `Stock insuffisant pour l'article ${articleId}`,
+          );
         }
 
         const decremente = await tx.stock.updateMany({
@@ -1286,7 +1724,12 @@ export class DepotBoissonsService {
     return vente;
   }
 
-  async annulerVente(tenantId: string, id: string, motif: string | undefined, actor: AuditActor) {
+  async annulerVente(
+    tenantId: string,
+    id: string,
+    motif: string | undefined,
+    actor: AuditActor,
+  ) {
     const vente = await this.prisma.vente.findFirst({
       where: { id, tenantId },
       include: { lignes: true },
@@ -1408,20 +1851,38 @@ export class DepotBoissonsService {
       where: { tenantId, depotId: data.depotId, estOuverte: true },
     });
     if (!session) {
-      throw new BadRequestException('Aucune session de caisse ouverte à fermer.');
+      throw new BadRequestException(
+        'Aucune session de caisse ouverte à fermer.',
+      );
     }
 
+    const fondFinal =
+      data.fondFinal !== undefined && data.fondFinal !== null
+        ? Number(data.fondFinal)
+        : null;
+    if (fondFinal !== null && (!Number.isFinite(fondFinal) || fondFinal < 0))
+      throw new BadRequestException('fondFinal invalide');
+    // Si l'écart n'est pas fourni, on le calcule automatiquement à partir
+    // du fond initial + mouvements (avant : écart jamais calculé si absent).
+    const ecart =
+      data.ecart !== undefined && data.ecart !== null
+        ? Number(data.ecart)
+        : fondFinal !== null
+          ? fondFinal - session.fondInitial
+          : null;
     const result = await this.prisma.sessionCaisse.updateMany({
       where: { tenantId, depotId: data.depotId, estOuverte: true },
       data: {
         estOuverte: false,
         dateCloture: new Date(),
-        fondFinal: data.fondFinal,
-        ecart: data.ecart,
+        fondFinal,
+        ecart,
       },
     });
     if (result.count === 0) {
-      throw new BadRequestException('Aucune session de caisse ouverte à fermer.');
+      throw new BadRequestException(
+        'Aucune session de caisse ouverte à fermer.',
+      );
     }
 
     await this.auditService
@@ -1432,19 +1893,19 @@ export class DepotBoissonsService {
         actorEmail: actor.email,
         actorRole: actor.role,
         action: AUDIT_ACTIONS.CAISSE_FERMEE,
-        severite: data.ecart ? AuditSeverite.ATTENTION : AuditSeverite.INFO,
+        severite: ecart ? AuditSeverite.ATTENTION : AuditSeverite.INFO,
         targetType: 'SessionCaisse',
         targetId: session.id,
-        description: `Caisse fermée — fond final ${data.fondFinal ?? 0} FCFA${
-          data.ecart ? `, écart de ${data.ecart} FCFA` : ''
+        description: `Caisse fermée — fond final ${fondFinal ?? 0} FCFA${
+          ecart ? `, écart de ${ecart} FCFA` : ''
         }`,
         valeurAvant: { fondInitial: session.fondInitial, estOuverte: true },
         valeurApres: {
-          fondFinal: data.fondFinal ?? null,
-          ecart: data.ecart ?? null,
+          fondFinal,
+          ecart,
           estOuverte: false,
         },
-        montant: data.ecart ?? null,
+        montant: ecart,
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
@@ -1460,6 +1921,9 @@ export class DepotBoissonsService {
     if (!session) throw new BadRequestException('Caisse non ouverte');
 
     const montant = parseFloat(data.montant);
+    // Validation du montant (auparavant acceptait NaN/0/négatif).
+    if (!Number.isFinite(montant) || montant <= 0)
+      throw new BadRequestException('montant invalide');
     const estEntree = data.typeMouvement === 'ENTREE';
     const motif = data.motif || 'Mouvement';
 
@@ -1479,7 +1943,9 @@ export class DepotBoissonsService {
         actorUserId: actor.userId,
         actorEmail: actor.email,
         actorRole: actor.role,
-        action: estEntree ? AUDIT_ACTIONS.ENTREE_CAISSE : AUDIT_ACTIONS.SORTIE_CAISSE,
+        action: estEntree
+          ? AUDIT_ACTIONS.ENTREE_CAISSE
+          : AUDIT_ACTIONS.SORTIE_CAISSE,
         severite: AuditSeverite.INFO,
         targetType: 'MouvementCaisse',
         targetId: mouvement.id,
@@ -1490,7 +1956,9 @@ export class DepotBoissonsService {
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log mouvement caisse:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log mouvement caisse:', err),
+      );
 
     return mouvement;
   }
@@ -1547,13 +2015,19 @@ export class DepotBoissonsService {
         targetType: 'Depense',
         targetId: depense.id,
         description: `Dépense enregistrée : ${data.motif || 'sans libellé'} (${montant} FCFA)`,
-        valeurApres: { montant, categorie: depense.categorie, motif: data.motif },
+        valeurApres: {
+          montant,
+          categorie: depense.categorie,
+          motif: data.motif,
+        },
         motif: data.motif,
         montant: -montant,
         ipAddress: actor.ip,
         userAgent: actor.userAgent,
       })
-      .catch((err) => console.error('[Audit] Échec log DEPENSE_ENREGISTREE:', err));
+      .catch((err) =>
+        console.error('[Audit] Échec log DEPENSE_ENREGISTREE:', err),
+      );
 
     return depense;
   }
@@ -1563,18 +2037,54 @@ export class DepotBoissonsService {
   }
 
   // ── Rapports ───────────────────────────────────────────────────
+  // ── Paramètres (JSON tenant : ticket 80mm / caisse / facture A4) ──
+  // Lecture/écriture non destructive dans `Tenant.parametres` — même patron
+  // que le sous-module Boutique, afin que le ticket et la facture du dépôt
+  // utilisent réellement la configuration enregistrée dans Paramètres.
+  async getParametres(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { parametres: true },
+    });
+    const raw = (tenant?.parametres ?? {}) as any;
+    return typeof raw === 'object' && raw !== null ? raw : {};
+  }
+
+  async updateParametres(tenantId: string, body: any) {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new BadRequestException('Corps de paramètres invalide.');
+    }
+    const current = await this.getParametres(tenantId);
+    const merged: Record<string, any> = { ...current };
+    for (const key of Object.keys(body)) {
+      const value = body[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        merged[key] = { ...(merged[key] || {}), ...value };
+      } else {
+        merged[key] = value;
+      }
+    }
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { parametres: merged as any },
+    });
+    return merged;
+  }
+
   async getRapport(
     tenantId: string,
     type: string,
     query: { dateDebut?: string; dateFin?: string; depotId?: string },
   ) {
     const startDate = query.dateDebut
-      ? new Date(query.dateDebut)
+      ? new Date(`${query.dateDebut}T00:00:00.000Z`)
       : new Date(new Date().setDate(1));
-    const endDate = query.dateFin ? new Date(query.dateFin) : new Date();
+    const endDate = query.dateFin
+      ? new Date(`${query.dateFin}T23:59:59.999Z`)
+      : new Date();
     const whereDate = { gte: startDate, lte: endDate };
-    const where: any = { tenantId, date: whereDate };
-    if (query.depotId) where.depotId = query.depotId;
+    const depotFilter = query.depotId ? { depotId: query.depotId } : {};
+    const where: any = { tenantId, ...depotFilter, date: whereDate };
 
     switch (type) {
       case 'ventes': {
@@ -1602,19 +2112,23 @@ export class DepotBoissonsService {
         }));
       }
       case 'clients_debiteurs': {
+        // Le modèle Client ne possède pas de champ `date` : on ne filtre pas
+        // par période (la dette est un solde à date), sous peine d'erreur Prisma.
         const clients = await this.prisma.client.findMany({
-          where: { ...where, soldeCredit: { gt: 0 } },
+          where: { tenantId, ...depotFilter, soldeCredit: { gt: 0 } },
           orderBy: { soldeCredit: 'desc' },
         });
         return clients.map((c) => ({
           Client: c.nom,
           Téléphone: c.telephone,
+          Plafond: c.plafondCredit,
           Dette: c.soldeCredit,
         }));
       }
       case 'depenses': {
+        // Depense n'a pas de champ `date` : la période s'applique à createdAt.
         const depenses = await this.prisma.depense.findMany({
-          where: { ...where, tenantId },
+          where: { tenantId, ...depotFilter, createdAt: whereDate },
           orderBy: { createdAt: 'desc' },
         });
         return depenses.map((d) => ({
@@ -1622,6 +2136,60 @@ export class DepotBoissonsService {
           Catégorie: d.categorie,
           Montant: d.montant,
           Motif: d.motif,
+        }));
+      }
+      case 'commissions': {
+        const ventes = await this.prisma.vente.findMany({
+          where: { tenantId, ...depotFilter, statut: 'PAYE', date: whereDate },
+          include: {
+            lignes: { include: { article: { select: { prixAchat: true } } } },
+            createur: { select: { nom: true, email: true } },
+          },
+        });
+        const byCommercial = new Map<string, any>();
+        for (const vente of ventes) {
+          const key = vente.createurId || 'inconnu';
+          const current = byCommercial.get(key) || {
+            Commercial: vente.createur?.nom || vente.createur?.email || 'Non attribué',
+            NbVentes: 0,
+            'Chiffre d’affaires': 0,
+            'Marge brute': 0,
+          };
+          current.NbVentes += 1;
+          current['Chiffre d’affaires'] += vente.total;
+          current['Marge brute'] += vente.lignes.reduce(
+            (acc, ligne) =>
+              acc + (ligne.total - ligne.quantite * (ligne.article.prixAchat || 0)),
+            0,
+          );
+          byCommercial.set(key, current);
+        }
+        return Array.from(byCommercial.values())
+          .map((row) => ({
+            ...row,
+            'Chiffre d’affaires': Number(row['Chiffre d’affaires'].toFixed(2)),
+            'Marge brute': Number(row['Marge brute'].toFixed(2)),
+          }))
+          .sort((a, b) => b['Chiffre d’affaires'] - a['Chiffre d’affaires']);
+      }
+      case 'tournees': {
+        const tournees = await this.prisma.tournee.findMany({
+          where: { tenantId, ...depotFilter, dateOuverture: whereDate },
+          include: {
+            commercial: { select: { nom: true, email: true } },
+            tricycle: { select: { nom: true } },
+            ventes: { select: { total: true, montantRecu: true } },
+          },
+          orderBy: { dateOuverture: 'desc' },
+        });
+        return tournees.map((t) => ({
+          Référence: t.reference,
+          Statut: t.statut,
+          Commercial: t.commercial?.nom || t.commercial?.email || '—',
+          Tricycle: t.tricycle?.nom || '—',
+          Ventes: t.ventes?.length || 0,
+          'CA encaissé':
+            Number((t.cashRemis || 0) + (t.omRemis || 0) + (t.momoRemis || 0)),
         }));
       }
       default:
@@ -1635,6 +2203,74 @@ export class DepotBoissonsService {
     format: string,
     query: any,
   ) {
-    return this.getRapport(tenantId, type, query);
+    const rows = await this.getRapport(tenantId, type, query);
+    const normalized = String(format || 'csv').toLowerCase();
+    const headers = rows.length ? Object.keys(rows[0]) : ['Information'];
+
+    // pdf-lib encode en WinAnsi : on neutralise les caractères non
+    // représentables (tirets longs, espaces fines, guillemets typographiques)
+    // sinon la génération lève une exception.
+    const sanitize = (value: unknown) =>
+      String(value ?? '')
+        .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+        .replace(/[\u2013\u2014\u2212]/g, '-')
+        .replace(/[\u202F\u00A0\u2009]/g, ' ')
+        .replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
+
+    if (normalized === 'pdf') {
+      const pdf = await PDFDocument.create();
+      const font = await pdf.embedFont(StandardFonts.Helvetica);
+      const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+      const page = pdf.addPage([842, 595]);
+      let y = 560;
+      page.drawText(sanitize(`Rapport ${type}`), {
+        x: 30,
+        y,
+        size: 16,
+        font: bold,
+        color: rgb(0.08, 0.11, 0.16),
+      });
+      y -= 14;
+      page.drawText(
+        sanitize(
+          `Periode : ${query.dateDebut || '-'} au ${query.dateFin || '-'} — ${rows.length} ligne(s)`,
+        ),
+        { x: 30, y, size: 10, font },
+      );
+      y -= 22;
+      page.drawText(sanitize(headers.join('  |  ')), { x: 30, y, size: 9, font: bold });
+      y -= 16;
+      for (const row of rows) {
+        if (y < 40) break;
+        page.drawText(headers.map((h) => sanitize(row[h])).join('  |  ').slice(0, 180), {
+          x: 30,
+          y,
+          size: 8,
+          font,
+        });
+        y -= 13;
+      }
+      const bytes = await pdf.save();
+      return {
+        buffer: Buffer.from(bytes),
+        contentType: 'application/pdf',
+        extension: 'pdf',
+      };
+    }
+
+    const csvCell = (value: unknown) => {
+      const text = String(value ?? '');
+      return /[";\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const csv = [
+      headers.join(';'),
+      ...rows.map((row) => headers.map((h) => csvCell(row[h])).join(';')),
+    ].join('\r\n');
+    return {
+      buffer: Buffer.from(`\uFEFF${csv}`, 'utf8'),
+      contentType: 'text/csv; charset=utf-8',
+      extension: 'csv',
+    };
   }
 }

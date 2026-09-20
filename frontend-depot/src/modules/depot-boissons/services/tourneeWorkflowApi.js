@@ -2,7 +2,8 @@ import api from '../../../api/axios';
 
 function headers() {
   const tenantId = localStorage.getItem('gestock_tenantId');
-  return { headers: { 'X-Tenant-Id': tenantId || '' } };
+  const depotId = localStorage.getItem('depot_actif_id');
+  return { headers: { 'X-Tenant-Id': tenantId || '', 'X-Depot-Id': depotId || '' } };
 }
 
 export const tourneeWorkflowApi = {

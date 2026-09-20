@@ -38,9 +38,26 @@ export class StocksService {
     return scope;
   }
 
-  private async assertScopedDepot(tenantId: string, depotId: string): Promise<string> {
+  private async assertScopedDepot(
+    tenantId: string,
+    depotId: string,
+  ): Promise<string> {
     this.assertScopedTenant(tenantId);
-    const scopeDepotId = this.depotScope.requireDepotId();
+    const scope = this.depotScope.getScope();
+    const scopeDepotId = scope.depotId;
+    const userRole = scope.role;
+
+    // PATRON peut accéder à tous les dépôts de son tenant
+    if (userRole === 'PATRON') {
+      const depot = await this.prisma.depot.findFirst({
+        where: { id: depotId, tenantId, isArchived: false },
+        select: { id: true },
+      });
+      if (!depot) throw new ForbiddenException('Accès refusé à ce dépôt.');
+      return depot.id;
+    }
+
+    // Pour les autres rôles, vérifier que le dépôt demandé correspond au scope
     if (scopeDepotId !== depotId) {
       throw new ForbiddenException('Accès refusé à ce dépôt.');
     }
@@ -62,18 +79,23 @@ export class StocksService {
       where: { id: articleId, tenantId },
       select: { id: true },
     });
-    if (!article) throw new NotFoundException('Article introuvable dans ce tenant.');
+    if (!article)
+      throw new NotFoundException('Article introuvable dans ce tenant.');
   }
 
   private validateNonNegativeQuantity(value: number, field: string): void {
     if (!Number.isInteger(value) || value < 0) {
-      throw new BadRequestException(`${field} doit être un entier supérieur ou égal à 0.`);
+      throw new BadRequestException(
+        `${field} doit être un entier supérieur ou égal à 0.`,
+      );
     }
   }
 
   private validatePositiveQuantity(value: number, field: string): void {
     if (!Number.isInteger(value) || value <= 0) {
-      throw new BadRequestException(`${field} doit être un entier strictement positif.`);
+      throw new BadRequestException(
+        `${field} doit être un entier strictement positif.`,
+      );
     }
   }
 
@@ -240,14 +262,18 @@ export class StocksService {
     this.assertScopedTenant(data.tenantId);
 
     if (data.sourceDepotId === data.destDepotId) {
-      throw new BadRequestException('Le dépôt source et le dépôt destination doivent être différents.');
+      throw new BadRequestException(
+        'Le dépôt source et le dépôt destination doivent être différents.',
+      );
     }
 
     const scope = this.depotScope.getScope();
     if (scope.role !== 'PATRON') {
       await this.assertScopedDepot(data.tenantId, data.sourceDepotId);
       if (data.destDepotId !== data.sourceDepotId) {
-        throw new ForbiddenException('Seul le patron peut transférer entre dépôts.');
+        throw new ForbiddenException(
+          'Seul le patron peut transférer entre dépôts.',
+        );
       }
     }
 
@@ -260,7 +286,9 @@ export class StocksService {
       select: { id: true },
     });
     if (depots.length !== 2) {
-      throw new ForbiddenException('Les dépôts source et destination doivent appartenir au tenant et être actifs.');
+      throw new ForbiddenException(
+        'Les dépôts source et destination doivent appartenir au tenant et être actifs.',
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -275,7 +303,9 @@ export class StocksService {
         data: { quantite: { decrement: data.quantite } },
       });
       if (source.count !== 1) {
-        throw new BadRequestException('Stock source insuffisant ou introuvable.');
+        throw new BadRequestException(
+          'Stock source insuffisant ou introuvable.',
+        );
       }
 
       await tx.stock.upsert({
@@ -320,22 +350,49 @@ export class StocksService {
 
   // 6. Historique avec filtres
   async obtenirMouvements(tenantId: string, filters: any) {
-    const selectedDepotId = this.requireDepotId(filters.depotId);
-    await this.assertScopedDepot(tenantId, selectedDepotId);
+    const resolvedTenantId = tenantId || this.depotScope.requireTenantId();
+    this.assertScopedTenant(resolvedTenantId);
+
+    const scope = this.depotScope.getScope();
+    const scopeDepotId = scope.depotId;
+    const userRole = scope.role;
+
+    const depotIdParam = filters?.depotId;
+    let selectedDepotId: string;
+
+    if (userRole === 'PATRON') {
+      selectedDepotId = depotIdParam || scopeDepotId || '';
+      if (!selectedDepotId) {
+        throw new BadRequestException(
+          'depotId est obligatoire pour isoler les donnees par depot.',
+        );
+      }
+      await this.assertScopedDepot(resolvedTenantId, selectedDepotId);
+    } else {
+      if (depotIdParam && depotIdParam !== scopeDepotId) {
+        throw new ForbiddenException('Accès refusé à ce dépôt.');
+      }
+      selectedDepotId = depotIdParam || scopeDepotId || '';
+      if (!selectedDepotId) {
+        throw new BadRequestException(
+          'depotId est obligatoire pour isoler les donnees par depot.',
+        );
+      }
+      await this.assertScopedDepot(resolvedTenantId, selectedDepotId);
+    }
 
     return this.prisma.mouvementStock.findMany({
       where: {
-        tenantId,
+        tenantId: resolvedTenantId,
         depotId: selectedDepotId,
-        ...(filters.articleId ? { articleId: filters.articleId } : {}),
-        ...(filters.type ? { type: filters.type } : {}),
+        ...(filters?.articleId ? { articleId: filters.articleId } : {}),
+        ...(filters?.type ? { type: filters.type } : {}),
       },
       include: { article: true, depot: true, tournee: true },
       orderBy: { createdAt: 'desc' },
       take: 200,
     });
   }
-
   // 7. Signalement d'Avarie (Casse/Perte)
   async signalerAvarie(data: SignalerAvarieDto, actor: any) {
     this.validatePositiveQuantity(data.quantite, 'quantite');
@@ -354,7 +411,9 @@ export class StocksService {
         data: { quantite: { decrement: data.quantite } },
       });
       if (stockUpdate.count !== 1) {
-        throw new BadRequestException('Stock insuffisant ou introuvable pour déclarer cette avarie.');
+        throw new BadRequestException(
+          'Stock insuffisant ou introuvable pour déclarer cette avarie.',
+        );
       }
 
       const stock = await tx.stock.findUniqueOrThrow({
@@ -408,7 +467,11 @@ export class StocksService {
     this.assertScopedTenant(tenantId);
     const scopeDepotId = this.depotScope.requireDepotId();
     const stock = await this.prisma.stock.findFirst({
-      where: { id, depotId: scopeDepotId, depot: { tenantId, isArchived: false } },
+      where: {
+        id,
+        depotId: scopeDepotId,
+        depot: { tenantId, isArchived: false },
+      },
       include: { article: true, depot: true, tricycle: true },
     });
 
@@ -424,7 +487,11 @@ export class StocksService {
     this.assertScopedTenant(tenantId);
     const scopeDepotId = this.depotScope.requireDepotId();
     const stock = await this.prisma.stock.findFirst({
-      where: { id, depotId: scopeDepotId, depot: { tenantId, isArchived: false } },
+      where: {
+        id,
+        depotId: scopeDepotId,
+        depot: { tenantId, isArchived: false },
+      },
     });
 
     if (!stock) {
@@ -478,14 +545,32 @@ export class StocksService {
 
   async getLots(tenantId: string, articleId?: string, depotId?: string) {
     this.assertScopedTenant(tenantId);
-    const scopeDepotId = this.depotScope.requireDepotId();
-    if (depotId && depotId !== scopeDepotId) {
-      throw new ForbiddenException('Accès refusé à ce dépôt.');
+    const scope = this.depotScope.getScope();
+    const scopeDepotId = scope.depotId;
+    const userRole = scope.role;
+
+    let selectedDepotId: string;
+
+    // PATRON peut accéder à tous les dépôts de son tenant
+    if (userRole === 'PATRON') {
+      selectedDepotId = depotId || scopeDepotId || '';
+      if (selectedDepotId) {
+        await this.assertScopedDepot(tenantId, selectedDepotId);
+      }
+    } else {
+      // Pour les autres rôles, vérifier que le dépôt demandé correspond au scope
+      if (depotId && depotId !== scopeDepotId) {
+        throw new ForbiddenException('Accès refusé à ce dépôt.');
+      }
+      selectedDepotId = depotId || scopeDepotId || '';
     }
-    const selectedDepotId = depotId || scopeDepotId;
 
     return this.prisma.lotStock.findMany({
-      where: { tenantId, depotId: selectedDepotId, ...(articleId ? { articleId } : {}) },
+      where: {
+        tenantId,
+        depotId: selectedDepotId,
+        ...(articleId ? { articleId } : {}),
+      },
       include: {
         article: true,
         depot: true,
@@ -584,75 +669,91 @@ export class StocksService {
     return result;
   }
 
-  async updateLot(tenantId: string, lotId: string, data: {
-    quantite?: number;
-    dlc?: Date;
-    numeroLot?: string;
-  }) {
+  async updateLot(
+    tenantId: string,
+    lotId: string,
+    data: {
+      quantite?: number;
+      dlc?: Date;
+      numeroLot?: string;
+    },
+  ) {
     this.assertScopedTenant(tenantId);
     const scopeDepotId = this.depotScope.requireDepotId();
-    if (data.quantite !== undefined) this.validateNonNegativeQuantity(data.quantite, 'quantite');
+    if (data.quantite !== undefined)
+      this.validateNonNegativeQuantity(data.quantite, 'quantite');
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        const lot = await tx.lotStock.findFirst({
-          where: { id: lotId, tenantId, depotId: scopeDepotId },
-        });
-
-        if (!lot) {
-          throw new NotFoundException(`Lot with ID ${lotId} not found`);
-        }
-
-        const nouvelleQuantite = data.quantite !== undefined ? data.quantite : lot.quantite;
-        const difference = nouvelleQuantite - lot.quantite;
-
-        if (difference < 0) {
-          const stockUpdate = await tx.stock.updateMany({
-            where: {
-              articleId: lot.articleId,
-              depotId: lot.depotId,
-              quantite: { gte: Math.abs(difference) },
-            },
-            data: { quantite: { decrement: Math.abs(difference) } },
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const lot = await tx.lotStock.findFirst({
+            where: { id: lotId, tenantId, depotId: scopeDepotId },
           });
 
-          if (stockUpdate.count !== 1) {
-            throw new BadRequestException(
-              'Stock global insuffisant pour réduire ce lot à cette quantité.',
-            );
+          if (!lot) {
+            throw new NotFoundException(`Lot with ID ${lotId} not found`);
           }
-        } else if (difference > 0) {
-          const stockUpdate = await tx.stock.updateMany({
-            where: {
-              articleId: lot.articleId,
-              depotId: lot.depotId,
+
+          const nouvelleQuantite =
+            data.quantite !== undefined ? data.quantite : lot.quantite;
+          const difference = nouvelleQuantite - lot.quantite;
+
+          if (difference < 0) {
+            const stockUpdate = await tx.stock.updateMany({
+              where: {
+                articleId: lot.articleId,
+                depotId: lot.depotId,
+                quantite: { gte: Math.abs(difference) },
+              },
+              data: { quantite: { decrement: Math.abs(difference) } },
+            });
+
+            if (stockUpdate.count !== 1) {
+              throw new BadRequestException(
+                'Stock global insuffisant pour réduire ce lot à cette quantité.',
+              );
+            }
+          } else if (difference > 0) {
+            const stockUpdate = await tx.stock.updateMany({
+              where: {
+                articleId: lot.articleId,
+                depotId: lot.depotId,
+              },
+              data: { quantite: { increment: difference } },
+            });
+
+            if (stockUpdate.count !== 1) {
+              throw new BadRequestException(
+                'Stock global introuvable pour augmenter ce lot.',
+              );
+            }
+          }
+
+          return tx.lotStock.update({
+            where: { id: lotId },
+            data: {
+              ...(data.quantite !== undefined && { quantite: data.quantite }),
+              ...(data.dlc && { dlc: data.dlc }),
+              ...(data.numeroLot && { numeroLot: data.numeroLot }),
             },
-            data: { quantite: { increment: difference } },
+            include: {
+              article: true,
+              depot: true,
+            },
           });
-
-          if (stockUpdate.count !== 1) {
-            throw new BadRequestException('Stock global introuvable pour augmenter ce lot.');
-          }
-        }
-
-        return tx.lotStock.update({
-          where: { id: lotId },
-          data: {
-            ...(data.quantite !== undefined && { quantite: data.quantite }),
-            ...(data.dlc && { dlc: data.dlc }),
-            ...(data.numeroLot && { numeroLot: data.numeroLot }),
-          },
-          include: {
-            article: true,
-            depot: true,
-          },
-        });
-      }, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      });
+        },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        },
+      );
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
-        throw new ConflictException('Le lot a été modifié simultanément. Réessayez.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
+        throw new ConflictException(
+          'Le lot a été modifié simultanément. Réessayez.',
+        );
       }
       throw error;
     }
@@ -663,38 +764,48 @@ export class StocksService {
     const scopeDepotId = this.depotScope.requireDepotId();
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        const lot = await tx.lotStock.findFirst({
-          where: { id: lotId, tenantId, depotId: scopeDepotId },
-        });
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const lot = await tx.lotStock.findFirst({
+            where: { id: lotId, tenantId, depotId: scopeDepotId },
+          });
 
-        if (!lot) {
-          throw new NotFoundException(`Lot with ID ${lotId} not found`);
-        }
+          if (!lot) {
+            throw new NotFoundException(`Lot with ID ${lotId} not found`);
+          }
 
-        const stockUpdate = await tx.stock.updateMany({
-          where: {
-            articleId: lot.articleId,
-            depotId: lot.depotId,
-            quantite: { gte: lot.quantite },
-          },
-          data: { quantite: { decrement: lot.quantite } },
-        });
-        if (stockUpdate.count !== 1) {
-          throw new BadRequestException('Stock global insuffisant pour supprimer ce lot.');
-        }
+          const stockUpdate = await tx.stock.updateMany({
+            where: {
+              articleId: lot.articleId,
+              depotId: lot.depotId,
+              quantite: { gte: lot.quantite },
+            },
+            data: { quantite: { decrement: lot.quantite } },
+          });
+          if (stockUpdate.count !== 1) {
+            throw new BadRequestException(
+              'Stock global insuffisant pour supprimer ce lot.',
+            );
+          }
 
-        await tx.lotStock.delete({
-          where: { id: lotId },
-        });
+          await tx.lotStock.delete({
+            where: { id: lotId },
+          });
 
-        return { success: true, message: 'Lot supprimé' };
-      }, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      });
+          return { success: true, message: 'Lot supprimé' };
+        },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        },
+      );
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
-        throw new ConflictException('Le lot a été modifié simultanément. Réessayez.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
+        throw new ConflictException(
+          'Le lot a été modifié simultanément. Réessayez.',
+        );
       }
       throw error;
     }
@@ -703,23 +814,37 @@ export class StocksService {
   async getDLCAlertes(tenantId: string, depotId?: string, jours: number = 30) {
     this.assertScopedTenant(tenantId);
     if (!Number.isInteger(jours) || jours < 0 || jours > 3650) {
-      throw new BadRequestException('jours doit être un entier compris entre 0 et 3650.');
+      throw new BadRequestException(
+        'jours doit être un entier compris entre 0 et 3650.',
+      );
     }
-    const scopeDepotId = this.depotScope.requireDepotId();
-    if (depotId && depotId !== scopeDepotId) {
-      throw new ForbiddenException('Accès refusé à ce dépôt.');
+    const scope = this.depotScope.getScope();
+    const scopeDepotId = scope.depotId;
+    const userRole = scope.role;
+
+    let selectedDepotId: string;
+
+    // PATRON peut accéder à tous les dépôts de son tenant
+    if (userRole === 'PATRON') {
+      selectedDepotId = depotId || scopeDepotId || '';
+      if (selectedDepotId) {
+        await this.assertScopedDepot(tenantId, selectedDepotId);
+      }
+    } else {
+      // Pour les autres rôles, vérifier que le dépôt demandé correspond au scope
+      if (depotId && depotId !== scopeDepotId) {
+        throw new ForbiddenException('Accès refusé à ce dépôt.');
+      }
+      selectedDepotId = depotId || scopeDepotId || '';
     }
-    const selectedDepotId = depotId || scopeDepotId;
 
     const dateLimite = new Date();
     dateLimite.setDate(dateLimite.getDate() + jours);
-
     const where: any = {
       tenantId,
       depotId: selectedDepotId,
       dlc: { lte: dateLimite },
     };
-
     const lots = await this.prisma.lotStock.findMany({
       where,
       include: {
@@ -728,22 +853,40 @@ export class StocksService {
       },
       orderBy: { dlc: 'asc' },
     });
-
     // Catégoriser par urgence
-    const perimes = lots.filter(l => l.dlc && new Date(l.dlc) < new Date());
-    const urgent = lots.filter(l => l.dlc && new Date(l.dlc) >= new Date() && new Date(l.dlc) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-    const bientot = lots.filter(l => l.dlc && new Date(l.dlc) > new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const perimes = lots.filter((l) => l.dlc && new Date(l.dlc) < new Date());
+    const urgent = lots.filter(
+      (l) =>
+        l.dlc &&
+        new Date(l.dlc) >= new Date() &&
+        new Date(l.dlc) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    );
+    const bientot = lots.filter(
+      (l) =>
+        l.dlc &&
+        new Date(l.dlc) > new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    );
 
     return {
       total: lots.length,
       perimes: perimes.length,
       urgent: urgent.length,
       bientot: bientot.length,
-      lots: lots.map(l => ({
+      lots: lots.map((l) => ({
         ...l,
-        joursRestants: l.dlc ? Math.ceil((new Date(l.dlc).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null,
-        urgence: l.dlc && new Date(l.dlc) < new Date() ? 'PERIME' :
-                 l.dlc && new Date(l.dlc) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'URGENT' : 'BIENTOT',
+        joursRestants: l.dlc
+          ? Math.ceil(
+              (new Date(l.dlc).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+            )
+          : null,
+        urgence:
+          l.dlc && new Date(l.dlc) < new Date()
+            ? 'PERIME'
+            : l.dlc &&
+                new Date(l.dlc) <=
+                  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+              ? 'URGENT'
+              : 'BIENTOT',
       })),
     };
   }

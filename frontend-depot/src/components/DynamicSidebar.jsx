@@ -15,6 +15,7 @@ import { getMetierMenus, getMetierConfig } from "../config/metier-dashboard.conf
 import { getSectorPrefix } from "./guards/SectorGuard";
 import { useNotifications } from "../core/notifications/useNotifications";
 import { useAuth } from "../contexts/AuthContext";
+import { resolveFileUrl } from "../shared/utils/fileUrl";
 import {
   normalizeMetierSlug,
   pathToSousModule,
@@ -40,6 +41,14 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
   const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [moduleConfig, setModuleConfig] = useState(null);
+
+  // Avatar du profil : URL absolue (l'avatar en base est relatif : /uploads/...)
+  // + repli sur l'initiale si la photo est absente ou en échec de chargement.
+  const avatarUrl = resolveFileUrl(user?.avatar || null);
+  const [avatarError, setAvatarError] = useState(false);
+  useEffect(() => {
+    setAvatarError(false);
+  }, [avatarUrl]);
 
   const rawMetier = tenant?.metier || user?.metier || localStorage.getItem('gestock_metier');
   const metier     = rawMetier || "DEPOT_BOISSONS";
@@ -76,6 +85,20 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
     () => moduleConfig?.ADMINISTRATION_MENUS || [],
     [moduleConfig]
   );
+
+  // §3/§23 — le GERANT est un gérant d'ÉTABLISSEMENT : il ne voit que
+  // Utilisateurs (employés de son établissement) et Paramètres établissement.
+  // Utilisateurs/Dépôts/Abonnement restent réservés au PATRON/ADMIN.
+  const staticAdminMenus = useMemo(() => {
+    if (user?.role === 'GERANT' && useGranular) {
+      return ADMIN_MENUS.filter((item) =>
+        ['utilisateurs', 'parametres'].includes(
+          pathToSousModule(`/${item.path}`, metierSlug),
+        ),
+      );
+    }
+    return ADMIN_MENUS;
+  }, [user?.role, useGranular, metierSlug]);
 
   const menus = useMemo(() => {
     const mapped = rawMenus.map(m => ({
@@ -266,7 +289,7 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
             )}
             {collapsed && <div style={styles.divider} />}
 
-            {ADMIN_MENUS.map((item) => {
+            {staticAdminMenus.map((item) => {
               const adminPath = `${prefix}/${item.path}`;
               const Icon = item.icon;
               return (
@@ -317,15 +340,30 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
           onClick={() => setUserMenuOpen(!userMenuOpen)}
           style={styles.profileBtn}
         >
-          <div
-            style={{
-              ...styles.avatar,
-              backgroundColor: couleur + "30",
-              color: couleur,
-            }}
-          >
-            {user?.nom?.[0]?.toUpperCase() || "U"}
-          </div>
+          {avatarUrl && !avatarError ? (
+            <img
+              key={avatarUrl}
+              src={avatarUrl}
+              alt={user?.nom || "Avatar"}
+              referrerPolicy="no-referrer"
+              onError={() => setAvatarError(true)}
+              style={{
+                ...styles.avatar,
+                backgroundColor: couleur + "30",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                ...styles.avatar,
+                backgroundColor: couleur + "30",
+                color: couleur,
+              }}
+            >
+              {user?.nom?.[0]?.toUpperCase() || "U"}
+            </div>
+          )}
           {!collapsed && (
             <div style={styles.profileInfo}>
               <span style={styles.profileName}>

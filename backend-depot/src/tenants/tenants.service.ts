@@ -108,10 +108,8 @@ export class TenantsService {
         codePrefix: true,
         isArchived: true,
         tenantId: true,
-        createdAt: true,
-        updatedAt: true,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { nom: 'asc' },
     });
 
     return {
@@ -162,7 +160,9 @@ export class TenantsService {
     }
 
     if (!TENANT_MANAGERS.has(user.role)) {
-      throw new ForbiddenException('Droits insuffisants pour modifier les paramètres.');
+      throw new ForbiddenException(
+        'Droits insuffisants pour modifier les paramètres.',
+      );
     }
 
     if (Object.keys(updateTenantDto).length === 0) {
@@ -209,7 +209,9 @@ export class TenantsService {
 
     if (updateTenantDto.emailPatron !== undefined) {
       if (user.role !== 'PATRON') {
-        throw new ForbiddenException('Seul le PATRON peut modifier l’e-mail propriétaire.');
+        throw new ForbiddenException(
+          'Seul le PATRON peut modifier l’e-mail propriétaire.',
+        );
       }
       data.emailPatron = updateTenantDto.emailPatron.trim().toLowerCase();
     }
@@ -242,7 +244,8 @@ export class TenantsService {
       throw new BadRequestException('Le logo est trop volumineux.');
     }
 
-    const allowedDataUrl = /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i;
+    const allowedDataUrl =
+      /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i;
     const allowedHttpUrl = /^https:\/\/[^\s]+$/i;
 
     if (allowedHttpUrl.test(value) && value.length > 2_048) {

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertCircle, Ban, CheckCircle, Download, FileText, RefreshCw, Search, ShieldCheck, XCircle, Fingerprint, TriangleAlert, BarChart3 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useDepot } from '../contexts/DepotContext';
+import { connectAuditRealtime } from '../shared/realtime/auditRealtime.ts';
 
 const ACTION_LABELS = {
   VENTE_ANNULEE: 'Annulation de vente',
@@ -29,11 +30,14 @@ function BadgeSeverite({ severite }) {
 const EMPTY_FILTERS = { action: '', severite: '', resultat: '', metier: '', search: '', startDate: '', endDate: '', montantMin: '', montantMax: '' };
 
 export default function AuditPage() {
-  const { tenantId } = useAuth();
+  const { tenantId, user } = useAuth();
   const { depotId } = useDepot();
+  const isPatron = user?.role === 'PATRON' || user?.isSuperAdmin === true;
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [exporting, setExporting] = useState('');
   const [hours, setHours] = useState('24');
+  const [realtimeStatus, setRealtimeStatus] = useState('idle');
+  const refreshSecurityRef = useRef(() => {});
 
   const queryParams = useMemo(() => {
     const params = {};
@@ -85,11 +89,30 @@ export default function AuditPage() {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [refetch, dashboardQuery, anomaliesQuery]);
 
+  // Temps réel : souscription au AuditGateway (namespace racine, PATRON only).
+  // Le polling 10 s reste en filet de sécurité si le socket est indisponible.
+  useEffect(() => {
+    const token = localStorage.getItem('depot_token');
+    const cleanup = connectAuditRealtime({
+      token,
+      tenantId,
+      enabled: Boolean(isPatron && tenantId),
+      onStatus: (status) => setRealtimeStatus(status),
+      onEvent: () => {
+        // Un événement d'audit est arrivé : rafraîchissement immédiat du journal,
+        // du tableau de bord et des anomalies (le polling reste en filet de sécurité).
+        refreshSecurityRef.current?.();
+      },
+    });
+    return cleanup;
+  }, [isPatron, tenantId]);
+
   const updateFilter = (key, value) => setFilters((prev) => ({ ...prev, [key]: value }));
 
   const refreshSecurity = async () => {
     await Promise.all([refetch(), dashboardQuery.refetch(), anomaliesQuery.refetch(), integrityQuery.refetch()]);
   };
+  refreshSecurityRef.current = refreshSecurity;
 
   const downloadExport = async (format) => {
     setExporting(format);
@@ -116,6 +139,14 @@ export default function AuditPage() {
       <div>
         <div className="flex flex-wrap items-center gap-3"><Activity size={28} className="text-indigo-400" /><h1 className="text-2xl font-black text-white">Journal d’Audit</h1><span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-400"><ShieldCheck size={13} />Patron sécurisé</span>{isFetching && <RefreshCw size={14} className="animate-spin text-indigo-400" />}</div>
         <p className="text-slate-400 text-sm mt-1">Traçabilité des opérations sensibles du tenant et du dépôt actif.</p>
+        {isPatron && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className={`inline-flex h-2.5 w-2.5 rounded-full ${realtimeStatus === 'connected' ? 'bg-emerald-400' : realtimeStatus === 'error' ? 'bg-red-400' : 'bg-amber-400 animate-pulse'}`} />
+            <span className="text-xs font-bold text-slate-500">
+              {realtimeStatus === 'connected' ? 'Journal temps réel connecté' : realtimeStatus === 'error' ? 'Temps réel indisponible — polling 10 s actif' : 'Connexion temps réel…'}
+            </span>
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         <button onClick={refreshSecurity} disabled={isFetching || dashboardQuery.isFetching || anomaliesQuery.isFetching || integrityQuery.isFetching} className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-2.5 text-sm font-bold text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-50"><RefreshCw size={15} className={dashboardQuery.isFetching || anomaliesQuery.isFetching || integrityQuery.isFetching ? 'animate-spin' : ''} />Actualiser sécurité</button>

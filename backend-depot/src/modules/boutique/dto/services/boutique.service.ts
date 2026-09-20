@@ -7,13 +7,21 @@
 // ─────────────────────────────────────────────────────────────────
 // 📁 src/modules/boutique/dto/create-promotion.dto.ts
 // ─────────────────────────────────────────────────────────────────
-import { IsEnum, IsNumber, IsString, IsDateString, IsBoolean, IsOptional, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  IsDateString,
+  IsBoolean,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum PromotionType {
-  POURCENTAGE  = 'POURCENTAGE',
+  POURCENTAGE = 'POURCENTAGE',
   MONTANT_FIXE = 'MONTANT_FIXE',
-  PRIX_FIXE    = 'PRIX_FIXE',
+  PRIX_FIXE = 'PRIX_FIXE',
 }
 
 export class CreatePromotionDto {
@@ -29,11 +37,11 @@ export class CreatePromotionDto {
 
   @IsNumber()
   @Min(0)
-  valeur: number;         // % ou montant selon type
+  valeur: number; // % ou montant selon type
 
   @IsNumber()
   @Min(0)
-  prixPromo: number;      // Prix final calculé
+  prixPromo: number; // Prix final calculé
 
   @IsDateString()
   dateDebut: string;
@@ -64,11 +72,16 @@ export class UpdatePromotionDto {
 // ─────────────────────────────────────────────────────────────────
 // 📁 src/modules/boutique/dto/credit-client.dto.ts
 // ─────────────────────────────────────────────────────────────────
-import { IsString as IsStr, IsNumber as IsNum, IsEnum as IsEnu, Min as Min2 } from 'class-validator';
+import {
+  IsString as IsStr,
+  IsNumber as IsNum,
+  IsEnum as IsEnu,
+  Min as Min2,
+} from 'class-validator';
 
 export enum CreditType {
-  AJOUT         = 'AJOUT',
-  DEDUCTION     = 'DEDUCTION',
+  AJOUT = 'AJOUT',
+  DEDUCTION = 'DEDUCTION',
   REMBOURSEMENT = 'REMBOURSEMENT',
 }
 
@@ -99,7 +112,11 @@ export class SetPlafondCreditDto {
 // ─────────────────────────────────────────────────────────────────
 // 📁 src/modules/boutique/services/promotions.service.ts
 // ─────────────────────────────────────────────────────────────────
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../prisma.service';
 
 @Injectable()
@@ -124,11 +141,18 @@ export class PromotionsService {
       },
     });
     if (existing) {
-      throw new BadRequestException('Une promotion active existe déjà pour cet article');
+      throw new BadRequestException(
+        'Une promotion active existe déjà pour cet article',
+      );
     }
 
     return this.prisma.promotion.create({
-      data: { ...dto, tenantId, dateDebut: new Date(dto.dateDebut), dateFin: new Date(dto.dateFin) },
+      data: {
+        ...dto,
+        tenantId,
+        dateDebut: new Date(dto.dateDebut),
+        dateFin: new Date(dto.dateFin),
+      },
       include: { article: { select: { designation: true, prixVente: true } } },
     });
   }
@@ -166,7 +190,10 @@ export class PromotionsService {
   }
 
   // ── Prix promo d'un article (si promotion active) ───────────
-  async getPrixPromo(tenantId: string, articleId: string): Promise<number | null> {
+  async getPrixPromo(
+    tenantId: string,
+    articleId: string,
+  ): Promise<number | null> {
     const promo = await this.prisma.promotion.findFirst({
       where: {
         tenantId,
@@ -180,7 +207,9 @@ export class PromotionsService {
   }
 
   private async assertExists(tenantId: string, id: string) {
-    const p = await this.prisma.promotion.findFirst({ where: { id, tenantId } });
+    const p = await this.prisma.promotion.findFirst({
+      where: { id, tenantId },
+    });
     if (!p) throw new NotFoundException('Promotion introuvable');
     return p;
   }
@@ -230,7 +259,7 @@ export class CreditClientService {
 
     if (credit.solde < dto.montant) {
       throw new BadRequestException(
-        `Crédit insuffisant. Solde : ${credit.solde} FCFA, Requis : ${dto.montant} FCFA`
+        `Crédit insuffisant. Solde : ${credit.solde} FCFA, Requis : ${dto.montant} FCFA`,
       );
     }
 

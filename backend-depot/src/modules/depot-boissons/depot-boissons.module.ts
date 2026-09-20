@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from '../../prisma.module';
+import { AuthModule } from '../../auth/auth.module';
 import { DepotBoissonsController } from './depot-boissons.controller';
 import { DepotBoissonsService } from './depot-boissons.service';
 import { SecureDepotBoissonsVenteService } from './secure-vente.service';
@@ -17,7 +18,8 @@ import { CaisseModule } from '../../caisse/caisse.module';
 import { AuditModule } from '../../audit/audit.module';
 
 @Module({
-  imports: [PrismaModule, CaisseModule, AuditModule],
+  // AuthModule : expose PermissionService (contrôle granulaire des rapports §10).
+  imports: [PrismaModule, CaisseModule, AuditModule, AuthModule],
   controllers: [
     DepotBoissonsController,
     DepotBoissonsPromotionsController,

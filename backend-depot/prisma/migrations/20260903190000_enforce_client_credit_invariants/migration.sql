@@ -2,18 +2,22 @@
 -- cannot make a client's credit balance negative or exceed an explicitly
 -- configured positive ceiling. A ceiling of 0 remains the legacy "no ceiling"
 -- convention and is therefore not restricted by this trigger.
+-- NOTE: les colonnes sont créées par Prisma en camelCase ("soldeCredit",
+-- "plafondCredit") : elles doivent être référencées avec des guillemets,
+-- sinon Postgres les lower-casera en "soldecredit"/"plafondcredit" qui
+-- n'existent pas (erreur 42703 à la création du trigger).
 
 CREATE OR REPLACE FUNCTION enforce_client_credit_invariants()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF NEW.soldeCredit < 0 THEN
+  IF NEW."soldeCredit" < 0 THEN
     RAISE EXCEPTION 'Le solde crédit client ne peut pas être négatif.'
       USING ERRCODE = '23514';
   END IF;
 
-  IF NEW.plafondCredit > 0 AND NEW.soldeCredit > NEW.plafondCredit THEN
+  IF NEW."plafondCredit" > 0 AND NEW."soldeCredit" > NEW."plafondCredit" THEN
     RAISE EXCEPTION 'Le plafond de crédit client est dépassé.'
       USING ERRCODE = '23514';
   END IF;
@@ -25,7 +29,7 @@ $$;
 DROP TRIGGER IF EXISTS client_credit_invariants ON "Client";
 
 CREATE TRIGGER client_credit_invariants
-BEFORE INSERT OR UPDATE OF soldeCredit, plafondCredit
+BEFORE INSERT OR UPDATE OF "soldeCredit", "plafondCredit"
 ON "Client"
 FOR EACH ROW
 EXECUTE FUNCTION enforce_client_credit_invariants();

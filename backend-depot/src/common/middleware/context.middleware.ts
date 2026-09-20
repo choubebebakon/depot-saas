@@ -2,11 +2,7 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'node:crypto';
 
-const METIER_PREFIXES = new Set([
-  'boutique',
-  'supermarche',
-  'depot-boissons',
-]);
+const METIER_PREFIXES = new Set(['boutique', 'supermarche', 'depot-boissons']);
 
 function extractMetierFromPath(path: string): string | null {
   const segments = path.split('/').filter(Boolean);

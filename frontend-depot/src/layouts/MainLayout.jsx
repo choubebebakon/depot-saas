@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingCart, Package, MapPin, Users, Settings, LogOut, PlusCircle, Printer, BarChart3, Warehouse, CreditCard, Tag, AlertTriangle, Box, ClipboardList, Users2, FileText, Activity, ShieldCheck, Wrench, ArrowRightLeft, Target, Receipt, Truck, Building2, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -84,9 +84,9 @@ function AccessDeniedCard() {
 const ALL_ROLES = [ROLES.PATRON, ROLES.GERANT, ROLES.CAISSIER, ROLES.MAGASINIER, ROLES.COMMERCIAL, ROLES.COMPTABLE];
 
 const ADMIN_NAV = [
-  { id: '/settings', label: 'ParamÃ¨tres', icon: 'Settings', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/settings', label: 'Paramètres', icon: 'Settings', roles: [ROLES.PATRON, ROLES.GERANT] },
   { id: '/personnel', label: 'Utilisateurs', icon: 'Users', roles: [ROLES.PATRON, ROLES.GERANT] },
-  { id: '/depots', label: 'DÃ©pÃ´ts', icon: 'Building2', roles: [ROLES.PATRON, ROLES.GERANT] },
+  { id: '/depots', label: 'Dépôts', icon: 'Building2', roles: [ROLES.PATRON] },
   { id: '/audit', label: 'Audit Patron', icon: 'ShieldCheck', roles: [ROLES.PATRON] },
   { id: '/analyses', label: 'Analyses BI', icon: 'BarChart3', roles: [ROLES.PATRON, ROLES.GERANT] },
   { id: '/support', label: 'Support & Aide', icon: 'LifeBuoy', roles: ALL_ROLES },
@@ -98,6 +98,12 @@ const PAGE_REGISTRY = {
   '/ventes': <VentesPage />,
   '/stock': <StocksPage />,
   '/clients': <ClientsPage />,
+  // Métier DEPOT_BOISSONS : le menu métier pointe vers /depot/clients et
+  // /depot/parametres (metier-dashboard.config.ts), absents du registre — les
+  // entrées tombaient sur « Module en développement ». On les mappe sur les
+  // mêmes pages CRM étendues (pas de duplication d'écran).
+  '/depot/clients': <ClientsPage />,
+  '/depot/parametres': <SettingsPage />,
   '/fournisseurs': <FournisseursPage />,
   '/caisse': <CaissePage />,
   '/rapports': <RapportsPage />,
@@ -172,7 +178,7 @@ const PAGE_REGISTRY = {
 const ROLE_GATED = ['/personnel', '/depots', '/audit', '/analyses'];
 const ROLE_GATE_MAP = {
   '/personnel': [ROLES.PATRON, ROLES.GERANT],
-  '/depots': [ROLES.PATRON, ROLES.GERANT],
+  '/depots': [ROLES.PATRON],
   '/audit': [ROLES.PATRON],
   '/analyses': [ROLES.PATRON, ROLES.GERANT],
 };

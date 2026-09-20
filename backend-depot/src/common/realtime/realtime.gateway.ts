@@ -14,21 +14,43 @@ import { PrismaService } from '../../prisma.service';
 import { RealtimeEvent } from './realtime.service';
 
 const TENANT_ROOM = (tenantId: string) => `tenant:${tenantId}`;
-const DEPOT_ROOM = (tenantId: string, depotId: string) => `tenant:${tenantId}:depot:${depotId}`;
+const DEPOT_ROOM = (tenantId: string, depotId: string) =>
+  `tenant:${tenantId}:depot:${depotId}`;
 const MULTI_DEPOT_ROLES = new Set(['PATRON']);
+
+function getAllowedRealtimeOrigins(): string[] {
+  const configured = (process.env.FRONTEND_URLS ?? process.env.FRONTEND_URL ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (configured.length > 0) return configured;
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Configuration de production invalide: FRONTEND_URLS doit contenir au moins une origine frontend autorisée pour le gateway Realtime.',
+    );
+  }
+
+  return [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ];
+}
 
 @WebSocketGateway({
   namespace: '/realtime',
   cors: {
-    origin: process.env.FRONTEND_URL?.split(',').map((value) => value.trim()).filter(Boolean) ?? [
-      'http://localhost:5173',
-      'http://localhost:4173',
-    ],
+    origin: getAllowedRealtimeOrigins(),
     credentials: true,
   },
   transports: ['websocket', 'polling'],
 })
-export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class RealtimeGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server!: Server;
 
@@ -66,12 +88,22 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         },
       });
 
-      if (!user || !user.isActive || (!user.tenant.estActif && !user.isSuperAdmin)) {
-        throw new UnauthorizedException('Session temps réel invalide ou compte indisponible');
+      if (
+        !user ||
+        !user.isActive ||
+        (!user.tenant.estActif && !user.isSuperAdmin)
+      ) {
+        throw new UnauthorizedException(
+          'Session temps réel invalide ou compte indisponible',
+        );
       }
 
-      const requestedDepotId = this.readOptionalString(socket.handshake.auth?.depotId);
-      const depotId = user.isSuperAdmin ? null : await this.resolveAuthorizedDepot(user, requestedDepotId);
+      const requestedDepotId = this.readOptionalString(
+        socket.handshake.auth?.depotId,
+      );
+      const depotId = user.isSuperAdmin
+        ? null
+        : await this.resolveAuthorizedDepot(user, requestedDepotId);
 
       socket.data.userId = user.id;
       socket.data.tenantId = user.tenantId;
@@ -97,7 +129,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         depotId,
       });
     } catch (error) {
-      this.logger.warn(`Socket refusée ${socket.id}: ${error instanceof Error ? error.message : 'auth error'}`);
+      this.logger.warn(
+        `Socket refusée ${socket.id}: ${error instanceof Error ? error.message : 'auth error'}`,
+      );
       socket.emit('realtime:error', { code: 'UNAUTHORIZED' });
       socket.disconnect(true);
     }
@@ -114,12 +148,16 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     };
 
     if (event.depotId) {
-      this.server.to(DEPOT_ROOM(event.tenantId, event.depotId)).emit('realtime:event', envelope);
+      this.server
+        .to(DEPOT_ROOM(event.tenantId, event.depotId))
+        .emit('realtime:event', envelope);
       return;
     }
 
     // Les événements tenant-wide sont réservés au PATRON.
-    this.server.to(TENANT_ROOM(event.tenantId)).emit('realtime:event', envelope);
+    this.server
+      .to(TENANT_ROOM(event.tenantId))
+      .emit('realtime:event', envelope);
   }
 
   publishPlatform<T>(event: RealtimeEvent<T>): void {
@@ -140,25 +178,46 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   ): Promise<string | null> {
     if (!MULTI_DEPOT_ROLES.has(user.role)) {
       if (!user.depotId) {
-        if (requestedDepotId) throw new UnauthorizedException('Dépôt non autorisé');
+        if (requestedDepotId)
+          throw new UnauthorizedException('Dépôt non autorisé');
         return null;
       }
       if (requestedDepotId && requestedDepotId !== user.depotId) {
         throw new UnauthorizedException('Dépôt non autorisé');
       }
-      const depot = await this.depotsService.findOne(user.depotId, user.tenantId);
-      if (!depot || depot.isArchived) throw new UnauthorizedException('Dépôt non autorisé');
+      const depot = await this.depotsService.findOne(user.depotId, {
+        userId: (user as any).id || '',
+        email: (user as any).email || '',
+        role: user.role,
+        tenantId: user.tenantId,
+        depotId: user.depotId,
+      });
+      if (!depot || depot.isArchived)
+        throw new UnauthorizedException('Dépôt non autorisé');
       return depot.id;
     }
 
     if (!requestedDepotId) {
       if (!user.depotId) return null;
-      const depot = await this.depotsService.findOne(user.depotId, user.tenantId);
-      if (!depot || depot.isArchived) throw new UnauthorizedException('Dépôt non autorisé');
+      const depot = await this.depotsService.findOne(user.depotId, {
+        userId: (user as any).id || '',
+        email: (user as any).email || '',
+        role: user.role,
+        tenantId: user.tenantId,
+        depotId: user.depotId,
+      });
+      if (!depot || depot.isArchived)
+        throw new UnauthorizedException('Dépôt non autorisé');
       return depot.id;
     }
 
-    const depot = await this.depotsService.findOne(requestedDepotId, user.tenantId);
+    const depot = await this.depotsService.findOne(requestedDepotId, {
+      userId: (user as any).id || '',
+      email: (user as any).email || '',
+      role: user.role,
+      tenantId: user.tenantId,
+      depotId: user.depotId,
+    });
     if (!depot || depot.isArchived) {
       throw new UnauthorizedException('Dépôt non autorisé');
     }
@@ -170,7 +229,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const authToken = this.readOptionalString(socket.handshake.auth?.token);
     if (authToken) return authToken.replace(/^Bearer\s+/i, '');
 
-    const authorization = this.readOptionalString(socket.handshake.headers.authorization);
+    const authorization = this.readOptionalString(
+      socket.handshake.headers.authorization,
+    );
     return authorization?.replace(/^Bearer\s+/i, '') ?? null;
   }
 

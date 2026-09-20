@@ -1,16 +1,18 @@
 export const SIDEBAR_MENUS = [
   { label: 'Tableau de bord', icon: 'BarChart3', path: '/boutique/dashboard' },
-  { label: 'Ventes',          icon: 'DollarSign', path: '/boutique/ventes' },
+  { label: 'Caisse POS',     icon: 'DollarSign', path: '/boutique/ventes-caisse' },
   { label: 'Stock',           icon: 'Package', path: '/boutique/stock' },
   { label: 'Inventaire',      icon: 'Clipboard', path: '/boutique/inventaire' },
   { label: 'Clients',         icon: 'User', path: '/boutique/clients' },
-  { label: 'Caisse',          icon: 'Wallet', path: '/boutique/caisse' },
   { label: 'Catégories',      icon: 'Tag', path: '/boutique/categories' },
   { label: 'Promotions',      icon: 'Tag', path: '/boutique/promotions' },
   { label: 'Factures',        icon: 'FileText', path: '/boutique/factures' },
   { label: 'Fournisseurs',    icon: 'Factory', path: '/boutique/fournisseurs' },
+  { label: 'Réceptions',      icon: 'Package', path: '/boutique/receptions' },
   { label: 'Dépenses',        icon: 'TrendingUp', path: '/boutique/depenses' },
   { label: 'Rapports',        icon: 'TrendingUp', path: '/boutique/rapports' },
+  // §10 — « Mes performances » (masqué pour les rôles sans rapports_performance).
+  { label: 'Mes performances', icon: 'BarChart3', path: '/boutique/performance' },
   { label: 'Paramètres',      icon: 'Settings', path: '/boutique/parametres' },
 ];
 

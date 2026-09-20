@@ -3,7 +3,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 
 export default function AutocompleteInput({
   label, name, value, onChange, onSelect, fetchSuggestions,
-  displayKey = 'nom', placeholder, required, error, disabled,
+  displayKey = 'nom', placeholder, required, error, disabled, refreshKey = 0,
 }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -28,6 +28,13 @@ export default function AutocompleteInput({
       setLoading(false);
     }
   }, [fetchSuggestions]);
+
+  useEffect(() => {
+    if (refreshKey && query && open) {
+      loadSuggestions(query);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   useEffect(() => {
     if (debouncedQuery && debouncedQuery !== (selected?.[displayKey] || '')) {

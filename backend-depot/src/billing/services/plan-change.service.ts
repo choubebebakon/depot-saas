@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { BillingCycle, PlanType } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
 import { calculatePlanAmount } from '../../common/config/subscription-pricing.config';

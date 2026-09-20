@@ -12,6 +12,8 @@ import {
 import { Roles } from '../auth/decorators/roles.decorator';
 import { StocksService } from './stocks.service';
 import { TransferStockService } from './transfer-stock.service';
+import { RequireAction } from '../auth/decorators/require-permission.decorator';
+
 import { SignalerAvarieDto } from './dto/signaler-avarie.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { ACCESS_LEVELS } from '../common/utils/rbac';
@@ -58,6 +60,7 @@ export class StocksController {
 
   @Post('ajuster')
   @Roles(...ACCESS_LEVELS.GERANT)
+  @RequireAction('stock.ajuster')
   async ajuster(
     @Request() req: any,
     @Body()
@@ -74,6 +77,7 @@ export class StocksController {
 
   @Post('transferer')
   @Roles(...ACCESS_LEVELS.GERANT)
+  @RequireAction('stock.transferer')
   async transferer(
     @Request() req: any,
     @Body()
@@ -94,6 +98,7 @@ export class StocksController {
 
   @Post('avarie')
   @Roles(...ACCESS_LEVELS.GERANT)
+  @RequireAction('stock.avarie')
   async signalerAvarie(@Request() req: any, @Body() data: SignalerAvarieDto) {
     return this.stocksService.signalerAvarie(data, req.user);
   }
@@ -198,6 +203,10 @@ export class StocksController {
     @Query('depotId') depotId: string,
     @Query('jours') jours?: string,
   ) {
-    return this.stocksService.getDLCAlertes(tenantId, depotId, jours ? parseInt(jours) : 30);
+    return this.stocksService.getDLCAlertes(
+      tenantId,
+      depotId,
+      jours ? parseInt(jours) : 30,
+    );
   }
 }

@@ -21,11 +21,23 @@ export class FournisseursService {
 
   private requireScope(tenantId?: string, depotId?: string) {
     const authoritativeTenantId = this.depotScope.requireTenantId();
-    const authoritativeDepotId = this.depotScope.requireDepotId();
+    const scope = this.depotScope.getScope();
+    const userRole = scope.role;
+    const authoritativeDepotId = scope.depotId;
 
     if (!tenantId || tenantId !== authoritativeTenantId) {
       throw new ForbiddenException('Accès refusé au tenant demandé.');
     }
+
+    // PATRON peut accéder à tous les dépôts de son tenant
+    if (userRole === 'PATRON') {
+      if (!depotId) {
+        throw new ForbiddenException('Dépôt requis pour cette opération.');
+      }
+      return { tenantId: authoritativeTenantId, depotId };
+    }
+
+    // Pour les autres rôles, vérifier que le dépôt demandé correspond au scope
     if (!depotId || depotId !== authoritativeDepotId) {
       throw new ForbiddenException('Accès refusé à ce dépôt.');
     }
@@ -33,7 +45,11 @@ export class FournisseursService {
     return { tenantId: authoritativeTenantId, depotId: authoritativeDepotId };
   }
 
-  private async assertDepotInTenant(tenantId: string, depotId: string, tx = this.prisma) {
+  private async assertDepotInTenant(
+    tenantId: string,
+    depotId: string,
+    tx: any = this.prisma,
+  ) {
     const depot = await tx.depot.findFirst({
       where: { id: depotId, tenantId, isArchived: false },
       select: { id: true },
@@ -42,29 +58,45 @@ export class FournisseursService {
     return depot.id;
   }
 
-  private buildReceptionReference(tenantId: string, depotId: string, idempotencyKey: string) {
+  private buildReceptionReference(
+    tenantId: string,
+    depotId: string,
+    idempotencyKey: string,
+  ) {
     const digest = createHash('sha256')
       .update(`${tenantId}:${depotId}:${idempotencyKey}`)
       .digest('hex');
     return `REC-${new Date().getFullYear()}-${digest.slice(0, 20)}`;
   }
 
-  private async findIdempotentReception(reference: string, tenantId: string, depotId: string) {
+  private async findIdempotentReception(
+    reference: string,
+    tenantId: string,
+    depotId: string,
+  ) {
     return this.prisma.receptionFournisseur.findFirst({
       where: { reference, tenantId, depotId },
       include: { lignes: true },
     });
   }
 
-  async createFournisseur(dto: CreateFournisseurDto, tenantId: string, depotId: string) {
+  async createFournisseur(
+    dto: CreateFournisseurDto,
+    tenantId: string,
+    depotId: string,
+  ) {
     const scope = this.requireScope(tenantId, depotId);
     const nom = dto.nom?.trim();
-    if (!nom) throw new BadRequestException('Le nom du fournisseur est obligatoire.');
+    if (!nom)
+      throw new BadRequestException('Le nom du fournisseur est obligatoire.');
     await this.assertDepotInTenant(scope.tenantId, scope.depotId);
 
-    const initialAmount = dto.soldeInitial === undefined ? 0 : Number(dto.soldeInitial);
+    const initialAmount =
+      dto.soldeInitial === undefined ? 0 : Number(dto.soldeInitial);
     if (!Number.isFinite(initialAmount) || initialAmount < 0) {
-      throw new BadRequestException('Le solde initial doit être un montant positif ou nul.');
+      throw new BadRequestException(
+        'Le solde initial doit être un montant positif ou nul.',
+      );
     }
 
     return this.prisma.fournisseur.create({
@@ -108,13 +140,16 @@ export class FournisseursService {
     const fournisseur = await this.prisma.fournisseur.findFirst({
       where: { id, tenantId: scope.tenantId, depotId: scope.depotId },
     });
-    if (!fournisseur) throw new NotFoundException('Fournisseur introuvable dans ce dépôt.');
+    if (!fournisseur)
+      throw new NotFoundException('Fournisseur introuvable dans ce dépôt.');
 
     let nextSoldeInitial = fournisseur.soldeInitial;
     if (dto.soldeInitial !== undefined) {
       nextSoldeInitial = Number(dto.soldeInitial);
       if (!Number.isFinite(nextSoldeInitial) || nextSoldeInitial < 0) {
-        throw new BadRequestException('Le solde initial doit être un montant positif ou nul.');
+        throw new BadRequestException(
+          'Le solde initial doit être un montant positif ou nul.',
+        );
       }
     }
 
@@ -122,10 +157,22 @@ export class FournisseursService {
       where: { id },
       data: {
         nom: dto.nom?.trim() || fournisseur.nom,
-        telephone: dto.telephone !== undefined ? dto.telephone?.trim() || null : fournisseur.telephone,
-        email: dto.email !== undefined ? dto.email?.trim() || null : fournisseur.email,
-        adresse: dto.adresse !== undefined ? dto.adresse?.trim() || null : fournisseur.adresse,
-        notes: dto.notes !== undefined ? dto.notes?.trim() || null : fournisseur.notes,
+        telephone:
+          dto.telephone !== undefined
+            ? dto.telephone?.trim() || null
+            : fournisseur.telephone,
+        email:
+          dto.email !== undefined
+            ? dto.email?.trim() || null
+            : fournisseur.email,
+        adresse:
+          dto.adresse !== undefined
+            ? dto.adresse?.trim() || null
+            : fournisseur.adresse,
+        notes:
+          dto.notes !== undefined
+            ? dto.notes?.trim() || null
+            : fournisseur.notes,
         soldeInitial: nextSoldeInitial,
       },
     });
@@ -138,7 +185,8 @@ export class FournisseursService {
       include: { _count: { select: { receptions: true } } },
     });
 
-    if (!fournisseur) throw new NotFoundException('Fournisseur introuvable dans ce dépôt.');
+    if (!fournisseur)
+      throw new NotFoundException('Fournisseur introuvable dans ce dépôt.');
     if (fournisseur._count.receptions > 0) {
       throw new BadRequestException(
         'Impossible de supprimer ce fournisseur car des réceptions y sont rattachées.',
@@ -156,179 +204,224 @@ export class FournisseursService {
   ) {
     const scope = this.requireScope(tenantId, depotId);
     const normalizedKey = idempotencyKey?.trim();
-    if (!normalizedKey || normalizedKey.length < 8 || normalizedKey.length > 128) {
+    if (
+      !normalizedKey ||
+      normalizedKey.length < 8 ||
+      normalizedKey.length > 128
+    ) {
       throw new BadRequestException(
         'Un en-tête x-idempotency-key valide (8 à 128 caractères) est obligatoire pour une réception.',
       );
     }
 
-    const reference = this.buildReceptionReference(scope.tenantId, scope.depotId, normalizedKey);
+    const reference = this.buildReceptionReference(
+      scope.tenantId,
+      scope.depotId,
+      normalizedKey,
+    );
 
-    const create = async () => this.prisma.$transaction(async (tx) => {
-      await this.assertDepotInTenant(scope.tenantId, scope.depotId, tx);
+    const create = async () =>
+      this.prisma.$transaction(
+        async (tx) => {
+          await this.assertDepotInTenant(scope.tenantId, scope.depotId, tx);
 
-      if (!dto.lignes?.length) {
-        throw new BadRequestException('Une réception doit contenir au moins une ligne.');
-      }
-      if (!dto.fournisseurId) {
-        throw new BadRequestException('Le fournisseur est obligatoire.');
-      }
+          if (!dto.lignes?.length) {
+            throw new BadRequestException(
+              'Une réception doit contenir au moins une ligne.',
+            );
+          }
+          if (!dto.fournisseurId) {
+            throw new BadRequestException('Le fournisseur est obligatoire.');
+          }
 
-      const fournisseur = await tx.fournisseur.findFirst({
-        where: {
-          id: dto.fournisseurId,
-          tenantId: scope.tenantId,
-          depotId: scope.depotId,
+          const fournisseur = await tx.fournisseur.findFirst({
+            where: {
+              id: dto.fournisseurId,
+              tenantId: scope.tenantId,
+              depotId: scope.depotId,
+            },
+            select: { id: true },
+          });
+          if (!fournisseur) {
+            throw new ForbiddenException(
+              'Fournisseur inaccessible pour ce dépôt.',
+            );
+          }
+
+          const montantPaye = Number(dto.montantPaye ?? 0);
+          if (!Number.isFinite(montantPaye) || montantPaye < 0) {
+            throw new BadRequestException('Le montant payé est invalide.');
+          }
+
+          const seenArticles = new Set<string>();
+          let totalReception = 0;
+          const linesToCreate: Array<Record<string, unknown>> = [];
+          const stockUpdates = new Map<string, number>();
+
+          for (const ligne of dto.lignes) {
+            const articleId = ligne.articleId?.trim();
+            if (!articleId)
+              throw new BadRequestException(
+                'Chaque ligne doit référencer un article.',
+              );
+            if (seenArticles.has(articleId)) {
+              throw new BadRequestException(
+                `L'article ${articleId} apparaît plusieurs fois dans la même réception. Regroupez les quantités sur une seule ligne.`,
+              );
+            }
+            seenArticles.add(articleId);
+
+            const quantiteLivree = Number(ligne.quantiteLivree);
+            const quantiteGratuite = Number(ligne.quantiteGratuite ?? 0);
+            const prixAchat = Number(ligne.prixAchatUnitaire);
+            if (!Number.isInteger(quantiteLivree) || quantiteLivree <= 0) {
+              throw new BadRequestException(
+                'La quantité livrée doit être un entier strictement positif.',
+              );
+            }
+            if (!Number.isInteger(quantiteGratuite) || quantiteGratuite < 0) {
+              throw new BadRequestException(
+                'La quantité gratuite doit être un entier positif ou nul.',
+              );
+            }
+            if (!Number.isFinite(prixAchat) || prixAchat < 0) {
+              throw new BadRequestException("Le prix d'achat est invalide.");
+            }
+
+            const article = await tx.article.findFirst({
+              where: { id: articleId, tenantId: scope.tenantId },
+              select: {
+                id: true,
+                uniteParCasier: true,
+                uniteParPack: true,
+                uniteParPalette: true,
+              },
+            });
+            if (!article) {
+              throw new BadRequestException(
+                `Article ${articleId} introuvable dans ce tenant.`,
+              );
+            }
+
+            const unite = (ligne.unite || 'PIECE').toUpperCase();
+            let mult = 1;
+            if (unite === 'CASIER') mult = article.uniteParCasier;
+            else if (unite === 'PACK') mult = article.uniteParPack;
+            else if (unite === 'PALETTE') mult = article.uniteParPalette;
+            else if (unite === 'PLATEAU') mult = 24;
+            else if (unite !== 'PIECE' && unite !== 'BOUTEILLE') {
+              throw new BadRequestException(
+                `Unité de réception non supportée: ${unite}.`,
+              );
+            }
+            if (!Number.isInteger(mult) || mult <= 0) {
+              throw new BadRequestException(
+                `Coefficient de conversion invalide pour l'article ${article.id}.`,
+              );
+            }
+
+            const qteLivreeBase = quantiteLivree * mult;
+            const qteGratuiteBase = quantiteGratuite * mult;
+            totalReception += prixAchat * quantiteLivree;
+
+            linesToCreate.push({
+              articleId: article.id,
+              quantiteLivree: qteLivreeBase,
+              quantiteGratuite: qteGratuiteBase,
+              prixAchatUnitaire: prixAchat,
+              uniteUsed: unite,
+            });
+            stockUpdates.set(
+              article.id,
+              (stockUpdates.get(article.id) || 0) +
+                qteLivreeBase +
+                qteGratuiteBase,
+            );
+          }
+
+          if (montantPaye > totalReception) {
+            throw new BadRequestException(
+              'Le montant payé ne peut pas dépasser le total de la réception.',
+            );
+          }
+          if (dto.modePaiement === ModePaiement.CREDIT && montantPaye !== 0) {
+            throw new BadRequestException(
+              'Une réception en crédit ne peut pas avoir de paiement immédiat.',
+            );
+          }
+
+          const montantDette = totalReception - montantPaye;
+
+          const reception = await tx.receptionFournisseur.create({
+            data: {
+              reference,
+              numBordereau: dto.numBordereau?.trim() || null,
+              statut: 'VALIDEE',
+              modePaiement: dto.modePaiement,
+              montantPaye,
+              montantDette,
+              fournisseurId: fournisseur.id,
+              depotId: scope.depotId,
+              tenantId: scope.tenantId,
+              lignes: { create: linesToCreate as any },
+            },
+            include: { lignes: true },
+          });
+
+          for (const [articleId, totalQte] of stockUpdates) {
+            if (totalQte <= 0) continue;
+            await tx.stock.upsert({
+              where: {
+                articleId_depotId: { articleId, depotId: scope.depotId },
+              },
+              update: { quantite: { increment: totalQte } },
+              create: { articleId, depotId: scope.depotId, quantite: totalQte },
+            });
+            await tx.mouvementStock.create({
+              data: {
+                type: 'ENTREE',
+                quantite: totalQte,
+                motif: `Réception ${reference}`,
+                articleId,
+                depotId: scope.depotId,
+                tenantId: scope.tenantId,
+              },
+            });
+          }
+
+          if (montantDette > 0) {
+            await tx.fournisseur.update({
+              where: { id: fournisseur.id },
+              data: { solde: { increment: montantDette } },
+            });
+          }
+
+          return reception;
         },
-        select: { id: true },
-      });
-      if (!fournisseur) {
-        throw new ForbiddenException('Fournisseur inaccessible pour ce dépôt.');
-      }
-
-      const montantPaye = Number(dto.montantPaye ?? 0);
-      if (!Number.isFinite(montantPaye) || montantPaye < 0) {
-        throw new BadRequestException('Le montant payé est invalide.');
-      }
-
-      const seenArticles = new Set<string>();
-      let totalReception = 0;
-      const linesToCreate: Array<Record<string, unknown>> = [];
-      const stockUpdates = new Map<string, number>();
-
-      for (const ligne of dto.lignes) {
-        const articleId = ligne.articleId?.trim();
-        if (!articleId) throw new BadRequestException('Chaque ligne doit référencer un article.');
-        if (seenArticles.has(articleId)) {
-          throw new BadRequestException(
-            `L'article ${articleId} apparaît plusieurs fois dans la même réception. Regroupez les quantités sur une seule ligne.`,
-          );
-        }
-        seenArticles.add(articleId);
-
-        const quantiteLivree = Number(ligne.quantiteLivree);
-        const quantiteGratuite = Number(ligne.quantiteGratuite ?? 0);
-        const prixAchat = Number(ligne.prixAchatUnitaire);
-        if (!Number.isInteger(quantiteLivree) || quantiteLivree <= 0) {
-          throw new BadRequestException('La quantité livrée doit être un entier strictement positif.');
-        }
-        if (!Number.isInteger(quantiteGratuite) || quantiteGratuite < 0) {
-          throw new BadRequestException('La quantité gratuite doit être un entier positif ou nul.');
-        }
-        if (!Number.isFinite(prixAchat) || prixAchat < 0) {
-          throw new BadRequestException("Le prix d'achat est invalide.");
-        }
-
-        const article = await tx.article.findFirst({
-          where: { id: articleId, tenantId: scope.tenantId },
-          select: {
-            id: true,
-            uniteParCasier: true,
-            uniteParPack: true,
-            uniteParPalette: true,
-          },
-        });
-        if (!article) {
-          throw new BadRequestException(`Article ${articleId} introuvable dans ce tenant.`);
-        }
-
-        const unite = (ligne.unite || 'PIECE').toUpperCase();
-        let mult = 1;
-        if (unite === 'CASIER') mult = article.uniteParCasier;
-        else if (unite === 'PACK') mult = article.uniteParPack;
-        else if (unite === 'PALETTE') mult = article.uniteParPalette;
-        else if (unite === 'PLATEAU') mult = 24;
-        else if (unite !== 'PIECE' && unite !== 'BOUTEILLE') {
-          throw new BadRequestException(`Unité de réception non supportée: ${unite}.`);
-        }
-        if (!Number.isInteger(mult) || mult <= 0) {
-          throw new BadRequestException(`Coefficient de conversion invalide pour l'article ${article.id}.`);
-        }
-
-        const qteLivreeBase = quantiteLivree * mult;
-        const qteGratuiteBase = quantiteGratuite * mult;
-        totalReception += prixAchat * quantiteLivree;
-
-        linesToCreate.push({
-          articleId: article.id,
-          quantiteLivree: qteLivreeBase,
-          quantiteGratuite: qteGratuiteBase,
-          prixAchatUnitaire: prixAchat,
-          uniteUsed: unite,
-        });
-        stockUpdates.set(
-          article.id,
-          (stockUpdates.get(article.id) || 0) + qteLivreeBase + qteGratuiteBase,
-        );
-      }
-
-      if (montantPaye > totalReception) {
-        throw new BadRequestException('Le montant payé ne peut pas dépasser le total de la réception.');
-      }
-      if (dto.modePaiement === ModePaiement.CREDIT && montantPaye !== 0) {
-        throw new BadRequestException('Une réception en crédit ne peut pas avoir de paiement immédiat.');
-      }
-
-      const montantDette = totalReception - montantPaye;
-
-      const reception = await tx.receptionFournisseur.create({
-        data: {
-          reference,
-          numBordereau: dto.numBordereau?.trim() || null,
-          statut: 'VALIDEE',
-          modePaiement: dto.modePaiement,
-          montantPaye,
-          montantDette,
-          fournisseurId: fournisseur.id,
-          depotId: scope.depotId,
-          tenantId: scope.tenantId,
-          lignes: { create: linesToCreate as any },
-        },
-        include: { lignes: true },
-      });
-
-      for (const [articleId, totalQte] of stockUpdates) {
-        if (totalQte <= 0) continue;
-        await tx.stock.upsert({
-          where: { articleId_depotId: { articleId, depotId: scope.depotId } },
-          update: { quantite: { increment: totalQte } },
-          create: { articleId, depotId: scope.depotId, quantite: totalQte },
-        });
-        await tx.mouvementStock.create({
-          data: {
-            type: 'ENTREE',
-            quantite: totalQte,
-            motif: `Réception ${reference}`,
-            articleId,
-            depotId: scope.depotId,
-            tenantId: scope.tenantId,
-          },
-        });
-      }
-
-      if (montantDette > 0) {
-        await tx.fournisseur.update({
-          where: { id: fournisseur.id },
-          data: { solde: { increment: montantDette } },
-        });
-      }
-
-      return reception;
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
 
     try {
       return await create();
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         const existing = await this.findIdempotentReception(
           reference,
           scope.tenantId,
           scope.depotId,
         );
         if (existing) return existing;
-        throw new ConflictException('Une réception concurrente utilise déjà cette référence.');
+        throw new ConflictException(
+          'Une réception concurrente utilise déjà cette référence.',
+        );
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
         const existing = await this.findIdempotentReception(
           reference,
           scope.tenantId,
@@ -347,7 +440,11 @@ export class FournisseursService {
     const scope = this.requireScope(tenantId, depotId);
     return this.prisma.receptionFournisseur.findMany({
       where: { tenantId: scope.tenantId, depotId: scope.depotId },
-      include: { fournisseur: true, depot: true, lignes: { include: { article: true } } },
+      include: {
+        fournisseur: true,
+        depot: true,
+        lignes: { include: { article: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -355,7 +452,11 @@ export class FournisseursService {
   async statsFournisseurs(tenantId: string, depotId: string) {
     const scope = this.requireScope(tenantId, depotId);
     const dettes = await this.prisma.fournisseur.aggregate({
-      where: { tenantId: scope.tenantId, depotId: scope.depotId, solde: { gt: 0 } },
+      where: {
+        tenantId: scope.tenantId,
+        depotId: scope.depotId,
+        solde: { gt: 0 },
+      },
       _sum: { solde: true },
       _count: { id: true },
     });

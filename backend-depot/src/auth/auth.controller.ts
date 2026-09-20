@@ -10,6 +10,7 @@ import {
   Logger,
   InternalServerErrorException,
   BadRequestException,
+  UnauthorizedException,
   HttpException,
   UseInterceptors,
   UploadedFile,
@@ -46,7 +47,11 @@ export class AuthController {
     jwtService: JwtService,
     auditService: AuditService,
   ) {
-    this.googleAuthService = new GoogleAuthService(prisma, jwtService, auditService);
+    this.googleAuthService = new GoogleAuthService(
+      prisma,
+      jwtService,
+      auditService,
+    );
   }
 
   @Public()
@@ -55,9 +60,16 @@ export class AuthController {
     try {
       return await this.authService.register(registerDto);
     } catch (error: any) {
-      this.logger.error(`Erreur critique lors de l'inscription: ${error.message}`, error.stack);
+      this.logger.error(
+        `Erreur critique lors de l'inscription: ${error.message}`,
+        error.stack,
+      );
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException({ message: error.message || 'Erreur interne lors de la création du compte', error: 'Registration Failed' });
+      throw new InternalServerErrorException({
+        message:
+          error.message || 'Erreur interne lors de la crÃ©ation du compte',
+        error: 'Registration Failed',
+      });
     }
   }
 
@@ -93,12 +105,20 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const origin = req.headers?.origin;
-    const configuredOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+    const configuredOrigins = (
+      process.env.FRONTEND_URLS ||
+      process.env.FRONTEND_URL ||
+      ''
+    )
       .split(',')
       .map((value: string) => value.trim().replace(/\/$/, ''))
       .filter(Boolean);
-    if (origin && configuredOrigins.length > 0 && !configuredOrigins.includes(origin.replace(/\/$/, ''))) {
-      throw new BadRequestException('Origine non autorisée.');
+    if (
+      origin &&
+      configuredOrigins.length > 0 &&
+      !configuredOrigins.includes(origin.replace(/\/$/, ''))
+    ) {
+      throw new BadRequestException('Origine non autorisÃ©e.');
     }
 
     const result = await this.googleAuthService.loginWithGoogle(credential, {
@@ -140,25 +160,62 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@CurrentUser() user: any) {
-    const tenant = await this.authService.getTenantInfo(user.tenantId);
-    return { ...user, metier: tenant?.metier, nomEntreprise: tenant?.nomEntreprise ?? tenant?.name };
+    // Le payload JWT ne porte que userId/role/tenantId : le profil complet
+    // (nom, tÃ©lÃ©phone, adresse, avatar, createdAt) doit Ãªtre relu en base,
+    // sinon le frontend perd l'avatar et les infos Ã  chaque refreshUser().
+    const [dbUser, tenant] = await Promise.all([
+      this.authService.getFullUser(user.userId),
+      this.authService.getTenantInfo(user.tenantId),
+    ]);
+    if (!dbUser) {
+      throw new UnauthorizedException('Utilisateur introuvable.');
+    }
+    return {
+      ...dbUser,
+      isSuperAdmin: dbUser.isSuperAdmin ?? user.isSuperAdmin ?? false,
+      metier: tenant?.metier,
+      nomEntreprise: tenant?.nomEntreprise ?? tenant?.name,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('permissions')
   async getPermissions(@CurrentUser() user: any) {
     const tenant = await this.authService.getTenantInfo(user.tenantId);
-    const metier = await this.permissionService.resolveMetierSlug(user.tenantId, undefined, tenant?.metier);
+    const metier = await this.permissionService.resolveMetierSlug(
+      user.tenantId,
+      undefined,
+      tenant?.metier,
+    );
     if (!metier) {
-      return { fullAccess: false, denySousModules: [], permissions: {}, libellePoste: user.role, metier: null };
+      return {
+        fullAccess: false,
+        denySousModules: [],
+        permissions: {},
+        libellePoste: user.role,
+        metier: null,
+        actions: [],
+        actionsFullAccess: false,
+      };
     }
-    const result = await this.permissionService.getPermissionsForUser(user.role, metier);
-    return { ...result, metier };
+    const [result, actionsResult] = await Promise.all([
+      this.permissionService.getPermissionsForUser(user.role, metier),
+      this.permissionService.getActionsForUser(user.role, metier),
+    ]);
+    return {
+      ...result,
+      metier,
+      actions: actionsResult.actions,
+      actionsFullAccess: actionsResult.fullAccess,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me')
-  async updateProfile(@CurrentUser() user: any, @Body() updateProfileDto: UpdateProfileDto) {
+  async updateProfile(
+    @CurrentUser() user: any,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
     return await this.authService.updateProfile(user.userId, updateProfileDto);
   }
 
@@ -176,15 +233,23 @@ export class AuthController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
-          return cb(new BadRequestException("Format d'image non supporté (jpg, jpeg, png, webp uniquement)"), false);
+          return cb(
+            new BadRequestException(
+              "Format d'image non supportÃ© (jpg, jpeg, png, webp uniquement)",
+            ),
+            false,
+          );
         }
         cb(null, true);
       },
       limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
-  async uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
-    if (!file) throw new BadRequestException('Aucun fichier reçu');
+  async uploadAvatar(
+    @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('Aucun fichier reÃ§u');
     return await this.authService.uploadAvatar(user.userId, file);
   }
 
@@ -195,15 +260,22 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
     @Req() req: any,
   ) {
-    return await this.authService.changePassword(user.userId, changePasswordDto, {
-      ip: req.ip ?? null,
-      userAgent: req.headers?.['user-agent'] ?? null,
-    });
+    return await this.authService.changePassword(
+      user.userId,
+      changePasswordDto,
+      {
+        ip: req.ip ?? null,
+        userAgent: req.headers?.['user-agent'] ?? null,
+      },
+    );
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('2fa')
-  async toggle2FA(@CurrentUser() user: any, @Body() body: { enabled: boolean }) {
+  async toggle2FA(
+    @CurrentUser() user: any,
+    @Body() body: { enabled: boolean },
+  ) {
     return await this.authService.toggle2FA(user.userId, body.enabled);
   }
 
@@ -215,7 +287,28 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Put('preferences')
-  async updatePreferences(@CurrentUser() user: any, @Body() preferencesDto: PreferencesDto) {
-    return await this.authService.updatePreferences(user.userId, preferencesDto);
+  async updatePreferences(
+    @CurrentUser() user: any,
+    @Body() preferencesDto: PreferencesDto,
+  ) {
+    return await this.authService.updatePreferences(
+      user.userId,
+      preferencesDto,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('actions')
+  async getActions(@CurrentUser() user: any) {
+    // S14 - actions fines accordees au role sur le metier du tenant.
+    // Utilise par le hook frontend useActions() pour masquer les boutons.
+    const tenant = await this.authService.getTenantInfo(user.tenantId);
+    const metier = await this.permissionService.resolveMetierSlug(
+      user.tenantId,
+      undefined,
+      tenant?.metier,
+    );
+    if (!metier) return { fullAccess: false, actions: [] };
+    return this.permissionService.getActionsForUser(user.role, metier);
   }
 }

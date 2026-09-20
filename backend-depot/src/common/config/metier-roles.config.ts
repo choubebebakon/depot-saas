@@ -175,6 +175,55 @@ export const METIER_ROLES: Partial<Record<MetierType, RoleConfig[]>> = {
       ],
       isAdmin: false,
     },
+    {
+      nom: 'MAGASINIER',
+      label: 'Magasinier',
+      // §6 : mouvement physique du stock (variantes, réception,
+      // inventaire) — aucune caisse, aucune annulation de vente.
+      permissions: [
+        'STOCK_READ',
+        'STOCK_WRITE',
+        'VENTES_READ',
+        'RAPPORTS_READ',
+      ],
+      isAdmin: false,
+    },
+    {
+      nom: 'COMMERCIAL',
+      label: 'Commercial',
+      // §7 : vente + portefeuille clients individuel — pas de caisse,
+      // pas d'écriture stock, promotions en consultation.
+      permissions: [
+        'STOCK_READ',
+        'VENTES_READ',
+        'VENTES_WRITE',
+        'CLIENTS_READ',
+        'CLIENTS_WRITE',
+        'FACTURES_READ',
+        'PROMOTIONS_READ',
+      ],
+      isAdmin: false,
+    },
+    {
+      nom: 'COMPTABLE',
+      label: 'Comptable',
+      // §8 : lecture globale finance (crédit clients inclus), clôtures
+      // et dépenses ; jamais d'écriture stock ni d'ouverture de caisse.
+      permissions: [
+        'VENTES_READ',
+        'CAISSE_READ',
+        'FACTURES_READ',
+        'RAPPORTS_READ',
+        'RAPPORTS_EXPORT',
+        'DEPENSES_READ',
+        'DEPENSES_WRITE',
+        'CLIENTS_READ',
+        'CREDIT_CLIENT_READ',
+        'FOURNISSEURS_READ',
+        'STOCK_READ',
+      ],
+      isAdmin: false,
+    },
   ],
 
   // ── QUINCAILLERIE ─────────────────────────────────────────────
@@ -472,6 +521,54 @@ export const METIER_ROLES: Partial<Record<MetierType, RoleConfig[]>> = {
         'FACTURES_READ',
         'FACTURES_WRITE',
         'CLIENTS_READ',
+      ],
+      isAdmin: false,
+    },
+    {
+      nom: 'MAGASINIER',
+      label: 'Rayonniste',
+      // §6 : responsable de la réalité physique du stock — pas de caisse,
+      // pas de ventes écritables, prix de vente non modifiables.
+      permissions: [
+        'STOCK_READ',
+        'STOCK_WRITE',
+        'VENTES_READ',
+        'RAPPORTS_READ',
+      ],
+      isAdmin: false,
+    },
+    {
+      nom: 'COMMERCIAL',
+      label: 'Commercial',
+      // §7 : vend et développe la clientèle — aucune caisse, aucun
+      // écriture stock ; portefeuille clients individuel (§7).
+      permissions: [
+        'STOCK_READ',
+        'VENTES_READ',
+        'VENTES_WRITE',
+        'CLIENTS_READ',
+        'CLIENTS_WRITE',
+        'FACTURES_READ',
+        'PROMOTIONS_READ',
+      ],
+      isAdmin: false,
+    },
+    {
+      nom: 'COMPTABLE',
+      label: 'Comptable',
+      // §8 : vision financière complète, zéro contrôle opérationnel
+      // sur le stock (lecture seule) et pas d'ouverture de caisse.
+      permissions: [
+        'VENTES_READ',
+        'CAISSE_READ',
+        'FACTURES_READ',
+        'RAPPORTS_READ',
+        'RAPPORTS_EXPORT',
+        'DEPENSES_READ',
+        'DEPENSES_WRITE',
+        'CLIENTS_READ',
+        'FOURNISSEURS_READ',
+        'STOCK_READ',
       ],
       isAdmin: false,
     },

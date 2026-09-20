@@ -58,7 +58,10 @@ export class EmailChannel {
   private safeActionUrl(value: unknown): string | null {
     if (typeof value !== 'string' || !value.trim()) return null;
     try {
-      const url = new URL(value, this.configService.get<string>('APP_URL', 'https://gestock.cm'));
+      const url = new URL(
+        value,
+        this.configService.get<string>('APP_URL', 'https://gestock.cm'),
+      );
       if (!['http:', 'https:'].includes(url.protocol)) return null;
       return this.escapeHtml(url.toString());
     } catch {

@@ -11,6 +11,7 @@ import {
   FournisseursService,
   DepensesService,
   VentesService,
+  ReceptionsService,
 } from './boutique.service';
 import { DepensesProductionService } from './depenses-production.service';
 import { DepensesProductionController } from './depenses-production.controller';
@@ -22,7 +23,11 @@ import { PromotionsProductionController } from './promotions-production.controll
 
 @Module({
   imports: [PrismaModule, AuditModule],
-  controllers: [BoutiqueController, DepensesProductionController, PromotionsProductionController],
+  controllers: [
+    BoutiqueController,
+    DepensesProductionController,
+    PromotionsProductionController,
+  ],
   providers: [
     PromotionsService,
     CreditClientService,
@@ -33,6 +38,7 @@ import { PromotionsProductionController } from './promotions-production.controll
     DepensesService,
     DepensesProductionService,
     PromotionsProductionService,
+    ReceptionsService,
     {
       provide: APP_GUARD,
       useClass: LegacyBoutiqueDepensesGuard,
@@ -53,6 +59,7 @@ import { PromotionsProductionController } from './promotions-production.controll
     DepensesProductionService,
     PromotionsProductionService,
     VentesService,
+    ReceptionsService,
   ],
 })
 export class BoutiqueModule {}

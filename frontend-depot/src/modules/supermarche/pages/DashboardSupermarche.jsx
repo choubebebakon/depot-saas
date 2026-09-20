@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import api from '../../../api';
 import { ShoppingCart, Coins, Receipt, AlertTriangle, Tag, Package, Clock, Trophy, DollarSign, BarChart3 } from 'lucide-react';
 
@@ -48,6 +49,9 @@ export default function DashboardSupermarche() {
   const { user, tenantId } = useAuth();
   const navigate = useNavigate();
   const [time, setTime] = useState(new Date());
+  // §13 — le widget « Top Produits » vient du module Rapports : la requête
+  // n'est lancée que si l'utilisateur a la permission correspondante.
+  const { canRead: canReadRapports } = usePermission('rapports');
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['supermarche-dashboard-stats', tenantId],
@@ -65,8 +69,8 @@ export default function DashboardSupermarche() {
       const res = await api.get('/supermarche/rapports', { params: cleanParams({ periode: 'jour' }) });
       return res.data;
     },
-    enabled: !!tenantId,
-    refetchInterval: 30_000,
+    enabled: !!tenantId && canReadRapports,
+    refetchInterval: canReadRapports ? 30_000 : false,
   });
 
   const { data: rayons } = useQuery({

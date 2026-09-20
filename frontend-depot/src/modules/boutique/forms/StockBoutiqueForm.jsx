@@ -20,6 +20,9 @@ const articleSchema = z.object({
   codeBarres: z.string().optional(),
   unite: z.string().default('PIECE'),
   familleId: z.string().optional(),
+  // Type/famille de l'article : saisie manuelle en texte libre (find-or-create
+  // côté serveur par nom, scoping tenant).
+  familleNom: z.string().max(120, 'La famille ne doit pas dépasser 120 caractères').optional(),
   marqueId: z.string().optional(),
   categorieId: z.string().uuid('Catégorie invalide').optional().or(z.literal('')),
   photoUrl: z.string().nullable().optional(),
@@ -28,7 +31,7 @@ const articleSchema = z.object({
 
 const defaultValues = {
   designation: '', prixVente: '', prixAchat: '', prixGros: '', seuilCritique: 0,
-  codeBarres: '', unite: 'PIECE', familleId: '', marqueId: '', categorieId: '',
+  codeBarres: '', unite: 'PIECE', familleId: '', familleNom: '', marqueId: '', categorieId: '',
   photoUrl: null, datePeremption: '',
 };
 
@@ -57,7 +60,8 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
         designation: edit.designation || edit.nom || '', prixVente: edit.prixVente ?? '',
         prixAchat: edit.prixAchat ?? '', prixGros: edit.prixGros ?? '',
         seuilCritique: edit.seuilCritique ?? 0, codeBarres: edit.codeBarres || '',
-        unite: edit.unite || 'PIECE', familleId: edit.familleId || '', marqueId: edit.marqueId || '',
+        unite: edit.unite || 'PIECE', familleId: edit.familleId || '',
+        familleNom: edit.famille?.nom || '', marqueId: edit.marqueId || '',
         categorieId: edit.categorieId ?? '', photoUrl: edit.photoUrl || null,
         datePeremption: edit.datePeremption ? new Date(edit.datePeremption).toISOString().slice(0, 16) : '',
       });
@@ -72,6 +76,8 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
         prixGros: data.prixGros === '' ? undefined : Number(data.prixGros),
         seuilCritique: Number(data.seuilCritique),
         codeBarres: data.codeBarres || undefined,
+        // Type/famille en texte libre : le serveur résout (find-or-create).
+        familleNom: (data.familleNom || '').trim() || undefined,
         datePeremption: data.datePeremption || undefined,
         depotId,
       };
@@ -79,8 +85,10 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
     },
     onSuccess: () => {
       notif.success(edit ? 'Article modifié' : 'Article créé');
-      queryClient.invalidateQueries({ queryKey: ['boutique-articles'] });
-      queryClient.invalidateQueries({ queryKey: ['boutique-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['boutique-articles'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['boutique-stock'], exact: false });
+      // Les compteurs d'articles par catégorie doivent se rafraîchir aussi.
+      queryClient.invalidateQueries({ queryKey: ['boutique-categories'], exact: false });
       onSuccess(); onClose();
     },
     onError: (err) => notif.error(err.response?.data?.message || 'Erreur lors de la sauvegarde'),
@@ -117,6 +125,13 @@ export default function StockBoutiqueForm({ isOpen, onClose, onSuccess, edit }) 
         <Controller name="categorieId" control={control} render={({ field }) => (
           <FormField label="Catégorie" name="categorieId" type="select" value={field.value}
             onChange={(e) => field.onChange(e.target.value)} options={categories?.map(c => ({ value: c.id, label: c.nom })) || []} />
+        )} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 mt-4">
+        <Controller name="familleNom" control={control} render={({ field }) => (
+          <FormField label="Type de famille de l'article" name="familleNom" value={field.value}
+            onChange={(e) => field.onChange(e.target.value)} placeholder="Ex : Boissons, Épicerie, Hygiène..."
+            hint="Saisie manuelle — créée automatiquement si inexistante" error={errors.familleNom?.message} />
         )} />
       </div>
       <div className="grid grid-cols-1 gap-4 mt-4">

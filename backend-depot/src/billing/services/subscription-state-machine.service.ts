@@ -40,19 +40,13 @@ const VALID_TRANSITIONS: Record<SubscriptionStatus, SubscriptionStatus[]> = {
     SubscriptionStatus.ACTIVE,
     SubscriptionStatus.EXPIRED,
   ],
-  [SubscriptionStatus.CANCELED]: [
-    SubscriptionStatus.ACTIVE,
-  ],
+  [SubscriptionStatus.CANCELED]: [SubscriptionStatus.ACTIVE],
   [SubscriptionStatus.GRACE]: [
     SubscriptionStatus.ACTIVE,
     SubscriptionStatus.EXPIRED,
   ],
-  [SubscriptionStatus.EXPIRED]: [
-    SubscriptionStatus.ACTIVE,
-  ],
-  [SubscriptionStatus.READ_ONLY]: [
-    SubscriptionStatus.ACTIVE,
-  ],
+  [SubscriptionStatus.EXPIRED]: [SubscriptionStatus.ACTIVE],
+  [SubscriptionStatus.READ_ONLY]: [SubscriptionStatus.ACTIVE],
   [SubscriptionStatus.UNPAID]: [
     SubscriptionStatus.ACTIVE,
     SubscriptionStatus.CANCELED,

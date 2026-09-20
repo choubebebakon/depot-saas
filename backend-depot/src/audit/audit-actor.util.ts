@@ -9,6 +9,7 @@
  */
 export interface AuditActor {
   userId: string | null;
+  tenantId: string | null;
   email: string | null;
   role: string | null;
   depotId: string | null;
@@ -19,6 +20,7 @@ export interface AuditActor {
 export function buildAuditActor(req: any): AuditActor {
   return {
     userId: req?.user?.userId ?? null,
+    tenantId: req?.user?.tenantId ?? null,
     email: req?.user?.email ?? null,
     role: req?.user?.role ?? null,
     depotId: req?.user?.depotId ?? null,

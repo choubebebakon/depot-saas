@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
+import { usePermission } from '../../../shared/hooks/usePermission';
 import { boutiqueApi } from '../services/boutiqueApi';
 import { Store, DollarSign, Package, User, AlertTriangle, Banknote, Trophy } from 'lucide-react';
 
 export default function DashboardBoutique() {
   const navigate = useNavigate();
   const { user, tenantId } = useAuth();
+  // §13 — le widget « Top produits / CA » vient du module Rapports : la
+  // requête n'est lancée que si l'utilisateur a la permission correspondante.
+  const { canRead: canReadRapports } = usePermission('rapports');
   const [time, setTime] = useState(new Date());
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -26,8 +30,8 @@ export default function DashboardBoutique() {
       const res = await boutiqueApi.getRapports({ periode: 'jour' });
       return res.data;
     },
-    enabled: !!tenantId,
-    refetchInterval: 30_000,
+    enabled: !!tenantId && canReadRapports,
+    refetchInterval: canReadRapports ? 30_000 : false,
   });
 
   useEffect(() => {
@@ -53,7 +57,7 @@ export default function DashboardBoutique() {
           <p className="text-slate-400 text-sm mt-1">{time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => navigate('/boutique/ventes')} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-cyan-600/20">Ventes</button>
+          <button onClick={() => navigate('/boutique/ventes-caisse')} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-cyan-600/20">Ventes</button>
           <button onClick={() => navigate('/boutique/stock')} className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all">Stock</button>
         </div>
       </div>

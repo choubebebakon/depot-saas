@@ -6,7 +6,9 @@ export class CreateSupportDto {
   @IsString()
   message: string;
 
-  @IsEnum(SupportMessageType, { message: 'Type de message invalide (BUG, SUGGESTION, MESSAGE)' })
+  @IsEnum(SupportMessageType, {
+    message: 'Type de message invalide (BUG, SUGGESTION, MESSAGE)',
+  })
   type: SupportMessageType;
 
   @IsOptional()

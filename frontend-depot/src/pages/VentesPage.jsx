@@ -184,7 +184,7 @@ export default function VentesPage() {
     startDate: '', endDate: '', statut: '', recherche: '',
   });
 
-  const { data: tenantConfig  } = useData(`/tenants/${tenantId}`, { enabled: !!tenantId });
+  const { data: tenantConfig  } = useData(`/tenant/${tenantId}`, { enabled: !!tenantId });
 
   const params = useMemo(() => {
     const p = { tenantId, depotId };

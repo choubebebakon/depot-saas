@@ -33,7 +33,10 @@ export class PromotionScopeInterceptor implements NestInterceptor {
     return /(?:^|\/)promotions(?:\/[^/]+)?$/i.test(path);
   }
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<unknown>> {
     const req = context.switchToHttp().getRequest<ScopedRequest>();
     if (!this.isPromotionRoute(req)) return next.handle();
 
@@ -51,24 +54,29 @@ export class PromotionScopeInterceptor implements NestInterceptor {
     const articleId = req.body?.articleId;
 
     if (method === 'POST') {
-      if (!articleId) throw new BadRequestException('articleId requis pour une promotion.');
+      if (!articleId)
+        throw new BadRequestException('articleId requis pour une promotion.');
       await this.assertArticleInDepot(tenantId, depotId, articleId);
     }
 
     if (method === 'PATCH' || method === 'PUT') {
       if (!id) throw new BadRequestException('Identifiant promotion requis.');
       const promotion = await this.prisma.promotion.findFirst({
-        where: { id, tenantId },
+        where: { id: String(id), tenantId },
         select: { id: true, articleId: true },
       });
       if (!promotion) throw new NotFoundException('Promotion introuvable.');
-      await this.assertArticleInDepot(tenantId, depotId, articleId || promotion.articleId);
+      await this.assertArticleInDepot(
+        tenantId,
+        depotId,
+        articleId || promotion.articleId,
+      );
     }
 
     if (method === 'DELETE' || method === 'GET') {
       if (id) {
         const promotion = await this.prisma.promotion.findFirst({
-          where: { id, tenantId },
+          where: { id: String(id), tenantId },
           select: { id: true, articleId: true },
         });
         if (!promotion) throw new NotFoundException('Promotion introuvable.');
@@ -76,11 +84,13 @@ export class PromotionScopeInterceptor implements NestInterceptor {
       }
     }
 
-    return next.handle().pipe(
-      mergeMap((result: unknown) =>
-        from(this.filterListResult(result, method, tenantId, depotId)),
-      ),
-    );
+    return next
+      .handle()
+      .pipe(
+        mergeMap((result: unknown) =>
+          from(this.filterListResult(result, method, tenantId, depotId)),
+        ),
+      );
   }
 
   private async filterListResult(

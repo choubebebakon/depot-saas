@@ -68,13 +68,15 @@ export class NotificationsScheduler {
           }
         }
 
-       if (
-          ([
-            MetierType.PHARMACIE,
-            MetierType.BOUTIQUE,
-            MetierType.SUPERMARCHE,
-            MetierType.DEPOT_BOISSONS,
-          ] as MetierType[]).includes(tenant.metier)
+        if (
+          (
+            [
+              MetierType.PHARMACIE,
+              MetierType.BOUTIQUE,
+              MetierType.SUPERMARCHE,
+              MetierType.DEPOT_BOISSONS,
+            ] as MetierType[]
+          ).includes(tenant.metier)
         ) {
           await this.checkPeremptionLots(tenant.id);
         }

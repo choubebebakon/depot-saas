@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 
 /**
  * Ferme les anciennes routes de dépenses qui acceptaient un depotId fourni
@@ -10,9 +15,12 @@ export class LegacyBoutiqueDepensesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const path = String(request.path || '');
-    const isLegacyExpenseRoute = path === '/boutique/depenses' || path.startsWith('/boutique/depenses/');
+    const isLegacyExpenseRoute =
+      path === '/boutique/depenses' || path.startsWith('/boutique/depenses/');
     if (isLegacyExpenseRoute) {
-      throw new ForbiddenException('Ancien flux de dépenses désactivé. Utilisez le module Dépenses de production.');
+      throw new ForbiddenException(
+        'Ancien flux de dépenses désactivé. Utilisez le module Dépenses de production.',
+      );
     }
     return true;
   }

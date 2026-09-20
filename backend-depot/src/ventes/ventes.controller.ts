@@ -13,6 +13,7 @@ import {
 import { RoleUser } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { RequireAction } from '../auth/decorators/require-permission.decorator';
 import { CreateVenteDto } from './dto/create-vente.dto';
 import {
   AnnulerVenteDto,
@@ -33,7 +34,10 @@ export class VentesController {
   constructor(private readonly ventesService: VentesService) {}
 
   private getTenantId(req: any): string {
-    if (!req.depotScope?.tenantId || req.depotScope.tenantId !== req.user?.tenantId) {
+    if (
+      !req.depotScope?.tenantId ||
+      req.depotScope.tenantId !== req.user?.tenantId
+    ) {
       throw new BadRequestException('Contexte tenant invalide.');
     }
     return req.depotScope.tenantId;
@@ -59,11 +63,14 @@ export class VentesController {
     @CurrentUser() user: any,
     @Req() req: any,
   ) {
-    const { tenantId: _clientTenantId, depotId: _clientDepotId, ...saleData } =
-      createVenteDto as CreateVenteDto & {
-        tenantId?: string;
-        depotId?: string;
-      };
+    const {
+      tenantId: _clientTenantId,
+      depotId: _clientDepotId,
+      ...saleData
+    } = createVenteDto as CreateVenteDto & {
+      tenantId?: string;
+      depotId?: string;
+    };
 
     return await this.ventesService.createVente(
       {
@@ -77,18 +84,27 @@ export class VentesController {
 
   @Get('stats')
   getStats(@Req() req: any) {
-    return this.ventesService.getStats(this.getTenantId(req), this.getDepotId(req));
+    return this.ventesService.getStats(
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
   }
 
   @Get('validations/en-attente')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.MAGASINIER)
   findEnAttenteValidation(@Req() req: any) {
-    return this.ventesService.findEnAttenteValidation(this.getTenantId(req), this.getDepotId(req));
+    return this.ventesService.findEnAttenteValidation(
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
   }
 
   @Get('caisse')
   async getCaisse(@Req() req: any) {
-    return this.ventesService.getCaisse(this.getTenantId(req), this.getDepotId(req));
+    return this.ventesService.getCaisse(
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
   }
 
   @Get()
@@ -109,7 +125,11 @@ export class VentesController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: any) {
-    return this.ventesService.findOne(id, this.getTenantId(req), this.getDepotId(req));
+    return this.ventesService.findOne(
+      id,
+      this.getTenantId(req),
+      this.getDepotId(req),
+    );
   }
 
   @Patch(':id/valider-sortie')
@@ -130,6 +150,7 @@ export class VentesController {
 
   @Patch(':id/annuler')
   @Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.CAISSIER)
+  @RequireAction('ventes.annuler')
   annuler(
     @Param('id') id: string,
     @Body() body: AnnulerVenteDto,

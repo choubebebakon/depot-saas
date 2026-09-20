@@ -23,7 +23,12 @@ export class LivraisonsService {
     return this.disabled();
   }
 
-  confirmer(_id: string, _tenantId?: string, _depotId?: string, _user?: unknown): never {
+  confirmer(
+    _id: string,
+    _tenantId?: string,
+    _depotId?: string,
+    _user?: unknown,
+  ): never {
     return this.disabled();
   }
 }

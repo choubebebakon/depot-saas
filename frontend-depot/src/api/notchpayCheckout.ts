@@ -1,148 +1,99 @@
-const NOTCHPAY_SCRIPT_SRC = 'https://checkout.notchpay.co/script.js';
-const SDK_READY_TIMEOUT_MS = 10000;
-const SDK_READY_POLL_MS = 100;
+/**
+ * NotchPay — ouverture du paiement d'abonnement (flux OFFICIEL « Collect »).
+ *
+ * FAITS VÉRIFIÉS (docs developer.notchpay.co + test LIVE du compte GesTock) :
+ * 1. NotchPay expose une page de paiement HÉBERGÉE (« Collect »). Le parcours
+ *    documenté est : créer le paiement côté serveur → REDIRIGER le client vers
+ *    `authorization_url` (`window.location.href = data.authorization_url`).
+ * 2. Il n'existe AUCUN SDK JavaScript navigateur documenté. L'ancien code
+ *    chargeait `https://checkout.notchpay.co/script.js` : cette URL n'existe
+ *    pas (ERR_CONNECTION_RESET constaté en réel) et cet hôte ne pointe pas sur
+ *    l'infrastructure NotchPay (`api.` et `pay.` partagent l'IP
+ *    148.113.235.168, `checkout.` non).
+ * 3. Le numéro Mobile Money / les données de carte sont donc saisis sur la page
+ *    NotchPay : aucune donnée bancaire ne transite par GesTock.
+ *
+ * SÉCURITÉ : la clé publique n'est PAS nécessaire dans le navigateur (elle ne
+ * sert qu'aux appels API du backend). Le contrôle de domaine ci-dessous
+ * empêche toute redirection ouverte si la réponse du backend était altérée.
+ * L'activation de l'abonnement n'est JAMAIS déclenchée ici : elle reste
+ * pilotée par le webhook NotchPay signé côté serveur.
+ */
 
-type NotchPayCheckoutPayload = {
+export type NotchPayCheckoutPayload = {
+  /** URL de paiement renvoyée par le backend (authorization_url NotchPay). */
+  checkoutUrl?: string;
+  /** Alias défensif si le backend exposait le nom brut du champ. */
+  authorizationUrl?: string;
+  /** Conservé pour compatibilité d'appel — inutilisé par ce flux. */
   publicKey?: string;
   paymentId?: string;
-  checkoutUrl?: string;
   amount: number;
   currency: string;
   channel?: string;
-  email: string;
+  email?: string;
   phone?: string;
-  reference: string;
+  reference?: string;
   description?: string;
 };
 
-type NotchPayOpenOptions = NotchPayCheckoutPayload & {
-  key?: string;
-  customer?: {
-    email: string;
-    phone?: string;
-  };
-  onSuccess?: (transaction: unknown) => void;
-  onFailure?: (error: unknown) => void;
-  onError?: (error: unknown) => void;
-  onClose?: () => void;
-};
+/** Domaines NotchPay légitimes pour la page de paiement hébergée. */
+const NOTCHPAY_HOST_PATTERN = /(^|\.)notchpay\.co$/i;
 
-type OpenNotchPayCallbacks = {
-  onSuccess: (transaction: unknown) => void;
-  onFailure: (error: unknown) => void;
-  onClose?: () => void;
-};
-
-declare global {
-  interface Window {
-    NotchPay?: {
-      open?: (options: NotchPayOpenOptions) => void;
-    };
-  }
-}
-
-let notchPayScriptPromise: Promise<void> | null = null;
-
-function redirectToHostedCheckout(checkoutUrl?: string): void {
-  console.warn('[NotchPay] Fallback activé.');
-
-  if (!checkoutUrl) {
-    throw new Error('URL de paiement NotchPay indisponible.');
+/**
+ * Résout et VALIDE l'URL de paiement hébergée.
+ * Jette une erreur explicite si l'URL est absente, malformée, non HTTPS ou
+ * hors domaine NotchPay (protection contre la redirection ouverte).
+ */
+export function resolveNotchPayCheckoutUrl(
+  checkout: Pick<NotchPayCheckoutPayload, 'checkoutUrl' | 'authorizationUrl'>,
+): string {
+  const raw = checkout?.checkoutUrl ?? checkout?.authorizationUrl;
+  if (!raw) {
+    throw new Error(
+      'URL de paiement NotchPay indisponible (authorization_url absent de la réponse).',
+    );
   }
 
-  window.location.href = checkoutUrl;
-}
-
-function waitForNotchPayReady(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const startedAt = Date.now();
-
-    const checkReady = () => {
-      if (window.NotchPay?.open) {
-        console.info('[NotchPay] SDK prêt.');
-        resolve();
-        return;
-      }
-
-      if (Date.now() - startedAt >= SDK_READY_TIMEOUT_MS) {
-        reject(new Error('NotchPay SDK non disponible après chargement du script.'));
-        return;
-      }
-
-      window.setTimeout(checkReady, SDK_READY_POLL_MS);
-    };
-
-    checkReady();
-  });
-}
-
-export async function loadNotchPayScript(): Promise<void> {
-  if (window.NotchPay?.open) {
-    console.info('[NotchPay] SDK prêt.');
-    return;
-  }
-
-  if (!notchPayScriptPromise) {
-    notchPayScriptPromise = new Promise((resolve, reject) => {
-      console.info('[NotchPay] Chargement script...');
-
-      const existingScript = document.querySelector<HTMLScriptElement>(
-        `script[src="${NOTCHPAY_SCRIPT_SRC}"]`,
-      );
-
-      if (existingScript) {
-        existingScript.addEventListener('load', () => resolve(), { once: true });
-        existingScript.addEventListener('error', () => reject(new Error('Impossible de charger NotchPay Checkout.')), { once: true });
-
-        if (existingScript.dataset.loaded === 'true') {
-          resolve();
-        }
-
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = NOTCHPAY_SCRIPT_SRC;
-      script.async = true;
-      script.onload = () => {
-        script.dataset.loaded = 'true';
-        resolve();
-      };
-      script.onerror = () => reject(new Error('Impossible de charger NotchPay Checkout.'));
-      document.body.appendChild(script);
-    });
-  }
-
-  await notchPayScriptPromise;
-  await waitForNotchPayReady();
-}
-
-export async function openNotchPayCheckout(
-  checkout: NotchPayCheckoutPayload,
-  callbacks: OpenNotchPayCallbacks,
-): Promise<void> {
+  let parsed: URL;
   try {
-    await loadNotchPayScript();
-
-    if (!window.NotchPay?.open) {
-      throw new Error('NotchPay Checkout indisponible.');
-    }
-
-    console.info('[NotchPay] Ouverture modale...');
-    window.NotchPay.open({
-      ...checkout,
-      key: checkout.publicKey,
-      customer: {
-        email: checkout.email,
-        phone: checkout.phone,
-      },
-      onSuccess: callbacks.onSuccess,
-      onFailure: callbacks.onFailure,
-      onError: callbacks.onFailure,
-      onClose: callbacks.onClose,
-    });
-  } catch (error) {
-    console.error('[NotchPay] Erreur checkout inline.', error);
-    redirectToHostedCheckout(checkout?.checkoutUrl);
+    parsed = new URL(raw);
+  } catch {
+    throw new Error('URL de paiement NotchPay invalide.');
   }
+
+  if (
+    parsed.protocol !== 'https:' ||
+    !NOTCHPAY_HOST_PATTERN.test(parsed.hostname)
+  ) {
+    throw new Error(
+      'URL de paiement NotchPay non conforme (domaine attendu : notchpay.co).',
+    );
+  }
+
+  return parsed.toString();
 }
+
+/**
+ * Redirige le commerçant vers la page de paiement sécurisée NotchPay.
+ * C'est la SEULE action déclenchée côté navigateur : la confirmation et
+ * l'activation restent entièrement côté serveur (webhook signé).
+ */
+export function redirectToNotchPayCheckout(
+  checkout: NotchPayCheckoutPayload,
+): void {
+  const url = resolveNotchPayCheckoutUrl(checkout);
+  console.info('[NotchPay] Redirection vers la page de paiement hébergée.');
+  window.location.assign(url);
+}
+
+/**
+ * @deprecated Alias rétro-compatible de {@link redirectToNotchPayCheckout}.
+ * Le nom d'origine évoquait un SDK inline qui n'existe pas côté NotchPay.
+ */
+export function openNotchPayCheckout(checkout: NotchPayCheckoutPayload): void {
+  redirectToNotchPayCheckout(checkout);
+}
+
+
+

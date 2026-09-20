@@ -63,12 +63,16 @@ export class CommandesService {
 
   async createCommande(dto: CreateCommandeDto, actor: any) {
     if (!actor?.tenantId || !actor?.depotId || !actor?.userId) {
-      throw new BadRequestException('Contexte utilisateur incomplet pour créer la commande.');
+      throw new BadRequestException(
+        'Contexte utilisateur incomplet pour créer la commande.',
+      );
     }
     const depotId = this.requireDepotId(actor.depotId);
 
     if (!dto.lignes?.length) {
-      throw new BadRequestException('Une commande doit contenir au moins une ligne.');
+      throw new BadRequestException(
+        'Une commande doit contenir au moins une ligne.',
+      );
     }
 
     const seenArticles = new Set<string>();
@@ -80,7 +84,9 @@ export class CommandesService {
       }
       seenArticles.add(ligne.articleId);
       if (!Number.isInteger(ligne.quantite) || ligne.quantite <= 0) {
-        throw new BadRequestException('La quantité commandée doit être un entier strictement positif.');
+        throw new BadRequestException(
+          'La quantité commandée doit être un entier strictement positif.',
+        );
       }
       if (!Number.isFinite(ligne.prixAchatUnit) || ligne.prixAchatUnit < 0) {
         throw new BadRequestException("Le prix d'achat unitaire est invalide.");
@@ -105,7 +111,9 @@ export class CommandesService {
         select: { id: true },
       });
       if (!fournisseur) {
-        throw new BadRequestException('Fournisseur invalide ou inaccessible pour ce dépôt.');
+        throw new BadRequestException(
+          'Fournisseur invalide ou inaccessible pour ce dépôt.',
+        );
       }
 
       const articles = await tx.article.findMany({
@@ -116,7 +124,9 @@ export class CommandesService {
         select: { id: true },
       });
       if (articles.length !== seenArticles.size) {
-        throw new BadRequestException('Un ou plusieurs articles sont invalides pour ce tenant.');
+        throw new BadRequestException(
+          'Un ou plusieurs articles sont invalides pour ce tenant.',
+        );
       }
 
       const total = dto.lignes.reduce(
@@ -150,7 +160,10 @@ export class CommandesService {
           },
         });
       } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
           throw new ConflictException('La référence de commande existe déjà.');
         }
         throw error;
@@ -210,7 +223,12 @@ export class CommandesService {
     });
   }
 
-  async update(tenantId: string, depotId: string, id: string, dto: UpdateCommandeDto) {
+  async update(
+    tenantId: string,
+    depotId: string,
+    id: string,
+    dto: UpdateCommandeDto,
+  ) {
     const selectedDepotId = this.requireDepotId(depotId);
     const commande = await this.prisma.commandeFournisseur.findFirst({
       where: { id, tenantId, depotId: selectedDepotId },
@@ -221,7 +239,10 @@ export class CommandesService {
       throw new NotFoundException(`Commande ${id} introuvable dans ce dépôt.`);
     }
 
-    if (dto.statut !== undefined && !this.canTransition(commande.statut, dto.statut)) {
+    if (
+      dto.statut !== undefined &&
+      !this.canTransition(commande.statut, dto.statut)
+    ) {
       throw new ConflictException(
         `Transition de statut interdite: ${commande.statut} → ${dto.statut}.`,
       );
@@ -233,7 +254,9 @@ export class CommandesService {
     if (dto.dateReceptionPrev !== undefined) {
       const date = new Date(dto.dateReceptionPrev);
       if (Number.isNaN(date.getTime())) {
-        throw new BadRequestException('La date de réception prévue est invalide.');
+        throw new BadRequestException(
+          'La date de réception prévue est invalide.',
+        );
       }
       data.dateReceptionPrev = date;
     }

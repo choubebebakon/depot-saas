@@ -4,8 +4,11 @@ import { TenantContext } from '../contexts/TenantContext'
 
 /**
  * useTenant — Accès au contexte du tenant (organisation) courant.
- * Fournit les infos du dépôt/entreprise connectée, le plan actif,
- * les permissions et les helpers de navigation multi-dépôts.
+ * Fournit les infos de l'entreprise connectée et le plan actif.
+ *
+ * NOTE (correctif du 9 septembre 2026) : ce hook ne gère plus le dépôt
+ * actif. Utiliser useDepot() (src/contexts/DepotContext.jsx) pour tout ce
+ * qui concerne le dépôt sélectionné — c'est l'unique source de vérité.
  */
 export function useTenant() {
   const context = useContext(TenantContext)
@@ -16,15 +19,13 @@ export function useTenant() {
 
   const {
     tenant,
-    currentDepot,
-    setCurrentDepot,
     depots,
     plan,
     isLoading,
     error,
   } = context
 
-  // ── Plan helpers ──────────────────────────────────────────────
+  // ── Plan helpers ──────────────────────────────────────────
   const isFree       = plan === 'free'
   const isSolo       = plan === 'solo'
   const isPME        = plan === 'pme'
@@ -34,24 +35,9 @@ export function useTenant() {
   const canAccessAPI        = isEnterprise
   const maxDepots = isSolo ? 1 : isPME ? 10 : isEnterprise ? Infinity : 1
 
-  // ── Depot helpers ─────────────────────────────────────────────
   const hasMultipleDepots = depots?.length > 1
 
-  const switchDepot = useCallback((depotId) => {
-    const depot = depots?.find((d) => d.id === depotId)
-    if (!depot) {
-      console.warn(`[useTenant] Depot "${depotId}" not found.`)
-      return
-    }
-    setCurrentDepot(depot)
-  }, [depots, setCurrentDepot])
-
-  const isCurrentDepot = useCallback(
-    (depotId) => currentDepot?.id === depotId,
-    [currentDepot]
-  )
-
-  // ── Permission helpers ────────────────────────────────────────
+  // ── Permission helpers ──────────────────────────────────────────
   const hasFeature = useCallback((feature) => {
     const featureMap = {
       stock:           true,
@@ -73,7 +59,6 @@ export function useTenant() {
   return {
     // Données brutes
     tenant,
-    currentDepot,
     depots,
     plan,
     isLoading,
@@ -89,8 +74,6 @@ export function useTenant() {
     // Dépôts
     hasMultipleDepots,
     canAccessMultiDepot,
-    switchDepot,
-    isCurrentDepot,
 
     // Permissions
     hasFeature,

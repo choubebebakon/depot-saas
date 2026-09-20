@@ -4,7 +4,9 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useDepot } from '../../../contexts/DepotContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
+import { useActions } from '../../../shared/hooks/useActions';
 import { depotApi } from '../services/depotApi';
+import { usePrintTicket } from '../components/Ticket80mm';
 
 const PAYMENT_MODES = [
   { value: 'CASH', label: 'Espèces' },
@@ -24,6 +26,9 @@ export default function CaissePage() {
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('caisse');
+  const { hasAction } = useActions();
+  // Ticket de caisse 80mm : impression automatique après chaque vente POS.
+  const { printTicket, ticketNode } = usePrintTicket();
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState([]);
   const [clientId, setClientId] = useState('');
@@ -78,7 +83,15 @@ export default function CaissePage() {
         modePaiement,
         articles: cart.map((line) => ({ articleId: line.articleId, quantite: line.quantite, prixUnitaire: line.prixUnitaire })),
       };
-      if (modePaiement === 'CASH') payload.montantCash = total;
+      if (modePaiement === 'CASH') {
+        payload.montantCash = total;
+        // Montant reçu en espèces + monnaie à restituer (affichés sur le ticket 80mm).
+        const recu = Number(cashReceived || 0);
+        if (recu > 0) {
+          payload.montantRecu = recu;
+          payload.monnaie = Math.max(0, recu - total);
+        }
+      }
       if (modePaiement === 'ORANGE_MONEY') payload.montantOM = total;
       if (modePaiement === 'MTN_MOMO') payload.montantMoMo = total;
       if (modePaiement === 'CREDIT') payload.montantCredit = total;
@@ -87,15 +100,19 @@ export default function CaissePage() {
         payload.montantOM = Number(omAmount || 0);
         payload.montantMoMo = Number(momoAmount || 0);
         payload.montantCredit = Number(creditAmount || 0);
+        if (Number(cashReceived || 0) > 0) payload.montantRecu = Number(cashReceived || 0);
       }
       return depotApi.createVente(payload);
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const vente = result?.data || result;
       setCart([]); setClientId(''); setCashReceived(''); setOmAmount(''); setMomoAmount(''); setCreditAmount('');
       queryClient.invalidateQueries({ queryKey: ['depot-caisse-statut', depotId] });
       queryClient.invalidateQueries({ queryKey: ['depot-pos-articles', depotId] });
       queryClient.invalidateQueries({ queryKey: ['depot-clients', depotId] });
       notif.success('Vente enregistrée : stock et caisse mis à jour.');
+      // Impression automatique du ticket de caisse 80mm.
+      if (vente?.reference) printTicket(vente);
     },
     onError: (error) => notif.error(errorMessage(error, 'Impossible d’enregistrer la vente.')),
   });
@@ -143,7 +160,7 @@ export default function CaissePage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div><p className="text-xs uppercase tracking-widest text-amber-400 font-bold">Dépôt de boissons</p><h1 className="text-2xl font-black">Caisse / Point de vente</h1></div>
         <div className="flex flex-wrap gap-2">
-          {caisse?.statut === 'OUVERTE' ? <><span className="px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 text-sm font-bold">● Caisse ouverte · {money(caisse.solde)} FCFA</span><button disabled={!canWrite || closeMutation.isPending} onClick={() => closeMutation.mutate()} className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sm font-bold">Fermer</button><button disabled={!canWrite} onClick={() => setShowMovement(true)} className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sm font-bold">Mouvement</button></> : <button disabled={!canWrite || openMutation.isPending} onClick={() => setShowOpen(true)} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-sm font-black">Ouvrir la caisse</button>}
+          {caisse?.statut === 'OUVERTE' ? <><span className="px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 text-sm font-bold">● Caisse ouverte · {money(caisse.solde)} FCFA</span><button disabled={!canWrite || !hasAction('caisse.fermer') || closeMutation.isPending} onClick={() => closeMutation.mutate()} className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sm font-bold">Fermer</button><button disabled={!canWrite || !hasAction('caisse.mouvement')} onClick={() => setShowMovement(true)} className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sm font-bold">Mouvement</button></> : <button disabled={!canWrite || !hasAction('caisse.ouvrir') || openMutation.isPending} onClick={() => setShowOpen(true)} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-sm font-black">Ouvrir la caisse</button>}
         </div>
       </div>
 
@@ -173,6 +190,7 @@ export default function CaissePage() {
       {showOpen && <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"><div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-5"><h3 className="font-black text-lg mb-4">Ouverture de caisse</h3><input autoFocus type="number" min="0" value={openingAmount} onChange={(e) => setOpeningAmount(e.target.value)} placeholder="Fond initial (FCFA)" className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3" /><div className="flex gap-2 mt-4"><button onClick={() => setShowOpen(false)} className="flex-1 rounded-xl py-3 bg-slate-800">Annuler</button><button disabled={openMutation.isPending} onClick={() => openMutation.mutate()} className="flex-1 rounded-xl py-3 bg-emerald-600 font-bold">Ouvrir</button></div></div></div>}
       {showMovement && <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"><div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-5"><h3 className="font-black text-lg mb-4">Mouvement de caisse</h3><div className="grid grid-cols-2 gap-2 mb-3"><button onClick={() => setMovement((m) => ({ ...m, typeMouvement: 'ENTREE' }))} className={`rounded-xl py-2 ${movement.typeMouvement === 'ENTREE' ? 'bg-emerald-600' : 'bg-slate-800'}`}>Entrée</button><button onClick={() => setMovement((m) => ({ ...m, typeMouvement: 'SORTIE' }))} className={`rounded-xl py-2 ${movement.typeMouvement === 'SORTIE' ? 'bg-red-600' : 'bg-slate-800'}`}>Sortie</button></div><input type="number" min="0" value={movement.montant} onChange={(e) => setMovement((m) => ({ ...m, montant: e.target.value }))} placeholder="Montant" className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 mb-3" /><input value={movement.motif} onChange={(e) => setMovement((m) => ({ ...m, motif: e.target.value }))} placeholder="Motif" className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3" /><div className="flex gap-2 mt-4"><button onClick={() => setShowMovement(false)} className="flex-1 rounded-xl py-3 bg-slate-800">Annuler</button><button disabled={movementMutation.isPending} onClick={() => movementMutation.mutate()} className="flex-1 rounded-xl py-3 bg-amber-500 text-slate-950 font-bold">Valider</button></div></div></div>}
       {caisseLoading && <div className="fixed bottom-4 right-4 text-xs text-slate-500">Actualisation caisse…</div>}
+      {ticketNode}
     </div>
   );
 }

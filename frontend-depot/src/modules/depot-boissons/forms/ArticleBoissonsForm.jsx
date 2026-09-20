@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
 import FormModal from '../../../shared/components/forms/FormModal';
 import FormField from '../../../shared/components/forms/FormField';
@@ -26,12 +27,18 @@ const articleSchema = z.object({
 export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { tenantId } = useAuth();
+  const [familleText, setFamilleText] = useState('');
 
   const { data: familles } = useQuery({
     queryKey: ['depot-familles'],
     queryFn: async () => {
       const res = await api.get('/depot-boissons/familles');
-      return res.data || [];
+      const responseData = res.data;
+      if (Array.isArray(responseData)) return responseData;
+      if (Array.isArray(responseData?.data)) return responseData.data;
+      if (Array.isArray(responseData?.familles)) return responseData.familles;
+      return [];
     },
   });
 
@@ -54,6 +61,8 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
 
   useEffect(() => {
     if (edit) {
+      const candidate = edit.famille?.nom || familles.find((f) => String(f.id) === String(edit.familleId))?.nom || '';
+      setFamilleText(candidate);
       reset({
         designation: edit.designation || edit.nom || '',
         familleId: edit.familleId || '',
@@ -68,6 +77,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
         photoUrl: edit.photoUrl || null,
       });
     } else {
+      setFamilleText('');
       reset({
         designation: '',
         familleId: '',
@@ -82,7 +92,7 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
         photoUrl: null,
       });
     }
-  }, [edit, isOpen, reset]);
+  }, [edit, isOpen, reset, familles]);
 
   const prefix = `/${metier}`;
 
@@ -92,6 +102,31 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
         ...data,
         prixAchat: data.prixAchat === '' ? null : Number(data.prixAchat),
       };
+
+      // Famille libre : on résout le texte saisi vers une Famille existe
+      // sinon on la crée à la volée (POST /catalogue/familles), puis on
+      // rattache l'article via familleId (relation du modèle).
+      const label = (familleText || '').trim().replace(/\s+/g, ' ');
+      if (label && tenantId) {
+        const existing = (Array.isArray(familles) ? familles : []).find(
+          (f) => (f.nom || '').trim().toLowerCase() === label.toLowerCase(),
+        );
+        if (existing) {
+          payload.familleId = existing.id;
+        } else {
+          try {
+            const created = await api.post('/catalogue/familles', { nom: label, tenantId, emoji: '📦' });
+            const newer = created.data?.id || created.data?.famille?.id || null;
+            if (!newer) throw new Error('Création de la famille impossible.');
+            payload.familleId = newer;
+          } catch (err) {
+            throw new Error(err?.response?.data?.message || 'Impossible d’enregistrer la famille saisie.');
+          }
+        }
+      } else if (!label) {
+        payload.familleId = '';
+      }
+
       if (edit) {
         const r = await api.patch(`${prefix}/articles/${edit.id}`, payload);
         return r.data;
@@ -103,12 +138,13 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['depot-articles'] });
       queryClient.invalidateQueries({ queryKey: ['depot-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['depot-familles'] });
       notif.success(edit ? 'Article mis à jour' : 'Article créé avec succès');
       onSuccess?.();
       onClose();
     },
     onError: (err) => {
-      notif.error(err.response?.data?.message || 'Une erreur est survenue');
+      notif.error(err.response?.data?.message || err.message || 'Une erreur est survenue');
     }
   });
 
@@ -135,17 +171,23 @@ export default function ArticleBoissonsForm({ isOpen, onClose, onSuccess, edit, 
         control={control}
         render={({ field }) => (
           <div>
-            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Famille</label>
-            <select
-              {...field}
+            <label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">Famille <span className="normal-case font-medium text-slate-500">(saisie libre)</span></label>
+            <input
+              type="text"
+              value={familleText}
+              onChange={(e) => { setFamilleText(e.target.value); field.onChange(e.target.value ? '' : ''); }}
               disabled={mutation.isPending}
-              className="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
-            >
-              <option value="">Sans famille</option>
-              {familles?.map(f => (
-                <option key={f.id} value={f.id}>{f.emoji} {f.nom}</option>
+              list="familles-list"
+              maxLength={80}
+              placeholder="Saisissez ou choisissez une famille — Ex: Bières, Boissons gazeuses…"
+              className="w-full bg-slate-800 border border-slate-700 focus:border-amber-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
+            />
+            <datalist id="familles-list">
+              {Array.isArray(familles) && familles.map(f => (
+                <option key={f.id || f._id} value={f.nom || f.libelle}>{f.emoji || ''} {f.nom || f.libelle}</option>
               ))}
-            </select>
+            </datalist>
+            <p className="text-xs text-slate-500 mt-1">Nouvelle famille créée automatiquement si elle n'est pas encore enregistrée.</p>
             {errors.familleId && <span className="text-red-400 text-xs mt-1">{errors.familleId.message}</span>}
           </div>
         )}

@@ -61,8 +61,8 @@ export class NotchPayWebhookController {
 
     // IDP + traitement (Délégué à BillingService pour appliquer l'idempotence AVANT le traitement)
     const result = await this.billingService.handleWebhook(payload);
-    
-    // Le BillingService retourne ALREADY_PROCESSED si l'idempotence a rejeté, 
+
+    // Le BillingService retourne ALREADY_PROCESSED si l'idempotence a rejeté,
     // on renvoie toujours un 200 au proxy pour éviter les retries NotchPay inutiles.
     return { received: true, status: (result as any).status || 'PROCESSED' };
   }

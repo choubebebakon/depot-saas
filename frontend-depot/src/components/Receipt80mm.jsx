@@ -11,8 +11,9 @@ export default function Receipt80mm({ vente, config, preview = false }) {
   const businessSlogan = config?.slogan || '';
   const endMessage = config?.messageFin || 'Merci de votre fidélité !';
 
-  const caissier = vente.caissier || vente.createur?.name || vente.createur?.email || 'Caissier';
+  const caissier = config?.nomCaissiere || vente.caissier || vente.createur?.name || vente.createur?.nom || vente.createur?.email || 'Caissier';
   const totalRemise = vente.lignes?.reduce((acc, l) => acc + (Number(l.remise) || 0), 0) || 0;
+  const messageAccueil = config?.messageAccueil || '';
 
   const dateAchat = new Date(vente.createdAt || vente.date || new Date()).toLocaleDateString('fr-FR');
   const heureAchat = new Date(vente.createdAt || vente.date || new Date()).toLocaleTimeString('fr-FR', {
@@ -52,6 +53,12 @@ export default function Receipt80mm({ vente, config, preview = false }) {
         {businessSlogan && (
           <p className="text-[10px] italic mb-1 text-center font-bold px-2 text-black">
             {businessSlogan}
+          </p>
+        )}
+
+        {messageAccueil && (
+          <p className="text-[10px] italic mt-1 text-center font-bold px-2 text-black">
+            {messageAccueil}
           </p>
         )}
 
@@ -161,6 +168,18 @@ export default function Receipt80mm({ vente, config, preview = false }) {
             <span className="opacity-70 italic">MODE DE PAIEMENT:</span>
             <span className="font-black">{vente.modePaiement || 'CASH'}</span>
           </div>
+          {Number(vente.montantRecu || 0) > 0 && (
+            <div className="flex justify-between w-full text-[10px] mt-1">
+              <span className="opacity-70 italic">MONTANT REÇU:</span>
+              <span className="font-black">{(Number(vente.montantRecu) || 0).toLocaleString('fr-FR')} FCFA</span>
+            </div>
+          )}
+          {Number(vente.monnaie || 0) > 0 && (
+            <div className="flex justify-between w-full text-[10px] mt-1">
+              <span className="opacity-70 italic">MONNAIE RENDUE:</span>
+              <span className="font-black">{(Number(vente.monnaie) || 0).toLocaleString('fr-FR')} FCFA</span>
+            </div>
+          )}
         </div>
 
         {/* PIED DE PAGE : MESSAGE & QR CODE */}

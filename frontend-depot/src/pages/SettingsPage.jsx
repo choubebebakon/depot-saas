@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useRef } from 'react';import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { FormCrmSettings } from '../components/CrmSettingsCard';
+import MetaConnectCard from '../components/MetaConnectCard';
 import { Upload, Save, CheckCircle, RefreshCcw, Building2, ShieldAlert } from 'lucide-react';
 
 const MAX_LOGO_BYTES = 350_000;
@@ -25,8 +26,12 @@ export default function SettingsPage() {
 
   const tenant = data?.tenant ?? data;
 
-  useEffect(() => {
-    if (!tenant) return;
+  // Pattern « adjusting state when props change » (React docs) : la sync du
+  // formulaire se fait pendant le rendu, gardée par l'identité de l'objet —
+  // pas d'effet, pas de rendu en cascade (règle react-hooks/set-state-in-effect).
+  const [syncedTenant, setSyncedTenant] = useState(tenant);
+  if (tenant !== syncedTenant) {
+    setSyncedTenant(tenant);
     setForm({
       nomEntreprise: tenant.nomEntreprise || '',
       slogan: tenant.slogan || '',
@@ -35,7 +40,7 @@ export default function SettingsPage() {
       messageFin: tenant.messageFin || 'Merci de votre fidélité !',
       logo: tenant.logo || null,
     });
-  }, [tenant]);
+  }
 
   const resizeImage = (file) => new Promise((resolve, reject) => {
     if (!ACCEPTED_LOGO_TYPES.has(file.type)) return reject(new Error('Format refusé. Utilisez PNG, JPEG ou WebP.'));
@@ -219,6 +224,17 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Paramètres métier CRM (contrainte n°12) : ratio de fidélité, seuil
+          d'alerte perte/vol, référentiel de tailles — réglables par le PATRON
+          ou le GÉRANT uniquement, côté serveur comme côté interface. */}
+      <div className="mt-8">
+        <FormCrmSettings tenantId={tenantId} canEdit={canEdit} tenant={tenant} />
+      </div>
+
+      {/* Connexion Meta native (WhatsApp/Instagram/Messenger) : Embedded
+          Signup côté client, onboarding + supervision côté backend. */}
+      <MetaConnectCard canEdit={canEdit} />
     </div>
   );
 }

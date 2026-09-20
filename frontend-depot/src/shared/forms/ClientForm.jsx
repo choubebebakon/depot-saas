@@ -20,6 +20,10 @@ const clientSchema = z.object({
   ).optional().or(z.literal('')),
   adresse: z.string().optional().or(z.literal('')),
   plafondCredit: z.coerce.number().min(0, 'Le plafond doit être positif ou nul'),
+  // Canaux CRM : identifiants de contact Instagram / Messenger. Chaîne libre
+  // (le format réel dépend du canal), bornée et validée côté backend.
+  instagramId: z.string().max(64, '64 caractères maximum').optional().or(z.literal('')),
+  messengerId: z.string().max(64, '64 caractères maximum').optional().or(z.literal('')),
 });
 
 export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier }) {
@@ -34,6 +38,8 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier })
       email: '',
       adresse: '',
       plafondCredit: 0,
+      instagramId: '',
+      messengerId: '',
     },
   });
 
@@ -45,6 +51,8 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier })
         email: edit.email || '',
         adresse: edit.adresse || '',
         plafondCredit: edit.plafondCredit || 0,
+        instagramId: edit.instagramId || '',
+        messengerId: edit.messengerId || '',
       });
     } else {
       reset({
@@ -53,6 +61,8 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier })
         email: '',
         adresse: '',
         plafondCredit: 0,
+        instagramId: '',
+        messengerId: '',
       });
     }
   }, [edit, isOpen, reset]);
@@ -69,6 +79,9 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier })
         email: data.email?.trim() || null,
         adresse: data.adresse?.trim() || null,
         plafondCredit: Number(data.plafondCredit) || 0,
+        // Canaux CRM : '' => null (effacement), cohérent avec le backend.
+        instagramId: data.instagramId?.trim() || null,
+        messengerId: data.messengerId?.trim() || null,
       };
 
       if (edit) {
@@ -128,6 +141,16 @@ export default function ClientForm({ isOpen, onClose, onSuccess, edit, metier })
       <div className="mt-4">
         <Controller name="plafondCredit" control={control} render={({ field }) => (
           <FormField label="Plafond crédit" name="plafondCredit" type="number" value={field.value} onChange={(e) => field.onChange(e.target.value)} min={0} unit="FCFA" error={errors.plafondCredit?.message} />
+        )} />
+      </div>
+
+      <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">Canaux de contact (CRM)</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+        <Controller name="instagramId" control={control} render={({ field }) => (
+          <FormField label="Instagram (ID ou @pseudo)" name="instagramId" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.instagramId?.message} placeholder="@client" />
+        )} />
+        <Controller name="messengerId" control={control} render={({ field }) => (
+          <FormField label="Messenger (ID Facebook)" name="messengerId" value={field.value} onChange={(e) => field.onChange(e.target.value)} error={errors.messengerId?.message} placeholder="ID PSID" />
         )} />
       </div>
     </FormModal>

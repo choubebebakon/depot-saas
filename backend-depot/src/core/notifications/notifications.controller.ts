@@ -43,7 +43,9 @@ export class NotificationsController {
     }
 
     if (this.aiRunsInProgress.has(tenantId)) {
-      throw new BadRequestException('Une analyse IA est déjà en cours pour cette entreprise');
+      throw new BadRequestException(
+        'Une analyse IA est déjà en cours pour cette entreprise',
+      );
     }
 
     this.aiRunsInProgress.add(tenantId);

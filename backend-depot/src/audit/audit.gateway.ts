@@ -10,7 +10,11 @@ import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma.service';
 
 function getAllowedOrigins(): string[] {
-  const configured = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  const configured = (
+    process.env.FRONTEND_URLS ||
+    process.env.FRONTEND_URL ||
+    ''
+  )
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
@@ -45,10 +49,13 @@ export class AuditGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const token = this.extractToken(client);
       if (!token || token.length > 8192) {
-        throw new UnauthorizedException('Token temps réel manquant ou invalide');
+        throw new UnauthorizedException(
+          'Token temps réel manquant ou invalide',
+        );
       }
 
-      const payload = await this.jwtService.verifyAsync<Record<string, any>>(token);
+      const payload =
+        await this.jwtService.verifyAsync<Record<string, any>>(token);
       if (!payload?.sub || !payload?.tenantId) {
         throw new UnauthorizedException('Identité temps réel invalide');
       }
@@ -118,7 +125,9 @@ export class AuditGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const authToken = this.readOptionalString(client.handshake.auth?.token);
     if (authToken) return authToken.replace(/^Bearer\s+/i, '');
 
-    const authorization = this.readOptionalString(client.handshake.headers.authorization);
+    const authorization = this.readOptionalString(
+      client.handshake.headers.authorization,
+    );
     return authorization?.replace(/^Bearer\s+/i, '') ?? null;
   }
 

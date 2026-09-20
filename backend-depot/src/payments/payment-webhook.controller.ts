@@ -3,6 +3,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   Req,
   UnauthorizedException,
@@ -42,6 +43,8 @@ interface NotchPayWebhookTransaction {
 @ApiTags('Payments Webhooks')
 @Controller('payments/webhook')
 export class PaymentWebhookController {
+  private readonly logger = new Logger(PaymentWebhookController.name);
+
   constructor(
     private readonly notchPayService: NotchPayService,
     private readonly paymentsService: PaymentsService,
@@ -61,12 +64,6 @@ export class PaymentWebhookController {
 
     const payload = request.body as NotchPayWebhookPayload;
     const transaction = this.extractTransaction(payload);
-    const status = (
-      transaction?.status ??
-      payload.type ??
-      payload.event ??
-      ''
-    ).toLowerCase();
     const reference = transaction?.trxref ?? transaction?.reference;
     const paymentId = transaction?.metadata?.paymentId;
 
@@ -74,31 +71,85 @@ export class PaymentWebhookController {
       return { received: true, status: 'IGNORED_INCOMPLETE' };
     }
 
-    if (status !== 'complete' && status !== 'payment.complete') {
-      if (status === 'failed' || status === 'payment.failed') {
-        await this.paymentsService.markNotchPayComplete({
-          reference,
-          paymentId,
-          tenantId: transaction.metadata?.tenantId,
-          notchPayId: transaction.id ?? transaction.reference,
-          status: 'failed',
-        });
+    // ── FAITS VALIDÉS n°3 / n°4 / n°14 (compte LIVE GesTock) ──────────────
+    // Noms d'événements webhook RÉELS (orthographe exacte) :
+    //   payment.created, payment.processing, payment.complete,
+    //   payment.partially_pay, payment.failed, payment.cancelled (2 L),
+    //   payment.expired, payment.authorized, payment.captured.
+    // ⚠️ `payment.success` N'EXISTE PAS — le succès est `payment.complete`.
+    // Tout événement non reconnu est ignoré proprement (log + 200, jamais
+    // d'erreur → pas de boucle de retries NotchPay).
+    const event = String(payload.event ?? payload.type ?? '').toLowerCase();
+    const txStatus = String(transaction.status ?? '').toLowerCase();
 
-        return { received: true, status: 'FAILED' };
-      }
+    // SUCCÈS (contraintes 9/10) : seul déclencheur de l'activation.
+    if (event === 'payment.complete' || txStatus === 'complete') {
+      await this.paymentsService.markNotchPayComplete({
+        reference,
+        paymentId,
+        tenantId: transaction.metadata?.tenantId,
+        notchPayId: transaction.id ?? transaction.reference,
+        status: 'complete',
+      });
+      return { received: true, status: 'PROCESSED' };
+    }
 
+    // ÉCHECS TERMINAUX — FAIT VALIDÉ n°4 : `payment.expired` (expiration
+    // native NotchPay) est la source PRINCIPALE du timeout (contrainte 12) ;
+    // `payment.cancelled` s'écrit avec DEUX L. Jamais de mutation
+    // d'abonnement ici : markNotchPayComplete ne touche le tenant que si la
+    // période est réellement échue (garde anti-dégradation déjà en place).
+    const TERMINAL_FAILURES = new Set([
+      'payment.failed',
+      'failed',
+      'payment.cancelled',
+      'cancelled',
+      'payment.expired',
+      'expired',
+    ]);
+    if (TERMINAL_FAILURES.has(event) || TERMINAL_FAILURES.has(txStatus)) {
+      await this.paymentsService.markNotchPayComplete({
+        reference,
+        paymentId,
+        tenantId: transaction.metadata?.tenantId,
+        notchPayId: transaction.id ?? transaction.reference,
+        status: 'failed',
+      });
+      return { received: true, status: 'FAILED' };
+    }
+
+    // PAIEMENT PARTIEL : ni succès ni échec définitif (argent partiellement
+    // reçu) → on NE mute RIEN (le paiement reste PENDING) et on signale pour
+    // revue manuelle — décider d'un remboursement/complément est un choix
+    // métier, pas un automatisme.
+    if (event === 'payment.partially_pay' || txStatus === 'partially_pay') {
+      this.logger.warn(
+        `[Webhook] Paiement PARTIEL à revue manuelle : ref=${reference} event=${event}`,
+      );
+      return { received: true, status: 'PARTIAL_REVIEW' };
+    }
+
+    // ÉVÉNEMENTS INTERMÉDIAIRES CONNUS : aucun effet d'état (le paiement doit
+    // rester PENDING jusqu'à un event terminal).
+    const NEUTRAL_EVENTS = new Set([
+      'payment.created',
+      'payment.processing',
+      'payment.authorized',
+      'payment.captured',
+      'created',
+      'processing',
+      'authorized',
+      'captured',
+    ]);
+    if (NEUTRAL_EVENTS.has(event) || NEUTRAL_EVENTS.has(txStatus)) {
       return { received: true, status: 'IGNORED' };
     }
 
-    await this.paymentsService.markNotchPayComplete({
-      reference,
-      paymentId,
-      tenantId: transaction.metadata?.tenantId,
-      notchPayId: transaction.id ?? transaction.reference,
-      status: 'complete',
-    });
-
-    return { received: true, status: 'PROCESSED' };
+    // CONTRAINTE 14 : événement non reconnu → log + 200, pas d'erreur.
+    this.logger.log(
+      `[Webhook] Événement NotchPay non reconnu, ignoré : event=${event || '(aucun)'} status=${txStatus || '(aucun)'} ref=${reference}`,
+    );
+    return { received: true, status: 'IGNORED_UNKNOWN_EVENT' };
   }
 
   private assertValidSignature(

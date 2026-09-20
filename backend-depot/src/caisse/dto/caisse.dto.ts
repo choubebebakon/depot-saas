@@ -15,6 +15,12 @@ export class OuvrirCaisseDto {
   @Min(0)
   fondInitial: number;
 
+  // Poste de caisse (multi-caisse) : CAISSE_1, CAISSE_2… CAISSE_1 par défaut.
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  posteId?: string;
+
   // Le depotId est résolu côté serveur depuis le scope authentifié.
   @IsOptional()
   @IsString()
@@ -83,6 +89,13 @@ export class CreateDepenseDto {
   @IsOptional()
   @IsString()
   depotId?: string;
+
+  // Poste de caisse débité (multi-caisse). Sans valeur, une session
+  // ouverte quelconque du dépôt est utilisée (comportement historique).
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  posteId?: string;
 
   // Compatibilité legacy : le tenant est toujours injecté côté serveur.
   @IsOptional()

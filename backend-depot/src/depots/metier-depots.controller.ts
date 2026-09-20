@@ -29,7 +29,7 @@ export class MetierDepotsController {
     RoleUser.COMPTABLE,
   )
   findAll(@CurrentUser() user: any) {
-    return this.depotsService.findAll(user?.tenantId);
+    return this.depotsService.findAll(user);
   }
 
   @Get(':id')
@@ -41,29 +41,29 @@ export class MetierDepotsController {
     RoleUser.MAGASINIER,
     RoleUser.COMPTABLE,
   )
-  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.depotsService.findOne(id, tenantId);
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.depotsService.findOne(id, user);
   }
 
   @Post()
-  @Roles(RoleUser.PATRON, RoleUser.GERANT)
+  @Roles(RoleUser.PATRON)
   create(@Body() createDepotDto: CreateDepotDto, @CurrentUser() user: any) {
-    return this.depotsService.create(createDepotDto, user?.tenantId);
+    return this.depotsService.create(createDepotDto, user);
   }
 
   @Patch(':id')
   @Roles(RoleUser.PATRON, RoleUser.GERANT)
   update(
     @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
     @Body() updateDepotDto: UpdateDepotDto,
+    @CurrentUser() user: any,
   ) {
-    return this.depotsService.update(id, tenantId, updateDepotDto);
+    return this.depotsService.update(id, updateDepotDto, user);
   }
 
   @Delete(':id')
-  @Roles(RoleUser.PATRON, RoleUser.GERANT)
-  remove(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.depotsService.remove(id, tenantId);
+  @Roles(RoleUser.PATRON)
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.depotsService.remove(id, user);
   }
 }

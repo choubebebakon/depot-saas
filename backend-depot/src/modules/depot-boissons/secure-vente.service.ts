@@ -15,6 +15,7 @@ import { PrismaService } from '../../prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { AUDIT_ACTIONS } from '../../audit/audit-actions.constants';
 import { AuditActor } from '../../audit/audit-actor.util';
+import { DepotScopeService } from '../../common/depot-scope.service';
 import { DepotBoissonsService } from './depot-boissons.service';
 
 /**
@@ -26,28 +27,34 @@ import { DepotBoissonsService } from './depot-boissons.service';
  */
 @Injectable()
 export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
-  private readonly db: PrismaService;
-  private readonly audit: AuditService;
+  protected readonly db: PrismaService;
+  protected readonly audit: AuditService;
 
-  constructor(prisma: PrismaService, auditService: AuditService) {
-    super(prisma, auditService);
+  constructor(
+    prisma: PrismaService,
+    auditService: AuditService,
+    depotScope: DepotScopeService,
+  ) {
+    super(prisma, auditService, depotScope);
     this.db = prisma;
     this.audit = auditService;
   }
 
-  override async createVente(
-    tenantId: string,
-    data: any,
-    actor: AuditActor,
-  ) {
+  override async createVente(tenantId: string, data: any, actor: AuditActor) {
     const depotId = this.requireDepotId(data?.depotId);
-    const id = typeof data?.id === 'string' && data.id.trim() ? data.id.trim() : undefined;
-    const clientRef = typeof data?.reference === 'string' ? data.reference.trim() : '';
+    const id =
+      typeof data?.id === 'string' && data.id.trim()
+        ? data.id.trim()
+        : undefined;
+    const clientRef =
+      typeof data?.reference === 'string' ? data.reference.trim() : '';
     const mode: ModePaiement = data?.modePaiement || ModePaiement.CASH;
     const lignes = Array.isArray(data?.articles) ? data.articles : [];
 
     if (lignes.length === 0) {
-      throw new BadRequestException('Une vente doit contenir au moins une ligne.');
+      throw new BadRequestException(
+        'Une vente doit contenir au moins une ligne.',
+      );
     }
 
     if (id) {
@@ -72,9 +79,14 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
       const prixUnitaire = Number(ligne?.prixUnitaire);
       const remise = Number(ligne?.remise ?? 0);
 
-      if (!articleId) throw new BadRequestException('articleId est requis pour chaque ligne.');
+      if (!articleId)
+        throw new BadRequestException(
+          'articleId est requis pour chaque ligne.',
+        );
       if (!Number.isInteger(quantite) || quantite <= 0) {
-        throw new BadRequestException('La quantité de chaque ligne doit être un entier supérieur à 0.');
+        throw new BadRequestException(
+          'La quantité de chaque ligne doit être un entier supérieur à 0.',
+        );
       }
       if (!Number.isFinite(remise) || remise < 0) {
         throw new BadRequestException('La remise doit être positive ou nulle.');
@@ -84,7 +96,8 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
         where: { id: articleId, tenantId },
         select: { id: true, designation: true, prixVente: true },
       });
-      if (!article) throw new BadRequestException(`Article introuvable: ${articleId}.`);
+      if (!article)
+        throw new BadRequestException(`Article introuvable: ${articleId}.`);
 
       let prix = Number(article.prixVente);
       let deductions: Array<{ articleId: string; quantite: number }> = [
@@ -100,40 +113,68 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
           },
         });
         if (!conditionnement) {
-          throw new BadRequestException('Conditionnement introuvable pour cet article.');
+          throw new BadRequestException(
+            'Conditionnement introuvable pour cet article.',
+          );
         }
-        if (!Number.isInteger(conditionnement.quantiteUnitaire) || conditionnement.quantiteUnitaire <= 0) {
+        if (
+          !Number.isInteger(conditionnement.quantiteUnitaire) ||
+          conditionnement.quantiteUnitaire <= 0
+        ) {
           throw new BadRequestException('Conditionnement invalide.');
         }
-        prix = ligne.prixUnitaire == null ? Number(conditionnement.prixVente) : prixUnitaire;
-        deductions = [{
-          articleId: article.id,
-          quantite: quantite * conditionnement.quantiteUnitaire,
-        }];
+        prix =
+          ligne.prixUnitaire == null
+            ? Number(conditionnement.prixVente)
+            : prixUnitaire;
+        deductions = [
+          {
+            articleId: article.id,
+            quantite: quantite * conditionnement.quantiteUnitaire,
+          },
+        ];
       } else if (ligne?.casierMixte) {
-        const composition = Array.isArray(ligne.composition) ? ligne.composition : null;
+        const composition = Array.isArray(ligne.composition)
+          ? ligne.composition
+          : null;
         if (!composition?.length) {
-          throw new BadRequestException('La composition du casier mixte est obligatoire.');
+          throw new BadRequestException(
+            'La composition du casier mixte est obligatoire.',
+          );
         }
-        prix = ligne.prixUnitaire == null ? Number(article.prixVente) : prixUnitaire;
+        prix =
+          ligne.prixUnitaire == null ? Number(article.prixVente) : prixUnitaire;
         deductions = composition.map((item: any) => {
           const componentId = String(item?.articleId || '').trim();
           const componentQty = Number(item?.quantite);
-          if (!componentId || !Number.isInteger(componentQty) || componentQty <= 0) {
-            throw new BadRequestException('Composition de casier mixte invalide.');
+          if (
+            !componentId ||
+            !Number.isInteger(componentQty) ||
+            componentQty <= 0
+          ) {
+            throw new BadRequestException(
+              'Composition de casier mixte invalide.',
+            );
           }
           return { articleId: componentId, quantite: componentQty * quantite };
         });
-      } else if (ligne?.prixUnitaire != null && !Number.isFinite(prixUnitaire)) {
+      } else if (
+        ligne?.prixUnitaire != null &&
+        !Number.isFinite(prixUnitaire)
+      ) {
         throw new BadRequestException('Prix de vente invalide.');
       }
 
       if (!Number.isFinite(prix) || prix < 0) {
-        throw new BadRequestException(`Prix invalide pour l'article ${article.designation}.`);
+        throw new BadRequestException(
+          `Prix invalide pour l'article ${article.designation}.`,
+        );
       }
       const totalLigne = Number((prix * quantite - remise).toFixed(2));
       if (!Number.isFinite(totalLigne) || totalLigne < 0) {
-        throw new BadRequestException('Le total d’une ligne ne peut pas être négatif.');
+        throw new BadRequestException(
+          'Le total d’une ligne ne peut pas être négatif.',
+        );
       }
 
       for (const deduction of deductions) {
@@ -142,7 +183,9 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
           select: { id: true },
         });
         if (!component) {
-          throw new BadRequestException(`Article de stock introuvable: ${deduction.articleId}.`);
+          throw new BadRequestException(
+            `Article de stock introuvable: ${deduction.articleId}.`,
+          );
         }
         stockDeductions.set(
           deduction.articleId,
@@ -167,13 +210,37 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
 
     const montantTotal = Number(totalVente.toFixed(2));
     if (!Number.isFinite(montantTotal) || montantTotal <= 0) {
-      throw new BadRequestException('Le total de la vente doit être supérieur à 0.');
+      throw new BadRequestException(
+        'Le total de la vente doit être supérieur à 0.',
+      );
     }
 
-    const cash = this.paymentAmount(data?.montantCash, mode === ModePaiement.CASH ? montantTotal : 0);
-    const om = this.paymentAmount(data?.montantOM, mode === ModePaiement.ORANGE_MONEY ? montantTotal : 0);
-    const momo = this.paymentAmount(data?.montantMoMo, mode === ModePaiement.MTN_MOMO ? montantTotal : 0);
-    const credit = this.paymentAmount(data?.montantCredit, mode === ModePaiement.CREDIT ? montantTotal : 0);
+    const cash = this.paymentAmount(
+      data?.montantCash,
+      mode === ModePaiement.CASH ? montantTotal : 0,
+    );
+    const om = this.paymentAmount(
+      data?.montantOM,
+      mode === ModePaiement.ORANGE_MONEY ? montantTotal : 0,
+    );
+    const momo = this.paymentAmount(
+      data?.montantMoMo,
+      mode === ModePaiement.MTN_MOMO ? montantTotal : 0,
+    );
+    const credit = this.paymentAmount(
+      data?.montantCredit,
+      mode === ModePaiement.CREDIT ? montantTotal : 0,
+    );
+
+    // Montant réellement présenté par le client (espèces) et monnaie restituée.
+    // Le montant reçu ne peut pas être inférieur à la part encaissée en espèces.
+    const montantRecu = this.paymentAmount(data?.montantRecu, cash);
+    if (montantRecu + 0.01 < cash) {
+      throw new BadRequestException(
+        'Le montant reçu est inférieur au montant à encaisser en espèces.',
+      );
+    }
+    const monnaie = Number(Math.max(0, montantRecu - cash).toFixed(2));
 
     if (mode !== ModePaiement.MIXTE) {
       const expected = {
@@ -185,11 +252,15 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
       for (const [key, value] of Object.entries({ cash, om, momo, credit })) {
         const allowed = key === this.paymentKey(mode);
         if (!allowed && value > 0.01) {
-          throw new BadRequestException(`Paiement incohérent pour le mode ${mode}.`);
+          throw new BadRequestException(
+            `Paiement incohérent pour le mode ${mode}.`,
+          );
         }
       }
       if (!(expected[mode] > 0)) {
-        throw new BadRequestException('Le montant du paiement est obligatoire.');
+        throw new BadRequestException(
+          'Le montant du paiement est obligatoire.',
+        );
       }
     }
 
@@ -201,14 +272,18 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
     }
 
     if (credit > 0 && !data?.clientId) {
-      throw new BadRequestException('Un client est obligatoire dès qu’une part de la vente est à crédit.');
+      throw new BadRequestException(
+        'Un client est obligatoire dès qu’une part de la vente est à crédit.',
+      );
     }
 
-    const reference = clientRef || `FAC-${new Date().getFullYear()}-${randomUUID()}`;
+    const reference =
+      clientRef || `FAC-${new Date().getFullYear()}-${randomUUID()}`;
 
     try {
       const vente = await this.db.$transaction(async (tx) => {
-        let client: { id: string; nom: string; soldeCredit: number } | null = null;
+        let client: { id: string; nom: string; soldeCredit: number } | null =
+          null;
         if (data?.clientId) {
           client = await tx.client.findFirst({
             where: {
@@ -218,7 +293,8 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
             },
             select: { id: true, nom: true, soldeCredit: true },
           });
-          if (!client) throw new BadRequestException('Client introuvable pour ce dépôt.');
+          if (!client)
+            throw new BadRequestException('Client introuvable pour ce dépôt.');
         }
 
         if (data?.tourneeId) {
@@ -226,7 +302,8 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
             where: { id: String(data.tourneeId), tenantId, depotId },
             select: { id: true },
           });
-          if (!tournee) throw new BadRequestException('Tournée introuvable pour ce dépôt.');
+          if (!tournee)
+            throw new BadRequestException('Tournée introuvable pour ce dépôt.');
         }
 
         let sessionId: string | null = null;
@@ -254,6 +331,8 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
             montantOM: om,
             montantMoMo: momo,
             montantCredit: credit,
+            montantRecu,
+            monnaie,
             tenantId,
             depotId,
             clientId: client?.id ?? null,
@@ -316,15 +395,24 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
           });
         }
 
-        if (Array.isArray(data?.retoursConsigne) && data.retoursConsigne.length > 0) {
+        if (
+          Array.isArray(data?.retoursConsigne) &&
+          data.retoursConsigne.length > 0
+        ) {
           if (!client) {
-            throw new BadRequestException('Un client est obligatoire pour enregistrer un retour de consignes.');
+            throw new BadRequestException(
+              'Un client est obligatoire pour enregistrer un retour de consignes.',
+            );
           }
 
           for (const retour of data.retoursConsigne) {
             const typeConsigneId = String(retour?.typeConsigneId || '').trim();
             const quantite = Number(retour?.quantite);
-            if (!typeConsigneId || !Number.isInteger(quantite) || quantite <= 0) {
+            if (
+              !typeConsigneId ||
+              !Number.isInteger(quantite) ||
+              quantite <= 0
+            ) {
               throw new BadRequestException('Retour de consigne invalide.');
             }
 
@@ -332,7 +420,8 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
               where: { id: typeConsigneId, tenantId },
               select: { id: true },
             });
-            if (!typeConsigne) throw new BadRequestException('Type de consigne introuvable.');
+            if (!typeConsigne)
+              throw new BadRequestException('Type de consigne introuvable.');
 
             const portfolio = await tx.portefeuilleConsigne.findUnique({
               where: {
@@ -343,7 +432,9 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
               },
             });
             if (!portfolio || portfolio.quantite < quantite) {
-              throw new BadRequestException('Quantité de consignes retournées supérieure au portefeuille client.');
+              throw new BadRequestException(
+                'Quantité de consignes retournées supérieure au portefeuille client.',
+              );
             }
 
             await tx.portefeuilleConsigne.update({
@@ -364,7 +455,7 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
                 tenantId,
                 depotId,
                 venteId: created.id,
-                typeConsigne: { connect: { id: typeConsigneId } },
+                typeConsigneId,
               },
             });
           }
@@ -400,7 +491,11 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
 
       return vente;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002' && id) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        id
+      ) {
         const existing = await this.db.vente.findFirst({
           where: { id, tenantId, depotId },
           include: { lignes: { include: { article: true } }, client: true },
@@ -414,7 +509,9 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
 
   private requireDepotId(depotId: unknown): string {
     if (typeof depotId !== 'string' || !depotId.trim()) {
-      throw new BadRequestException('Dépôt actif requis pour enregistrer la vente.');
+      throw new BadRequestException(
+        'Dépôt actif requis pour enregistrer la vente.',
+      );
     }
     return depotId.trim();
   }
@@ -423,7 +520,9 @@ export class SecureDepotBoissonsVenteService extends DepotBoissonsService {
     if (value === undefined || value === null || value === '') return fallback;
     const amount = Number(value);
     if (!Number.isFinite(amount) || amount < 0) {
-      throw new BadRequestException('Les montants de paiement doivent être positifs ou nuls.');
+      throw new BadRequestException(
+        'Les montants de paiement doivent être positifs ou nuls.',
+      );
     }
     return Number(amount.toFixed(2));
   }

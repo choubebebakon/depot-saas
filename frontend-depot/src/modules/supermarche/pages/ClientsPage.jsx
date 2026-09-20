@@ -9,6 +9,7 @@ import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
 import ClientForm from '../../../shared/forms/ClientForm';
+import ClientFicheModal, { BadgeCanal, canauxClient } from '../../../components/ClientFicheModal';
 
 export default function ClientsPage() {
   const { metier: metierParam } = useParams();
@@ -21,6 +22,8 @@ export default function ClientsPage() {
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [canalFiltre, setCanalFiltre] = useState('');
+  const [ficheClient, setFicheClient] = useState(null);
 
   const { success, error: notifError } = useNotif();
   const perm = usePermission(PERMISSIONS, 'clients');
@@ -32,6 +35,9 @@ export default function ClientsPage() {
 
   const normalizedSearch = search.trim().toLowerCase();
   const filtres = clients.filter((item) => {
+    // Filtre canal appliqué à l'écran : le serveur ne filtre pas sur les
+    // identifiants Instagram / Messenger (colonnes de la fiche client).
+    if (canalFiltre && !canauxClient(item).includes(canalFiltre)) return false;
     if (!normalizedSearch) return true;
     return [item?.nom, item?.telephone, item?.adresse]
       .filter((value) => value !== null && value !== undefined)
@@ -40,7 +46,6 @@ export default function ClientsPage() {
 
   const pagination = usePagination(filtres, 10);
   const paginated = pagination?.paginated || [];
-  const { totalItems } = pagination;
 
   const handleDelete = async () => {
     if (!confirmDelete || deleting) return;
@@ -72,13 +77,23 @@ export default function ClientsPage() {
         )}
       </div>
 
-      <input
-        type="text"
-        placeholder="🔍 Rechercher par nom, téléphone ou adresse..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="mb-6 bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"
-      />
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <input
+          type="text"
+          placeholder="🔍 Rechercher par nom, téléphone ou adresse..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"
+        />
+        <div className="flex gap-1">
+          {[['', 'Tous'], ['WHATSAPP', 'WhatsApp'], ['INSTAGRAM', 'Instagram'], ['MESSENGER', 'Messenger']].map(([id, label]) => (
+            <button key={id || 'all'} type="button" onClick={() => setCanalFiltre(id)}
+              className={`px-3 py-2.5 rounded-xl text-xs font-bold border transition-all ${canalFiltre === id ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -91,7 +106,15 @@ export default function ClientsPage() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 bg-amber-500/20 rounded-full flex items-center justify-center text-amber-400 font-bold">{c.nom?.[0]?.toUpperCase()}</div>
-                  <p className="text-white font-bold">{c.nom}</p>
+                  <div className="min-w-0">
+                    <button type="button" onClick={() => setFicheClient(c)} title="Voir la fiche client"
+                      className="text-white font-bold hover:text-amber-400 transition-colors text-left truncate max-w-full">
+                      {c.nom}
+                    </button>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {canauxClient(c).map((canal) => <BadgeCanal key={canal} canal={canal} />)}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   {perm.canEdit && <button onClick={() => { setEditItem(c); setFormOpen(true); }} className="text-slate-400 hover:text-white text-xs">✏️</button>}
@@ -109,6 +132,16 @@ export default function ClientsPage() {
         </div>
       )}
 
+      {ficheClient && (
+        <ClientFicheModal
+          client={ficheClient}
+          onClose={() => setFicheClient(null)}
+          onEdit={perm.canEdit ? (c) => { setFicheClient(null); setEditItem(c); setFormOpen(true); } : undefined}
+          // Historique de caisse du supermarché : endpoint métier dédié
+          // (curseur keyset, limite par défaut issue des paramètres du shop).
+          historyEndpoint={(c) => `/${prefix}/clients/${c.id}/historique`}
+        />
+      )}
       <ClientForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { refetch(); setFormOpen(false); }} edit={editItem} metier={prefix} />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} loading={deleting}
         title="Supprimer le client" message={`Supprimer ${confirmDelete?.nom} ?`} />

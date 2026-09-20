@@ -13,7 +13,12 @@ export const PLAN_RANK: Record<PlanType, number> = {
   [PlanType.UNLIMITED]: 4,
 };
 
-export type PlanChangeType = 'NEW' | 'RENEWAL' | 'UPGRADE' | 'DOWNGRADE' | 'SAME';
+export type PlanChangeType =
+  | 'NEW'
+  | 'RENEWAL'
+  | 'UPGRADE'
+  | 'DOWNGRADE'
+  | 'SAME';
 
 export function getPlanRank(plan: PlanType): number {
   return PLAN_RANK[plan] ?? 0;

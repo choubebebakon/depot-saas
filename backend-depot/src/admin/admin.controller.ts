@@ -26,7 +26,8 @@ const MAX_PAGE_SIZE = 100;
 const MAX_PAGE_OFFSET = 100_000;
 const MAX_AUDIT_PAGE_SIZE = 500;
 const ALLOWED_ANALYTICS_PERIODS = new Set(['7d', '30d', '90d', '1y']);
-const DEFAULT_ADMIN_ACTION_REASON = 'Action administrative effectuée depuis la console SuperAdmin GesTock';
+const DEFAULT_ADMIN_ACTION_REASON =
+  'Action administrative effectuée depuis la console SuperAdmin GesTock';
 
 @Controller('admin')
 @UseGuards(SuperAdminGuard)
@@ -37,29 +38,43 @@ export class AdminController {
     private readonly auditService: AuditService,
   ) {}
 
-  private parsePageValue(value: string | undefined, name: string, max: number, fallback: number): number {
+  private parsePageValue(
+    value: string | undefined,
+    name: string,
+    max: number,
+    fallback: number,
+  ): number {
     if (value === undefined || value === '') return fallback;
-    if (!/^\d+$/.test(value)) throw new BadRequestException(`${name} doit être un entier positif.`);
+    if (!/^\d+$/.test(value))
+      throw new BadRequestException(`${name} doit être un entier positif.`);
     const parsed = Number(value);
-    if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > max) throw new BadRequestException(`${name} est hors limites.`);
+    if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > max)
+      throw new BadRequestException(`${name} est hors limites.`);
     return parsed;
   }
 
-  private parseEnum<T extends string>(value: string | undefined, values: readonly T[], name: string): T | undefined {
+  private parseEnum<T extends string>(
+    value: string | undefined,
+    values: readonly T[],
+    name: string,
+  ): T | undefined {
     if (value === undefined || value === '') return undefined;
-    if (!values.includes(value as T)) throw new BadRequestException(`${name} invalide.`);
+    if (!values.includes(value as T))
+      throw new BadRequestException(`${name} invalide.`);
     return value as T;
   }
 
   private parseBoolean(value: string | undefined): boolean | undefined {
     if (value === undefined || value === '') return undefined;
-    if (value !== 'true' && value !== 'false') throw new BadRequestException('isActive doit être true ou false.');
+    if (value !== 'true' && value !== 'false')
+      throw new BadRequestException('isActive doit être true ou false.');
     return value === 'true';
   }
 
   private parsePeriod(value: string | undefined): string | undefined {
     if (value === undefined || value === '') return undefined;
-    if (!ALLOWED_ANALYTICS_PERIODS.has(value)) throw new BadRequestException('Période analytics invalide.');
+    if (!ALLOWED_ANALYTICS_PERIODS.has(value))
+      throw new BadRequestException('Période analytics invalide.');
     return value;
   }
 
@@ -67,17 +82,25 @@ export class AdminController {
     return this.parseEnum(value, Object.values(Role), 'role');
   }
 
-  private parseText(value: string | undefined, name: string, maxLength: number): string | undefined {
+  private parseText(
+    value: string | undefined,
+    name: string,
+    maxLength: number,
+  ): string | undefined {
     if (value === undefined) return undefined;
     const normalized = value.trim();
     if (!normalized) return undefined;
-    if (normalized.length > maxLength) throw new BadRequestException(`${name} est trop long.`);
+    if (normalized.length > maxLength)
+      throw new BadRequestException(`${name} est trop long.`);
     return normalized;
   }
 
   private getActorUserId(req: any): string {
     const actorUserId = req.user?.userId;
-    if (!actorUserId || typeof actorUserId !== 'string') throw new BadRequestException('Identité SuperAdmin introuvable dans la session.');
+    if (!actorUserId || typeof actorUserId !== 'string')
+      throw new BadRequestException(
+        'Identité SuperAdmin introuvable dans la session.',
+      );
     return actorUserId;
   }
 
@@ -86,19 +109,57 @@ export class AdminController {
     return reason && reason.length >= 5 ? reason : DEFAULT_ADMIN_ACTION_REASON;
   }
 
-  @Get('stats') getPlatformStats() { return this.adminService.getPlatformStats(); }
-  @Get('metrics') getRevenueMetrics() { return this.adminService.getRevenueMetrics(); }
-  @Get('users-by-metier') getUsersByMetier() { return this.adminService.getUsersByMetier(); }
-  @Get('subscribers-by-plan') getSubscribersByPlan() { return this.adminService.getSubscribersByPlan(); }
+  // Variante stricte pour les actions irréversibles (changement de rôle,
+  // promotion/rétrogradation super-admin) : le motif doit être fourni et
+  // explicite afin de garantir une piste d'audit exploitable.
+  private parseRequiredReason(value: string | undefined): string {
+    const reason = this.parseText(value, 'reason', 500);
+    if (!reason || reason.length < 5)
+      throw new BadRequestException(
+        'reason est obligatoire (minimum 5 caractères) pour cette action sensible.',
+      );
+    return reason;
+  }
+
+  @Get('stats') getPlatformStats() {
+    return this.adminService.getPlatformStats();
+  }
+  @Get('metrics') getRevenueMetrics() {
+    return this.adminService.getRevenueMetrics();
+  }
+  @Get('users-by-metier') getUsersByMetier() {
+    return this.adminService.getUsersByMetier();
+  }
+  @Get('subscribers-by-plan') getSubscribersByPlan() {
+    return this.adminService.getSubscribersByPlan();
+  }
 
   @Get('transactions')
-  getTransactions(@Query('status') status?: string, @Query('method') method?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-    return this.adminService.getTransactions({ status: this.parseEnum(status, Object.values(PaymentStatus), 'status'), method: this.parseEnum(method, Object.values(PaymentMethod), 'method'), limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50), offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0) });
+  getTransactions(
+    @Query('status') status?: string,
+    @Query('method') method?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.adminService.getTransactions({
+      status: this.parseEnum(status, Object.values(PaymentStatus), 'status'),
+      method: this.parseEnum(method, Object.values(PaymentMethod), 'method'),
+      limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
+      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
+    });
   }
 
   @Get('tenants')
-  getTenants(@Query('status') status?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-    return this.adminService.getTenants({ status: this.parseEnum(status, Object.values(TenantStatus), 'status'), limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50), offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0) });
+  getTenants(
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.adminService.getTenants({
+      status: this.parseEnum(status, Object.values(TenantStatus), 'status'),
+      limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
+      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
+    });
   }
 
   @Post('transactions/:id/reconcile')
@@ -109,15 +170,41 @@ export class AdminController {
   }
 
   @Get('audit/journal')
-  getTenantJournal(@Query('tenantId') tenantId?: string, @Query('action') action?: string, @Query('severite') severite?: string, @Query('limit') limit?: string) {
+  getTenantJournal(
+    @Query('tenantId') tenantId?: string,
+    @Query('action') action?: string,
+    @Query('severite') severite?: string,
+    @Query('limit') limit?: string,
+  ) {
     const safeTenantId = this.parseText(tenantId, 'tenantId', 100);
-    if (!safeTenantId) throw new BadRequestException('tenantId est obligatoire.');
-    return this.auditService.getJournalPatron(safeTenantId, { action: this.parseText(action, 'action', 100), severite: this.parseEnum(severite, Object.values(AuditSeverite), 'severite'), limit: this.parsePageValue(limit, 'limit', MAX_AUDIT_PAGE_SIZE, 100) });
+    if (!safeTenantId)
+      throw new BadRequestException('tenantId est obligatoire.');
+    return this.auditService.getJournalPatron(safeTenantId, {
+      action: this.parseText(action, 'action', 100),
+      severite: this.parseEnum(
+        severite,
+        Object.values(AuditSeverite),
+        'severite',
+      ),
+      limit: this.parsePageValue(limit, 'limit', MAX_AUDIT_PAGE_SIZE, 100),
+    });
   }
 
   @Get('users')
-  getAllUsers(@Query('tenantId') tenantId?: string, @Query('role') role?: string, @Query('isActive') isActive?: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
-    return this.adminService.getAllUsers({ tenantId: this.parseText(tenantId, 'tenantId', 100), role: this.parseRole(role), isActive: this.parseBoolean(isActive), limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50), offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0) });
+  getAllUsers(
+    @Query('tenantId') tenantId?: string,
+    @Query('role') role?: string,
+    @Query('isActive') isActive?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.adminService.getAllUsers({
+      tenantId: this.parseText(tenantId, 'tenantId', 100),
+      role: this.parseRole(role),
+      isActive: this.parseBoolean(isActive),
+      limit: this.parsePageValue(limit, 'limit', MAX_PAGE_SIZE, 50),
+      offset: this.parsePageValue(offset, 'offset', MAX_PAGE_OFFSET, 0),
+    });
   }
 
   @Get('users/:id')
@@ -128,38 +215,84 @@ export class AdminController {
   }
 
   @Post('users/:id/toggle-active')
-  toggleUserActive(@Param('id') userId: string, @Body('reason') reason: string, @Req() req: any) {
+  toggleUserActive(
+    @Param('id') userId: string,
+    @Body('reason') reason: string,
+    @Req() req: any,
+  ) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
-    return this.adminUserSecurity.toggleUserActive(this.getActorUserId(req), id, this.parseReason(reason));
+    return this.adminUserSecurity.toggleUserActive(
+      this.getActorUserId(req),
+      id,
+      this.parseReason(reason),
+    );
   }
 
   @Post('users/:id/role')
-  updateUserRole(@Param('id') userId: string, @Body('role') role: string, @Body('reason') reason: string, @Req() req: any) {
+  updateUserRole(
+    @Param('id') userId: string,
+    @Body('role') role: string,
+    @Body('reason') reason: string,
+    @Req() req: any,
+  ) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
     const safeRole = this.parseRole(role);
     if (!safeRole) throw new BadRequestException('role est obligatoire.');
-    return this.adminUserSecurity.updateUserRole(this.getActorUserId(req), id, safeRole, this.parseReason(reason));
+    return this.adminUserSecurity.updateUserRole(
+      this.getActorUserId(req),
+      id,
+      safeRole,
+      this.parseRequiredReason(reason),
+    );
   }
 
   @Post('users/:id/super-admin')
-  toggleSuperAdmin(@Param('id') userId: string, @Body('reason') reason: string, @Req() req: any) {
+  toggleSuperAdmin(
+    @Param('id') userId: string,
+    @Body('reason') reason: string,
+    @Req() req: any,
+  ) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
-    return this.adminUserSecurity.toggleSuperAdmin(this.getActorUserId(req), id, this.parseReason(reason));
+    return this.adminUserSecurity.toggleSuperAdmin(
+      this.getActorUserId(req),
+      id,
+      this.parseRequiredReason(reason),
+    );
   }
 
   @Delete('users/:id')
-  deleteUser(@Param('id') userId: string, @Query('reason') reason: string, @Req() req: any) {
+  deleteUser(
+    @Param('id') userId: string,
+    @Query('reason') reason: string,
+    @Req() req: any,
+  ) {
     const id = this.parseText(userId, 'userId', 200);
     if (!id) throw new BadRequestException('Identifiant utilisateur manquant.');
-    return this.adminUserSecurity.deleteUser(this.getActorUserId(req), id, this.parseReason(reason));
+    return this.adminUserSecurity.deleteUser(
+      this.getActorUserId(req),
+      id,
+      this.parseReason(reason),
+    );
   }
 
-  @Get('analytics/overview') getAnalyticsOverview() { return this.adminService.getAnalyticsOverview(); }
-  @Get('analytics/usage') getUsageMetrics(@Query('period') period?: string) { return this.adminService.getUsageMetrics(this.parsePeriod(period)); }
-  @Get('analytics/revenue') getRevenueAnalytics(@Query('period') period?: string) { return this.adminService.getRevenueAnalytics(this.parsePeriod(period)); }
-  @Get('analytics/churn') getChurnAnalytics() { return this.adminService.getChurnAnalytics(); }
-  @Get('analytics/feature-usage') getFeatureUsage() { return this.adminService.getFeatureUsage(); }
+  @Get('analytics/overview') getAnalyticsOverview() {
+    return this.adminService.getAnalyticsOverview();
+  }
+  @Get('analytics/usage') getUsageMetrics(@Query('period') period?: string) {
+    return this.adminService.getUsageMetrics(this.parsePeriod(period));
+  }
+  @Get('analytics/revenue') getRevenueAnalytics(
+    @Query('period') period?: string,
+  ) {
+    return this.adminService.getRevenueAnalytics(this.parsePeriod(period));
+  }
+  @Get('analytics/churn') getChurnAnalytics() {
+    return this.adminService.getChurnAnalytics();
+  }
+  @Get('analytics/feature-usage') getFeatureUsage() {
+    return this.adminService.getFeatureUsage();
+  }
 }

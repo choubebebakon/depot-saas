@@ -197,11 +197,7 @@ export class NotificationsService {
       this.prisma.notification.count({ where }),
       this.prisma.notification.count({
         where: {
-          AND: [
-            { tenantId },
-            this.buildUserFilter(userId),
-            { isRead: false },
-          ],
+          AND: [{ tenantId }, this.buildUserFilter(userId), { isRead: false }],
         },
       }),
     ]);
@@ -212,11 +208,7 @@ export class NotificationsService {
   async findUnread(tenantId: string, userId: string) {
     return this.prisma.notification.findMany({
       where: {
-        AND: [
-          { tenantId },
-          this.buildUserFilter(userId),
-          { isRead: false },
-        ],
+        AND: [{ tenantId }, this.buildUserFilter(userId), { isRead: false }],
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -298,9 +290,10 @@ export class NotificationsService {
       process.env.NOTIF_RETENTION_DAYS || '90',
       10,
     );
-    const retentionDays = Number.isFinite(parsedRetention) && parsedRetention > 0
-      ? Math.min(parsedRetention, 3650)
-      : 90;
+    const retentionDays =
+      Number.isFinite(parsedRetention) && parsedRetention > 0
+        ? Math.min(parsedRetention, 3650)
+        : 90;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - retentionDays);
     const result = await this.prisma.notification.deleteMany({

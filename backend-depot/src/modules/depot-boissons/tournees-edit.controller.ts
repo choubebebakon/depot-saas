@@ -1,4 +1,12 @@
-import { BadRequestException, Body, Controller, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Param,
+  Patch,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
@@ -17,7 +25,8 @@ export class DepotBoissonsTourneesEditController {
   async update(@Req() req: any, @Param('id') id: string, @Body() data: any) {
     const tenantId = req.user?.tenantId;
     const depotId = req.depotScope?.depotId;
-    if (!tenantId) throw new BadRequestException('tenantId manquant dans le token.');
+    if (!tenantId)
+      throw new BadRequestException('tenantId manquant dans le token.');
     if (!depotId) throw new BadRequestException('Dépôt actif requis.');
     return this.service.update(tenantId, depotId, id, data);
   }

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, GoneException, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  GoneException,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Metier } from '../auth/decorators/metier.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
@@ -12,7 +21,12 @@ import { TourneesService } from './tournees.service';
 @Controller('tournees')
 @Metier(MetierType.DEPOT_BOISSONS)
 @UseGuards(JwtAuthGuard, MetierGuard)
-@Roles(RoleUser.PATRON, RoleUser.GERANT, RoleUser.COMMERCIAL, RoleUser.MAGASINIER)
+@Roles(
+  RoleUser.PATRON,
+  RoleUser.GERANT,
+  RoleUser.COMMERCIAL,
+  RoleUser.MAGASINIER,
+)
 export class TourneesController {
   constructor(private readonly service: TourneesService) {}
 
@@ -45,16 +59,32 @@ export class TourneesController {
    * The only writable source of truth is /depot-boissons/tournee-workflow.
    */
   @Post('ouvrir')
-  ouvrirTournee() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
+  ouvrirTournee() {
+    throw new GoneException(
+      'Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.',
+    );
+  }
 
   @Post('charger')
-  chargerTournee() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
+  chargerTournee() {
+    throw new GoneException(
+      'Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.',
+    );
+  }
 
   @Post('cloture-commerciale')
-  clotureCommerciale() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
+  clotureCommerciale() {
+    throw new GoneException(
+      'Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.',
+    );
+  }
 
   @Post('valider-magasinier')
-  validerMagasinier() { throw new GoneException('Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.'); }
+  validerMagasinier() {
+    throw new GoneException(
+      'Ancien workflow de tournée désactivé. Utilisez /depot-boissons/tournee-workflow.',
+    );
+  }
 
   @Get('stats')
   @RequirePermission('tournees', 'read')

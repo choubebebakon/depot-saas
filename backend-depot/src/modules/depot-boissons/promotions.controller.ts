@@ -25,7 +25,9 @@ export class DepotBoissonsPromotionsController {
 
   private tenantId(req: any): string {
     if (!req.user?.tenantId) {
-      throw new BadRequestException('tenantId manquant dans le contexte authentifié.');
+      throw new BadRequestException(
+        'tenantId manquant dans le contexte authentifié.',
+      );
     }
     return req.user.tenantId;
   }

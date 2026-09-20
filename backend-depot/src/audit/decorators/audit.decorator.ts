@@ -20,4 +20,4 @@ export interface AuditMeta {
  * fait dans ventes.service.ts et stocks.service.ts.
  */
 export const Audit = (action: string, targetType: string) =>
-  SetMetadata(AUDIT_KEY, { action, targetType } as AuditMeta);
+  SetMetadata(AUDIT_KEY, { action, targetType });

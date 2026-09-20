@@ -2,32 +2,40 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
+import { useDepot } from '../../../contexts/DepotContext';
 import { PERMISSIONS } from '../permissions';
 import ClientForm from '../../../shared/forms/ClientForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { boutiqueApi } from '../services/boutiqueApi';
+import ClientFicheModal, { BadgeCanal, canauxClient } from '../../../components/ClientFicheModal';
 import { Search, Edit, Trash2 } from 'lucide-react';
 
 export default function ClientsPage() {
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { depotId } = useDepot();
 
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [ficheClient, setFicheClient] = useState(null);
+  const [canalFiltre, setCanalFiltre] = useState('');
 
   const perm = usePermission(PERMISSIONS, 'clients');
 
   const { data: clientsData, isLoading } = useQuery({
-    queryKey: ['boutique-clients', search],
+    queryKey: ['boutique-clients', search, depotId],
     queryFn: async () => {
-      const res = await boutiqueApi.getClients({ search });
+      const res = await boutiqueApi.getClients({ search, depotId });
       return res.data;
     },
   });
 
-  const items = clientsData?.data || [];
+  const clientsBruts = clientsData?.data || [];
+  const items = canalFiltre
+    ? clientsBruts.filter((c) => canauxClient(c).includes(canalFiltre))
+    : clientsBruts;
   const totalItems = clientsData?.total || 0;
 
   const deleteMutation = useMutation({
@@ -65,7 +73,7 @@ export default function ClientsPage() {
           </button>
         )}
       </div>
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <input
           type="text"
           placeholder="Nom, téléphone..."
@@ -73,6 +81,14 @@ export default function ClientsPage() {
           onChange={e => setSearch(e.target.value)}
           className="bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none w-72"
         />
+        <div className="flex gap-1">
+          {[['', 'Tous'], ['WHATSAPP', 'WhatsApp'], ['INSTAGRAM', 'Instagram'], ['MESSENGER', 'Messenger']].map(([id, label]) => (
+            <button key={id || 'all'} type="button" onClick={() => setCanalFiltre(id)}
+              className={`text-xs font-bold px-3 py-2 rounded-xl border transition-colors ${canalFiltre === id ? 'bg-cyan-600/20 border-cyan-500/40 text-cyan-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
@@ -85,6 +101,7 @@ export default function ClientsPage() {
               <tr className="text-slate-500 text-xs font-bold uppercase tracking-widest">
                 <th className="text-left px-5 py-4">Nom</th>
                 <th className="text-left px-5 py-4">Téléphone</th>
+                <th className="text-left px-5 py-4">Canaux</th>
                 <th className="text-left px-5 py-4">Adresse</th>
                 <th className="text-left px-5 py-4">Plafond</th>
                 <th className="text-left px-5 py-4">Solde Crédit</th>
@@ -93,7 +110,7 @@ export default function ClientsPage() {
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {items.length === 0 ? (
-                <tr><td colSpan={4} className="text-center py-16 text-slate-500">Aucun client</td></tr>
+                <tr><td colSpan={7} className="text-center py-16 text-slate-500">Aucun client</td></tr>
               ) : items.map(i => (
                 <tr key={i.id} className="hover:bg-slate-700/20 transition-colors">
                   <td className="px-5 py-4">
@@ -101,10 +118,19 @@ export default function ClientsPage() {
                       <div className="w-9 h-9 bg-cyan-600/20 rounded-xl flex items-center justify-center text-cyan-400 font-black text-sm">
                         {i.nom?.slice(0,2).toUpperCase()}
                       </div>
-                      <span className="text-white font-semibold text-sm">{i.nom}</span>
+                      <button type="button" onClick={() => setFicheClient(i)} title="Voir la fiche client"
+                        className="text-white font-semibold text-sm hover:text-cyan-400 transition-colors text-left">
+                        {i.nom}
+                      </button>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-slate-300">{i.telephone || '-'}</td>
+                  <td className="px-5 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {canauxClient(i).map((canal) => <BadgeCanal key={canal} canal={canal} />)}
+                      {!canauxClient(i).length && <span className="text-slate-600 text-xs">—</span>}
+                    </div>
+                  </td>
                   <td className="px-5 py-4 text-slate-300">{i.adresse || '-'}</td>
                   <td className="px-5 py-4 text-slate-300">{i.plafondCredit ? `${i.plafondCredit.toLocaleString('fr-FR')} F` : '-'}</td>
                   <td className="px-5 py-4 text-slate-300">
@@ -150,6 +176,13 @@ export default function ClientsPage() {
           }}
           edit={editItem}
           metier="boutique"
+        />
+      )}
+      {ficheClient && (
+        <ClientFicheModal
+          client={ficheClient}
+          onClose={() => setFicheClient(null)}
+          onEdit={perm.canEdit ? (c) => { setFicheClient(null); setEditItem(c); setFormOpen(true); } : undefined}
         />
       )}
       {confirmDelete && (

@@ -1,4 +1,13 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Get,
+  Patch,
+  Param,
+} from '@nestjs/common';
 import { SupportService } from './support.service';
 import { CreateSupportDto } from './dto/create-support.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,11 +20,18 @@ export class SupportController {
   constructor(private readonly supportService: SupportService) {}
 
   @Post('messages')
-  async createMessage(@Request() req, @Body() createSupportDto: CreateSupportDto) {
+  async createMessage(
+    @Request() req,
+    @Body() createSupportDto: CreateSupportDto,
+  ) {
     const userId = req.user.userId;
     const tenantId = req.user.tenantId;
 
-    return this.supportService.createMessage(userId, tenantId, createSupportDto);
+    return this.supportService.createMessage(
+      userId,
+      tenantId,
+      createSupportDto,
+    );
   }
 
   @Get('messages')

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
+  ACTION_KEY,
   PERMISSION_KEY,
   RequiredPermission,
 } from '../decorators/require-permission.decorator';
@@ -32,7 +33,14 @@ export class PermissionGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (!required) return true;
+    // §14 : contrôle d'action fine (ventes.annuler, caisse.fermer…),
+    // évalué en complément — ou en l'absence — de la permission read/write.
+    const requiredAction = this.reflector.getAllAndOverride<string>(
+      ACTION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (!required && !requiredAction) return true;
 
     const req = context.switchToHttp().getRequest();
     const user = req.user;
@@ -52,15 +60,31 @@ export class PermissionGuard implements CanActivate {
       throw this.denied('Patron ou Gérant');
     }
 
-    const result = await this.permissionService.canAccess(
-      role,
-      metier,
-      required.sousModule,
-      required.action,
-    );
+    if (required) {
+      const result = await this.permissionService.canAccess(
+        role,
+        metier,
+        required.sousModule,
+        required.action,
+      );
 
-    if (!result.allowed) {
-      throw this.denied(result.libelleRoleAutorise);
+      if (!result.allowed) {
+        throw this.denied(result.libelleRoleAutorise);
+      }
+    }
+
+    if (requiredAction) {
+      const allowed = await this.permissionService.canPerformAction(
+        role,
+        metier,
+        requiredAction,
+      );
+      if (!allowed) {
+        throw new ForbiddenException({
+          error: 'ACTION_DENIED',
+          message: `Action refusée — « ${requiredAction} » n'est pas accordée à votre rôle sur ce métier. Contactez votre gérant.`,
+        });
+      }
     }
 
     return true;

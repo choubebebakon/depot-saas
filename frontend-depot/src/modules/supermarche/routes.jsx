@@ -18,9 +18,11 @@ const PromotionsPage        = lazy(() => import('./pages/PromotionsPage'));
 const ClientsPage           = lazy(() => import('./pages/ClientsPage'));
 const FournisseursPage      = lazy(() => import('./pages/FournisseursPage'));
 const ReceptionsPage        = lazy(() => import('./pages/ReceptionsPage'));
+const FacturesPage          = lazy(() => import('./pages/FacturesPage'));
 const InventairePage        = lazy(() => import('../../shared/pages/InventaireProductionPage'));
 const DepensesPage          = lazy(() => import('./pages/DepensesPage'));
 const RapportsPage          = lazy(() => import('./pages/RapportsPage'));
+const PerformancePage       = lazy(() => import('../../shared/pages/PerformancePage'));
 const ParametresPage        = lazy(() => import('./pages/ParametresPage'));
 const UtilisateursPage      = lazy(() => import('../../components/admin/UtilisateursPage'));
 const DepotsPage            = lazy(() => import('../../components/admin/DepotsPage'));
@@ -111,9 +113,12 @@ export default function SupermarcheRoutes() {
             <Route path="clients" element={gate('clients', ClientsPage)} />
             <Route path="fournisseurs" element={gate('fournisseurs', FournisseursPage)} />
             <Route path="receptions" element={gate('receptions', ReceptionsPage)} />
+            <Route path="factures" element={gate('ventes', FacturesPage)} />
             <Route path="inventaire" element={gate('inventaire', InventairePage)} />
             <Route path="depenses" element={gate('depenses', DepensesPage)} />
             <Route path="rapports" element={gate('rapports', RapportsPage)} />
+            {/* §10 — « Mes performances » : gate par rapports_performance. */}
+            <Route path="performance" element={gate('rapports_performance', PerformancePage)} />
             <Route path="parametres" element={gate('parametres', ParametresPage)} />
             <Route path="utilisateurs" element={gate('utilisateurs', UtilisateursPage)} />
             <Route path="depots" element={gate('depots', DepotsPage)} />

@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-
   Put,
   Patch,
   Delete,
@@ -22,8 +21,9 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { RequirePermission, RequireAction } from '../../auth/decorators/require-permission.decorator';
 import { buildAuditActor } from '../../audit/audit-actor.util';
+import { PrismaService } from '../../prisma.service';
 import {
   PromotionsService,
   ArticlesService,
@@ -33,6 +33,7 @@ import {
   DepensesService,
   VentesService,
   CreditClientService,
+  ReceptionsService,
 } from './boutique.service';
 import { StockQueryDto } from './dto/stock-query.dto';
 
@@ -49,20 +50,25 @@ export class BoutiqueController {
     private depensesService: DepensesService,
     private ventesService: VentesService,
     private creditClientService: CreditClientService,
+    private receptionsService: ReceptionsService,
+    private prisma: PrismaService,
   ) {}
 
   // ── Helper ────────────────────────────────────────────────────────────────
 
   private getTenantId(req: any): string {
     if (!req.user?.tenantId) {
-      throw new BadRequestException('Accès refusé : tenantId manquant dans le token.');
+      throw new BadRequestException(
+        'Accès refusé : tenantId manquant dans le token.',
+      );
     }
     return req.user.tenantId;
   }
 
   private getDepotId(req: any): string | undefined {
     const raw = req.headers['x-depot-id'];
-    if (!raw || raw === 'undefined' || raw === 'null' || raw === 'all') return undefined;
+    if (!raw || raw === 'undefined' || raw === 'null' || raw === 'all')
+      return undefined;
     return raw;
   }
 
@@ -115,7 +121,7 @@ export class BoutiqueController {
 
   // ── Articles ──────────────────────────────────────────────────────────────
 
- @Get('articles')
+  @Get('articles')
   @RequirePermission('stock', 'read')
   async findAllArticles(@Req() req: any, @Query() params: any) {
     return this.articlesService.findAll(this.getTenantId(req), params);
@@ -130,8 +136,11 @@ export class BoutiqueController {
   @Post('articles')
   @RequirePermission('stock', 'write')
   async createArticle(@Body() data: CreateArticleDto, @Req() req: any) {
-    // Le ValidationPipe va transformer et valider 'data' automatiquement ici
-    return this.articlesService.create(data, this.getTenantId(req));
+    const depotId = data.depotId || this.getDepotId(req);
+    return this.articlesService.create(
+      { ...data, depotId },
+      this.getTenantId(req),
+    );
   }
 
   @Patch('articles/:id')
@@ -158,7 +167,11 @@ export class BoutiqueController {
   @RequirePermission('stock', 'write')
   @HttpCode(HttpStatus.OK)
   async deleteArticle(@Param('id') id: string, @Req() req: any) {
-    return this.articlesService.delete(id, this.getTenantId(req), buildAuditActor(req));
+    return this.articlesService.delete(
+      id,
+      this.getTenantId(req),
+      buildAuditActor(req),
+    );
   }
   // ── Stock ─────────────────────────────────────────────────────────────────
 
@@ -170,6 +183,86 @@ export class BoutiqueController {
       this.getDepotId(req),
       query,
     );
+  }
+
+  @Get('articles/:id/stock-history')
+  @RequirePermission('stock', 'read')
+  async getStockHistory(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Query() query: any,
+  ) {
+    return this.stockService.getStockHistory(
+      this.getTenantId(req),
+      id,
+      query,
+    );
+  }
+
+  @Post('stock/entree')
+  @RequirePermission('stock', 'write')
+  async entreStock(@Body() data: any, @Req() req: any) {
+    return this.stockService.entreStock(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || this.getDepotId(req) },
+      buildAuditActor(req),
+    );
+  }
+
+  @Post('stock/sortie')
+  @RequirePermission('stock', 'write')
+  async sortieStock(@Body() data: any, @Req() req: any) {
+    return this.stockService.sortieStock(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || this.getDepotId(req) },
+      buildAuditActor(req),
+    );
+  }
+
+  @Post('stock/transfert')
+  @RequirePermission('stock', 'write')
+  async transfertStock(@Body() data: any, @Req() req: any) {
+    return this.stockService.transfertStock(
+      this.getTenantId(req),
+      { ...data, depotId: data.depotId || this.getDepotId(req) },
+      buildAuditActor(req),
+    );
+  }
+
+  // ── Réceptions ────────────────────────────────────────────────────────────
+
+  @Get('receptions')
+  @RequirePermission('receptions', 'read')
+  async findAllReceptions(@Req() req: any) {
+    return this.receptionsService.findAll(this.getTenantId(req));
+  }
+
+  @Get('receptions/:id')
+  @RequirePermission('receptions', 'read')
+  async findOneReception(@Param('id') id: string, @Req() req: any) {
+    return this.receptionsService.findOne(id, this.getTenantId(req));
+  }
+
+  @Post('receptions')
+  @RequirePermission('receptions', 'write')
+  async createReception(@Req() req: any, @Body() data: any) {
+    return this.receptionsService.create(this.getTenantId(req), data);
+  }
+
+  @Patch('receptions/:id')
+  @RequirePermission('receptions', 'write')
+  async updateReception(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() data: any,
+  ) {
+    return this.receptionsService.update(this.getTenantId(req), id, data);
+  }
+
+  @Delete('receptions/:id')
+  @RequirePermission('receptions', 'write')
+  async deleteReception(@Param('id') id: string, @Req() req: any) {
+    return this.receptionsService.remove(this.getTenantId(req), id);
   }
 
   // ── Clients ───────────────────────────────────────────────────────────────
@@ -193,7 +286,10 @@ export class BoutiqueController {
   @RequirePermission('clients', 'write')
   async createClient(@Body() data: any, @Req() req: any) {
     const depotId = data.depotId || this.getDepotId(req);
-    return this.clientsService.create({ ...data, depotId }, this.getTenantId(req));
+    return this.clientsService.create(
+      { ...data, depotId },
+      this.getTenantId(req),
+    );
   }
 
   @Patch('clients/:id')
@@ -220,7 +316,11 @@ export class BoutiqueController {
   @RequirePermission('clients', 'write')
   @HttpCode(HttpStatus.OK)
   async deleteClient(@Param('id') id: string, @Req() req: any) {
-    return this.clientsService.delete(id, this.getTenantId(req), buildAuditActor(req));
+    return this.clientsService.delete(
+      id,
+      this.getTenantId(req),
+      buildAuditActor(req),
+    );
   }
 
   // ── Crédit Client ─────────────────────────────────────────────────────────────
@@ -265,7 +365,10 @@ export class BoutiqueController {
   @RequirePermission('fournisseurs', 'write')
   async createFournisseur(@Body() data: any, @Req() req: any) {
     const depotId = data.depotId || this.getDepotId(req);
-    return this.fournisseursService.create({ ...data, depotId }, this.getTenantId(req));
+    return this.fournisseursService.create(
+      { ...data, depotId },
+      this.getTenantId(req),
+    );
   }
 
   @Patch('fournisseurs/:id')
@@ -381,6 +484,7 @@ export class BoutiqueController {
 
   @Patch('ventes/:id/annuler')
   @RequirePermission('ventes', 'write')
+  @RequireAction('ventes.annuler')
   @HttpCode(HttpStatus.OK)
   async annulerVente(
     @Param('id') id: string,
@@ -412,6 +516,7 @@ export class BoutiqueController {
 
   @Post('caisse/ouvrir')
   @RequirePermission('caisse', 'write')
+  @RequireAction('caisse.ouvrir')
   async ouvrirCaisse(@Body() data: any, @Req() req: any) {
     const depotId = data.depotId || this.getDepotId(req);
     const actor = buildAuditActor(req);
@@ -424,6 +529,7 @@ export class BoutiqueController {
 
   @Post('caisse/fermer')
   @RequirePermission('caisse', 'write')
+  @RequireAction('caisse.fermer')
   async fermerCaisse(@Body() data: any, @Req() req: any) {
     const depotId = data.depotId || this.getDepotId(req);
     return this.ventesService.fermerCaisse(
@@ -435,6 +541,7 @@ export class BoutiqueController {
 
   @Post('caisse/mouvement')
   @RequirePermission('caisse', 'write')
+  @RequireAction('caisse.mouvement')
   async mouvementCaisse(@Body() data: any, @Req() req: any) {
     const depotId = data.depotId || this.getDepotId(req);
     return this.ventesService.mouvementCaisse(
@@ -446,7 +553,10 @@ export class BoutiqueController {
 
   @Get('caisse/rapport-journalier')
   @RequirePermission('caisse', 'read')
-  async rapportJournalierCaisse(@Req() req: any, @Query('depotId') depotId?: string) {
+  async rapportJournalierCaisse(
+    @Req() req: any,
+    @Query('depotId') depotId?: string,
+  ) {
     return this.ventesService.rapportJournalier(
       this.getTenantId(req),
       depotId || this.getDepotId(req),
@@ -478,10 +588,7 @@ export class BoutiqueController {
 
   @Get('factures')
   @RequirePermission('factures', 'read')
-  async findAllFactures(
-    @Req() req: any,
-    @Query() params: any,
-  ) {
+  async findAllFactures(@Req() req: any, @Query() params: any) {
     // Force statut PAYE côté backend
     return this.ventesService.findAll(this.getTenantId(req), {
       ...params,
@@ -508,7 +615,6 @@ export class BoutiqueController {
     return this.ventesService.findAllCategories(this.getTenantId(req), query);
   }
 
-
   @Get('categories/:id')
   @RequirePermission('categories', 'read')
   getCategorie(@Req() req: any, @Param('id') id: string) {
@@ -529,7 +635,11 @@ export class BoutiqueController {
 
   @Put('categories/:id')
   @RequirePermission('categories', 'write')
-  updateCategoriePut(@Req() req: any, @Param('id') id: string, @Body() dto: any) {
+  updateCategoriePut(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
     return this.ventesService.updateCategorie(this.getTenantId(req), id, dto);
   }
 
@@ -540,7 +650,6 @@ export class BoutiqueController {
     return this.ventesService.deleteCategorie(this.getTenantId(req), id);
   }
 
-
   @Post('categories/seed/:typeBoutique')
   @RequirePermission('categories', 'write')
   seedCategories(@Req() req: any, @Param('typeBoutique') typeBoutique: string) {
@@ -550,15 +659,57 @@ export class BoutiqueController {
     );
   }
 
+  // ── Paramètres ─────────────────────────────────────────────────────────────
+  // Persistés dans le JSON `parametres` du tenant (merge non destructif).
+  // Le ticket 80mm et la facture A4 lisent cette configuration.
+
+  private async readTenantParametres(
+    tenantId: string,
+  ): Promise<Record<string, any>> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { parametres: true },
+    });
+    const raw = (tenant?.parametres ?? {}) as any;
+    return typeof raw === 'object' && raw !== null ? raw : {};
+  }
+
+  private async mergeTenantParametres(tenantId: string, body: any) {
+    if (!body || typeof body !== 'object') {
+      throw new BadRequestException('Corps de paramètres invalide.');
+    }
+    const current = await this.readTenantParametres(tenantId);
+    const merged: Record<string, any> = { ...current };
+    for (const key of Object.keys(body)) {
+      const value = body[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        merged[key] = { ...(merged[key] || {}), ...value };
+      } else {
+        merged[key] = value;
+      }
+    }
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { parametres: merged as any },
+    });
+    return merged;
+  }
+
+  @Get('parametres')
+  @RequirePermission('parametres', 'read')
+  async getParametres(@Req() req: any) {
+    return this.readTenantParametres(this.getTenantId(req));
+  }
+
   @Put('parametres')
   @RequirePermission('parametres', 'write')
-  async updateParametres(@Body() body: any) {
-    return body;
+  async updateParametres(@Req() req: any, @Body() body: any) {
+    return this.mergeTenantParametres(this.getTenantId(req), body);
   }
 
   @Patch('parametres')
   @RequirePermission('parametres', 'write')
-  async patchParametres(@Body() body: any) {
-    return body;
+  async patchParametres(@Req() req: any, @Body() body: any) {
+    return this.mergeTenantParametres(this.getTenantId(req), body);
   }
 }

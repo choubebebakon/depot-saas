@@ -4,13 +4,16 @@ import { useData } from '../../../hooks/useData';
 import { usePagination } from '../../../hooks/usePagination';
 import { useNotif } from '../../../context/NotifContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
 import FournisseurForm from '../../../shared/forms/FournisseurForm';
 
 export default function FournisseursPage() {
   const { metier: metierParam } = useParams();
-  const { metier: metierAuth, depotActif } = useAuth();
+  const { metier: metierAuth } = useAuth();
+  // depotActif vit dans DepotContext (pas dans AuthContext) — source unique de vérité.
+  const { depotActif } = useDepot();
   const metier = metierParam || metierAuth || 'supermarche';
   const prefix = metier.toLowerCase().replace(/_/g, '-');
 
@@ -35,7 +38,7 @@ export default function FournisseursPage() {
   const normalizedSearch = search.trim().toLocaleLowerCase();
   const filtres = fournisseurs.filter((item) => {
     if (!normalizedSearch) return true;
-    return [item.nom, item.contact, item.telephone, item.email]
+    return [item.nom, item.contact, item.telephone, item.email, item.adresse]
       .filter(Boolean)
       .some((value) => String(value).toLocaleLowerCase().includes(normalizedSearch));
   });
@@ -161,6 +164,7 @@ export default function FournisseursPage() {
                     <td className="px-5 py-4">
                       <p className="text-white font-semibold text-sm">{fournisseur.nom}</p>
                       {fournisseur.email && <p className="text-slate-400 text-xs font-mono">{fournisseur.email}</p>}
+                      {fournisseur.adresse && <p className="text-slate-500 text-xs mt-0.5">📍 {fournisseur.adresse}</p>}
                     </td>
                     <td className="px-5 py-4 text-slate-300 text-sm">{fournisseur.telephone || '-'}</td>
                     <td className="px-5 py-4">

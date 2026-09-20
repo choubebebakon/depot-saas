@@ -11,6 +11,7 @@ import {
 } from '@prisma/client';
 import { CampayService } from '../payments/campay.service';
 import { PaymentsService } from '../payments/payments.service';
+import { NotchPayService } from '../payments/notchpay.service';
 
 /**
  * Service des taches planifiees (CRON) pour GeStock.
@@ -28,6 +29,7 @@ export class TasksService {
     private readonly prisma: PrismaService,
     private readonly campay: CampayService,
     private readonly payments: PaymentsService,
+    private readonly notchPay: NotchPayService,
     private readonly emailService: EmailService,
   ) {}
 
@@ -182,8 +184,13 @@ export class TasksService {
         );
       }
 
+      const expiredToFail: string[] = [];
+
       for (const payment of pendingPayments) {
         try {
+          // ── Branche CAMPAY (PÉRIODE DE GRÂCE — décommissionnement en cours) ──
+          // Maintenue tant que des paiements Campay en vol peuvent exister
+          // (voir docs/PAYMENTS_NOTCHPAY_MIGRATION.md, point de non-retour n°1).
           if (
             payment.method === PaymentMethod.MTN_MOMO &&
             payment.operatorTxId
@@ -205,10 +212,82 @@ export class TasksService {
               });
               this.logger.log(`Payment ${payment.id} reconciled as FAILED`);
             }
+            continue;
           }
+
+          // ── Branche NOTCHPAY (filet de sécurité si webhook perdu) ──
+          // Vérification "pull" auprès de l'API : ne modifie l'état QUE sur
+          // une réponse explicite (complete → SUCCESS, failed → FAILED).
+          // Une erreur API laisse le paiement PENDING (retry au prochain
+          // passage) — jamais de bascule en FAILED sur une indisponibilité.
+          const reference = payment.notchPayId ?? payment.reference;
+          if (reference) {
+            try {
+              const tx = await this.notchPay.verifyTransaction(reference);
+              const txStatus = String(tx.status ?? '').toLowerCase();
+              if (
+                [
+                  'complete',
+                  'completed',
+                  'success',
+                  'successful',
+                  'accepted',
+                  'approved',
+                  'paid',
+                ].includes(txStatus)
+              ) {
+                await this.payments.markPaymentSuccess(
+                  payment.id,
+                  tx.id ?? payment.notchPayId ?? payment.id,
+                );
+                this.logger.log(
+                  `Payment ${payment.id} reconciled as SUCCESS (NotchPay pull)`,
+                );
+              } else if (
+                ['failed', 'canceled', 'cancelled', 'expired'].includes(
+                  txStatus,
+                )
+              ) {
+                await this.payments.markNotchPayComplete({
+                  reference: payment.reference ?? undefined,
+                  notchPayId: payment.notchPayId ?? undefined,
+                  status: 'failed',
+                });
+                this.logger.log(
+                  `Payment ${payment.id} reconciled as FAILED (NotchPay pull)`,
+                );
+              }
+              continue;
+            } catch {
+              // API injoignable : on ne bascule RIEN cette nuit, réessai demain.
+              this.logger.warn(
+                `NotchPay verify injoignable pour ${payment.id} — paiement laissé PENDING`,
+              );
+              continue;
+            }
+          }
+
+          // ── PENDING orphelin (> 24h, sans aucune référence opérateur) ──
+          // L'initialisation n'a jamais abouti : aucune transaction n'existe
+          // côté agrégateur, il est sûr de le basculer en FAILED (contrainte 12).
+          expiredToFail.push(payment.id);
         } catch (e) {
           this.logger.error(`Failed to reconcile payment ${payment.id}`, e);
         }
+      }
+
+      // Expiration en masse des PENDING orphelins (aucune activation possible
+      // : pas de transaction à reconcilier). Idempotent : un replay webhook
+      // ultérieur resterait no-op grâce à canTransitionTo si jamais payé
+      // ailleurs — et un orphelin ne peut pas être payé (init jamais abouti).
+      if (expiredToFail.length > 0) {
+        const result = await this.prisma.payment.updateMany({
+          where: { id: { in: expiredToFail }, status: PaymentStatus.PENDING },
+          data: { status: PaymentStatus.FAILED },
+        });
+        this.logger.log(
+          `${result.count} paiements PENDING orphelins expirés en FAILED`,
+        );
       }
 
       this.logger.log(

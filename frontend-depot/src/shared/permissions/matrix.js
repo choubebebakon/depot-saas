@@ -42,50 +42,80 @@ export const PERMISSION_MATRIX = {
       stock: { canRead: true, canWrite: true },
       rayons: { canRead: true, canWrite: true },
       fournisseurs: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: false },
+      promotions: { canRead: true, canWrite: false },
       receptions: { canRead: true, canWrite: true },
       inventaire: { canRead: true, canWrite: true },
+      // §10 — « Rapports stock » seulement, jamais financier.
+      rapports_stock: { canRead: true, canWrite: false },
     },
     CAISSIER: {
       dashboard: { canRead: true, canWrite: false },
       pos_caisse: { canRead: true, canWrite: true },
+      ventes: { canRead: true, canWrite: true },
       clients: { canRead: true, canWrite: false },
+      stock: { canRead: true, canWrite: false },
+      rayons: { canRead: true, canWrite: false },
+      promotions: { canRead: true, canWrite: false },
+      // §10 — rapports.* ❌ pour le caissier.
     },
     COMPTABLE: {
       dashboard: { canRead: true, canWrite: false },
       stock: { canRead: true, canWrite: false },
-      fournisseurs: { canRead: true, canWrite: true },
-      receptions: { canRead: true, canWrite: false },
+      rayons: { canRead: true, canWrite: false },
       inventaire: { canRead: true, canWrite: false },
+      receptions: { canRead: true, canWrite: false },
+      pos_caisse: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: false },
+      clients: { canRead: true, canWrite: false },
+      promotions: { canRead: true, canWrite: false },
+      fournisseurs: { canRead: true, canWrite: true },
       depenses: { canRead: true, canWrite: true },
       rapports: { canRead: true, canWrite: true },
+      // §23 — 'depots' est un sous-module d'ADMINISTRATION (réservé au
+      // PATRON) : aucune ligne ici, conformément à ADMINISTRATION_SUBMODULES.
     },
     COMMERCIAL: {
       dashboard: { canRead: true, canWrite: false },
-      promotions: { canRead: true, canWrite: true },
+      stock: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: true },
       clients: { canRead: true, canWrite: true },
-      rapports: { canRead: true, canWrite: false },
+      promotions: { canRead: true, canWrite: true },
+      // §10 — « Mes performances » seulement.
+      rapports_performance: { canRead: true, canWrite: false },
     },
   },
   boutique: {
     MAGASINIER: {
       dashboard: { canRead: true, canWrite: false },
-      ventes: { canRead: true, canWrite: true },
+      ventes: { canRead: true, canWrite: false },
       stock: { canRead: true, canWrite: true },
+      receptions: { canRead: true, canWrite: true },
       inventaire: { canRead: true, canWrite: true },
-      clients: { canRead: true, canWrite: false },
       categories: { canRead: true, canWrite: true },
+      clients: { canRead: true, canWrite: false },
+      rapports_stock: { canRead: true, canWrite: false },
     },
     CAISSIER: {
       dashboard: { canRead: true, canWrite: false },
       ventes: { canRead: true, canWrite: true },
-      clients: { canRead: true, canWrite: false },
       caisse: { canRead: true, canWrite: true },
       factures: { canRead: true, canWrite: false },
+      clients: { canRead: true, canWrite: false },
+      stock: { canRead: true, canWrite: false },
+      categories: { canRead: true, canWrite: false },
+      promotions: { canRead: true, canWrite: false },
     },
     COMPTABLE: {
       dashboard: { canRead: true, canWrite: false },
       stock: { canRead: true, canWrite: false },
       inventaire: { canRead: true, canWrite: false },
+      receptions: { canRead: true, canWrite: false },
+      caisse: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: false },
+      categories: { canRead: true, canWrite: false },
+      promotions: { canRead: true, canWrite: false },
+      clients: { canRead: true, canWrite: false },
       factures: { canRead: true, canWrite: true },
       fournisseurs: { canRead: true, canWrite: true },
       depenses: { canRead: true, canWrite: true },
@@ -93,10 +123,12 @@ export const PERMISSION_MATRIX = {
     },
     COMMERCIAL: {
       dashboard: { canRead: true, canWrite: false },
-      ventes: { canRead: true, canWrite: false },
+      stock: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: true },
       clients: { canRead: true, canWrite: true },
       promotions: { canRead: true, canWrite: true },
-      rapports: { canRead: true, canWrite: false },
+      factures: { canRead: true, canWrite: false },
+      rapports_performance: { canRead: true, canWrite: false },
     },
   },
   depot: {
@@ -108,28 +140,42 @@ export const PERMISSION_MATRIX = {
       livraisons: { canRead: true, canWrite: true },
       tournees: { canRead: true, canWrite: true },
       fournisseurs: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: false },
+      rapports_stock: { canRead: true, canWrite: false },
     },
     CAISSIER: {
       dashboard: { canRead: true, canWrite: false },
-      consignes: { canRead: true, canWrite: false },
-      clients: { canRead: true, canWrite: false },
       ventes: { canRead: true, canWrite: true },
       caisse: { canRead: true, canWrite: true },
+      clients: { canRead: true, canWrite: false },
+      consignes: { canRead: true, canWrite: false },
+      stock_articles: { canRead: true, canWrite: false },
+      factures: { canRead: true, canWrite: false },
+      // §10 — rapports.* ❌ pour le caissier.
     },
     COMPTABLE: {
       dashboard: { canRead: true, canWrite: false },
       stock_articles: { canRead: true, canWrite: false },
       inventaire: { canRead: true, canWrite: false },
       consignes: { canRead: true, canWrite: false },
+      tournees: { canRead: true, canWrite: false },
+      livraisons: { canRead: true, canWrite: false },
+      caisse: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: false },
+      clients: { canRead: true, canWrite: false },
+      factures: { canRead: true, canWrite: true },
       fournisseurs: { canRead: true, canWrite: true },
       depenses: { canRead: true, canWrite: true },
       rapports: { canRead: true, canWrite: true },
     },
     COMMERCIAL: {
       dashboard: { canRead: true, canWrite: false },
+      stock_articles: { canRead: true, canWrite: false },
+      ventes: { canRead: true, canWrite: true },
       clients: { canRead: true, canWrite: true },
-      ventes: { canRead: true, canWrite: false },
-      rapports: { canRead: true, canWrite: false },
+      tournees: { canRead: true, canWrite: true },
+      livraisons: { canRead: true, canWrite: true },
+      rapports_performance: { canRead: true, canWrite: false },
     },
   },
 };
@@ -180,7 +226,12 @@ export function resolvePermission(role, metier, sousModuleRaw, apiState = null) 
   }
 
   if (role === 'GERANT') {
-    const allowed = sousModule !== 'audit_patron';
+    // §3/§23 — gérant d'établissement : pas d'audit patron, pas d'abonnement,
+    // pas d'administration tenant (dépôts). Aligné sur PermissionService backend.
+    const allowed =
+      sousModule !== 'audit_patron' &&
+      sousModule !== 'abonnement' &&
+      sousModule !== 'depots';
     return {
       canRead: allowed,
       canWrite: allowed,
@@ -254,7 +305,11 @@ export function pathToSousModule(path, metierSlug) {
   const aliases = {
     pos: 'pos_caisse',
     'pos-caisse': 'pos_caisse',
+    'ventes-caisse': 'caisse',
     'audit-patron': 'audit_patron',
+    'rapports-stock': 'rapports_stock',
+    performance: 'rapports_performance',
+    'mes-performances': 'rapports_performance',
     articles: metierSlug === 'depot' ? 'stock_articles' : 'stock',
     stock: metierSlug === 'depot' ? 'stock_articles' : 'stock',
   };

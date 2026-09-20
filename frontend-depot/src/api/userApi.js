@@ -1,54 +1,52 @@
 import api from './axios';
 
+function buildApiCall(fn) {
+  return async (...args) => {
+    const signal = args[args.length - 1] instanceof AbortSignal ? args.pop() : undefined;
+    return fn(...args, { signal });
+  };
+}
+
 export const userApi = {
-  // Récupérer le profil utilisateur
-  getProfile: async () => {
-    const response = await api.get('/auth/me');
+  getProfile: buildApiCall(async (_, { signal }) => {
+    const response = await api.get('/auth/me', { signal });
     return response.data;
-  },
+  }),
 
-  // Mettre à jour le profil utilisateur
-  updateProfile: async (data) => {
-    const response = await api.put('/auth/me', data);
+  updateProfile: buildApiCall(async (data, { signal }) => {
+    const response = await api.put('/auth/me', data, { signal });
     return response.data;
-  },
+  }),
 
-  // Upload de photo de profil
-  uploadAvatar: async (file) => {
+  uploadAvatar: buildApiCall(async (file, { signal }) => {
     const formData = new FormData();
     formData.append('avatar', file);
-    
+
     const response = await api.post('/auth/avatar', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      signal,
     });
     return response.data;
-  },
+  }),
 
-  // Changer le mot de passe
-  changePassword: async (data) => {
-    const response = await api.post('/auth/change-password', data);
+  changePassword: buildApiCall(async (data, { signal }) => {
+    const response = await api.post('/auth/change-password', data, { signal });
     return response.data;
-  },
+  }),
 
-  // Activer/Désactiver la 2FA
-  toggle2FA: async (enabled) => {
-    const response = await api.post('/auth/2fa', { enabled });
+  toggle2FA: buildApiCall(async (enabled, { signal }) => {
+    const response = await api.post('/auth/2fa', { enabled }, { signal });
     return response.data;
-  },
+  }),
 
-  // Récupérer les préférences utilisateur
-  getPreferences: async () => {
-    const response = await api.get('/auth/preferences');
+  getPreferences: buildApiCall(async (_, { signal }) => {
+    const response = await api.get('/auth/preferences', { signal });
     return response.data;
-  },
+  }),
 
-  // Mettre à jour les préférences utilisateur
-  updatePreferences: async (data) => {
-    const response = await api.put('/auth/preferences', data);
+  updatePreferences: buildApiCall(async (data, { signal }) => {
+    const response = await api.put('/auth/preferences', data, { signal });
     return response.data;
-  },
+  }),
 };
 
 export default userApi;

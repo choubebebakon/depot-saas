@@ -11,7 +11,7 @@ import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [AuditModule],
-  controllers: [StocksController, InventaireController],
+  controllers: [InventaireController, StocksController],
   providers: [
     StocksService,
     TransferStockService,

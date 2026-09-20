@@ -35,7 +35,7 @@ export default function DepensesPage() {
   const { data: depensesData, isLoading, isError, error, refetch } = useQuery({
     queryKey: expensesQueryKey,
     queryFn: async () => {
-      const res = await boutiqueApi.getDepenses({ search });
+      const res = await boutiqueApi.getDepenses({ search, depotId });
       return res.data;
     },
     enabled: Boolean(depotId) && !depotLoading,

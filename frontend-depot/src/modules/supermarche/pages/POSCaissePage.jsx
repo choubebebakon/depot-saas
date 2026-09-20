@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { io } from 'socket.io-client';
 import { useDepot } from '../../../contexts/DepotContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotif } from '../../../context/NotifContext';
 import { supermarcheApi } from '../services/supermarcheApi';
+import { acquireVenteSocket, releaseVenteSocket } from '../../../shared/realtime/venteSocket';
 import POSSupermarcheForm from '../forms/POSSupermarcheForm';
 import Receipt80mm from '../../../components/Receipt80mm';
+import { useFactureConfig } from '../components/FacturePrintSupermarche';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import api from '../../../api/axios';
+import { useActions } from '../../../shared/hooks/useActions';
 import {
   Store, Lock, Unlock, ArrowDownToLine, ArrowUpFromLine,
   AlertTriangle, BarChart3, ShoppingCart,
@@ -76,6 +78,9 @@ function OuvrirCaisseModal({ isOpen, onClose, onOpen, isPending }) {
     </div>
   );
 }
+
+// ─── Multi-caisse : postes disponibles ──────────────────────────────────────
+const POSTES_CAISSE = Array.from({ length: 10 }, (_, i) => `CAISSE_${i + 1}`);
 
 // ─── Modale : Fermeture de caisse ──────────────────────────────────────────
 function FermerCaisseModal({ isOpen, onClose, onFermer, isPending }) {
@@ -148,15 +153,32 @@ export default function POSCaissePage() {
   const notif = useNotif();
 
   const [modal, setModal] = useState(null); // 'ouvrir' | 'fermer' | 'rapport'
+  const { hasAction } = useActions();
   const [printData, setPrintData] = useState(null);
   const [rapportData, setRapportData] = useState(null);
   const [fetchingRapport, setFetchingRapport] = useState(false);
 
+  // ── Multi-caisse : poste de caisse actif ────────────────────
+  // Chaque terminal POS choisit son poste (CAISSE_1…CAISSE_10) ; le choix est
+  // mémorisé localement pour que la page rouvre sur le même poste.
+  const [posteId, setPosteId] = useState(
+    () => localStorage.getItem('gestock_poste_caisse') || 'CAISSE_1',
+  );
+
+  useEffect(() => {
+    localStorage.setItem('gestock_poste_caisse', posteId);
+  }, [posteId]);
+
+  // Configuration du ticket 80mm : synchronisée avec le sous-module Paramètres
+  // (nom de l'entreprise, adresse, téléphone, logo, devise, caissière, messages).
+  const { data: factureConfig } = useFactureConfig();
+
   useEffect(() => {
     if (!tenantId) return undefined;
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    const socket = io(apiUrl);
+    // Socket singleton partagée (VenteGateway) : jamais déconnectée au
+    // démontage (StrictMode), on retire seulement les écouteurs de la page.
+    const socket = acquireVenteSocket();
 
     const joinAlerts = () => {
       socket.emit('join_alerts', { tenantId, role: 'MAGASINIER' });
@@ -166,6 +188,7 @@ export default function POSCaissePage() {
       queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-session'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-resume'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['supermarche-ventes'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['supermarche-factures'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['supermarche-articles'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'], exact: false });
     };
@@ -182,36 +205,37 @@ export default function POSCaissePage() {
       socket.off('connect', joinAlerts);
       socket.off('nouvelle_vente', refreshPOSData);
       socket.off('vente_prise_en_charge', refreshPOSData);
-      socket.disconnect();
+      releaseVenteSocket();
     };
   }, [tenantId, queryClient]);
 
-  // ── Query : session active ──────────────────────────────────
+  // ── Query : session active du poste sélectionné ─────────────
   const { data: session, isLoading, error: sessionError } = useQuery({
-    queryKey: ['supermarche-caisse-session', tenantId, depotId],
+    queryKey: ['supermarche-caisse-session', tenantId, depotId, posteId],
     queryFn: async () => {
-      const res = await supermarcheApi.getSessionCaisseActive(tenantId, depotId);
-      return res.data; // null si aucune session ouverte
+      const res = await supermarcheApi.getSessionCaisseActive(tenantId, depotId, posteId);
+      return res.data; // null si aucune session ouverte sur ce poste
     },
     enabled: !!tenantId && !!depotId,
     refetchInterval: 15_000,
   });
 
-  // ── Query : résumé caisse ───────────────────────────────────
+  // ── Query : résumé caisse du poste ──────────────────────────
   const { data: resume } = useQuery({
-    queryKey: ['supermarche-caisse-resume', tenantId, depotId],
+    queryKey: ['supermarche-caisse-resume', tenantId, depotId, posteId],
     queryFn: async () => {
-      const res = await supermarcheApi.getResumeCaisse(tenantId, depotId);
+      const res = await supermarcheApi.getResumeCaisse(tenantId, depotId, posteId);
       return res.data;
     },
     enabled: !!tenantId && !!depotId && !!session,
     refetchInterval: 30_000,
   });
 
-  // ── Mutation : ouvrir ───────────────────────────────────────
+  // ── Mutation : ouvrir (poste sélectionné) ───────────────────
   const ouvrirMutation = useMutation({
     mutationFn: (data) => supermarcheApi.ouvrirCaisse({
       fondInitial: parseFloat(data.fondInitial),
+      posteId,
       depotId,
       tenantId,
       userId: user?.id || '',
@@ -225,12 +249,14 @@ export default function POSCaissePage() {
     onError: (err) => notif.error(err.response?.data?.message || "Erreur lors de l'ouverture"),
   });
 
-  // ── Mutation : fermer ───────────────────────────────────────
+  // ── Mutation : fermer (session du poste sélectionné) ────────
   const fermerMutation = useMutation({
     mutationFn: (data) => supermarcheApi.fermerCaisse({
       sessionId: session?.id,
       fondFinal: parseFloat(data.fondFinal),
       motifEcart: data.motifEcart || undefined,
+      tenantId,
+      depotId,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-session'] });
@@ -245,7 +271,7 @@ export default function POSCaissePage() {
   async function handleRapport() {
     setFetchingRapport(true);
     try {
-      const res = await supermarcheApi.getResumeCaisse(tenantId, depotId);
+      const res = await supermarcheApi.getResumeCaisse(tenantId, depotId, posteId);
       setRapportData(res.data);
       setModal('rapport');
     } catch (err) {
@@ -255,34 +281,46 @@ export default function POSCaissePage() {
     }
   }
 
-  // ── Impression après vente ──────────────────────────────────
+  // ── Après vente ENCAISSÉE ──────────────────────────────────
+  // ENCAISSER crée la vente (visible temps réel dans le sous-module Factures)
+  // ET génère/imprime automatiquement le ticket de caisse 80mm.
   const handlePOSSuccess = async (createdVente) => {
     if (!createdVente) return;
-    // Rafraîchir le résumé caisse après chaque vente
-    queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-resume'] });
-    try {
-      let tenantConfig = {};
-      if (tenantId) {
-        try {
-          const t = await api.get(`/tenants/${tenantId}`);
-          tenantConfig = t.data || {};
-        } catch (_) { /* silencieux */ }
-      }
-      const config = {
-        nomEntreprise: tenantConfig.nomEntreprise || 'SUPERMARCHÉ',
-        adresse: tenantConfig.adresse || '',
-        telephone: tenantConfig.telephone || '',
-        messageFin: 'Merci de votre visite !',
-        logo: tenantConfig.logo,
-      };
-      setPrintData({ vente: createdVente, config });
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => setPrintData(null), 1000);
-      }, 500);
-    } catch (e) {
-      console.error("Erreur lors de l'impression", e);
+    // Rafraîchir le résumé caisse + la liste des factures après chaque vente
+    queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-resume'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['supermarche-factures'], exact: false });
+
+    // Config du ticket : valeur issue de la page Paramètres (synchronisée),
+    // avec repli sur le tenant pour le logo si besoin.
+    let config = { ...(factureConfig || {}) };
+    if (!config.logo && tenantId) {
+      try {
+        const t = await api.get(`/tenant/${tenantId}`);
+        const tc = t.data || {};
+        if (tc.logo) config.logo = tc.logo;
+        if (!config.nomEntreprise && (tc.nomEntreprise || tc.name)) config.nomEntreprise = tc.nomEntreprise || tc.name;
+        if (tc.adresse) config.adresse = config.adresse || tc.adresse;
+        if (tc.telephone) config.telephone = config.telephone || tc.telephone;
+      } catch (_) { /* silencieux */ }
     }
+
+    setPrintData({
+      vente: createdVente,
+      config: {
+        nomEntreprise: config.nomEntreprise || 'SUPERMARCHÉ',
+        adresse: config.adresse || '',
+        telephone: config.telephone || '',
+        devise: config.devise || 'FCFA',
+        messageFin: config.messageFin || 'Merci de votre visite !',
+        nomCaissiere: config.nomCaissiere || user?.nom || '',
+        logo: config.logo,
+        ...config,
+      },
+    });
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setPrintData(null), 1000);
+    }, 500);
   };
 
   // ── Gardes ─────────────────────────────────────────────────
@@ -330,6 +368,9 @@ export default function POSCaissePage() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">
             {estOuverte ? '🟢 Caisse ouverte' : '🔴 Caisse fermée'}
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 bg-slate-800 border border-slate-600 text-white font-bold text-xs rounded-md">
+              🖥️ {posteId}
+            </span>
             {resume && estOuverte && (
               <span className="ml-2 text-white font-bold">
                 — Solde net : {(resume.soldeNet || 0).toLocaleString('fr-FR')} FCFA
@@ -338,21 +379,37 @@ export default function POSCaissePage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* ── Sélecteur de poste (multi-caisse) ─────────────── */}
+          <select
+            value={posteId}
+            onChange={(e) => setPosteId(e.target.value)}
+            disabled={estOuverte}
+            title={estOuverte ? 'Fermez la caisse pour changer de poste' : 'Choisir le poste de caisse de ce terminal'}
+            className="px-3 py-2.5 bg-slate-800 border border-slate-700 disabled:opacity-60 text-white font-bold rounded-xl text-sm transition-all cursor-pointer"
+          >
+            {POSTES_CAISSE.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
           {!estOuverte ? (
-            <button
-              onClick={() => setModal('ouvrir')}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
-            >
-              <Unlock className="w-4 h-4" /> Ouvrir la caisse
-            </button>
+            hasAction('caisse.ouvrir') && (
+              <button
+                onClick={() => setModal('ouvrir')}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
+              >
+                <Unlock className="w-4 h-4" /> Ouvrir la caisse
+              </button>
+            )
           ) : (
             <>
-              <button
-                onClick={() => setModal('fermer')}
-                className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-sm transition-all flex items-center gap-2"
-              >
-                <Lock className="w-4 h-4" /> Fermer la caisse
-              </button>
+              {hasAction('caisse.fermer') && (
+                <button
+                  onClick={() => setModal('fermer')}
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-sm transition-all flex items-center gap-2"
+                >
+                  <Lock className="w-4 h-4" /> Fermer la caisse
+                </button>
+              )}
             </>
           )}
           <button
@@ -391,6 +448,7 @@ export default function POSCaissePage() {
             <POSSupermarcheForm
               metier="supermarche"
               depotId={depotId}
+              posteId={posteId}
               onSuccess={handlePOSSuccess}
             />
           </div>
@@ -431,16 +489,18 @@ export default function POSCaissePage() {
           <p className="text-slate-400 mt-2">
             Vous devez ouvrir la caisse pour enregistrer des ventes.
           </p>
-          <button
-            onClick={() => setModal('ouvrir')}
-            className="mt-6 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all"
-          >
-            Ouvrir la caisse maintenant
-          </button>
+          {hasAction('caisse.ouvrir') && (
+            <button
+              onClick={() => setModal('ouvrir')}
+              className="mt-6 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all"
+            >
+              Ouvrir la caisse maintenant
+            </button>
+          )}
         </div>
       )}
 
-      {/* ── Ticket impression ─────────────────────────────────── */}
+      {/* ── Ticket impression auto après ENCAISSER ───────────── */}
       <Receipt80mm vente={printData?.vente} config={printData?.config} />
 
       {/* ── Modales ──────────────────────────────────────────── */}

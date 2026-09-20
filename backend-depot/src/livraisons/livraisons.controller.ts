@@ -10,11 +10,15 @@ import { Controller, Get, GoneException, Param, Post } from '@nestjs/common';
 export class LivraisonsController {
   @Get(':id')
   findOne(@Param('id') _id: string): never {
-    throw new GoneException('Ancien endpoint de livraison désactivé. Utilisez le module Achats/Réceptions.');
+    throw new GoneException(
+      'Ancien endpoint de livraison désactivé. Utilisez le module Achats/Réceptions.',
+    );
   }
 
   @Post(':id/confirmer')
   confirmer(@Param('id') _id: string): never {
-    throw new GoneException('Ancien endpoint de livraison désactivé. Utilisez le module Achats/Réceptions.');
+    throw new GoneException(
+      'Ancien endpoint de livraison désactivé. Utilisez le module Achats/Réceptions.',
+    );
   }
 }

@@ -29,13 +29,23 @@ export default function BarcodeScanner({
     handleCode(input);
   };
 
+  // Douchette HID branchée sur le champ : les caractères vont directement dans
+  // l'input et le scanner termine par Entrée. Sans ce gestionnaire, cette touche
+  // ne déclenche rien (l'input n'est pas dans un <form>) : le scan serait perdu.
+  const handleInputKeyDown = (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    handleCode(input);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2" role="search">
+    <div className="flex gap-2" role="search">
       <input
         ref={inputRef}
         type="text"
         value={input}
         onChange={(event) => setInput(event.target.value)}
+        onKeyDown={handleInputKeyDown}
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
@@ -43,12 +53,13 @@ export default function BarcodeScanner({
         className="flex-1 bg-slate-800 border border-slate-600 focus:border-amber-500 text-white rounded-xl px-4 py-3 text-sm outline-none font-mono"
       />
       <button
-        type="submit"
+        type="button"
+        onClick={handleSubmit}
         aria-label="Rechercher le code-barres"
         className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl text-sm transition-colors"
       >
         🔍
       </button>
-    </form>
+    </div>
   );
 }

@@ -10,6 +10,19 @@ export const ADMINISTRATION_SUBMODULES = new Set([
   'administration',
 ]);
 
+/**
+ * §3/§23 — Sous-modules interdits au GERANT (gérant d'ÉTABLISSEMENT, pas
+ * administrateur du tenant) : audit patron, abonnement, administration des
+ * établissements. Source unique de vérité, miroir dans
+ * `frontend-depot/src/shared/permissions/matrix.js` (verrouillé par
+ * `frontend-matrix-parity.spec.ts`).
+ */
+export const GERANT_DENY_SOUS_MODULES: readonly string[] = [
+  'audit_patron',
+  'abonnement',
+  'depots',
+];
+
 export const ROLE_LABELS_BY_METIER: Record<
   PermissionMetier,
   Partial<Record<Role, string>>
@@ -47,7 +60,9 @@ export function roleLabel(role: string, metier: PermissionMetier): string {
   );
 }
 
-export function normalizePermissionMetier(raw?: string | null): PermissionMetier | null {
+export function normalizePermissionMetier(
+  raw?: string | null,
+): PermissionMetier | null {
   if (!raw) return null;
 
   const value = raw.toLowerCase().replace(/_/g, '-');

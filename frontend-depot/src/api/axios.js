@@ -15,10 +15,13 @@ const offlineQueue = localforage.createInstance({
   storeName: 'syncQueue',
 });
 const MAX_OFFLINE_QUEUE_SIZE = 100;
-const GLOBAL_DEPOT_FREE_PATHS = ['/auth/login', '/auth/register', '/auth/me', '/depots', '/tenants', '/settings'];
+const GLOBAL_DEPOT_FREE_PATHS = ['/auth/login', '/auth/register', '/auth/me', '/auth/avatar', '/depots', '/tenants', '/settings'];
 
 function shouldSkipDepotInjection(url = '') {
-  return GLOBAL_DEPOT_FREE_PATHS.some((path) => url.startsWith(path));
+  // Check both relative path and full path with /api/v1 prefix
+  return GLOBAL_DEPOT_FREE_PATHS.some((path) => 
+    url === path || url.startsWith(path + '/') || url.includes('/api/v1' + path)
+  );
 }
 
 function getActiveDepotId() {
@@ -95,11 +98,14 @@ async function queueReceptionWhileOffline(config) {
   return { id, timestamp };
 }
 
-api.defaults.headers.post['Content-Type'] = 'application/json';
-
 api.interceptors.request.use(async (config) => {
   const token = localStorage.getItem('depot_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  // Let axios set Content-Type automatically for FormData (multipart/form-data with boundary)
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
 
   // Une même requête POST doit conserver la même clé pendant les retries Axios.
   // Le backend utilise cette clé pour rendre la création d'une réception idempotente.

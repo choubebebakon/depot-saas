@@ -18,19 +18,25 @@ export class InventaireService {
   private normalizeDepotId(depotId?: string) {
     const value = depotId?.trim();
     if (!value) {
-      throw new BadRequestException('Un dépôt actif est obligatoire pour réaliser un inventaire.');
+      throw new BadRequestException(
+        'Un dépôt actif est obligatoire pour réaliser un inventaire.',
+      );
     }
     return value;
   }
 
   private normalizeLines(dto: RealiserInventaireDto) {
     if (!dto?.lignes?.length) {
-      throw new BadRequestException('L’inventaire doit contenir au moins une ligne.');
+      throw new BadRequestException(
+        'L’inventaire doit contenir au moins une ligne.',
+      );
     }
 
     const ids = dto.lignes.map((line) => line.articleId);
     if (new Set(ids).size !== ids.length) {
-      throw new BadRequestException('Un article ne peut apparaître qu’une seule fois dans un inventaire.');
+      throw new BadRequestException(
+        'Un article ne peut apparaître qu’une seule fois dans un inventaire.',
+      );
     }
 
     return dto.lignes.map((line) => ({
@@ -39,18 +45,26 @@ export class InventaireService {
     }));
   }
 
-  private async assertDepotAccess(tenantId: string, depotId: string, actor: any) {
+  private async assertDepotAccess(
+    tenantId: string,
+    depotId: string,
+    actor: any,
+  ) {
     const depot = await this.prisma.depot.findFirst({
       where: { id: depotId, tenantId, isArchived: false },
       select: { id: true, nom: true, tenantId: true },
     });
 
     if (!depot) {
-      throw new NotFoundException('Dépôt introuvable, archivé ou inaccessible.');
+      throw new NotFoundException(
+        'Dépôt introuvable, archivé ou inaccessible.',
+      );
     }
 
     if (actor?.role !== 'PATRON' && actor?.depotId !== depotId) {
-      throw new ForbiddenException('Vous ne pouvez réaliser un inventaire que dans votre dépôt autorisé.');
+      throw new ForbiddenException(
+        'Vous ne pouvez réaliser un inventaire que dans votre dépôt autorisé.',
+      );
     }
 
     return depot;
@@ -73,7 +87,10 @@ export class InventaireService {
           ? {
               article: {
                 tenantId,
-                designation: { contains: normalizedSearch, mode: 'insensitive' },
+                designation: {
+                  contains: normalizedSearch,
+                  mode: 'insensitive',
+                },
               },
             }
           : { article: { tenantId } }),
@@ -106,7 +123,11 @@ export class InventaireService {
   ) {
     const selectedDepotId = this.normalizeDepotId(depotId);
     const lines = this.normalizeLines(dto);
-    const depot = await this.assertDepotAccess(tenantId, selectedDepotId, actor);
+    const depot = await this.assertDepotAccess(
+      tenantId,
+      selectedDepotId,
+      actor,
+    );
 
     const articleIds = lines.map((line) => line.articleId);
     const articles = await this.prisma.article.findMany({
@@ -117,10 +138,14 @@ export class InventaireService {
     if (articles.length !== articleIds.length) {
       const found = new Set(articles.map((article) => article.id));
       const missing = articleIds.filter((id) => !found.has(id));
-      throw new NotFoundException(`Article(s) introuvable(s) ou hors tenant : ${missing.join(', ')}`);
+      throw new NotFoundException(
+        `Article(s) introuvable(s) ou hors tenant : ${missing.join(', ')}`,
+      );
     }
 
-    const articleById = new Map(articles.map((article) => [article.id, article]));
+    const articleById = new Map(
+      articles.map((article) => [article.id, article]),
+    );
     const reference = `INV-${Date.now()}-${actor.userId.slice(0, 8)}`;
     const reason = dto.motif?.trim().slice(0, 500) || 'Inventaire physique';
 

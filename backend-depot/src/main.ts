@@ -6,10 +6,12 @@ import { json, urlencoded } from 'express';
 import { Logger } from 'nestjs-pino';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { metierSlugMiddleware } from './common/middleware/metier-slug.middleware';
 import { join } from 'path';
+import { mkdirSync } from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -33,14 +35,15 @@ async function bootstrap() {
     );
   }
 
-  const corsOrigins = configuredOrigins.length > 0
-    ? configuredOrigins
-    : [
-        'http://localhost:5173',
-        'http://localhost:4173',
-        'http://localhost:3000',
-        'http://localhost:3001',
-      ];
+  const corsOrigins =
+    configuredOrigins.length > 0
+      ? configuredOrigins
+      : [
+          'http://localhost:5173',
+          'http://localhost:4173',
+          'http://localhost:3000',
+          'http://localhost:3001',
+        ];
 
   app.enableCors({
     origin: corsOrigins,
@@ -53,6 +56,15 @@ async function bootstrap() {
       'x-refresh-token',
       'x-depot-id',
       'X-Depot-Id',
+      'x-idempotency-key',
+      'X-Idempotency-Key',
+      // CRM omnicanal : appelé par l'orchestrateur IA / les webhooks Meta.
+      'x-api-key',
+      'X-Api-Key',
+      'x-hub-signature-256',
+      'X-Hub-Signature-256',
+      'x-request-id',
+      'X-Request-Id',
       'Accept',
       'Origin',
       'X-Requested-With',
@@ -66,11 +78,26 @@ async function bootstrap() {
 
   // Sert le dossier uploads/ statiquement — nécessaire pour que les avatars
   // uploadés soient accessibles via /uploads/avatars/<fichier>
+  // Les répertoires d'upload doivent exister avant le montage des assets
+  // statiques (multer échoue sinon) — idempotent, requis en déploiement prod.
+  mkdirSync(join(process.cwd(), 'uploads', 'avatars'), { recursive: true });
+
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 
   app.use(metierSlugMiddleware);
+
+  // Headers de sécurité HTTP (HSTS, X-Content-Type-Options, X-Frame-Options,
+  // no-sniff…). contentSecurityPolicy est désactivé car l'API ne sert pas de
+  // HTML ; crossOriginResourcePolicy est assoupli pour que le frontend puisse
+  // charger les fichiers statiques /uploads (avatars, etc.).
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   app.useGlobalFilters(new AllExceptionsFilter(app.get(HttpAdapterHost)));
   app.use(cookieParser());
@@ -114,9 +141,7 @@ async function bootstrap() {
     console.warn(
       '⚠️  DISABLE_SUBSCRIPTION_CHECKS=true — CONTRÔLES ABONNEMENT DÉSACTIVÉS',
     );
-    console.warn(
-      '⚠️  Ne JAMAIS déployer en production avec ce flag actif.',
-    );
+    console.warn('⚠️  Ne JAMAIS déployer en production avec ce flag actif.');
     console.warn('⚠️ '.repeat(20) + '\n');
   }
 

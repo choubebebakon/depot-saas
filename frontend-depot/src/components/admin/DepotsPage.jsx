@@ -7,7 +7,13 @@ import FormModal from '../../shared/components/forms/FormModal';
 import ConfirmModal from '../../shared/components/forms/ConfirmModal';
 
 const PLAN_DEPOT_LIMITS = { FREE: 1, TRIAL: 1, SOLO: 1, BASIC: 1, PME: 3, PREMIUM: 5, ENTERPRISE: 20, UNLIMITED: Infinity };
-const ADMIN_PERMS = { PATRON: { canView: ['*'], canCreate: ['*'], canEdit: ['*'], canDelete: ['*'] }, GERANT: { canView: ['depots', 'utilisateurs'], canCreate: ['depots'], canEdit: ['depots'], canDelete: ['depots'] } };
+// §3/§23 — le GERANT est un gérant d'établissement : il peut consulter la
+// liste (scopée serveur) et éditer SON dépôt (contrôlé par DepotsService),
+// mais jamais créer ni archiver un dépôt (réservés au PATRON).
+const ADMIN_PERMS = {
+  PATRON: { canView: ['*'], canCreate: ['*'], canEdit: ['*'], canDelete: ['*'] },
+  GERANT: { canView: ['depots', 'utilisateurs'], canEdit: ['depots'] },
+};
 const EMPTY_FORM = { nom: '', codePrefix: '', emplacement: '', adresse: '' };
 
 export default function DepotsPage() {

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TenantsController } from '../tenants.controller';
 import { TenantsService } from '../tenants.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { AuditService } from '../../audit/audit.service';
 
 describe('TenantsController', () => {
   let controller: TenantsController;
@@ -37,6 +38,12 @@ describe('TenantsController', () => {
             findAll: jest.fn().mockResolvedValue([mockTenant]),
           },
         },
+        {
+          provide: AuditService,
+          useValue: {
+            logEvent: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -50,14 +57,14 @@ describe('TenantsController', () => {
 
   describe('findOne', () => {
     it('should return a single tenant', async () => {
-      const result = await controller.findOne('tenant-123');
+      const result = await controller.findOne('tenant-123', mockRequest as any);
       expect(result).toEqual(mockTenant);
     });
   });
 
   describe('findAll', () => {
     it('should return an array of tenants', async () => {
-      const result = await controller.findAll();
+      const result = await controller.findAll(mockRequest as any);
       expect(result).toEqual([mockTenant]);
     });
   });

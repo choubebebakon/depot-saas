@@ -14,7 +14,6 @@ import { AuditService } from '../../audit/audit.service';
 import { AUDIT_ACTIONS } from '../../audit/audit-actions.constants';
 import { AuditSeverite } from '@prisma/client';
 
-
 @Injectable()
 export class SubscriptionLifecycleService {
   private readonly logger = new Logger(SubscriptionLifecycleService.name);
@@ -36,8 +35,7 @@ export class SubscriptionLifecycleService {
   })
   async runNightlyLifecycle(): Promise<void> {
     this.logger.log('CRON lifecycle : démarrage');
-    const disableChecks =
-      process.env.DISABLE_SUBSCRIPTION_CHECKS === 'true';
+    const disableChecks = process.env.DISABLE_SUBSCRIPTION_CHECKS === 'true';
 
     if (disableChecks) {
       this.logger.warn(
@@ -91,9 +89,7 @@ export class SubscriptionLifecycleService {
         auditAction: 'SUBSCRIPTION_TRIAL_EXPIRED',
       });
       locked++;
-      this.logger.warn(
-        `Tenant ${tenant.id} (${tenant.name}) → TRIAL_EXPIRED`,
-      );
+      this.logger.warn(`Tenant ${tenant.id} (${tenant.name}) → TRIAL_EXPIRED`);
     }
 
     // 2. PAST_DUE épuisés (3+ retries ET currentPeriodEnd < J-5 → CANCELED)
@@ -113,11 +109,10 @@ export class SubscriptionLifecycleService {
       });
       // Notification finale
       await this.notifService
-        .createFromTemplate(
-          tenant.id,
-          NotifType.SUBSCRIPTION_CANCELED,
-          { message: 'Votre abonnement a été annulé après plusieurs tentatives de paiement infructueuses.' },
-        )
+        .createFromTemplate(tenant.id, NotifType.SUBSCRIPTION_CANCELED, {
+          message:
+            'Votre abonnement a été annulé après plusieurs tentatives de paiement infructueuses.',
+        })
         .catch((e) =>
           this.logger.error(`Notif CANCELED échouée: ${e.message}`),
         );
@@ -185,7 +180,9 @@ export class SubscriptionLifecycleService {
         );
 
       // Email au patron
-      for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+      for (const email of [tenant.emailPatron].filter((e): e is string =>
+        Boolean(e),
+      )) {
         this.emailService
           .sendExpiryReminder(
             email,
@@ -233,7 +230,10 @@ export class SubscriptionLifecycleService {
         currentPeriodEnd: { gte: startOfDay, lt: endOfDay },
       },
       select: {
-        id: true, name: true, planType: true, currentPeriodEnd: true,
+        id: true,
+        name: true,
+        planType: true,
+        currentPeriodEnd: true,
         emailPatron: true,
         subscriptionAlerts: {
           where: { alertType: AlertType.MONTHLY_J3 },
@@ -254,7 +254,9 @@ export class SubscriptionLifecycleService {
         })
         .catch((e) => this.logger.error(`Notif MONTHLY_J3: ${e.message}`));
 
-      for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+      for (const email of [tenant.emailPatron].filter((e): e is string =>
+        Boolean(e),
+      )) {
         this.emailService
           .sendExpiryReminder(
             email,
@@ -286,7 +288,10 @@ export class SubscriptionLifecycleService {
         currentPeriodEnd: { gte: range14.startOfDay, lt: range14.endOfDay },
       },
       select: {
-        id: true, name: true, planType: true, currentPeriodEnd: true,
+        id: true,
+        name: true,
+        planType: true,
+        currentPeriodEnd: true,
         emailPatron: true,
         subscriptionAlerts: {
           where: { alertType: AlertType.ANNUAL_J14 },
@@ -305,7 +310,9 @@ export class SubscriptionLifecycleService {
           plan: tenant.planType,
         })
         .catch((e) => this.logger.error(`Notif ANNUAL_J14: ${e.message}`));
-for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+      for (const email of [tenant.emailPatron].filter((e): e is string =>
+        Boolean(e),
+      )) {
         this.emailService
           .sendExpiryReminder(
             email,
@@ -335,7 +342,10 @@ for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e)))
         },
       },
       select: {
-        id: true, name: true, planType: true, currentPeriodEnd: true,
+        id: true,
+        name: true,
+        planType: true,
+        currentPeriodEnd: true,
         emailPatron: true,
         subscriptionAlerts: {
           where: { alertType: AlertType.ANNUAL_J3 },
@@ -355,7 +365,9 @@ for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e)))
         })
         .catch((e) => this.logger.error(`Notif ANNUAL_J3: ${e.message}`));
 
-      for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+      for (const email of [tenant.emailPatron].filter((e): e is string =>
+        Boolean(e),
+      )) {
         this.emailService
           .sendExpiryReminder(
             email,
@@ -411,9 +423,7 @@ for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e)))
       const maxPeriodEnd = new Date(
         startOfToday.getTime() - schedule.offsetDays * 86400000,
       );
-      const minPeriodEnd = new Date(
-        maxPeriodEnd.getTime() - 86400000,
-      );
+      const minPeriodEnd = new Date(maxPeriodEnd.getTime() - 86400000);
 
       const pastDueTenants = await this.prisma.tenant.findMany({
         where: {
@@ -447,9 +457,10 @@ for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e)))
           );
 
         // Email avec lien de paiement
-        const frontendUrl =
-          process.env.FRONTEND_URL || 'http://localhost:5173';
-        for (const email of [tenant.emailPatron].filter((e): e is string => Boolean(e))) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        for (const email of [tenant.emailPatron].filter((e): e is string =>
+          Boolean(e),
+        )) {
           this.emailService
             .sendPaymentFailed(
               email,

@@ -21,7 +21,10 @@ import { PrismaService } from '../../prisma.service';
 export class ClientDepotScopeInterceptor implements NestInterceptor {
   constructor(private readonly prisma: PrismaService) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<any>> {
     const req = context.switchToHttp().getRequest();
     const method = String(req.method || '').toUpperCase();
     const path = String(req.originalUrl || req.path || req.route?.path || '');
@@ -41,7 +44,7 @@ export class ClientDepotScopeInterceptor implements NestInterceptor {
     }
 
     const depot = await this.prisma.depot.findFirst({
-      where: { id: depotId, tenantId, estActif: true },
+      where: { id: depotId, tenantId, isArchived: false },
       select: { id: true },
     });
     if (!depot) {
@@ -50,7 +53,11 @@ export class ClientDepotScopeInterceptor implements NestInterceptor {
 
     // Never let a client-controlled depotId override the active depot.
     if (method === 'GET' && !req.params?.id) {
-      req.query = { ...(req.query || {}), depotId };
+      if (req.query && typeof req.query === 'object') {
+        req.query.depotId = depotId;
+      } else {
+        req.query = { depotId };
+      }
       return next.handle();
     }
 

@@ -8,28 +8,68 @@
   Query,
   UseGuards,
   Req,
+  Res,
   Param,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { DepotBoissonsService } from './depot-boissons.service';
+import { UpdateArticleDto } from './dto/update-article.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { RequirePermission, RequireAction } from '../../auth/decorators/require-permission.decorator';
+import { PermissionService } from '../../auth/permission.service';
+import { rapportSousModule } from './rapport-permission.util';
 import { buildAuditActor } from '../../audit/audit-actor.util';
 
 @Controller('depot-boissons')
 @Metier(MetierType.DEPOT_BOISSONS)
 @UseGuards(JwtAuthGuard, MetierGuard)
 export class DepotBoissonsController {
-  constructor(private service: DepotBoissonsService) {}
+  constructor(
+    private service: DepotBoissonsService,
+    private readonly permissionService: PermissionService,
+  ) {}
 
   private getTenantId(req: any): string {
     if (!req.user?.tenantId) {
-      throw new BadRequestException('AccÃ¨s refusÃ© : tenantId manquant dans le token.');
+      throw new BadRequestException(
+        'AccÃ¨s refusÃ© : tenantId manquant dans le token.',
+      );
     }
     return req.user.tenantId;
+  }
+
+  /**
+   * §10 — Contrôle de permission dynamique pour les rapports : le sous-module
+   * requis dépend du type de rapport (rapports / rapports_stock /
+   * rapports_performance). Deny-by-default via PermissionService.
+   */
+  private async assertRapportAccess(req: any, type: string): Promise<void> {
+    if (!req.user?.role) {
+      throw new BadRequestException('Contexte utilisateur invalide.');
+    }
+    const metier =
+      (await this.permissionService.resolveMetierSlug(
+        req.user.tenantId,
+        undefined,
+        req.user.metier,
+      )) || 'depot';
+    const result = await this.permissionService.canAccess(
+      req.user.role,
+      metier,
+      rapportSousModule(type),
+      'read',
+    );
+    if (!result.allowed) {
+      throw new ForbiddenException({
+        error: 'ACCESS_DENIED',
+        message: `Accès refusé — ce rapport est réservé à ${result.libelleRoleAutorise}.`,
+      });
+    }
   }
 
   // â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -66,21 +106,25 @@ export class DepotBoissonsController {
   async updateArticle(
     @Req() req: any,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateArticleDto,
   ) {
     return this.service.updateArticle(this.getTenantId(req), id, data);
   }
 
   @Delete('articles/:id')
   @RequirePermission('stock_articles', 'write')
-  async archiveArticle(@Req() req: any, @Param('id') id: string) {
-    return this.service.archiveArticle(this.getTenantId(req), id);
+  async deleteArticle(@Req() req: any, @Param('id') id: string) {
+    return this.service.deleteArticle(this.getTenantId(req), id);
   }
 
   @Get('articles/:id/stock-history')
   @RequirePermission('stock_articles', 'read')
-  async getStockHistory(@Req() req: any, @Param('id') id: string) {
-    return this.service.getStockHistory(this.getTenantId(req), id);
+  async getStockHistory(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query() query: any,
+  ) {
+    return this.service.getStockHistory(this.getTenantId(req), id, query);
   }
 
   @Post('stock/entree')
@@ -433,6 +477,7 @@ export class DepotBoissonsController {
 
   @Post('ventes/:id/annuler')
   @RequirePermission('ventes', 'write')
+  @RequireAction('ventes.annuler')
   async annulerVente(
     @Req() req: any,
     @Param('id') id: string,
@@ -464,6 +509,7 @@ export class DepotBoissonsController {
 
   @Post('caisse/ouvrir')
   @RequirePermission('caisse', 'write')
+  @RequireAction('caisse.ouvrir')
   async ouvrirCaisse(@Req() req: any, @Body() data: any) {
     const actor = buildAuditActor(req);
     return this.service.ouvrirCaisse(
@@ -479,6 +525,7 @@ export class DepotBoissonsController {
 
   @Post('caisse/fermer')
   @RequirePermission('caisse', 'write')
+  @RequireAction('caisse.fermer')
   async fermerCaisse(@Req() req: any, @Body() data: any) {
     return this.service.fermerCaisse(
       this.getTenantId(req),
@@ -489,6 +536,7 @@ export class DepotBoissonsController {
 
   @Post('caisse/mouvement')
   @RequirePermission('caisse', 'write')
+  @RequireAction('caisse.mouvement')
   async mouvementCaisse(@Req() req: any, @Body() data: any) {
     return this.service.mouvementCaisse(
       this.getTenantId(req),
@@ -533,13 +581,26 @@ export class DepotBoissonsController {
   }
 
   // â”€â”€ Rapports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Paramètres (ticket / caisse / facture) ───────────────────────
+  @Get('parametres')
+  @RequirePermission('parametres', 'read')
+  async getParametres(@Req() req: any) {
+    return this.service.getParametres(this.getTenantId(req));
+  }
+
+  @Patch('parametres')
+  @RequirePermission('parametres', 'write')
+  async updateParametres(@Req() req: any, @Body() body: any) {
+    return this.service.updateParametres(this.getTenantId(req), body);
+  }
+
   @Get('rapports/:type')
-  @RequirePermission('rapports', 'read')
   async getRapport(
     @Req() req: any,
     @Param('type') type: string,
     @Query() query: any,
   ) {
+    await this.assertRapportAccess(req, type);
     return this.service.getRapport(this.getTenantId(req), type, {
       ...query,
       depotId: query.depotId || req.headers['x-depot-id'],
@@ -547,17 +608,25 @@ export class DepotBoissonsController {
   }
 
   @Get('rapports/:type/export')
-  @RequirePermission('rapports', 'read')
   async exporterRapport(
     @Req() req: any,
     @Param('type') type: string,
     @Query() query: any,
+    @Res() res: Response,
   ) {
-    return this.service.exporterRapport(
-      this.getTenantId(req),
-      type,
-      query.format || 'json',
-      { ...query, depotId: query.depotId || req.headers['x-depot-id'] },
-    );
+    await this.assertRapportAccess(req, type);
+    const { buffer, contentType, extension } =
+      await this.service.exporterRapport(
+        this.getTenantId(req),
+        type,
+        query.format || 'csv',
+        { ...query, depotId: query.depotId || req.headers['x-depot-id'] },
+      );
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="rapport-${type}.${extension}"`,
+      'Content-Length': String(buffer.length),
+    });
+    res.end(buffer);
   }
 }

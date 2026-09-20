@@ -71,6 +71,8 @@ export class PaymentsController {
       billingCycle: createPaymentDto.billingCycle,
       method: createPaymentDto.method,
       channel: createPaymentDto.channel,
+      // PARTIE 2 (contrainte 8) : pays du paiement (défaut CM côté service).
+      country: createPaymentDto.country,
       customerEmail: user.email,
       momoPhoneNumber: createPaymentDto.momoPhoneNumber || null,
     });

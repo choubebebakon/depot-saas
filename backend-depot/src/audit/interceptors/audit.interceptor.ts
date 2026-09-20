@@ -53,7 +53,10 @@ export class AuditInterceptor implements NestInterceptor {
             valeurApres: sanitizeAuditValue(result),
           })
           .catch((err) => {
-            console.error('[AuditInterceptor] Échec du log audit (succès):', err);
+            console.error(
+              '[AuditInterceptor] Échec du log audit (succès):',
+              err,
+            );
           });
       }),
       catchError((err) => {
@@ -68,11 +71,17 @@ export class AuditInterceptor implements NestInterceptor {
             valeurApres: null,
             metadata: {
               statusCode: err?.status ?? err?.statusCode ?? null,
-              erreur: typeof err?.message === 'string' ? err.message.slice(0, 1_000) : 'erreur inconnue',
+              erreur:
+                typeof err?.message === 'string'
+                  ? err.message.slice(0, 1_000)
+                  : 'erreur inconnue',
             },
           })
           .catch((logErr) => {
-            console.error('[AuditInterceptor] Échec du log audit (échec):', logErr);
+            console.error(
+              '[AuditInterceptor] Échec du log audit (échec):',
+              logErr,
+            );
           });
         return throwError(() => err);
       }),

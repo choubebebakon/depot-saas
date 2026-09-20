@@ -9,14 +9,7 @@ import { AuditModule } from '../audit/audit.module';
 @Module({
   imports: [AuditModule],
   controllers: [TenantsController],
-  providers: [
-    TenantsService,
-    PrismaService,
-    DepotScopeService,
-  ],
-  exports: [
-    PrismaService,
-    DepotScopeService,
-  ],
+  providers: [TenantsService, PrismaService, DepotScopeService],
+  exports: [PrismaService, DepotScopeService],
 })
 export class TenantsModule {}

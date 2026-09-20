@@ -18,4 +18,3 @@ export const RolePermissions: Record<Role, ModulePermission[]> = {
   [Role.COMPTABLE]: ['COMPTABILITE'],
   [Role.ADMIN]: ['ADMIN', 'ALL'],
 };
-

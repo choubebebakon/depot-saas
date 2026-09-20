@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma.service';
 import type { PermissionAction } from './decorators/require-permission.decorator';
 import {
   ADMINISTRATION_SUBMODULES,
+  GERANT_DENY_SOUS_MODULES,
   PermissionMetier,
   normalizePermissionMetier,
   normalizeSousModule,
@@ -20,7 +21,15 @@ const CACHE_TTL_MS = 60_000;
 
 @Injectable()
 export class PermissionService {
-  private readonly cache = new Map<string, { expiresAt: number; value: PermissionResult }>();
+  private readonly cache = new Map<
+    string,
+    { expiresAt: number; value: PermissionResult }
+  >();
+
+  private readonly actionCache = new Map<
+    string,
+    { expiresAt: number; value: boolean }
+  >();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -61,10 +70,13 @@ export class PermissionService {
     }
 
     if (role === Role.GERANT) {
-      const allowed = sousModule !== 'audit_patron';
+      // §3/§23 — le GERANT est un gérant d'ÉTABLISSEMENT, pas un admin tenant :
+      // audit patron, abonnement et administration des dépôts (nouvel
+      // établissement) lui sont interdits. Tout le reste est opérationnel.
+      const deniedForGerant = GERANT_DENY_SOUS_MODULES.includes(sousModule);
       return {
-        canRead: allowed,
-        canWrite: allowed,
+        canRead: !deniedForGerant,
+        canWrite: !deniedForGerant,
         libelleRoleAutorise: roleLabel(Role.PATRON, metier),
       };
     }
@@ -97,7 +109,10 @@ export class PermissionService {
     const value = {
       canRead: permission?.canRead ?? false,
       canWrite: permission?.canWrite ?? false,
-      libelleRoleAutorise: await this.getAuthorizedRoleLabel(metier, sousModule),
+      libelleRoleAutorise: await this.getAuthorizedRoleLabel(
+        metier,
+        sousModule,
+      ),
     };
 
     this.cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, value });
@@ -113,6 +128,8 @@ export class PermissionService {
     denySousModules: string[];
     permissions: Record<string, { canRead: boolean; canWrite: boolean }>;
     libellePoste: string;
+    actions: string[];
+    actionsFullAccess: boolean;
   }> {
     const libellePoste = roleLabel(role, metier);
 
@@ -122,22 +139,32 @@ export class PermissionService {
         denySousModules: [],
         permissions: {},
         libellePoste,
+        // §14 — PATRON et GERANT voient toutes les actions (le backend
+        // reste seul juge via canPerformAction).
+        actions: [],
+        actionsFullAccess: true,
       };
     }
 
     if (role === Role.GERANT) {
       return {
         fullAccess: true,
-        denySousModules: ['audit_patron'],
+        // §3/§23 — administration tenant interdite au gérant d'établissement.
+        denySousModules: [...GERANT_DENY_SOUS_MODULES],
         permissions: {},
         libellePoste,
+        actions: [],
+        actionsFullAccess: true,
       };
     }
 
-    const rows = await this.prisma.permission.findMany({
-      where: { role: role as Role, metier },
-      select: { sousModule: true, canRead: true, canWrite: true },
-    });
+    const [rows, actionMap] = await Promise.all([
+      this.prisma.permission.findMany({
+        where: { role: role as Role, metier },
+        select: { sousModule: true, canRead: true, canWrite: true },
+      }),
+      this.getActionsForUser(role, metier),
+    ]);
 
     const permissions: Record<string, { canRead: boolean; canWrite: boolean }> =
       {};
@@ -153,6 +180,9 @@ export class PermissionService {
       denySousModules: [],
       permissions,
       libellePoste,
+      // Liste des actions fines accordées (masquage des boutons côté UI).
+      actions: actionMap.actions,
+      actionsFullAccess: actionMap.fullAccess,
     };
   }
 
@@ -169,11 +199,68 @@ export class PermissionService {
     };
   }
 
+  /**
+   * §14 — Permission d'action fine (ventes.annuler, caisse.fermer,
+   * stock.ajuster…). Deny-by-default : l'action doit exister dans la table
+   * ActionPermission avec allowed=true pour ce rôle×métier. PATRON et GERANT
+   * sont toujours autorisés (gérés en code, comme pour les sous-modules).
+   */
+  async canPerformAction(
+    role: string,
+    metier: PermissionMetier,
+    action: string,
+  ): Promise<boolean> {
+    if (role === Role.PATRON || role === Role.GERANT) return true;
+
+    const cacheKey = `action:${role}:${metier}:${action}`;
+    const cached = this.actionCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+    const row = await this.prisma.actionPermission.findUnique({
+      where: {
+        role_metier_action: {
+          role: role as Role,
+          metier,
+          action,
+        },
+      },
+      select: { allowed: true },
+    });
+
+    const value = row?.allowed ?? false;
+    this.actionCache.set(cacheKey, {
+      expiresAt: Date.now() + CACHE_TTL_MS,
+      value,
+    });
+    return value;
+  }
+
+  /** Carte des actions accordées à un rôle (pour masquer les boutons côté UI). */
+  async getActionsForUser(
+    role: string,
+    metier: PermissionMetier,
+  ): Promise<{ fullAccess: boolean; actions: string[] }> {
+    if (role === Role.PATRON || role === Role.GERANT) {
+      return { fullAccess: true, actions: [] };
+    }
+    const rows = await this.prisma.actionPermission.findMany({
+      where: { role: role as Role, metier, allowed: true },
+      select: { action: true },
+    });
+    return { fullAccess: false, actions: rows.map((r) => r.action) };
+  }
+
   private async getAuthorizedRoleLabel(
     metier: PermissionMetier,
     sousModule: string,
   ): Promise<string> {
-    if (sousModule === 'audit_patron') return roleLabel(Role.PATRON, metier);
+    if (
+      sousModule === 'audit_patron' ||
+      sousModule === 'abonnement' ||
+      sousModule === 'depots'
+    ) {
+      return roleLabel(Role.PATRON, metier);
+    }
     if (ADMINISTRATION_SUBMODULES.has(sousModule)) return 'Patron ou Gérant';
 
     const rows = await this.prisma.permission.findMany({

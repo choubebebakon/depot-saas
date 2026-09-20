@@ -1,15 +1,18 @@
--- CreateEnum
-CREATE TYPE "AuditResultat" AS ENUM ('SUCCES', 'ECHEC');
+-- CreateEnum (idempotent : le type peut déjà exister si la migration a été
+-- appliquée manuellement ou via db push avant l'enregistrement du dossier).
+DO $$ BEGIN
+  CREATE TYPE "AuditResultat" AS ENUM ('SUCCES', 'ECHEC');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
--- AlterTable
-ALTER TABLE "JournalAudit" ADD COLUMN     "motif" TEXT,
-ADD COLUMN     "resultat" "AuditResultat" NOT NULL DEFAULT 'SUCCES',
-ADD COLUMN     "sessionId" TEXT,
-ADD COLUMN     "requestId" TEXT,
-ADD COLUMN     "metier" TEXT;
+-- AlterTable (idempotent : les colonnes peuvent déjà exister)
+ALTER TABLE "JournalAudit" ADD COLUMN IF NOT EXISTS "motif" TEXT;
+ALTER TABLE "JournalAudit" ADD COLUMN IF NOT EXISTS "resultat" "AuditResultat" NOT NULL DEFAULT 'SUCCES';
+ALTER TABLE "JournalAudit" ADD COLUMN IF NOT EXISTS "sessionId" TEXT;
+ALTER TABLE "JournalAudit" ADD COLUMN IF NOT EXISTS "requestId" TEXT;
+ALTER TABLE "JournalAudit" ADD COLUMN IF NOT EXISTS "metier" TEXT;
 
--- CreateIndex
-CREATE INDEX "JournalAudit_requestId_idx" ON "JournalAudit"("requestId");
-
--- CreateIndex
-CREATE INDEX "JournalAudit_metier_idx" ON "JournalAudit"("metier");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "JournalAudit_requestId_idx" ON "JournalAudit"("requestId");
+CREATE INDEX IF NOT EXISTS "JournalAudit_metier_idx" ON "JournalAudit"("metier");

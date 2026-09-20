@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useDepot } from '../../../contexts/DepotContext';
-import { useNotif } from '../../../context/NotifContext';
-import { usePermission } from '../../../shared/hooks/usePermission';
-import api from '../../../api';
-import FormModal from '../../../shared/components/forms/FormModal';
-import FormField from '../../../shared/components/forms/FormField';
-import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDepot } from '../../contexts/DepotContext';
+import { useNotif } from '../../context/NotifContext';
+import { usePermission } from '../hooks/usePermission';
+import api from '../../api';
+import FormModal from '../components/forms/FormModal';
+import FormField from '../components/forms/FormField';
+import ConfirmModal from '../components/forms/ConfirmModal';
 import { Package, AlertTriangle, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 
 // ── Statut DLC ───────────────────────────────────────────────────────────────

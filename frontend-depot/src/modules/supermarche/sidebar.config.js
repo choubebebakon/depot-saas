@@ -7,9 +7,12 @@ export const SIDEBAR_MENUS = [
   { label: 'Clients',        icon: 'Users', path: '/supermarche/clients' },
   { label: 'Fournisseurs',   icon: 'Factory', path: '/supermarche/fournisseurs' },
   { label: 'Réceptions',     icon: 'Package', path: '/supermarche/receptions' },
+  { label: 'Factures',       icon: 'FileText', path: '/supermarche/factures' },
   { label: 'Inventaire',     icon: 'BarChart3', path: '/supermarche/inventaire' },
   { label: 'Dépenses',       icon: 'TrendingUp', path: '/supermarche/depenses' },
   { label: 'Rapports',       icon: 'TrendingUp', path: '/supermarche/rapports' },
+  // §10 — « Mes performances » (masqué pour les rôles sans rapports_performance).
+  { label: 'Mes performances', icon: 'BarChart3', path: '/supermarche/performance' },
   { label: 'Paramètres',     icon: 'Settings', path: '/supermarche/parametres' },
 ];
 

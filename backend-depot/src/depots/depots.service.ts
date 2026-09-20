@@ -20,7 +20,10 @@ interface DepotUserContext {
   depotId: string | null;
 }
 
-const MANAGER_ROLES = new Set<RoleUser | string>([RoleUser.PATRON, RoleUser.GERANT]);
+const MANAGER_ROLES = new Set<RoleUser | string>([
+  RoleUser.PATRON,
+  RoleUser.GERANT,
+]);
 
 @Injectable()
 export class DepotsService {
@@ -33,21 +36,63 @@ export class DepotsService {
     return user.tenantId;
   }
 
-  private requireManager(user?: DepotUserContext) {
+  private requirePatron(user?: DepotUserContext) {
     const tenantId = this.requireTenant(user);
-    if (!MANAGER_ROLES.has(user?.role ?? '')) {
-      throw new ForbiddenException('Droits insuffisants pour gérer les dépôts.');
+    if (user?.role !== RoleUser.PATRON && user?.role !== 'PATRON') {
+      throw new ForbiddenException(
+        'Droits insuffisants : action réservée au patron.',
+      );
     }
     return tenantId;
   }
 
-  private canSeeDepot(user: DepotUserContext, depotId: string) {
-    return MANAGER_ROLES.has(user.role) || user.depotId === depotId;
+  private requireManager(user?: DepotUserContext) {
+    const tenantId = this.requireTenant(user);
+    if (!MANAGER_ROLES.has(user?.role ?? '')) {
+      throw new ForbiddenException(
+        'Droits insuffisants pour gérer les dépôts.',
+      );
+    }
+    return tenantId;
+  }
+
+  private isPatron(user?: DepotUserContext): boolean {
+    return user?.role === RoleUser.PATRON || user?.role === 'PATRON';
+  }
+
+  /**
+   * Périmètre d'établissements de l'utilisateur (§13 de la matrice d'accès) :
+   * dépôt principal + affectations multi-établissements (UserDepot).
+   * Retourne null pour le PATRON (= tous les dépôts du tenant).
+   */
+  private async getAllowedDepotIds(
+    user: DepotUserContext,
+    tx?: Prisma.TransactionClient,
+  ): Promise<string[] | null> {
+    if (this.isPatron(user)) return null;
+    const client = tx ?? this.prisma;
+    const affectations = await client.userDepot.findMany({
+      where: { userId: user.userId, tenantId: user.tenantId },
+      select: { depotId: true },
+    });
+    return [
+      ...new Set(
+        [user.depotId, ...affectations.map((a) => a.depotId)].filter(
+          Boolean,
+        ) as string[],
+      ),
+    ];
+  }
+
+  private async canSeeDepot(user: DepotUserContext, depotId: string) {
+    if (this.isPatron(user)) return true;
+    const allowed = await this.getAllowedDepotIds(user);
+    return !!allowed?.includes(depotId);
   }
 
   async findAll(user?: DepotUserContext) {
     const tenantId = this.requireTenant(user);
-    const isManager = MANAGER_ROLES.has(user?.role ?? '');
+    const isPatronUser = this.isPatron(user);
 
     return this.prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.findUnique({
@@ -60,9 +105,19 @@ export class DepotsService {
       }
 
       const depotLimit = getDepotLimitForPlan(tenant.planType);
-      const where = isManager
+      // PATRON : tous les dépôts du tenant. Les autres rôles : dépôt
+      // principal + affectations multi-établissements (§13 : comptable
+      // central, gérant multi-sites) — la liste reste confinée serveur.
+      const allowedIds = user
+        ? await this.getAllowedDepotIds(user, tx)
+        : [];
+      const where = isPatronUser
         ? { tenantId, isArchived: false }
-        : { tenantId, id: user?.depotId ?? '__NO_DEPOT__', isArchived: false };
+        : {
+            tenantId,
+            id: { in: allowedIds?.length ? allowedIds : ['__NO_DEPOT__'] },
+            isArchived: false,
+          };
 
       return tx.depot.findMany({
         where,
@@ -87,71 +142,83 @@ export class DepotsService {
       where: { id, tenantId, isArchived: false },
     });
 
-    if (!depot || !this.canSeeDepot(user as DepotUserContext, id)) {
+    if (!depot || !(await this.canSeeDepot(user as DepotUserContext, id))) {
       throw new NotFoundException('Dépôt introuvable.');
     }
 
     return depot;
   }
 
-  async create(createDepotDto: {
-    nom: string;
-    adresse: string;
-    emplacement: string;
-    codePrefix?: string;
-  }, user?: DepotUserContext) {
-    const tenantId = this.requireManager(user);
+  async create(
+    createDepotDto: {
+      nom: string;
+      adresse: string;
+      emplacement: string;
+      codePrefix?: string;
+    },
+    user?: DepotUserContext,
+  ) {
+    const tenantId = this.requirePatron(user);
 
-    return this.prisma.$transaction(async (tx) => {
-      // Sérialise les créations de dépôts du même tenant afin d'éviter
-      // qu'une concurrence ne dépasse le quota du plan.
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`depot-quota:${tenantId}`}, 0))`;
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Sérialise les créations de dépôts du même tenant afin d'éviter
+        // qu'une concurrence ne dépasse le quota du plan.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`depot-quota:${tenantId}`}, 0))`;
 
-      const tenant = await tx.tenant.findUnique({
-        where: { id: tenantId },
-        select: { planType: true },
-      });
-
-      if (!tenant) {
-        throw new NotFoundException('Tenant introuvable.');
-      }
-
-      const depotCount = await tx.depot.count({
-        where: { tenantId, isArchived: false },
-      });
-      const depotLimit = getDepotLimitForPlan(tenant.planType);
-
-      if (depotCount >= depotLimit) {
-        throw new ForbiddenException({
-          error: 'QUOTA_REACHED',
-          message: `Quota de dépôts atteint pour le plan ${tenant.planType} (${depotCount}/${depotLimit}).`,
-          metadata: {
-            resource: 'depots',
-            currentPlan: tenant.planType,
-            suggestedPlan: getSuggestedPlanForPlan(tenant.planType),
-            current: depotCount,
-            limit: depotLimit,
-          },
+        const tenant = await tx.tenant.findUnique({
+          where: { id: tenantId },
+          select: { planType: true },
         });
-      }
 
-      try {
-        return await tx.depot.create({
-          data: {
-            nom: createDepotDto.nom.trim(),
-            adresse: createDepotDto.adresse.trim(),
-            emplacement: createDepotDto.emplacement.trim(),
-            codePrefix: createDepotDto.codePrefix?.trim().toUpperCase() || 'DEP',
-            tenantId,
-          },
-        });
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-          throw new ConflictException('Un dépôt avec ces informations existe déjà.');
+        if (!tenant) {
+          throw new NotFoundException('Tenant introuvable.');
         }
-        throw error;
-      }
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+        const depotCount = await tx.depot.count({
+          where: { tenantId, isArchived: false },
+        });
+        const depotLimit = getDepotLimitForPlan(tenant.planType);
+
+        if (depotCount >= depotLimit) {
+          throw new ForbiddenException({
+            error: 'QUOTA_REACHED',
+            message: `Quota de dépôts atteint pour le plan ${tenant.planType} (${depotCount}/${depotLimit}).`,
+            metadata: {
+              resource: 'depots',
+              currentPlan: tenant.planType,
+              suggestedPlan: getSuggestedPlanForPlan(tenant.planType),
+              current: depotCount,
+              limit: depotLimit,
+            },
+          });
+        }
+
+        try {
+          return await tx.depot.create({
+            data: {
+              nom: createDepotDto.nom.trim(),
+              adresse: createDepotDto.adresse.trim(),
+              emplacement: createDepotDto.emplacement.trim(),
+              codePrefix:
+                createDepotDto.codePrefix?.trim().toUpperCase() || 'DEP',
+              tenantId,
+            },
+          });
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          ) {
+            throw new ConflictException(
+              'Un dépôt avec ces informations existe déjà.',
+            );
+          }
+          throw error;
+        }
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async update(
@@ -166,6 +233,19 @@ export class DepotsService {
     user?: DepotUserContext,
   ) {
     const tenantId = this.requireManager(user);
+    if (!this.isPatron(user)) {
+      if (user?.depotId !== id) {
+        throw new ForbiddenException(
+          'Un gérant ne peut modifier que son propre dépôt.',
+        );
+      }
+      if (updateDepotDto.isArchived !== undefined) {
+        throw new ForbiddenException(
+          'Seul le patron peut archiver un dépôt.',
+        );
+      }
+    }
+
     const depot = await this.prisma.depot.findFirst({
       where: { id, tenantId },
       select: { id: true, isArchived: true },
@@ -186,19 +266,27 @@ export class DepotsService {
     return this.prisma.depot.update({
       where: { id },
       data: {
-        ...(updateDepotDto.nom !== undefined && { nom: updateDepotDto.nom.trim() }),
-        ...(updateDepotDto.adresse !== undefined && { adresse: updateDepotDto.adresse.trim() }),
-        ...(updateDepotDto.emplacement !== undefined && { emplacement: updateDepotDto.emplacement.trim() }),
+        ...(updateDepotDto.nom !== undefined && {
+          nom: updateDepotDto.nom.trim(),
+        }),
+        ...(updateDepotDto.adresse !== undefined && {
+          adresse: updateDepotDto.adresse.trim(),
+        }),
+        ...(updateDepotDto.emplacement !== undefined && {
+          emplacement: updateDepotDto.emplacement.trim(),
+        }),
         ...(updateDepotDto.codePrefix !== undefined && {
           codePrefix: updateDepotDto.codePrefix.trim().toUpperCase(),
         }),
-        ...(updateDepotDto.isArchived !== undefined && { isArchived: updateDepotDto.isArchived }),
+        ...(updateDepotDto.isArchived !== undefined && {
+          isArchived: updateDepotDto.isArchived,
+        }),
       },
     });
   }
 
   async remove(id: string, user?: DepotUserContext) {
-    const tenantId = this.requireManager(user);
+    const tenantId = this.requirePatron(user);
     await this.assertCanArchive(id, tenantId);
 
     return this.prisma.depot.update({
@@ -234,7 +322,9 @@ export class DepotsService {
     });
 
     if (activeCount <= 1) {
-      throw new ConflictException('Le tenant doit conserver au moins un dépôt actif.');
+      throw new ConflictException(
+        'Le tenant doit conserver au moins un dépôt actif.',
+      );
     }
   }
 }

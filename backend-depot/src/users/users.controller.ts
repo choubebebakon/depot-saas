@@ -30,12 +30,16 @@ export class UsersController {
       tenantId?: string;
       nom?: string;
       depotId?: string;
+      depotsAcces?: string[];
     },
     @Req() req: any,
   ) {
     // tenantId fourni par le client volontairement ignoré : l'identité JWT/DB est l'autorité.
     const tenantId = req.user?.tenantId;
-    return this.usersService.create({ ...body, tenantId }, buildAuditActor(req));
+    return this.usersService.create(
+      { ...body, tenantId },
+      buildAuditActor(req),
+    );
   }
 
   // Création d'un employé (alias de POST / avec rôle imposé)
@@ -49,11 +53,15 @@ export class UsersController {
       tenantId?: string;
       nom?: string;
       depotId?: string;
+      depotsAcces?: string[];
     },
     @Req() req: any,
   ) {
     const tenantId = req.user?.tenantId;
-    return this.usersService.create({ ...body, tenantId }, buildAuditActor(req));
+    return this.usersService.create(
+      { ...body, tenantId },
+      buildAuditActor(req),
+    );
   }
 
   @Get()
@@ -62,9 +70,8 @@ export class UsersController {
     @Req() req: any,
   ) {
     const tenantId = req.user?.tenantId;
-    const effectiveDepotId = req.user?.role === RoleUser.PATRON
-      ? depotId
-      : req.user?.depotId;
+    const effectiveDepotId =
+      req.user?.role === RoleUser.PATRON ? depotId : req.user?.depotId;
 
     if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
       throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
@@ -79,9 +86,8 @@ export class UsersController {
     @Req() req: any,
   ) {
     const tenantId = req.user?.tenantId;
-    const effectiveDepotId = req.user?.role === RoleUser.PATRON
-      ? depotId
-      : req.user?.depotId;
+    const effectiveDepotId =
+      req.user?.role === RoleUser.PATRON ? depotId : req.user?.depotId;
 
     if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
       throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
@@ -91,12 +97,10 @@ export class UsersController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Req() req: any,
-  ) {
+  async findOne(@Param('id') id: string, @Req() req: any) {
     const tenantId = req.user?.tenantId;
-    const depotId = req.user?.role === RoleUser.PATRON ? undefined : req.user?.depotId;
+    const depotId =
+      req.user?.role === RoleUser.PATRON ? undefined : req.user?.depotId;
 
     if (req.user?.role === RoleUser.GERANT && !depotId) {
       throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
@@ -120,11 +124,17 @@ export class UsersController {
     );
   }
 
-  // Mise à jour d'un utilisateur (rôle, nom, dépôt)
+  // Mise à jour d'un utilisateur (rôle, nom, dépôt, établissements)
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() body: { nom?: string; role?: RoleUser; depotId?: string },
+    @Body()
+    body: {
+      nom?: string;
+      role?: RoleUser;
+      depotId?: string;
+      depotsAcces?: string[];
+    },
     @Req() req: any,
   ) {
     return this.usersService.update(
@@ -138,6 +148,10 @@ export class UsersController {
   // Suppression d'un utilisateur
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: any) {
-    return this.usersService.remove(id, req.user.tenantId, buildAuditActor(req));
+    return this.usersService.remove(
+      id,
+      req.user.tenantId,
+      buildAuditActor(req),
+    );
   }
 }

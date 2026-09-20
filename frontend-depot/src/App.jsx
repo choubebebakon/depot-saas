@@ -84,30 +84,38 @@ function PrivateRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
-// Guard dédié aux routes SuperAdmin (/admin/*) — protège l'accès au panel.
+// 2. Protection renforcée de la route SuperAdmin
 function SuperAdminRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
-  if (loading) return <AppLoader />;
+  
+  // Attend que l'état d'authentification ET l'objet user soient prêts
+  if (loading || (isAuthenticated && !user)) return <AppLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === 'ADMIN';
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   if (!isSuperAdmin) return <Navigate to="/dashboard" replace />;
 
   return children;
 }
 
+// 1. Détection du SuperAdmin dans le redirect global
 function SectorHomeRedirect() {
-  const { metier, isAuthenticated, loading } = useAuth();
+  const { user, metier, isAuthenticated, loading } = useAuth();
   if (loading) return <AppLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  
+
+  // Si c'est le fondateur / superadmin, on l'envoie sur son dashboard dédié
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+  if (isSuperAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   const stored = localStorage.getItem('gestock_metier');
   const sector = metier || stored;
-  
+
   if (!sector) return <Navigate to="/onboarding/metier" replace />;
-  
+
   const prefix = getSectorPrefix(sector);
-  // Redirige directement vers la sous-route spécifique du secteur (ex: /supermarche/dashboard)
   return <Navigate to={`${prefix}/dashboard`} replace />;
 }
 

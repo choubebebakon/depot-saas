@@ -60,6 +60,8 @@ import { SupportModule } from './support/support.module';
 import { BillingModule } from './billing/billing.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { RealtimeModule } from './common/realtime/realtime.module';
+import { CrmModule } from './crm/crm.module';
+import { MetaModule } from './meta/meta.module';
 import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation.interceptor';
 
 @Module({
@@ -67,9 +69,10 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot({
       pinoHttp: {
-        transport: process.env.NODE_ENV !== 'production'
-          ? { target: 'pino-pretty', options: { singleLine: true } }
-          : undefined,
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { singleLine: true } }
+            : undefined,
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
@@ -112,6 +115,8 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
     BillingModule,
     PlatformAdminModule,
     RealtimeModule,
+    CrmModule,
+    MetaModule,
   ],
   controllers: [AppController],
   providers: [
@@ -133,6 +138,14 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ContextMiddleware).forRoutes('*');
+    // ── Compat NestJS 11 / Express 5 (path-to-regexp v8) ──────────────────
+    // Le joker NON NOMMÉ '*' n'est plus supporté depuis path-to-regexp v8 :
+    // il déclenchait 5 warnings « LegacyRouteConverter — Unsupported route
+    // path: "/api/v1/*" » au démarrage (Nest convertissait implicitement, mais
+    // cette conversion silencieuse disparaîtra dans une prochaine version).
+    // '{*path}' est la syntaxe officielle équivalente : elle matche '/api/v1'
+    // ET '/api/v1/...' (vérifié : /^(?:\/api\/v1\/([^]+)|\/api\/v1\/)(?:\/)?$/i),
+    // donc le ContextMiddleware continue de s'appliquer à TOUTES les routes.
+    consumer.apply(ContextMiddleware).forRoutes('{*path}');
   }
 }

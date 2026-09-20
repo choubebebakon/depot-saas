@@ -30,10 +30,14 @@ export class InventaireController {
 
     if (req.user?.role !== 'PATRON') {
       if (!actorDepot) {
-        throw new BadRequestException('Aucun dépôt n’est associé à cet utilisateur.');
+        throw new BadRequestException(
+          'Aucun dépôt n’est associé à cet utilisateur.',
+        );
       }
       if (requested && requested !== actorDepot) {
-        throw new BadRequestException('Le dépôt demandé ne correspond pas à votre dépôt autorisé.');
+        throw new BadRequestException(
+          'Le dépôt demandé ne correspond pas à votre dépôt autorisé.',
+        );
       }
       return actorDepot;
     }

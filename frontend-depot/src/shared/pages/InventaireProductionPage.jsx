@@ -15,15 +15,21 @@ export default function InventaireProductionPage() {
 
   const selectedDepotId = depotId || depotActif?.id || null;
 
-  const { data = [], isLoading, isFetching, refetch } = useQuery({
+  const { data = [], isLoading, isFetching, refetch, isError, error } = useQuery({
     queryKey: ['inventaire-production', selectedDepotId, search],
     queryFn: async () => {
       const response = await api.get('/stocks/inventaire', {
-        params: search.trim() ? { search: search.trim() } : {},
+        params: { 
+          ...(search.trim() ? { search: search.trim() } : {}),
+          depotId: selectedDepotId,
+        },
       });
       return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
     enabled: Boolean(selectedDepotId),
+    staleTime: 10_000,
+    refetchInterval: 20_000,
+    refetchIntervalInBackground: false,
   });
 
   const rows = useMemo(() => data.map((row) => {
@@ -47,7 +53,11 @@ export default function InventaireProductionPage() {
       if (lignes.some((ligne) => !Number.isInteger(ligne.quantiteComptee) || ligne.quantiteComptee < 0)) {
         throw new Error('Les quantités comptées doivent être des entiers positifs ou nulles.');
       }
-      return (await api.post('/stocks/inventaire', { motif: motif.trim() || undefined, lignes })).data;
+      return (await api.post('/stocks/inventaire', { 
+        motif: motif.trim() || undefined, 
+        lignes,
+        depotId: selectedDepotId,
+      })).data;
     },
     onSuccess: (result) => {
       setCounts({});
@@ -63,6 +73,26 @@ export default function InventaireProductionPage() {
 
   if (!selectedDepotId) {
     return <div className="p-8 text-center text-slate-400">Sélectionnez un dépôt actif pour réaliser un inventaire.</div>;
+  }
+
+  if (isError) {
+    const status = error?.response?.status;
+    const message = status === 403
+      ? 'Accès refusé (403) : votre rôle n’a pas la permission « inventaire » dans ce dépôt. Demandez au Patron d’ajuster vos permissions.'
+      : status === 400
+        ? error.response?.data?.message || 'Requête invalide : vérifiez le dépôt actif sélectionné.'
+        : error?.response?.data?.message || 'Impossible de charger le stock pour l’inventaire.';
+    return (
+      <div className="p-6">
+        <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center">
+          <CheckCircle2 className="mx-auto text-red-400" size={36} />
+          <p className="font-bold text-red-300">{message}</p>
+          <button type="button" onClick={() => refetch()} className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700">
+            Réessayer
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const modifiedCount = Object.keys(counts).length;

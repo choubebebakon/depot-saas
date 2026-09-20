@@ -54,7 +54,7 @@ const LignePanier = memo(function LignePanier({ field, idx, control, panierItem,
   );
 });
 
-export default function POSSupermarcheForm({ onSuccess, depotId }) {
+export default function POSSupermarcheForm({ onSuccess, depotId, posteId }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
 
@@ -129,21 +129,37 @@ export default function POSSupermarcheForm({ onSuccess, depotId }) {
       const payload = {
         id: crypto.randomUUID(),
         depotId,
+        // Multi-caisse : le poste actif est transmis pour rattacher la vente
+        // à la session de caisse correspondante côté serveur.
+        posteId: posteId || 'CAISSE_1',
         clientId: data.clientId || undefined,
         modePaiement: data.modePaiement,
         remiseGlobale: Number(data.remiseGlobale) || 0,
         panier: data.panier.map((p) => ({ articleId: p.articleId, quantite: Number(p.quantite), prix: Number(p.prixUnitaire), remise: Number(p.remise) || 0 })),
         total: Math.round(total * 100) / 100,
+        // Ticket 80mm : montant présenté par le client et monnaie restituée.
+        montantRecu: data.modePaiement === 'CASH'
+          ? Math.round((Number(data.montantRecu) || 0) * 100) / 100
+          : Math.round(total * 100) / 100,
+        monnaie: data.modePaiement === 'CASH'
+          ? Math.max(0, Math.round(((Number(data.montantRecu) || 0) - total) * 100) / 100)
+          : 0,
       };
 
       const r = await supermarcheApi.createVente(payload);
       return r.data;
     },
     onSuccess: (createdVente) => {
-      queryClient.invalidateQueries({ queryKey: ['supermarche-ventes'] });
-      queryClient.invalidateQueries({ queryKey: ['supermarche-articles'] });
-      queryClient.invalidateQueries({ queryKey: ['supermarche-dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-resume'] });
+      // ENCAISSER enregistre la vente uniquement (visible temps réel dans le
+      // sous-module Factures) — aucune impression automatique ici. Le prédicat
+      // garantit que les clés de la page Factures
+      // (['supermarche-factures','ventes',depotId]) et du POS sont rafraîchies.
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = Array.isArray(query.queryKey) ? query.queryKey.join('|') : String(query.queryKey || '');
+          return ['supermarche-', 'facture', 'vente', 'caisse', 'resume', 'dashboard'].some((needle) => key.toLocaleLowerCase().includes(needle));
+        },
+      });
       notif.success(`Vente${createdVente?.reference ? ` #${createdVente.reference}` : ''} enregistrée avec succès`);
       reset({ clientId: '', depotId: depotId || '', modePaiement: 'CASH', remiseGlobale: 0, montantRecu: '', panier: [] });
       onSuccess?.(createdVente);

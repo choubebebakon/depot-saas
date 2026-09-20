@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import {
   OuvrirTourneeDto,
@@ -7,22 +11,87 @@ import {
   ValidationMagasinierDto,
   CreateTricycleDto,
 } from './dto/tournee.dto';
+import { DepotScopeService } from '../common/depot-scope.service';
 
 @Injectable()
 export class TourneesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly depotScope: DepotScopeService,
+  ) {}
 
   private requireDepotId(depotId?: string) {
-    if (!depotId) throw new BadRequestException('depotId est obligatoire pour isoler les tournees du depot actif.');
+    const scope = this.depotScope.getScope();
+    const userRole = scope.role;
+    const scopeDepotId = scope.depotId;
+
+    // PATRON peut utiliser n'importe quel dépôt de son tenant
+    if (userRole === 'PATRON') {
+      if (!depotId && !scopeDepotId) {
+        throw new BadRequestException(
+          'depotId est obligatoire pour isoler les tournees du depot actif.',
+        );
+      }
+      return depotId || scopeDepotId || '';
+    }
+
+    // Pour les autres rôles, utiliser le dépôt du scope
+    if (!depotId) {
+      if (!scopeDepotId) {
+        throw new BadRequestException(
+          'depotId est obligatoire pour isoler les tournees du depot actif.',
+        );
+      }
+      return scopeDepotId;
+    }
+
+    // Vérifier que le dépôt demandé correspond au scope
+    if (depotId !== scopeDepotId) {
+      throw new BadRequestException('Accès refusé à ce dépôt.');
+    }
+
     return depotId;
   }
 
   // ── Tricycles ────────────────────────────────────────────
   async createTricycle(dto: CreateTricycleDto) {
+    // Normalisation défensive : le nom provient du client, on le nettoie
+    // ici aussi (le DTO a déjà transformé, on ne fait jamais confiance
+    // à la couche d'entrée seule).
+    const nom = String(dto.nom ?? '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!nom)
+      throw new BadRequestException(
+        'Le nom / immatriculation du tricycle est requis.',
+      );
+    if (nom.length > 80)
+      throw new BadRequestException(
+        'Le nom du tricycle ne peut pas dépasser 80 caractères.',
+      );
+
     const depotId = this.requireDepotId(dto.depotId);
-    const existing = await this.prisma.tricycle.findFirst({ where: { tenantId: dto.tenantId, depotId, nom: dto.nom.trim() }, select: { id: true } });
-    if (existing) throw new ConflictException('Un tricycle avec cette immatriculation existe déjà dans ce dépôt.');
-    return this.prisma.tricycle.create({ data: { nom: dto.nom.trim(), tenantId: dto.tenantId, depotId, estLibre: true } });
+    // Defense-in-depth : le contrôleur fournit toujours le tenant du scope
+    // serveur ; on refuse toute requête qui n'en porterait pas.
+    if (!dto.tenantId)
+      throw new BadRequestException('Contexte tenant absent.');
+    const tenantId = dto.tenantId;
+    const existing = await this.prisma.tricycle.findFirst({
+      where: { tenantId, depotId, nom },
+      select: { id: true },
+    });
+    if (existing)
+      throw new ConflictException(
+        'Un tricycle avec cette immatriculation existe déjà dans ce dépôt.',
+      );
+    return this.prisma.tricycle.create({
+      data: {
+        nom,
+        tenantId,
+        depotId,
+        estLibre: true,
+      },
+    });
   }
 
   async findTricycles(tenantId: string, depotId?: string) {
@@ -43,95 +112,268 @@ export class TourneesService {
   // ── Ouverture Tournée ────────────────────────────────────
   async ouvrirTournee(dto: OuvrirTourneeDto) {
     const depotId = this.requireDepotId(dto.depotId);
-    return this.prisma.$transaction(async (tx) => {
-      const tricycle = await tx.tricycle.findFirst({ where: { id: dto.tricycleId, tenantId: dto.tenantId, depotId }, select: { id: true, estLibre: true } });
-      if (!tricycle) throw new BadRequestException('Tricycle introuvable dans ce dépôt');
-      if (!tricycle.estLibre) throw new ConflictException("Ce tricycle est déjà en tournée. Clôturez la tournée précédente d'abord.");
+    return this.prisma.$transaction(
+      async (tx) => {
+        const tricycle = await tx.tricycle.findFirst({
+          where: { id: dto.tricycleId, tenantId: dto.tenantId, depotId },
+          select: { id: true, estLibre: true },
+        });
+        if (!tricycle)
+          throw new BadRequestException('Tricycle introuvable dans ce dépôt');
+        if (!tricycle.estLibre)
+          throw new ConflictException(
+            "Ce tricycle est déjà en tournée. Clôturez la tournée précédente d'abord.",
+          );
 
-      const commercial = await tx.user.findFirst({ where: { id: dto.commercialId, tenantId: dto.tenantId, depotId }, select: { id: true } });
-      if (!commercial) throw new BadRequestException('Commercial introuvable dans ce dépôt');
+        const commercial = await tx.user.findFirst({
+          where: { id: dto.commercialId, tenantId: dto.tenantId, depotId },
+          select: { id: true },
+        });
+        if (!commercial)
+          throw new BadRequestException('Commercial introuvable dans ce dépôt');
 
-      const locked = await tx.tricycle.updateMany({ where: { id: dto.tricycleId, tenantId: dto.tenantId, depotId, estLibre: true }, data: { estLibre: false } });
-      if (!locked.count) throw new ConflictException('Le tricycle vient d’être affecté à une autre tournée.');
+        const locked = await tx.tricycle.updateMany({
+          where: {
+            id: dto.tricycleId,
+            tenantId: dto.tenantId,
+            depotId,
+            estLibre: true,
+          },
+          data: { estLibre: false },
+        });
+        if (!locked.count)
+          throw new ConflictException(
+            'Le tricycle vient d’être affecté à une autre tournée.',
+          );
 
-      const count = await tx.tournee.count({ where: { tenantId: dto.tenantId, depotId } });
-      const annee = new Date().getFullYear();
-      const reference = `TRN-${annee}-${String(count + 1).padStart(5, '0')}`;
+        const count = await tx.tournee.count({
+          where: { tenantId: dto.tenantId, depotId },
+        });
+        const annee = new Date().getFullYear();
+        const reference = `TRN-${annee}-${String(count + 1).padStart(5, '0')}`;
 
-      return tx.tournee.create({
-        data: { reference, statut: 'OUVERTE', depotId, tricycleId: dto.tricycleId, commercialId: dto.commercialId, tenantId: dto.tenantId },
-        include: { tricycle: true, commercial: { select: { email: true, role: true, nom: true } }, depot: true },
-      });
-    }, { isolationLevel: 'Serializable' });
+        return tx.tournee.create({
+          data: {
+            reference,
+            statut: 'OUVERTE',
+            depotId,
+            tricycleId: dto.tricycleId,
+            commercialId: dto.commercialId,
+            tenantId: dto.tenantId,
+          },
+          include: {
+            tricycle: true,
+            commercial: { select: { email: true, role: true, nom: true } },
+            depot: true,
+          },
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   // ── Chargement ───────────────────────────────────────────
   async chargerTournee(dto: ChargerTourneeDto) {
-    const tournee = await this.prisma.tournee.findFirst({ where: { id: dto.tourneeId, tenantId: dto.tenantId }, include: { lignesChargement: true } });
+    const tournee = await this.prisma.tournee.findFirst({
+      where: { id: dto.tourneeId, tenantId: dto.tenantId },
+      include: { lignesChargement: true },
+    });
     if (!tournee) throw new BadRequestException('Tournée introuvable');
-    if (tournee.statut !== 'OUVERTE') throw new BadRequestException('Impossible de charger : tournée non ouverte');
+    if (tournee.statut !== 'OUVERTE')
+      throw new BadRequestException(
+        'Impossible de charger : tournée non ouverte',
+      );
 
-    return this.prisma.$transaction(async (tx) => {
-      for (const ligne of dto.lignes) {
-        const stock = await tx.stock.findUnique({ where: { articleId_depotId: { articleId: ligne.articleId, depotId: tournee.depotId } } });
-        if (!stock || stock.quantite < ligne.quantiteChargee) {
-          const article = await tx.article.findUnique({ where: { id: ligne.articleId } });
-          throw new BadRequestException(`Stock insuffisant pour ${article?.designation || ligne.articleId}. Disponible: ${stock?.quantite || 0}`);
+    return this.prisma.$transaction(
+      async (tx) => {
+        for (const ligne of dto.lignes) {
+          const stock = await tx.stock.findUnique({
+            where: {
+              articleId_depotId: {
+                articleId: ligne.articleId,
+                depotId: tournee.depotId,
+              },
+            },
+          });
+          if (!stock || stock.quantite < ligne.quantiteChargee) {
+            const article = await tx.article.findUnique({
+              where: { id: ligne.articleId },
+            });
+            throw new BadRequestException(
+              `Stock insuffisant pour ${article?.designation || ligne.articleId}. Disponible: ${stock?.quantite || 0}`,
+            );
+          }
+          await tx.stock.update({
+            where: { id: stock.id },
+            data: { quantite: { decrement: ligne.quantiteChargee } },
+          });
+          const existante = await tx.ligneChargement.findFirst({
+            where: { tourneeId: dto.tourneeId, articleId: ligne.articleId },
+          });
+          if (existante) {
+            await tx.ligneChargement.update({
+              where: { id: existante.id },
+              data: { quantiteChargee: { increment: ligne.quantiteChargee } },
+            });
+          } else {
+            await tx.ligneChargement.create({
+              data: {
+                tourneeId: dto.tourneeId,
+                articleId: ligne.articleId,
+                quantiteChargee: ligne.quantiteChargee,
+              },
+            });
+          }
+          await tx.mouvementStock.create({
+            data: {
+              type: 'TRANSFERT_SORTIE',
+              quantite: ligne.quantiteChargee,
+              motif: `Chargement tournée ${tournee.reference}`,
+              articleId: ligne.articleId,
+              depotId: tournee.depotId,
+              tenantId: dto.tenantId,
+              tourneeId: dto.tourneeId,
+            },
+          });
         }
-        await tx.stock.update({ where: { id: stock.id }, data: { quantite: { decrement: ligne.quantiteChargee } } });
-        const existante = await tx.ligneChargement.findFirst({ where: { tourneeId: dto.tourneeId, articleId: ligne.articleId } });
-        if (existante) {
-          await tx.ligneChargement.update({ where: { id: existante.id }, data: { quantiteChargee: { increment: ligne.quantiteChargee } } });
-        } else {
-          await tx.ligneChargement.create({ data: { tourneeId: dto.tourneeId, articleId: ligne.articleId, quantiteChargee: ligne.quantiteChargee } });
-        }
-        await tx.mouvementStock.create({ data: { type: 'TRANSFERT_SORTIE', quantite: ligne.quantiteChargee, motif: `Chargement tournée ${tournee.reference}`, articleId: ligne.articleId, depotId: tournee.depotId, tenantId: dto.tenantId, tourneeId: dto.tourneeId } });
-      }
-      return tx.tournee.findUnique({ where: { id: dto.tourneeId }, include: { lignesChargement: { include: { article: true } }, commercial: { select: { email: true, nom: true } }, depot: true, tricycle: true } });
-    }, { isolationLevel: 'Serializable' });
+        return tx.tournee.findUnique({
+          where: { id: dto.tourneeId },
+          include: {
+            lignesChargement: { include: { article: true } },
+            commercial: { select: { email: true, nom: true } },
+            depot: true,
+            tricycle: true,
+          },
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   // ── Clôture Commerciale ──────────────────────────────────
   async clotureCommerciale(dto: ClotureCommercialeDto) {
-    const tournee = await this.prisma.tournee.findFirst({ where: { id: dto.tourneeId, tenantId: dto.tenantId } });
+    const tournee = await this.prisma.tournee.findFirst({
+      where: { id: dto.tourneeId, tenantId: dto.tenantId },
+    });
     if (!tournee) throw new BadRequestException('Tournée introuvable');
-    if (tournee.statut !== 'OUVERTE') throw new BadRequestException('La tournée doit être ouverte pour faire la clôture commerciale');
-    return this.prisma.tournee.update({ where: { id: dto.tourneeId }, data: { statut: 'CLOTURE_COMMERCIALE', cashRemis: dto.cashRemis, omRemis: dto.omRemis, momoRemis: dto.momoRemis, noteCloture: dto.noteCloture } });
+    if (tournee.statut !== 'OUVERTE')
+      throw new BadRequestException(
+        'La tournée doit être ouverte pour faire la clôture commerciale',
+      );
+    return this.prisma.tournee.update({
+      where: { id: dto.tourneeId },
+      data: {
+        statut: 'CLOTURE_COMMERCIALE',
+        cashRemis: dto.cashRemis,
+        omRemis: dto.omRemis,
+        momoRemis: dto.momoRemis,
+        noteCloture: dto.noteCloture,
+      },
+    });
   }
 
   // ── Validation Magasinier ────────────────────────────────
   async validerMagasinier(dto: ValidationMagasinierDto) {
-    const tournee = await this.prisma.tournee.findFirst({ where: { id: dto.tourneeId, tenantId: dto.tenantId }, include: { lignesChargement: { include: { article: true } } } });
+    const tournee = await this.prisma.tournee.findFirst({
+      where: { id: dto.tourneeId, tenantId: dto.tenantId },
+      include: { lignesChargement: { include: { article: true } } },
+    });
     if (!tournee) throw new BadRequestException('Tournée introuvable');
-    if (tournee.statut !== 'CLOTURE_COMMERCIALE') throw new BadRequestException('La tournée doit être en clôture commerciale');
+    if (tournee.statut !== 'CLOTURE_COMMERCIALE')
+      throw new BadRequestException(
+        'La tournée doit être en clôture commerciale',
+      );
 
-    return this.prisma.$transaction(async (tx) => {
-      let ecartTotal = 0;
-      for (const retour of dto.lignesRetour) {
-        const ligne = tournee.lignesChargement.find((l) => l.articleId === retour.articleId);
-        if (!ligne) continue;
-        const attenduRetour = ligne.quantiteChargee - ligne.quantiteVendue;
-        const ecartLigne = retour.quantiteRetour - attenduRetour;
-        ecartTotal += Math.abs(ecartLigne);
-        await tx.ligneChargement.update({ where: { id: ligne.id }, data: { quantiteRetour: retour.quantiteRetour } });
-        if (retour.quantiteRetour > 0) {
-          const stockDepot = await tx.stock.findUnique({ where: { articleId_depotId: { articleId: retour.articleId, depotId: tournee.depotId } } });
-          if (stockDepot) await tx.stock.update({ where: { id: stockDepot.id }, data: { quantite: { increment: retour.quantiteRetour } } });
-          else await tx.stock.create({ data: { articleId: retour.articleId, depotId: tournee.depotId, quantite: retour.quantiteRetour } });
-          await tx.mouvementStock.create({ data: { type: 'TRANSFERT_ENTREE', quantite: retour.quantiteRetour, motif: `Retour tournée ${tournee.reference}`, articleId: retour.articleId, depotId: tournee.depotId, tenantId: dto.tenantId, tourneeId: dto.tourneeId } });
+    return this.prisma.$transaction(
+      async (tx) => {
+        let ecartTotal = 0;
+        for (const retour of dto.lignesRetour) {
+          const ligne = tournee.lignesChargement.find(
+            (l) => l.articleId === retour.articleId,
+          );
+          if (!ligne) continue;
+          const attenduRetour = ligne.quantiteChargee - ligne.quantiteVendue;
+          const ecartLigne = retour.quantiteRetour - attenduRetour;
+          ecartTotal += Math.abs(ecartLigne);
+          await tx.ligneChargement.update({
+            where: { id: ligne.id },
+            data: { quantiteRetour: retour.quantiteRetour },
+          });
+          if (retour.quantiteRetour > 0) {
+            const stockDepot = await tx.stock.findUnique({
+              where: {
+                articleId_depotId: {
+                  articleId: retour.articleId,
+                  depotId: tournee.depotId,
+                },
+              },
+            });
+            if (stockDepot)
+              await tx.stock.update({
+                where: { id: stockDepot.id },
+                data: { quantite: { increment: retour.quantiteRetour } },
+              });
+            else
+              await tx.stock.create({
+                data: {
+                  articleId: retour.articleId,
+                  depotId: tournee.depotId,
+                  quantite: retour.quantiteRetour,
+                },
+              });
+            await tx.mouvementStock.create({
+              data: {
+                type: 'TRANSFERT_ENTREE',
+                quantite: retour.quantiteRetour,
+                motif: `Retour tournée ${tournee.reference}`,
+                articleId: retour.articleId,
+                depotId: tournee.depotId,
+                tenantId: dto.tenantId,
+                tourneeId: dto.tourneeId,
+              },
+            });
+          }
         }
-      }
-      await tx.tricycle.update({ where: { id: tournee.tricycleId }, data: { estLibre: true } });
-      return tx.tournee.update({ where: { id: dto.tourneeId }, data: { statut: 'VALIDEE', dateCloture: new Date(), ecartStock: ecartTotal, noteValidation: dto.noteValidation }, include: { lignesChargement: { include: { article: true } }, commercial: { select: { email: true, nom: true } }, tricycle: true, depot: true } });
-    }, { isolationLevel: 'Serializable' });
+        await tx.tricycle.update({
+          where: { id: tournee.tricycleId },
+          data: { estLibre: true },
+        });
+        return tx.tournee.update({
+          where: { id: dto.tourneeId },
+          data: {
+            statut: 'VALIDEE',
+            dateCloture: new Date(),
+            ecartStock: ecartTotal,
+            noteValidation: dto.noteValidation,
+          },
+          include: {
+            lignesChargement: { include: { article: true } },
+            commercial: { select: { email: true, nom: true } },
+            tricycle: true,
+            depot: true,
+          },
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   // ── Lister tournées ──────────────────────────────────────
   async findAll(tenantId: string, depotId?: string, statut?: string) {
     const selectedDepotId = this.requireDepotId(depotId);
     return this.prisma.tournee.findMany({
-      where: { tenantId, depotId: selectedDepotId, ...(statut ? { statut: statut as any } : {}) },
-      include: { commercial: { select: { email: true, role: true, nom: true } }, tricycle: true, depot: true, lignesChargement: { include: { article: true } }, _count: { select: { ventes: true } } },
+      where: {
+        tenantId,
+        depotId: selectedDepotId,
+        ...(statut ? { statut: statut as any } : {}),
+      },
+      include: {
+        commercial: { select: { email: true, role: true, nom: true } },
+        tricycle: true,
+        depot: true,
+        lignesChargement: { include: { article: true } },
+        _count: { select: { ventes: true } },
+      },
       orderBy: { dateOuverture: 'desc' },
     });
   }
@@ -140,7 +382,16 @@ export class TourneesService {
     const selectedDepotId = this.requireDepotId(depotId);
     return this.prisma.tournee.findFirst({
       where: { id, tenantId, depotId: selectedDepotId },
-      include: { commercial: { select: { email: true, nom: true } }, tricycle: true, depot: true, lignesChargement: { include: { article: true } }, ventes: { include: { lignes: { include: { article: true } } }, orderBy: { date: 'desc' } } },
+      include: {
+        commercial: { select: { email: true, nom: true } },
+        tricycle: true,
+        depot: true,
+        lignesChargement: { include: { article: true } },
+        ventes: {
+          include: { lignes: { include: { article: true } } },
+          orderBy: { date: 'desc' },
+        },
+      },
     });
   }
 
@@ -148,8 +399,12 @@ export class TourneesService {
     const selectedDepotId = this.requireDepotId(depotId);
     const where = { tenantId, depotId: selectedDepotId };
     const [actives, attenteMagasinier, total] = await Promise.all([
-      this.prisma.tournee.count({ where: { ...where, statut: { in: ['OUVERTE', 'CLOTURE_COMMERCIALE'] } } }),
-      this.prisma.tournee.count({ where: { ...where, statut: 'CLOTURE_COMMERCIALE' } }),
+      this.prisma.tournee.count({
+        where: { ...where, statut: { in: ['OUVERTE', 'CLOTURE_COMMERCIALE'] } },
+      }),
+      this.prisma.tournee.count({
+        where: { ...where, statut: 'CLOTURE_COMMERCIALE' },
+      }),
       this.prisma.tournee.count({ where }),
     ]);
     return { actives, attenteMagasinier, total };

@@ -9,7 +9,11 @@ export class SupportService {
 
   constructor(private prisma: PrismaService) {}
 
-  async createMessage(userId: string, tenantId: string | null, dto: CreateSupportDto) {
+  async createMessage(
+    userId: string,
+    tenantId: string | null,
+    dto: CreateSupportDto,
+  ) {
     const data: any = {
       message: dto.message,
       type: dto.type,
@@ -25,7 +29,9 @@ export class SupportService {
       data.tenant = { connect: { id: tenantId } };
     }
 
-    this.logger.log(`Creating support message with data: ${JSON.stringify(data)}`);
+    this.logger.log(
+      `Creating support message with data: ${JSON.stringify(data)}`,
+    );
 
     const newMessage = await this.prisma.supportMessage.create({
       data,
@@ -37,12 +43,14 @@ export class SupportService {
 
     // Notification asynchrone sans bloquer la réponse
     this.sendWebhookNotification(newMessage).catch((err) =>
-      this.logger.error(`Erreur lors de l'envoi du webhook Discord: ${err.message}`)
+      this.logger.error(
+        `Erreur lors de l'envoi du webhook Discord: ${err.message}`,
+      ),
     );
 
     return {
       success: true,
-      message: "Votre message a bien été enregistré.",
+      message: 'Votre message a bien été enregistré.',
       ticketId: newMessage.id,
     };
   }
@@ -66,7 +74,9 @@ export class SupportService {
   }
 
   async updateStatut(id: string, statut: SupportMessageStatut) {
-    const message = await this.prisma.supportMessage.findUnique({ where: { id } });
+    const message = await this.prisma.supportMessage.findUnique({
+      where: { id },
+    });
     if (!message) {
       throw new NotFoundException(`Message support ${id} introuvable`);
     }
@@ -94,9 +104,21 @@ export class SupportService {
           description: data.message,
           color: isBug ? 16711680 : 3447003,
           fields: [
-            { name: '📧 Email de contact', value: `**${data.user?.email || 'Inconnu'}**`, inline: false },
-            { name: '👤 Utilisateur', value: data.user?.email || 'Inconnu', inline: true },
-            { name: '📄 Page', value: data.pageUrl || 'Non renseignée', inline: true },
+            {
+              name: '📧 Email de contact',
+              value: `**${data.user?.email || 'Inconnu'}**`,
+              inline: false,
+            },
+            {
+              name: '👤 Utilisateur',
+              value: data.user?.email || 'Inconnu',
+              inline: true,
+            },
+            {
+              name: '📄 Page',
+              value: data.pageUrl || 'Non renseignée',
+              inline: true,
+            },
           ],
           timestamp: new Date().toISOString(),
         },
@@ -110,7 +132,9 @@ export class SupportService {
     });
 
     if (!response.ok) {
-      throw new Error(`Discord API a répondu avec le statut ${response.status}`);
+      throw new Error(
+        `Discord API a répondu avec le statut ${response.status}`,
+      );
     }
   }
 }

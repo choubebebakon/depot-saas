@@ -89,9 +89,7 @@ export class TransferStockService {
           });
 
           if (!article) {
-            throw new NotFoundException(
-              'Article introuvable dans ce tenant.',
-            );
+            throw new NotFoundException('Article introuvable dans ce tenant.');
           }
 
           const source = await tx.stock.updateMany({
@@ -129,8 +127,7 @@ export class TransferStockService {
               {
                 type: TypeMouvement.TRANSFERT_SORTIE,
                 quantite: data.quantite,
-                motif:
-                  data.motif || `Vers Dépôt ${data.destDepotId}`,
+                motif: data.motif || `Vers Dépôt ${data.destDepotId}`,
                 articleId: data.articleId,
                 depotId: data.sourceDepotId,
                 tenantId: data.tenantId,
@@ -138,8 +135,7 @@ export class TransferStockService {
               {
                 type: TypeMouvement.TRANSFERT_ENTREE,
                 quantite: data.quantite,
-                motif:
-                  data.motif || `Depuis Dépôt ${data.sourceDepotId}`,
+                motif: data.motif || `Depuis Dépôt ${data.sourceDepotId}`,
                 articleId: data.articleId,
                 depotId: data.destDepotId,
                 tenantId: data.tenantId,
@@ -147,28 +143,25 @@ export class TransferStockService {
             ],
           });
 
-          auditAfterCommit = await this.auditService.logEventInTransaction(
-            tx,
-            {
-              tenantId: data.tenantId,
-              depotId: data.sourceDepotId,
-              actorUserId: data.actor.userId,
-              actorEmail: data.actor.email,
-              actorRole: data.actor.role,
-              action: 'TRANSFERT_STOCK',
-              targetType: 'STOCK',
-              targetId: destination.id,
-              reference: article.designation || data.articleId,
-              description: `Transfert de ${data.quantite} unité(s) du dépôt ${data.sourceDepotId} vers ${data.destDepotId}.`,
-              metadata: {
-                articleId: data.articleId,
-                sourceDepotId: data.sourceDepotId,
-                destDepotId: data.destDepotId,
-                quantite: data.quantite,
-                motif: data.motif || null,
-              },
+          auditAfterCommit = await this.auditService.logEventInTransaction(tx, {
+            tenantId: data.tenantId,
+            depotId: data.sourceDepotId,
+            actorUserId: data.actor.userId,
+            actorEmail: data.actor.email,
+            actorRole: data.actor.role,
+            action: 'TRANSFERT_STOCK',
+            targetType: 'STOCK',
+            targetId: destination.id,
+            reference: article.designation || data.articleId,
+            description: `Transfert de ${data.quantite} unité(s) du dépôt ${data.sourceDepotId} vers ${data.destDepotId}.`,
+            metadata: {
+              articleId: data.articleId,
+              sourceDepotId: data.sourceDepotId,
+              destDepotId: data.destDepotId,
+              quantite: data.quantite,
+              motif: data.motif || null,
             },
-          );
+          });
 
           return {
             success: true,

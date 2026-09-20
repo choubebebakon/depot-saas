@@ -21,7 +21,8 @@ export class DlcController {
 
   private getTenantId(req: any): string {
     const tenantId = req.user?.tenantId;
-    if (!tenantId) throw new BadRequestException('tenantId manquant (non authentifié)');
+    if (!tenantId)
+      throw new BadRequestException('tenantId manquant (non authentifié)');
     return tenantId;
   }
 
@@ -46,28 +47,19 @@ export class DlcController {
   }
 
   @Get('lots')
-  findLots(
-    @Req() req: any,
-    @Query('depotId') depotId: string,
-  ) {
+  findLots(@Req() req: any, @Query('depotId') depotId: string) {
     const tenantId = this.getTenantId(req);
     return this.dlcService.findLots(tenantId, depotId);
   }
 
   @Get('alertes')
-  getAlertes(
-    @Req() req: any,
-    @Query('depotId') depotId: string,
-  ) {
+  getAlertes(@Req() req: any, @Query('depotId') depotId: string) {
     const tenantId = this.getTenantId(req);
     return this.dlcService.getAlertes(tenantId, depotId);
   }
 
   @Get('stats')
-  getStats(
-    @Req() req: any,
-    @Query('depotId') depotId: string,
-  ) {
+  getStats(@Req() req: any, @Query('depotId') depotId: string) {
     const tenantId = this.getTenantId(req);
     return this.dlcService.getStats(tenantId, depotId);
   }
@@ -86,10 +78,7 @@ export class DlcController {
   }
 
   @Delete('lots/:id')
-  deleteLot(
-    @Req() req: any,
-    @Param('id') id: string,
-  ) {
+  deleteLot(@Req() req: any, @Param('id') id: string) {
     const tenantId = this.getTenantId(req);
     return this.dlcService.deleteLot(id, tenantId);
   }

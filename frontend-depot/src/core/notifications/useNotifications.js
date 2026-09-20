@@ -6,7 +6,16 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const API_BASE = '/notifications';
 
-let socketInstance = null;
+// Singleton résistant au HMR Vite : la réévaluation du module (hot reload)
+// ne doit pas réinitialiser `socket`, sinon l'ancienne socket reste connectée
+// en orpheline et un doublon de connexion est créé (POST 400 sid inconnu).
+function getSocketRegistry() {
+  const win = typeof window !== 'undefined' ? window : globalThis;
+  if (!win.__depotNotifSocket) {
+    win.__depotNotifSocket = { socket: null };
+  }
+  return win.__depotNotifSocket;
+}
 
 export function useNotifications() {
   const { user, tenantId } = useAuth();
@@ -60,11 +69,12 @@ export function useNotifications() {
   }, []);
 
   useEffect(() => {
+    const reg = getSocketRegistry();
     if (!user || !tenantId || !userId) {
-      if (socketInstance) {
-        socketInstance.disconnect();
-        socketInstance.removeAllListeners();
-        socketInstance = null;
+      if (reg.socket) {
+        reg.socket.disconnect();
+        reg.socket.removeAllListeners();
+        reg.socket = null;
       }
       setConnected(false);
       return undefined;
@@ -72,28 +82,38 @@ export function useNotifications() {
 
     const token = localStorage.getItem('depot_token');
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    const existingToken = socketInstance?.auth?.token;
+    const existingToken = reg.socket?.auth?.token;
 
     // Recrée la socket si l'identité/token change (logout, changement de tenant,
     // renouvellement de session), afin de ne jamais conserver une connexion d'un ancien utilisateur.
-    if (socketInstance && existingToken !== token) {
-      socketInstance.disconnect();
-      socketInstance.removeAllListeners();
-      socketInstance = null;
+    if (reg.socket && existingToken !== token) {
+      reg.socket.disconnect();
+      reg.socket.removeAllListeners();
+      reg.socket = null;
     }
 
-    if (!socketInstance) {
-      socketInstance = io(`${apiUrl}/notifications`, {
+    if (!reg.socket) {
+      reg.socket = io(`${apiUrl}/notifications`, {
         auth: { token },
-        transports: ['websocket', 'polling'],
+        // forceNew : ce namespace doit posséder sa propre session engine.io.
+        // Par défaut socket.io multiplexe tous les namespaces d'une même origine
+        // sur UNE connexion partagée : la déconnexion de /realtime (dans le
+        // cleanup de useRealtimeSync) ou du namespace racine fermait alors la
+        // session commune, et ce client repartait avec un sid devenu inconnu
+        // côté serveur ("Session ID unknown" → 400 sur /socket.io).
+        forceNew: true,
+        // Ordre [polling, websocket] obligatoire (cf. realtimeClient) : le
+        // websocket d'abord casse la poignée de main sous double-rendu React.
+        transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: 8,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000,
         timeout: 10000,
       });
     }
 
-    const socket = socketInstance;
+    const socket = reg.socket;
     const onConnect = () => setConnected(true);
     const onDisconnect = () => setConnected(false);
     const onNewNotification = (notif) => {

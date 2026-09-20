@@ -58,13 +58,23 @@ export class DepotBoissonsPromotionsService {
     const valeur = Number(data.valeur);
     const prixPromo = Number(data.prixPromo);
 
-    if (!Number.isFinite(dateDebut.getTime()) || !Number.isFinite(dateFin.getTime())) {
+    if (
+      !Number.isFinite(dateDebut.getTime()) ||
+      !Number.isFinite(dateFin.getTime())
+    ) {
       throw new BadRequestException('Dates de promotion invalides.');
     }
     if (dateFin <= dateDebut) {
-      throw new BadRequestException('La date de fin doit être postérieure à la date de début.');
+      throw new BadRequestException(
+        'La date de fin doit être postérieure à la date de début.',
+      );
     }
-    if (!Number.isFinite(valeur) || valeur < 0 || !Number.isFinite(prixPromo) || prixPromo < 0) {
+    if (
+      !Number.isFinite(valeur) ||
+      valeur < 0 ||
+      !Number.isFinite(prixPromo) ||
+      prixPromo < 0
+    ) {
       throw new BadRequestException('Valeur ou prix promotionnel invalide.');
     }
 
@@ -84,7 +94,12 @@ export class DepotBoissonsPromotionsService {
     });
   }
 
-  async update(tenantId: string, depotId: string | undefined, id: string, data: any) {
+  async update(
+    tenantId: string,
+    depotId: string | undefined,
+    id: string,
+    data: any,
+  ) {
     const activeDepotId = this.requireDepotId(depotId);
     const existing = await this.prisma.promotion.findFirst({
       where: { id, tenantId },
@@ -100,12 +115,19 @@ export class DepotBoissonsPromotionsService {
       if (data[field] !== undefined) updateData[field] = data[field];
     }
     if (data.valeur !== undefined) updateData.valeur = Number(data.valeur);
-    if (data.prixPromo !== undefined) updateData.prixPromo = Number(data.prixPromo);
+    if (data.prixPromo !== undefined)
+      updateData.prixPromo = Number(data.prixPromo);
     if (data.dateDebut) updateData.dateDebut = new Date(data.dateDebut);
     if (data.dateFin) updateData.dateFin = new Date(data.dateFin);
 
-    if (updateData.dateDebut && updateData.dateFin && updateData.dateFin <= updateData.dateDebut) {
-      throw new BadRequestException('La date de fin doit être postérieure à la date de début.');
+    if (
+      updateData.dateDebut &&
+      updateData.dateFin &&
+      updateData.dateFin <= updateData.dateDebut
+    ) {
+      throw new BadRequestException(
+        'La date de fin doit être postérieure à la date de début.',
+      );
     }
 
     return this.prisma.promotion.update({
@@ -122,7 +144,11 @@ export class DepotBoissonsPromotionsService {
       select: { id: true, articleId: true },
     });
     if (!existing) throw new NotFoundException('Promotion introuvable.');
-    await this.assertArticleInDepot(tenantId, activeDepotId, existing.articleId);
+    await this.assertArticleInDepot(
+      tenantId,
+      activeDepotId,
+      existing.articleId,
+    );
     return this.prisma.promotion.delete({ where: { id } });
   }
 }

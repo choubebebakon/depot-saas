@@ -63,6 +63,7 @@ model Categorie {
   @@index([tenantId])
   @@index([tenantId, actif])
 }
+
 model Article {
   id                 String                     @id @default(uuid())
   designation        String
@@ -82,6 +83,7 @@ model Article {
   photoUrl           String?
   prixGros           Float?
   unite              String                     @default("PIECE")
+  datePeremption     DateTime?
   categorieId        String?
   alimentations      AlimentationElevage[]
   categorie          Categorie?                 @relation(fields: [categorieId], references: [id])
@@ -327,11 +329,14 @@ model Vente {
   montantOM          Float               @default(0)
   montantMoMo        Float               @default(0)
   montantCredit      Float               @default(0)
+  montantRecu        Float               @default(0)
+  monnaie            Float               @default(0)
   tenantId           String
   depotId            String
   clientId           String?
   createurId         String?
   tourneeId          String?
+  sessionId          String?
   lignes             LigneVente[]
   mouvementsConsigne MouvementConsigne[]
   client             Client?             @relation(fields: [clientId], references: [id])
@@ -339,10 +344,16 @@ model Vente {
   depot              Depot               @relation(fields: [depotId], references: [id], onDelete: Cascade)
   tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tournee            Tournee?            @relation(fields: [tourneeId], references: [id])
+  session            SessionCaisse?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([depotId])
   @@index([clientId])
+  @@index([sessionId])
+  // Index ciblé de l'historique CRM : la pagination par curseur (keyset) filtre
+  // sur (clientId) puis trie sur (date DESC, id DESC). Sans cet index composite,
+  // chaque page de l'historique ferait un tri en mémoire (contrainte de latence).
+  @@index([clientId, date(sort: Desc), id(sort: Desc)])
 }
 
 model LigneVente {
@@ -374,7 +385,20 @@ model Client {
   soldeCredit           Float                  @default(0)
   tenantId              String
   depotId               String?
+  commercialId          String?
   createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  // ─── CRM omnicanal : identités de messagerie du client final ──────────────
+  // Un client peut arriver par WhatsApp, Instagram DM ou Messenger. Ces
+  // colonnes sont optionnelles : le même client physique peut n'exister que
+  // dans un seul canal.
+  instagramId           String?
+  messengerId           String?
+  // Métadonnées libres alimentées par l'agent IA (deep merge atomique côté
+  // service). Toujours un objet JSON non nul : le service peut donc fusionner
+  // sans test de nullité préalable.
+  metaData              Json                   @default("{}")
+  commercial            User?                  @relation("ClientCommercial", fields: [commercialId], references: [id])
   chantiers             Chantier[]
   depot                 Depot?                 @relation(fields: [depotId], references: [id])
   tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -396,8 +420,27 @@ model Client {
   vehicules             VehiculeClient[]
   ventes                Vente[]
 
+  // Isolation multi-tenant de l'identité client : l'unicité est portée par
+  // (tenantId, identifiant de canal) et JAMAIS par l'identifiant seul.
+  //
+  // Comportement PostgreSQL des NULL dans une contrainte composite : les NULL
+  // sont considérés comme distincts (contrairement à une base qui traiterait
+  // NULL = NULL). Deux clients du même tenant peuvent donc avoir tous les deux
+  // telephone = NULL, instagramId = NULL, etc., sans déclencher de faux conflit
+  // d'unicité. L'unicité ne s'applique qu'entre valeurs réellement renseignées.
+  @@unique([tenantId, telephone])
+  @@unique([tenantId, instagramId])
+  @@unique([tenantId, messengerId])
   @@index([tenantId])
   @@index([depotId])
+  @@index([commercialId])
+  // Index mono-colonne : utilisés pour les recherches techniques de support
+  // (retrouver un client à partir d'un identifiant de canal sans connaître le
+  // tenant). Aucune requête applicative ne doit s'en servir pour filtrer sans
+  // tenantId.
+  @@index([telephone])
+  @@index([instagramId])
+  @@index([messengerId])
 }
 
 model DetteClient {
@@ -596,14 +639,17 @@ model SessionCaisse {
   dateCloture   DateTime?
   depotId       String
   userId        String
+  posteId       String            @default("CAISSE_1")
   tenantId      String
   mouvements    MouvementCaisse[]
+  ventes        Vente[]
   depot         Depot             @relation(fields: [depotId], references: [id])
   tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user          User              @relation(fields: [userId], references: [id])
 
   @@index([tenantId])
   @@index([depotId])
+  @@index([posteId])
 }
 
 model MouvementCaisse {
@@ -655,19 +701,19 @@ model JournalAudit {
   severite     AuditSeverite @default(INFO)
 
   // === ÉLÉMENTS MANQUANTS AJOUTÉS ICI ===
-  resultat     AuditResultat?
-  metier       String?
-  motif        String?
-  requestId    String?
-  sessionId    String?
+  resultat  AuditResultat?
+  metier    String?
+  motif     String?
+  requestId String?
+  sessionId String?
   // ======================================
 
-  ipAddress    String?
-  userAgent    String?
-  montant      Float?
-  createdAt    DateTime      @default(now())
-  depot        Depot?        @relation(fields: [depotId], references: [id])
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ipAddress String?
+  userAgent String?
+  montant   Float?
+  createdAt DateTime @default(now())
+  depot     Depot?   @relation(fields: [depotId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([action])
@@ -774,6 +820,7 @@ model Tenant {
   slogan               String?
   adresse              String?
   logo                 String?
+  parametres           Json?
   messageFin           String?                  @default("Merci de votre fidélité !")
   metier               MetierType               @default(DEPOT_BOISSONS)
   subscriptionStatus   SubscriptionStatus       @default(TRIALING)
@@ -783,6 +830,7 @@ model Tenant {
   paymentRetryCount    Int                      @default(0)
   subscriptionAlerts   SubscriptionAlert[]
   users                User[]
+  affectationsDepots   UserDepot[]
   supportMessages      SupportMessage[]
   alimentations        AlimentationElevage[]
   articles             Article[]
@@ -791,6 +839,8 @@ model Tenant {
   chambres             Chambre[]
   chantiers            Chantier[]
   clients              Client[]
+  crmApiKeys           CrmApiKey[]
+  metaIntegrations     MetaIntegration[]
   codesBarres          CodeBarresArticle[]
   colis                Colis[]
   commandesRestaurant  Commande[]
@@ -888,9 +938,31 @@ model User {
   depot            Depot?                  @relation(fields: [depotId], references: [id])
   tenant           Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   ventesCreees     Vente[]                 @relation("VenteCreateur")
+  clientsGeres     Client[]                @relation("ClientCommercial")
+
+  depotsAcces UserDepot[]
 
   @@index([tenantId])
   @@index([depotId])
+}
+
+/// Affectation multi-établissements (§13 de la matrice d'accès) : permet à un
+/// utilisateur (ex. comptable central, gérant multi-sites) d'accéder à
+/// plusieurs dépôts du tenant. `User.depotId` reste le dépôt par défaut
+/// (session active au login) ; les lignes ici élargissent le périmètre.
+model UserDepot {
+  id        String   @id @default(uuid())
+  userId    String
+  depotId   String
+  tenantId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  depot     Depot    @relation(fields: [depotId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, depotId])
+  @@index([depotId])
+  @@index([tenantId])
 }
 
 /// Permissions granulaires (role × métier × sous-module). Deny-by-default :
@@ -905,6 +977,21 @@ model Permission {
   canWrite   Boolean @default(false)
 
   @@unique([role, metier, sousModule])
+}
+
+/// Permissions d'ACTION fines (§14 matrice) : distinguent les actions
+/// sensibles (ventes.annuler, caisse.fermer, stock.ajuster…) d'une écriture
+/// normale. Deny-by-default : action absente pour un rôle = refusée.
+/// PATRON/GERANT/ADMIN sont gérés en code (PermissionService).
+model ActionPermission {
+  id      String  @id @default(cuid())
+  role    Role
+  metier  String // "supermarche" | "boutique" | "depot"
+  action  String // slug point, ex: "ventes.annuler", "caisse.fermer"
+  allowed Boolean @default(false)
+
+  @@unique([role, metier, action])
+  @@index([action])
 }
 
 model Depot {
@@ -937,6 +1024,7 @@ model Depot {
   transfertsDest        TransfertStock[]        @relation("TransfertDest")
   transfertsSource      TransfertStock[]        @relation("TransfertSource")
   tricycles             Tricycle[]
+  affectationsUsers     UserDepot[]
   users                 User[]
   ventes                Vente[]
 
@@ -2213,6 +2301,10 @@ enum NotifType {
   TENTATIVE_ECHEC
   ALERTE_PREDICTIVE
   RAPPORT_JOURNALIER
+  /// Alerte de renouvellement de token Meta BISU (contrainte n°9 / fait vérifié n°14).
+  /// Le token BISU 60 jours n'est PAS renouvelable par API — le commerçant doit
+  /// repasser par l'Embedded Signup. Ce type déclenche la bannière dashboard.
+  META_TOKEN_EXPIRING
 }
 
 enum NotifCategory {
@@ -2255,7 +2347,16 @@ enum DeliveryStatus {
 
 enum PaymentStatus {
   PENDING
+  /// Statut CANONIQUE d'un paiement abouti (PARTIE 3, contrainte 5).
   SUCCESS
+  /// @deprecated Doublon historique de SUCCESS — ne JAMAIS écrire dans une
+  /// nouvelle ligne. La valeur est conservée car les enums Postgres ne se
+  /// suppriment pas proprement tant que des lignes y font référence. La
+  /// migration `20260917000000_canonicalize_payment_status` réaffecte les
+  /// lignes COMPLETED existantes vers SUCCESS ; le retrait définitif de la
+  /// valeur est prévu après vérification (checklist décommissionnement,
+  /// docs/PAYMENTS_NOTCHPAY_MIGRATION.md). Lecture : réinterpréter COMPLETED
+  /// comme SUCCESS via common/utils/payment-status.utils.ts.
   COMPLETED
   FAILED
   REFUNDED
@@ -2265,6 +2366,12 @@ enum PaymentMethod {
   CASH
   ORANGE_MONEY
   MTN_MOMO
+  /// @deprecated Décommissionnement Stripe (PARTIE 1) : valeur historique
+  /// conservée car des lignes Payment y font référence (audit, facturation,
+  /// litiges — aucune donnée historique ne doit être réécrite). Ne JAMAIS
+  /// créer un nouveau paiement avec STRIPE : les cartes passent désormais
+  /// par NotchPay (channel 'card') via VISA_CARD / MASTERCARD, et la couche
+  /// service refuse toute création de paiement method=STRIPE.
   STRIPE
   VISA_CARD
   MASTERCARD
@@ -2533,4 +2640,124 @@ enum SupportMessageStatut {
   OUVERT
   EN_COURS
   TRAITE
+}
+
+// ============================================================================
+// CRM OMNICANAL
+// ----------------------------------------------------------------------------
+// Note de nommage importante : le modèle « Shop » du cahier des charges
+// correspond au modèle Tenant de GeStock (le client B2B abonné / le
+// commerçant). Le champ transmis dans le contrat HTTP reste `shopId` et vaut
+// toujours Tenant.id : c'est le contrat d'API demandé, mais aucun modèle
+// parallèle n'est créé, pour ne pas dupliquer le modèle de données existant.
+// ============================================================================
+
+enum CrmChannel {
+  WHATSAPP
+  INSTAGRAM
+  MESSENGER
+}
+
+/// Clé d'API machine-à-machine utilisée par l'orchestrateur IA (et/ou le
+/// récepteur de webhooks Meta) pour interroger le CRM.
+///
+/// Sécurité : la clé brute n'est JAMAIS persistée. Seule son empreinte
+/// HMAC-SHA256 avec un secret serveur (CRM_API_KEY_PEPPER) est stockée dans
+/// keyHash. Un dump de la base ne permet donc pas de rejouer les clés.
+/// keyPrefix conserve les premiers caractères en clair pour l'identification
+/// humaine en console et la révocation ciblée.
+model CrmApiKey {
+  id              String       @id @default(uuid())
+  label           String
+  keyPrefix       String
+  keyHash         String       @unique
+  isActive        Boolean      @default(true)
+  /// Canaux autorisés pour cette clé (moindre privilège : une clé dédiée au
+  /// canal WhatsApp n'a pas besoin de lire les identités Instagram).
+  /// Liste vide = tous les canaux du tenant. Règle explicite et documentée,
+  /// pas de privilège implicite caché.
+  allowedChannels CrmChannel[] @default([])
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  lastUsedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  tenantId        String
+  /// onDelete: Cascade — une clé d'API n'a aucun sens sans son tenant : la
+  /// suppression du compte B2B doit révoquer toutes ses clés d'accès.
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// INTÉGRATION META NATIVE (WhatsApp Cloud API / Instagram / Messenger)
+// ----------------------------------------------------------------------------
+// Une ligne = un canal Meta connecté par Embedded Signup (WhatsApp/WABA, fait
+// vérifié n°10) ou Facebook Login for Business (Pages/Instagram, même fait).
+// Relation 1-N vers Tenant : un commerçant peut connecter plusieurs numéros
+// WABA et/ou plusieurs Pages. Les identifiants d'extrémité (phoneNumberId,
+// facebookPageId, instagramPageId) sont uniques GLOBALEMENT : c'est la clé de
+// la résolution webhook → tenant (contrainte n°1, fait vérifié n°8) et elle
+// est portée par la base, pas par une convention applicative.
+//
+// Sécurité : le jeton d'accès n'est JAMAIS stocké en clair — uniquement dans
+// `encryptedAccessToken`, chiffré AES-256-GCM avec META_TOKEN_ENCRYPTION_KEY
+// (voir src/meta/services/token-crypto.service.ts). Un dump de la base ne
+// permet donc pas de rejouer une connexion Meta.
+// ============================================================================
+enum MetaChannel {
+  WHATSAPP
+  INSTAGRAM
+  MESSENGER
+}
+
+model MetaIntegration {
+  id                   String      @id @default(uuid())
+  tenantId             String
+  tenant               Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  channel              MetaChannel
+  wabaId               String?
+  phoneNumberId        String?     @unique
+  displayPhoneNumber   String?
+  instagramPageId      String?     @unique
+  facebookPageId       String?     @unique
+  /// Jeton chiffré AES-256-GCM : blob JSON `{ accessToken, registerPin? }`.
+  encryptedAccessToken String
+  /// Null si le template de configuration Embedded Signup utilisé produit un
+  /// jeton sans expiration (fait vérifié n°4 : durée NON garantie à 60 jours,
+  /// dépend du template choisi dans le dashboard Meta — à confirmer).
+  tokenExpiresAt       DateTime?
+  isActive             Boolean     @default(true)
+  /// Horodatage de la dernière vérification positive de l'abonnement webhook
+  /// (GET /{waba-id}/subscribed_apps — contrainte n°8). Null si non vérifié
+  /// ou si l'abonnement a été perdu depuis. Mis à jour à la connexion et par
+  /// le cron quotidien de surveillance (voir MetaTokenGuardService).
+  webhookSubscriptionVerifiedAt DateTime?
+  /// Suivi de validité (contrainte n°5) : alimenté par debug_token périodique
+  /// ou par l'interception des erreurs Graph 190.
+  lastCheckedAt        DateTime?
+  lastCheckStatus      String?
+  lastError            String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@index([tokenExpiresAt])
+}
+
+/// Journal de déduplication des notifications webhook Meta (contrainte n°7 :
+/// Meta peut re-livrer un même événement — fait vérifié n°9). L'unicité est
+/// portée par la base (eventId unique) : deux workers simultanés ne peuvent
+/// pas traiter deux fois la même notification, même en multi-instances.
+model MetaWebhookEvent {
+  id         String   @id @default(uuid())
+  eventId    String   @unique
+  sourceId   String
+  receivedAt DateTime @default(now())
+
+  @@index([receivedAt])
 }

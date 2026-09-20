@@ -19,7 +19,10 @@ export default function InventaireProductionPage() {
     queryKey: ['supermarche-inventaire-production', selectedDepotId, search],
     queryFn: async () => {
       const response = await api.get('/stocks/inventaire', {
-        params: search.trim() ? { search: search.trim() } : {},
+        params: { 
+          ...(search.trim() ? { search: search.trim() } : {}),
+          depotId: selectedDepotId,
+        },
       });
       return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
@@ -43,7 +46,11 @@ export default function InventaireProductionPage() {
         .map((row) => ({ articleId: row.articleId, quantiteComptee: Number(counts[row.articleId]) }));
 
       if (lignes.length === 0) throw new Error('Aucune quantité modifiée.');
-      return (await api.post('/stocks/inventaire', { motif: motif.trim() || undefined, lignes })).data;
+      return (await api.post('/stocks/inventaire', { 
+        motif: motif.trim() || undefined, 
+        lignes,
+        depotId: selectedDepotId,
+      })).data;
     },
     onSuccess: (result) => {
       setCounts({});

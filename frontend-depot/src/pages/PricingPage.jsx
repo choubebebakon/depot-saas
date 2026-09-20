@@ -1,8 +1,24 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { openNotchPayCheckout } from '../api/notchpayCheckout';
+import { redirectToNotchPayCheckout } from '../api/notchpayCheckout';
 import Icon from '../shared/components/Icon';
+import mtnMomoLogo from '../assets/mtn-momo.png';
+import orangeMoneyLogo from '../assets/orange-money.png';
+import visaLogo from '../assets/visa.svg';
+import mastercardLogo from '../assets/mastercard.svg';
+// PARTIE 1 : Stripe est décommissionné (plus d'import de son logo).
+// PARTIE 2 : la couverture pays/canaux vient de la config centralisée,
+// miroir de backend-depot/src/common/config/notchpay-channels.config.ts.
+import {
+  NOTCHPAY_COUNTRIES,
+  DEFAULT_COUNTRY_ISO2,
+  channelForMethod,
+  getCountryCoverage,
+  methodsForCountry,
+  normalizeMomoPhoneForCountry,
+  validateMomoPhoneForCountry,
+} from '../config/notchpayCountries';
 
 const TVA = 0.1925;
 
@@ -37,28 +53,22 @@ const PLANS = [
   },
 ];
 
+/**
+ * Méthodes de paiement proposées au commerçant.
+ * PARTIE 1 (décommissionnement Stripe) : l'entrée STRIPE est retirée — le
+ * commerçant n'a plus le choix d'un agrégateur carte distinct. Les cartes
+ * internationales passent désormais par NotchPay (canal 'card').
+ * ⚠️ Ne jamais réintroduire une méthode qui ne serait pas déclarée dans la
+ * config centralisée (NOTCHPAY_COUNTRIES), sinon le backend la refusera.
+ */
 const PAYMENT_METHODS = [
-  { id: 'MTN_MOMO', label: 'MTN MoMo', icon: 'Smartphone', color: '#FFC107', bg: 'rgba(255,193,7,0.12)', border: 'rgba(255,193,7,0.4)', requiresPhone: true },
-  { id: 'ORANGE_MONEY', label: 'Orange Money', icon: 'Circle', color: '#FF6B00', bg: 'rgba(255,107,0,0.12)', border: 'rgba(255,107,0,0.4)', requiresPhone: true },
-  { id: 'VISA_CARD', label: 'Visa', icon: 'CreditCard', color: '#1A73E8', bg: 'rgba(26,115,232,0.12)', border: 'rgba(26,115,232,0.4)', requiresPhone: false },
-  { id: 'MASTERCARD', label: 'Mastercard', icon: 'CreditCard', color: '#EB001B', bg: 'rgba(235,0,27,0.12)', border: 'rgba(235,0,27,0.4)', requiresPhone: false },
-  { id: 'STRIPE', label: 'Stripe', icon: 'Lock', color: '#635BFF', bg: 'rgba(99,91,255,0.12)', border: 'rgba(99,91,255,0.4)', requiresPhone: false },
+  { id: 'MTN_MOMO', label: 'MTN MoMo', logo: mtnMomoLogo, color: '#FFC107', bg: 'rgba(255,193,7,0.12)', border: 'rgba(255,193,7,0.4)', requiresPhone: true },
+  { id: 'ORANGE_MONEY', label: 'Orange Money', logo: orangeMoneyLogo, color: '#FF6B00', bg: 'rgba(255,107,0,0.12)', border: 'rgba(255,107,0,0.4)', requiresPhone: true },
+  { id: 'VISA_CARD', label: 'Visa', logo: visaLogo, color: '#1A73E8', bg: 'rgba(26,115,232,0.12)', border: 'rgba(26,115,232,0.4)', requiresPhone: false },
+  { id: 'MASTERCARD', label: 'Mastercard', logo: mastercardLogo, color: '#EB001B', bg: 'rgba(235,0,27,0.12)', border: 'rgba(235,0,27,0.4)', requiresPhone: false },
 ];
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
-const normalizePhone = (phone) => {
-  if (!phone) return null;
-  const cleaned = phone.replace(/\D/g, '');
-  return cleaned.startsWith('237') ? cleaned : '237' + cleaned;
-};
-
-const NOTCHPAY_CHANNELS = {
-  MTN_MOMO: 'mtn',
-  ORANGE_MONEY: 'orange',
-  VISA_CARD: 'card',
-  MASTERCARD: 'card',
-  STRIPE: 'card',
-};
 
 export default function PricingPage() {
   const navigate = useNavigate();
@@ -66,9 +76,14 @@ export default function PricingPage() {
   const [cycle, setCycle] = useState('MONTHLY');
   const [modal, setModal] = useState(null); // { plan, method }
   const [phone, setPhone] = useState('');
+  // PARTIE 2/4 : pays de paiement, piloté par la config centralisée
+  // (sélecteur construit depuis NOTCHPAY_COUNTRIES — fail-closed).
+  const [country, setCountry] = useState(DEFAULT_COUNTRY_ISO2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [awaited, setAwaited] = useState(false); // en attente / redirection vers NotchPay
+  const [redirecting, setRedirecting] = useState(false); // redirection vers la page hébergée
   const [step, setStep] = useState(1); // 1=method, 2=confirm
 
   const price = (p) => cycle === 'MONTHLY' ? p.monthly : p.annual;
@@ -76,15 +91,31 @@ export default function PricingPage() {
 
   const openModal = (plan, method) => {
     setModal({ plan, method });
-    setPhone(''); setError(''); setSuccess(''); setStep(1);
+    setPhone(''); setError(''); setSuccess(''); setAwaited(false); setStep(1);
+    setCountry(DEFAULT_COUNTRY_ISO2);
   };
 
-  const closeModal = () => { setModal(null); setStep(1); };
+  const closeModal = () => { setModal(null); setStep(1); setAwaited(false); };
 
   const handleDirectPayment = async (plan, method, phoneNumber) => {
     const p = price(plan);
     const { ttc: total } = ttc(p);
-    const channel = NOTCHPAY_CHANNELS[method.id] || 'card';
+
+    // GARDE-FOU (frontend, pas de sécurité — le backend revalide) :
+    // la méthode doit être réellement servie par NotchPay dans ce pays
+    // (config centralisée, fail-closed).
+    if (!methodsForCountry(country).includes(method.id)) {
+      setError(`Méthode ${method.label} indisponible pour ce pays.`);
+      return;
+    }
+
+    // Le canal NotchPay est dérivé de la MÊME config centralisée :
+    // plus de table de correspondance dupliquée dans la page.
+    const channel = channelForMethod(country, method.id);
+    if (!channel) {
+      setError(`Canal de paiement indisponible pour ${method.label}.`);
+      return;
+    }
 
     setLoading(true); setError('');
     try {
@@ -94,7 +125,12 @@ export default function PricingPage() {
         method: method.id,
         channel,
         amount: total,
-        momoPhoneNumber: normalizePhone(phoneNumber), // Utilisation du normalisateur
+        // PARTIE 2/3 : normalisation pilotée par la config centralisée
+        // (indicatif international sans '+'), au lieu du '237' en dur.
+        country,
+        momoPhoneNumber: method.requiresPhone
+          ? normalizeMomoPhoneForCountry(country, phoneNumber)
+          : undefined,
       });
 
       const checkout = res.data?.checkout ?? {
@@ -105,34 +141,44 @@ export default function PricingPage() {
         channel,
       };
 
-      if (res.data?.stripeClientSecret) {
-        navigate('/payment-card', { state: { clientSecret: res.data.stripeClientSecret } });
-        return;
-      }
-
-      await openNotchPayCheckout(checkout, {
-        onSuccess: () => {
-          setSuccess('Paiement confirmé. Redirection vers GeStock...');
-          // REDIRECTION AUTOMATIQUE VERS ONBOARDING
-          setTimeout(() => { 
-            closeModal();
-            navigate('/onboarding/metier'); 
-          }, 1500);
-        },
-        onFailure: () => setError('Paiement refusé ou annulé.'),
-        onClose: () => setLoading(false),
-      });
+      // PARTIE 1 : plus de branche Stripe (stripeClientSecret) — Stripe est
+      // décommissionné, tous les canaux cartes passent par NotchPay.
+      //
+      // FLUX OFFICIEL NOTCHPAY (« Collect », fait vérifié) : la page de paiement
+      // est HÉBERGÉE par NotchPay. Aucun SDK JavaScript navigateur n'existe
+      // (`checkout.notchpay.co/script.js` → ERR_CONNECTION_RESET constaté).
+      // On redirige donc vers `authorization_url` renvoyée par le backend.
+      setRedirecting(true);
+      setSuccess(
+        'Redirection vers la page de paiement sécurisée NotchPay…',
+      );
+      redirectToNotchPayCheckout(checkout);
     } catch (e) {
-      setError(e.response?.data?.message || 'Erreur lors du paiement');
+      setRedirecting(false);
+      setError(e.response?.data?.message || e.message || 'Erreur lors du paiement');
     } finally { setLoading(false); }
   };
 
   const handlePay = async () => {
     if (!modal) return;
     const m = PAYMENT_METHODS.find(x => x.id === modal.method);
-    if (m?.requiresPhone && (!phone || phone.length < 9)) {
-      setError('Numero invalide (min. 9 chiffres)'); return;
+    if (m?.requiresPhone) {
+      // Validation alignée sur la config centralisée (et non plus ">= 9 chiffres").
+      if (!validateMomoPhoneForCountry(country, phone)) {
+        const c = getCountryCoverage(country);
+        setError(
+          c
+            ? `Numéro invalide pour ${c.name} (format attendu : ${c.dialCode} suivi de 9 chiffres).`
+            : 'Pays non couvert par NotchPay.',
+        );
+        return;
+      }
     }
+    // Le push USSD est déclenché par l'OPÉRATEUR après la saisie du numéro sur
+    // la page hébergée NotchPay : on ne prétend donc pas qu'il est « déjà
+    // envoyé ». Aucune attente bloquante côté serveur (contrainte 12) ;
+    // l'activation reste pilotée par le webhook signé (contrainte 9).
+    setAwaited(true);
     await handleDirectPayment(modal.plan, m, phone);
   };
 
@@ -512,28 +558,34 @@ export default function PricingPage() {
                     {/* Mobile Money */}
                     <p style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, margin: 0 }}>Mobile Money</p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      {PAYMENT_METHODS.filter(m => m.requiresPhone).map(m => (
+                      {PAYMENT_METHODS.filter(m => m.requiresPhone && methodsForCountry(DEFAULT_COUNTRY_ISO2).includes(m.id)).map(m => (
                         <button key={m.id} onClick={() => openModal(plan, m.id)} className="pay-btn" style={{
                           padding: '12px 8px', borderRadius: 12, background: m.bg, border: `1px solid ${m.border}`,
                           color: m.color, fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                         }}>
-                          <Icon name={m.icon} size={16} /> {m.label}
+                          <img src={m.logo} alt={m.label} style={{ width: 24, height: 24, objectFit: 'contain' }} /> {m.label}
                         </button>
                       ))}
                     </div>
-                    {/* Card */}
-                    <p style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, margin: '4px 0 0' }}>Carte bancaire</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                      {PAYMENT_METHODS.filter(m => !m.requiresPhone).map(m => (
-                        <button key={m.id} onClick={() => openModal(plan, m.id)} className="pay-btn" style={{
-                          padding: '12px 4px', borderRadius: 12, background: m.bg, border: `1px solid ${m.border}`,
-                          color: m.color, fontWeight: 700, fontSize: 11, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                        }}>
-                          <Icon name={m.icon} size={18} />
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
+                    {/* FAIT VALIDÉ n°6 : canal 'card' inactif sur le compte
+                        NotchPay LIVE (GET /channels) → section masquée tant
+                        que la config centralisée ne liste pas la carte. */}
+                    {methodsForCountry(DEFAULT_COUNTRY_ISO2).some(id => id === 'VISA_CARD' || id === 'MASTERCARD') && (
+                      <>
+                        <p style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, margin: '4px 0 0' }}>Carte bancaire</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          {PAYMENT_METHODS.filter(m => !m.requiresPhone && methodsForCountry(DEFAULT_COUNTRY_ISO2).includes(m.id)).map(m => (
+                            <button key={m.id} onClick={() => openModal(plan, m.id)} className="pay-btn" style={{
+                              padding: '12px 4px', borderRadius: 12, background: m.bg, border: `1px solid ${m.border}`,
+                              color: m.color, fontWeight: 700, fontSize: 11, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                            }}>
+                              <img src={m.logo} alt={m.label} style={{ width: 32, height: 20, objectFit: 'contain' }} />
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -545,18 +597,28 @@ export default function PricingPage() {
         <div style={{ textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: 48 }}>
           <p style={{ color: '#64748b', fontSize: 13, fontWeight: 600, marginBottom: 24, textTransform: 'uppercase', letterSpacing: 1 }}>Paiements sécurisés via</p>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
-            {[
-              { label: 'MTN MoMo', bg: '#FFC107', color: '#000', text: 'M' },
-              { label: 'Orange Money', bg: '#FF6B00', color: '#fff', text: 'O' },
-              { label: 'Visa', bg: '#1A73E8', color: '#fff', text: 'VISA' },
-              { label: 'Mastercard', bg: 'linear-gradient(135deg, #EB001B, #F79E1B)', color: '#fff', text: 'MC' },
-              { label: 'Stripe', bg: '#635BFF', color: '#fff', text: 'S' },
-            ].map(b => (
-              <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: b.bg, color: b.color, fontWeight: 900, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{b.text}</div>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{b.label}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
+              <img src={mtnMomoLogo} alt="MTN MoMo" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>MTN MoMo</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
+              <img src={orangeMoneyLogo} alt="Orange Money" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Orange Money</span>
+            </div>
+            {/* FAIT VALIDÉ n°6 : badges carte affichés seulement si le canal
+                'card' est réellement actif sur le compte NotchPay. */}
+            {methodsForCountry(DEFAULT_COUNTRY_ISO2).includes('VISA_CARD') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
+                <img src={visaLogo} alt="Visa" style={{ width: 50, height: 32, objectFit: 'contain' }} />
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Visa</span>
               </div>
-            ))}
+            )}
+            {methodsForCountry(DEFAULT_COUNTRY_ISO2).includes('MASTERCARD') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
+                <img src={mastercardLogo} alt="Mastercard" style={{ width: 50, height: 32, objectFit: 'contain' }} />
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Mastercard</span>
+              </div>
+            )}
           </div>
           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
             {[
@@ -586,8 +648,8 @@ export default function PricingPage() {
             }}>
               {/* Modal header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: m.bg, border: `1px solid ${m.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                  <Icon name={m.icon} size={28} />
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: m.bg, border: `1px solid ${m.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
+                  <img src={m.logo} alt={m.label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, color: '#fff', fontSize: 22, fontWeight: 900 }}>Payer via {m.label}</h3>
@@ -611,6 +673,34 @@ export default function PricingPage() {
                 </div>
               </div>
 
+              {/* PARTIE 2/4 : sélecteur de pays piloté par la config centralisée */}
+              <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+                    Pays de paiement
+                  </label>
+                  <select
+                    value={country}
+                    onChange={e => { setCountry(e.target.value); setError(''); setSuccess(''); setAwaited(false); }}
+                    style={{
+                      width: '100%', boxSizing: 'border-box', padding: '14px 16px',
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 14, color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'inherit',
+                    }}
+                  >
+                    {NOTCHPAY_COUNTRIES.map(c => (
+                      <option key={c.iso2} value={c.iso2} style={{ background: '#0b0b18' }}>
+                        {c.flag ? `${c.flag} ` : ''}{c.name} ({c.currency})
+                      </option>
+                    ))}
+                  </select>
+                  {/* Sécurité UX : on n'affiche pas de pays non confirmé côté NotchPay. */}
+                  <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 11 }}>
+                    {NOTCHPAY_COUNTRIES.length === 1
+                      ? 'Seul le Cameroun est confirmé sur le compte NotchPay à ce jour.'
+                      : `${NOTCHPAY_COUNTRIES.length} pays confirmés sur le compte NotchPay.`}
+                  </p>
+                </div>
+
               {/* Phone input for mobile money */}
               {m.requiresPhone && (
                 <div style={{ marginBottom: 24 }}>
@@ -623,15 +713,31 @@ export default function PricingPage() {
                       type="tel"
                       value={phone}
                       onChange={e => setPhone(e.target.value)}
-                      placeholder="6XX XXX XXX"
+                      placeholder={getCountryCoverage(country)?.phonePlaceholder || 'Numéro local'}
                       style={{
                         width: '100%', boxSizing: 'border-box', paddingLeft: 44, paddingRight: 16, paddingTop: 14, paddingBottom: 14,
-                        background: 'rgba(255,255,255,0.05)', border: `1px solid ${phone.length >= 9 ? m.border : 'rgba(255,255,255,0.1)'}`,
+                        background: 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${validateMomoPhoneForCountry(country, phone) ? m.border : 'rgba(255,255,255,0.1)'}`,
                         borderRadius: 14, color: '#fff', fontSize: 16, outline: 'none', transition: 'border 0.2s',
                         fontFamily: 'inherit', letterSpacing: 1,
                       }}
                     />
                   </div>
+                  {/*
+                    COPY HONNÊTE (contrainte 13) : le push USSD est déclenché par
+                    l'OPÉRATEUR (ou NotchPay) APRÈS la saisie du numéro sur leur
+                    page hébergée, et son libellé n'est PAS personnalisable côté
+                    GesTock. On décrit donc l'enchaînement réel sans promettre de
+                    texte exact.
+                  */}
+                  <p style={{ margin: '8px 0 0', color: '#94a3b8', fontSize: 12, lineHeight: 1.6 }}>
+                    À l'étape suivante, vous serez redirigé vers la page de paiement
+                    sécurisée NotchPay : choisissez-y Mobile Money (MTN MoMo ou
+                    Orange Money), saisissez ce numéro, puis confirmez avec le code
+                    confidentiel reçu par message de votre opérateur. Le libellé
+                    exact de ce message est défini par l'opérateur (non modifiable
+                    par GesTock).
+                  </p>
                 </div>
               )}
 
@@ -639,8 +745,19 @@ export default function PricingPage() {
                 <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 16, marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <Icon name="Lock" size={20} />
                   <p style={{ margin: 0, color: '#94a3b8', fontSize: 13, lineHeight: 1.6 }}>
-                    Vous serez redirigé vers la page de paiement sécurisée {m.label} pour entrer vos données bancaires.
+                    Paiement carte (Visa / Mastercard) via NotchPay. Vous serez redirigé vers la page sécurisée de l'agrégateur pour saisir vos données bancaires.
                   </p>
+                </div>
+              )}
+
+              {/* Redirection vers la page hébergée NotchPay (aucune attente
+                  bloquante côté serveur — contrainte 12). */}
+              {awaited && (
+                <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#93c5fd', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="Clock" size={16} />
+                  {redirecting
+                    ? 'Redirection vers la page de paiement sécurisée NotchPay…'
+                    : 'Préparation du paiement sécurisé…'}
                 </div>
               )}
 

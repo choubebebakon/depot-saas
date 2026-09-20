@@ -7,6 +7,8 @@ export interface ScopeContext {
   role: string | null;
   requestId?: string | null;
   metier?: string | null;
+  /** Utilisateur authentifié (§7 : périmètre individuel des commerciaux). */
+  userId?: string | null;
 }
 
 const EMPTY_SCOPE: ScopeContext = {
@@ -51,6 +53,21 @@ export class DepotScopeService {
 
   getMetier(): string | null {
     return this.getScope().metier ?? null;
+  }
+
+  /** Identifiant de l'utilisateur authentifié (§7 : « mes clients/mes ventes »). */
+  getUserId(): string | null {
+    return this.getScope().userId ?? null;
+  }
+
+  /**
+   * Vrai si l'utilisateur courant est un COMMERCIAL avec un périmètre
+   * individuel : ses listes de clients/ventes sont restreintes à son
+   * portefeuille (§7 de la matrice d'accès).
+   */
+  isCommercial(): boolean {
+    const scope = this.getScope();
+    return scope.role === 'COMMERCIAL' && !!scope.userId;
   }
 
   /**

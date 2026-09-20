@@ -12,9 +12,7 @@ export const ANNUAL_DISCOUNT_RATE = 0.17;
 
 const TVA_RATE = 0.1925;
 
-export function normalizeBillingCycle(
-  cycle: string,
-): BillingCycle {
+export function normalizeBillingCycle(cycle: string): BillingCycle {
   const upper = cycle?.toUpperCase();
   if (upper === 'ANNUAL' || upper === 'YEARLY') return BillingCycle.YEARLY;
   return BillingCycle.MONTHLY;

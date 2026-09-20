@@ -49,7 +49,42 @@ describe('PermissionService', () => {
     expect(prisma.permission.findUnique).not.toHaveBeenCalled();
   });
 
-  it('GERANT a accès total ailleurs', async () => {
+  it('GERANT est refusé sur abonnement (lecture et écriture réservées au PATRON)', async () => {
+    const read = await service.canAccess(
+      Role.GERANT,
+      metier,
+      'abonnement',
+      'read',
+    );
+    const write = await service.canAccess(
+      Role.GERANT,
+      metier,
+      'abonnement',
+      'write',
+    );
+    expect(read.allowed).toBe(false);
+    expect(write.allowed).toBe(false);
+    expect(prisma.permission.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('PATRON a accès à abonnement', async () => {
+    const read = await service.canAccess(
+      Role.PATRON,
+      metier,
+      'abonnement',
+      'read',
+    );
+    expect(read.allowed).toBe(true);
+  });
+
+  it('getPermissionsForUser renvoie denySousModules avec audit_patron et abonnement pour GERANT', async () => {
+    const perms = await service.getPermissionsForUser(Role.GERANT, metier);
+    expect(perms.fullAccess).toBe(true);
+    expect(perms.denySousModules).toContain('audit_patron');
+    expect(perms.denySousModules).toContain('abonnement');
+  });
+
+  it('GERANT a accès opérationnel sur les modules métier', async () => {
     const result = await service.canAccess(
       Role.GERANT,
       metier,
@@ -73,9 +108,7 @@ describe('PermissionService', () => {
 
   it('CAISSIER reçoit 403 logique hors allow-list (deny-by-default)', async () => {
     prisma.permission.findUnique.mockResolvedValue(null);
-    prisma.permission.findMany.mockResolvedValue([
-      { role: Role.MAGASINIER },
-    ]);
+    prisma.permission.findMany.mockResolvedValue([{ role: Role.MAGASINIER }]);
 
     const denied = await service.canAccess(
       Role.CAISSIER,
@@ -123,5 +156,112 @@ describe('PermissionService', () => {
     );
     expect(read.allowed).toBe(true);
     expect(write.allowed).toBe(false);
+  });
+
+  // ── §3/§23 — GERANT ≠ admin tenant ────────────────────────────────────────
+  it('GERANT est refusé sur depots (administration tenant)', async () => {
+    const read = await service.canAccess(Role.GERANT, metier, 'depots', 'read');
+    const write = await service.canAccess(
+      Role.GERANT,
+      metier,
+      'depots',
+      'write',
+    );
+    expect(read.allowed).toBe(false);
+    expect(write.allowed).toBe(false);
+    expect(prisma.permission.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('GERANT garde ses accès opérationnels (ventes, rapports, utilisateurs, parametres)', async () => {
+    for (const sousModule of ['ventes', 'rapports', 'utilisateurs', 'parametres']) {
+      const result = await service.canAccess(
+        Role.GERANT,
+        metier,
+        sousModule,
+        'read',
+      );
+      expect(result.allowed).toBe(true);
+    }
+  });
+
+  it('getPermissionsForUser GERANT inclut depots dans denySousModules', async () => {
+    const perms = await service.getPermissionsForUser(Role.GERANT, metier);
+    expect(perms.denySousModules).toEqual(
+      expect.arrayContaining(['audit_patron', 'abonnement', 'depots']),
+    );
+  });
+
+  // ── §10 — granularité des rapports ───────────────────────────────────────
+  it('CAISSIER : rapports refusé (deny-by-default, aucune ligne seedée)', async () => {
+    prisma.permission.findUnique.mockResolvedValue(null);
+    const result = await service.canAccess(
+      Role.CAISSIER,
+      metier,
+      'rapports',
+      'read',
+    );
+    expect(result.allowed).toBe(false);
+  });
+
+  it('COMMERCIAL : rapports refusé, rapports_performance accordé', async () => {
+    prisma.permission.findUnique.mockImplementation(
+      (_args: any) => Promise.resolve(null),
+    );
+    const denied = await service.canAccess(
+      Role.COMMERCIAL,
+      metier,
+      'rapports',
+      'read',
+    );
+    expect(denied.allowed).toBe(false);
+
+    prisma.permission.findUnique.mockResolvedValue({
+      canRead: true,
+      canWrite: false,
+    });
+    const allowed = await service.canAccess(
+      Role.COMMERCIAL,
+      metier,
+      'rapports_performance',
+      'read',
+    );
+    expect(allowed.allowed).toBe(true);
+  });
+
+  it('MAGASINIER : rapports_stock accordé, rapports refusé', async () => {
+    prisma.permission.findUnique.mockResolvedValue(null);
+    const denied = await service.canAccess(
+      Role.MAGASINIER,
+      metier,
+      'rapports',
+      'read',
+    );
+    expect(denied.allowed).toBe(false);
+
+    prisma.permission.findUnique.mockResolvedValue({
+      canRead: true,
+      canWrite: false,
+    });
+    const allowed = await service.canAccess(
+      Role.MAGASINIER,
+      metier,
+      'rapports_stock',
+      'read',
+    );
+    expect(allowed.allowed).toBe(true);
+  });
+
+  it('COMPTABLE : rapports financiers accordés (lecture + écriture seedées)', async () => {
+    prisma.permission.findUnique.mockResolvedValue({
+      canRead: true,
+      canWrite: true,
+    });
+    const result = await service.canAccess(
+      Role.COMPTABLE,
+      metier,
+      'rapports',
+      'read',
+    );
+    expect(result.allowed).toBe(true);
   });
 });

@@ -5,11 +5,13 @@ import { usePagination } from '../../../hooks/usePagination';
 import { useNotif } from '../../../context/NotifContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../api/axios';
+import { useDepot } from '../../../contexts/DepotContext';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
 import { usePermission } from '../../../shared/hooks/usePermission';
 import { PERMISSIONS } from '../permissions';
 import VenteBoutiqueForm from '../forms/VenteBoutiqueForm';
 import Receipt80mm from '../../../components/Receipt80mm';
+import { usePrintFacture } from '../components/FacturePrint';
 import { boutiqueApi } from '../services/boutiqueApi';
 import { Search } from 'lucide-react';
 export default function VentesPage() {
@@ -24,13 +26,18 @@ export default function VentesPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [printData, setPrintData] = useState(null);
+  const { print: printFacture, printingId, factureNode } = usePrintFacture();
 
   const [edit, setEdit] = useState(null);
 
   const { success, error: notifError } = useNotif();
 
   const perm = usePermission(PERMISSIONS, 'ventes');
-  const { data: itemsData = [], loading, refetch } = useData(`/${prefix}/ventes`, { enabled: true });
+  const { depotId } = useDepot();
+  const { data: itemsData = [], loading, refetch } = useData(`/${prefix}/ventes`, {
+    enabled: true,
+    refetchInterval: 5000,
+  });
   const items = Array.isArray(itemsData?.data) ? itemsData.data : (Array.isArray(itemsData) ? itemsData : []);
 
   const totalCA = items.reduce((acc, i) => acc + (i.montant || 0), 0);
@@ -85,7 +92,7 @@ export default function VentesPage() {
       let tenantConfig = {};
       if (tenantId) {
         try {
-          const t = await api.get(`/tenants/${tenantId}`);
+          const t = await api.get('/tenant/info');
           tenantConfig = t.data || {};
         } catch(e) {}
       }
@@ -130,7 +137,7 @@ export default function VentesPage() {
                   <td className="px-5 py-4 text-right text-green-400 font-bold font-mono">{((i.prixUnitaire || 0) * (i.quantite || 0)).toLocaleString('fr-FR')} F</td>
                   <td className="px-5 py-4 text-slate-300">{i.client || ''}</td>
                   <td className="px-5 py-4 text-slate-300 text-sm">{i.createdAt ? new Date(i.createdAt).toLocaleDateString('fr-FR') : ''}</td>
-                  <td className="px-5 py-4 text-center"><div className="flex justify-center gap-1"><button onClick={() => handlePrint(i.id)} className="text-slate-400 hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm">🖨️ Ticket</button>{perm.canEdit && <button onClick={() => { setEditItem(i); setFormOpen(true); }} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm">✏️ Modifier</button>}{perm.canDelete && <button onClick={() => setConfirmDelete(i)} className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm">🗑️ Supprimer</button>}</div></td>
+                  <td className="px-5 py-4 text-center"><div className="flex justify-center gap-1"><button onClick={() => handlePrint(i.id)} className="text-slate-400 hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm">🖨️ Ticket</button>{i.statut !== 'ANNULEE' && i.statut !== 'ANNULE' && <button onClick={() => printFacture(i.id)} disabled={printingId === i.id} title="Imprimer la facture A4" className="text-slate-400 hover:text-cyan-400 p-1.5 rounded-lg hover:bg-slate-700 text-xs font-bold disabled:opacity-50">Facture</button>}{perm.canEdit && <button onClick={() => { setEditItem(i); setFormOpen(true); }} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 text-sm">✏️ Modifier</button>}{perm.canDelete && <button onClick={() => setConfirmDelete(i)} className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-700 text-sm">🗑️ Supprimer</button>}</div></td>
                 </tr>
               ))}
             </tbody>
@@ -143,9 +150,10 @@ export default function VentesPage() {
           )}
         </div>
       )}
-      {formOpen && <VenteBoutiqueForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { success(editItem ? 'Vente modifiée ?' : 'Vente cre ?'); refetch(); }} edit={editItem} />}
+      {formOpen && <VenteBoutiqueForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => { success(editItem ? 'Vente modifiée ?' : 'Vente cre ?'); refetch(); }} edit={editItem} depotId={depotId} />}
       {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} title="Supprimer la vente" message={`tes-vous sr de vouloir suppriméer la vente "${confirmDelete.produit}" ?`} />}
       <Receipt80mm vente={printData?.vente} config={printData?.config} />
+      {factureNode}
     </div>
   );
 }

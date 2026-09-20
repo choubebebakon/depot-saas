@@ -11,12 +11,16 @@ function resolveRealtimeUrl() {
 export function connectSuperAdminRealtime({ token, onEvent, onStatus, onError } = {}) {
   if (!token) return null;
 
+  const isDev = import.meta.env.DEV;
+
   const socket = io(`${resolveRealtimeUrl()}/realtime`, {
     auth: { token },
     transports: ['websocket', 'polling'],
     withCredentials: true,
     reconnection: true,
-    reconnectionAttempts: Infinity,
+    // En développement, limiter les tentatives pour éviter le spam console
+    // quand le backend n'est pas démarré. En production, reconnexion infinie.
+    reconnectionAttempts: isDev ? 5 : Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 10000,
     timeout: 10000,

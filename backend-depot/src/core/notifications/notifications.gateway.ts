@@ -15,13 +15,26 @@ interface JwtPayload {
   [key: string]: unknown;
 }
 
-function getAllowedOrigins(): string[] | string {
-  const configured = process.env.FRONTEND_URL?.split(',')
+function getAllowedOrigins(): string[] {
+  const configured = (process.env.FRONTEND_URLS ?? process.env.FRONTEND_URL ?? '')
+    .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  if (configured?.length) return configured;
-  return process.env.NODE_ENV === 'production' ? [] : '*';
+  if (configured.length > 0) return configured;
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Configuration de production invalide: FRONTEND_URLS doit contenir au moins une origine frontend autorisée pour le gateway Notifications.',
+    );
+  }
+
+  return [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ];
 }
 
 @WebSocketGateway({
@@ -71,7 +84,8 @@ export class NotificationsGateway
       }
 
       const currentLimit =
-        Number.isFinite(this.maxConnectionsPerTenant) && this.maxConnectionsPerTenant > 0
+        Number.isFinite(this.maxConnectionsPerTenant) &&
+        this.maxConnectionsPerTenant > 0
           ? this.maxConnectionsPerTenant
           : 100;
       const tenantCount = this.tenantConnections.get(tenantId)?.size || 0;

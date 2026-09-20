@@ -14,7 +14,10 @@ import { PrismaService } from '../../prisma.service';
 export class AuditSafetyInterceptor implements NestInterceptor {
   constructor(private readonly prisma: PrismaService) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<any>> {
     const req = context.switchToHttp().getRequest();
     const path = String(req.originalUrl || req.path || '');
     if (!path.includes('/audit/')) return next.handle();
@@ -26,54 +29,92 @@ export class AuditSafetyInterceptor implements NestInterceptor {
     const query = req.query ?? {};
     const tenantId = String(req.user.tenantId);
 
-    if (query.depotId !== undefined && query.depotId !== null && String(query.depotId).trim()) {
+    if (
+      query.depotId !== undefined &&
+      query.depotId !== null &&
+      String(query.depotId).trim()
+    ) {
       const depotId = String(query.depotId).trim();
       const depot = await this.prisma.depot.findFirst({
         where: { id: depotId, tenantId, isArchived: false },
         select: { id: true },
       });
-      if (!depot) throw new ForbiddenException('Dépôt non autorisé pour ce tenant.');
+      if (!depot)
+        throw new ForbiddenException('Dépôt non autorisé pour ce tenant.');
       query.depotId = depot.id;
     } else {
       delete query.depotId;
     }
 
-    const validateDate = (value: unknown, field: string): string | undefined => {
-      if (value === undefined || value === null || String(value).trim() === '') return undefined;
+    const validateDate = (
+      value: unknown,
+      field: string,
+    ): string | undefined => {
+      if (value === undefined || value === null || String(value).trim() === '')
+        return undefined;
       const raw = String(value).trim();
       const date = new Date(raw);
-      if (Number.isNaN(date.getTime())) throw new BadRequestException(`${field} est invalide.`);
+      if (Number.isNaN(date.getTime()))
+        throw new BadRequestException(`${field} est invalide.`);
       return raw;
     };
 
     const startDate = validateDate(query.startDate, 'startDate');
     const endDate = validateDate(query.endDate, 'endDate');
-    if (startDate && endDate && new Date(startDate).getTime() > new Date(endDate).getTime()) {
-      throw new BadRequestException('La date de début doit précéder la date de fin.');
+    if (
+      startDate &&
+      endDate &&
+      new Date(startDate).getTime() > new Date(endDate).getTime()
+    ) {
+      throw new BadRequestException(
+        'La date de début doit précéder la date de fin.',
+      );
     }
     if (startDate) query.startDate = startDate;
     else delete query.startDate;
     if (endDate) query.endDate = endDate;
     else delete query.endDate;
 
-    const validateEnum = <T extends string>(value: unknown, field: string, allowed: readonly T[]): T | undefined => {
-      if (value === undefined || value === null || String(value).trim() === '') return undefined;
+    const validateEnum = <T extends string>(
+      value: unknown,
+      field: string,
+      allowed: readonly T[],
+    ): T | undefined => {
+      if (value === undefined || value === null || String(value).trim() === '')
+        return undefined;
       const normalized = String(value).trim();
-      if (!allowed.includes(normalized as T)) throw new BadRequestException(`${field} est invalide.`);
+      if (!allowed.includes(normalized as T))
+        throw new BadRequestException(`${field} est invalide.`);
       return normalized as T;
     };
 
-    const severite = validateEnum(query.severite, 'severite', Object.values(AuditSeverite));
-    const resultat = validateEnum(query.resultat, 'resultat', Object.values(AuditResultat));
+    const severite = validateEnum(
+      query.severite,
+      'severite',
+      Object.values(AuditSeverite),
+    );
+    const resultat = validateEnum(
+      query.resultat,
+      'resultat',
+      Object.values(AuditResultat),
+    );
     if (severite) query.severite = severite;
     else delete query.severite;
     if (resultat) query.resultat = resultat;
     else delete query.resultat;
 
-    const validateNumber = (value: unknown, field: string): number | undefined => {
-      if (value === undefined || value === null || String(value).trim() === '') return undefined;
+    const validateNumber = (
+      value: unknown,
+      field: string,
+    ): number | undefined => {
+      if (value === undefined || value === null || String(value).trim() === '')
+        return undefined;
       const number = Number(String(value).trim().replace(',', '.'));
-      if (!Number.isFinite(number) || number < 0 || number > 1_000_000_000_000) {
+      if (
+        !Number.isFinite(number) ||
+        number < 0 ||
+        number > 1_000_000_000_000
+      ) {
         throw new BadRequestException(`${field} est invalide.`);
       }
       return number;
@@ -81,13 +122,21 @@ export class AuditSafetyInterceptor implements NestInterceptor {
 
     const montantMin = validateNumber(query.montantMin, 'montantMin');
     const montantMax = validateNumber(query.montantMax, 'montantMax');
-    if (montantMin !== undefined && montantMax !== undefined && montantMin > montantMax) {
-      throw new BadRequestException('montantMin doit être inférieur ou égal à montantMax.');
+    if (
+      montantMin !== undefined &&
+      montantMax !== undefined &&
+      montantMin > montantMax
+    ) {
+      throw new BadRequestException(
+        'montantMin doit être inférieur ou égal à montantMax.',
+      );
     }
 
     const limitRaw = query.limit === undefined ? 100 : Number(query.limit);
     if (!Number.isInteger(limitRaw) || limitRaw < 1 || limitRaw > 500) {
-      throw new BadRequestException('limit doit être un entier compris entre 1 et 500.');
+      throw new BadRequestException(
+        'limit doit être un entier compris entre 1 et 500.',
+      );
     }
     query.limit = String(limitRaw);
 

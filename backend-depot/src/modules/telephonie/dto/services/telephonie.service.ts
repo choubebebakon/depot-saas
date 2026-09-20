@@ -8,8 +8,14 @@
 // 📁 src/modules/telephonie/dto/create-telephone.dto.ts
 // ─────────────────────────────────────────────────────────────────
 import {
-  IsString, IsBoolean, IsOptional, IsNumber,
-  IsPositive, IsEnum, IsDateString, Min,
+  IsString,
+  IsBoolean,
+  IsOptional,
+  IsNumber,
+  IsPositive,
+  IsEnum,
+  IsDateString,
+  Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -21,14 +27,14 @@ export enum TelephoneEtat {
 
 export class CreateTelephoneDto {
   @IsString()
-  articleId: string;      // Référence Article existant
+  articleId: string; // Référence Article existant
 
   @IsString()
-  imei: string;           // IMEI principal — unique mondial
+  imei: string; // IMEI principal — unique mondial
 
   @IsString()
   @IsOptional()
-  imei2?: string;         // Second IMEI (dual-SIM)
+  imei2?: string; // Second IMEI (dual-SIM)
 
   @IsString()
   marque: string;
@@ -42,11 +48,11 @@ export class CreateTelephoneDto {
 
   @IsString()
   @IsOptional()
-  stockage?: string;      // 128Go, 256Go...
+  stockage?: string; // 128Go, 256Go...
 
   @IsString()
   @IsOptional()
-  ram?: string;           // 8Go, 12Go...
+  ram?: string; // 8Go, 12Go...
 
   @IsEnum(TelephoneEtat)
   @IsOptional()
@@ -73,21 +79,12 @@ export class CreateTelephoneDto {
 import { Type } from 'class-transformer';
 import { IsArray, ValidateNested } from 'class-validator';
 
-export enum ReparationStatut {
-  RECU = 'RECU',
-  EN_DIAGNOSTIC = 'EN_DIAGNOSTIC',
-  EN_ATTENTE_PIECES = 'EN_ATTENTE_PIECES',
-  EN_REPARATION = 'EN_REPARATION',
-  PRET = 'PRET',
-  LIVRE = 'LIVRE',
-  ANNULE = 'ANNULE',
-  IRREPARABLE = 'IRREPARABLE',
-}
+import { ReparationStatut } from '@prisma/client';
 
 export class PieceReparationDto {
   @IsString()
   @IsOptional()
-  articleId?: string;     // Si pièce en stock GeStock
+  articleId?: string; // Si pièce en stock GeStock
 
   @IsString()
   nom: string;
@@ -107,11 +104,11 @@ export class CreateReparationDto {
 
   @IsString()
   @IsOptional()
-  telephoneId?: string;   // Si téléphone en stock GeStock
+  telephoneId?: string; // Si téléphone en stock GeStock
 
   @IsString()
   @IsOptional()
-  imei?: string;          // Si apporté par le client
+  imei?: string; // Si apporté par le client
 
   @IsString()
   @IsOptional()
@@ -122,7 +119,7 @@ export class CreateReparationDto {
   modele?: string;
 
   @IsString()
-  probleme: string;       // Description du problème client
+  probleme: string; // Description du problème client
 
   @IsString()
   @IsOptional()
@@ -185,12 +182,16 @@ export class UpdateReparationDto {
 // ─────────────────────────────────────────────────────────────────
 // 📁 src/modules/telephonie/services/telephone.service.ts
 // ─────────────────────────────────────────────────────────────────
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../prisma.service';
 
 @Injectable()
 export class TelephoneService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // ── Enregistrer un téléphone (lié à un Article) ──────────────
   async create(tenantId: string, dto: CreateTelephoneDto) {
@@ -242,7 +243,9 @@ export class TelephoneService {
     return this.prisma.telephone.findMany({
       where: { tenantId, vendu: false },
       include: {
-        article: { select: { designation: true, prixVente: true, prixAchat: true } },
+        article: {
+          select: { designation: true, prixVente: true, prixAchat: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -250,7 +253,9 @@ export class TelephoneService {
 
   // ── Marquer comme vendu ──────────────────────────────────────
   async marquerVendu(tenantId: string, id: string) {
-    const tel = await this.prisma.telephone.findFirst({ where: { id, tenantId } });
+    const tel = await this.prisma.telephone.findFirst({
+      where: { id, tenantId },
+    });
     if (!tel) throw new NotFoundException('Téléphone introuvable');
 
     return this.prisma.telephone.update({
@@ -274,8 +279,11 @@ export class TelephoneService {
     return tels
       .map((t) => {
         const dateVente = t.dateVente!.getTime();
-        const dateExpiry = dateVente + t.garantieMois * 30 * 24 * 60 * 60 * 1000;
-        const joursRestants = Math.ceil((dateExpiry - Date.now()) / (1000 * 60 * 60 * 24));
+        const dateExpiry =
+          dateVente + t.garantieMois * 30 * 24 * 60 * 60 * 1000;
+        const joursRestants = Math.ceil(
+          (dateExpiry - Date.now()) / (1000 * 60 * 60 * 24),
+        );
         return { ...t, dateExpiry: new Date(dateExpiry), joursRestants };
       })
       .filter((t) => t.dateExpiry.getTime() <= limite && t.joursRestants > 0)
@@ -305,7 +313,7 @@ export class TelephoneService {
 // ─────────────────────────────────────────────────────────────────
 @Injectable()
 export class ReparationService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateReparationDto) {
     // Vérifie que le client existe
@@ -316,7 +324,8 @@ export class ReparationService {
 
     // Calcul du total pièces
     const totalPieces = (dto.pieces ?? []).reduce(
-      (sum, p) => sum + p.quantite * p.prix, 0
+      (sum, p) => sum + p.quantite * p.prix,
+      0,
     );
 
     return this.prisma.reparation.create({
@@ -335,14 +344,19 @@ export class ReparationService {
         notes: dto.notes,
         pieces: dto.pieces?.length
           ? {
-            create: dto.pieces.map((p) => ({
-              articleId: p.articleId,
-              nom: p.nom,
-              quantite: p.quantite,
-              prix: p.prix,
-              total: p.quantite * p.prix,
-            })),
-          }
+              create: dto.pieces.map(
+                (p) =>
+                  ({
+                    ...(p.articleId
+                      ? { article: { connect: { id: p.articleId } } }
+                      : {}),
+                    nom: p.nom,
+                    quantite: p.quantite,
+                    prix: p.prix,
+                    total: p.quantite * p.prix,
+                  }) as any,
+              ),
+            }
           : undefined,
       },
       include: {
@@ -394,16 +408,21 @@ export class ReparationService {
         dateRetrait: dto.dateRetrait ? new Date(dto.dateRetrait) : undefined,
         ...(pieces?.length
           ? {
-            pieces: {
-              create: pieces.map((p) => ({
-                articleId: p.articleId,
-                nom: p.nom,
-                quantite: p.quantite,
-                prix: p.prix,
-                total: p.quantite * p.prix,
-              })),
-            },
-          }
+              pieces: {
+                create: pieces.map(
+                  (p) =>
+                    ({
+                      ...(p.articleId
+                        ? { article: { connect: { id: p.articleId } } }
+                        : {}),
+                      nom: p.nom,
+                      quantite: p.quantite,
+                      prix: p.prix,
+                      total: p.quantite * p.prix,
+                    }) as any,
+                ),
+              },
+            }
           : {}),
       },
       include: { pieces: true, client: { select: { nom: true } } },
@@ -428,11 +447,15 @@ export class ReparationService {
 
   // ── Stats réparations ────────────────────────────────────────
   async stats(tenantId: string) {
-    const debut = new Date(); debut.setHours(0, 0, 0, 0);
+    const debut = new Date();
+    debut.setHours(0, 0, 0, 0);
 
     const [enCours, livresAujourdhui, recettes] = await Promise.all([
       this.prisma.reparation.count({
-        where: { tenantId, statut: { notIn: ['LIVRE', 'ANNULE', 'IRREPARABLE'] } },
+        where: {
+          tenantId,
+          statut: { notIn: ['LIVRE', 'ANNULE', 'IRREPARABLE'] },
+        },
       }),
       this.prisma.reparation.count({
         where: { tenantId, statut: 'LIVRE', dateRetrait: { gte: debut } },

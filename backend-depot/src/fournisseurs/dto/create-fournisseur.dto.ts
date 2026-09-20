@@ -1,10 +1,4 @@
-import {
-  IsEmail,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsEmail, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateFournisseurDto {
   @IsString()

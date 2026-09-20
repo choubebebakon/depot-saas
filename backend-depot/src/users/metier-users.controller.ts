@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -52,20 +53,43 @@ export class MetierUsersController {
   @Get()
   @RequirePermission('utilisateurs', 'read')
   async findAll(@Req() req: any, @Query('depotId') depotId?: string) {
-    // 🔒 On force l'utilisation du tenantId du patron connecté (via le JWT)
-    return this.usersService.findAll(req.user.tenantId, depotId);
+    const effectiveDepotId =
+      req.user?.role === RoleUser.PATRON ? depotId : req.user?.depotId;
+
+    if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
+      throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
+    }
+
+    return this.usersService.findAll(req.user.tenantId, effectiveDepotId);
   }
 
   @Get('commerciaux')
   @RequirePermission('utilisateurs', 'read')
-  async findCommerciaux(@Req() req: any) {
-    return this.usersService.findCommerciaux(req.user.tenantId);
+  async findCommerciaux(@Req() req: any, @Query('depotId') depotId?: string) {
+    const effectiveDepotId =
+      req.user?.role === RoleUser.PATRON ? depotId : req.user?.depotId;
+
+    if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
+      throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
+    }
+
+    return this.usersService.findCommerciaux(
+      req.user.tenantId,
+      effectiveDepotId,
+    );
   }
 
   @Get(':id')
   @RequirePermission('utilisateurs', 'read')
   async findOne(@Param('id') id: string, @Req() req: any) {
-    return this.usersService.findOne(req.user.tenantId, id);
+    const effectiveDepotId =
+      req.user?.role === RoleUser.PATRON ? undefined : req.user?.depotId;
+
+    if (req.user?.role === RoleUser.GERANT && !effectiveDepotId) {
+      throw new ForbiddenException('Ce GERANT n’est affecté à aucun dépôt.');
+    }
+
+    return this.usersService.findOne(req.user.tenantId, id, effectiveDepotId);
   }
 
   @Patch(':id/status')
@@ -102,6 +126,10 @@ export class MetierUsersController {
   @Delete(':id')
   @RequirePermission('utilisateurs', 'write')
   async remove(@Param('id') id: string, @Req() req: any) {
-    return this.usersService.remove(id, req.user.tenantId, buildAuditActor(req));
+    return this.usersService.remove(
+      id,
+      req.user.tenantId,
+      buildAuditActor(req),
+    );
   }
 }

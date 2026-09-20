@@ -14,7 +14,7 @@ const conditionnementSchema = z.object({
   type: z.enum(['CASIER', 'PACK', 'PALETTE', 'UNITE'], { message: 'Le type est requis' }),
   quantiteUnitaire: z.coerce.number().min(1, 'Minimum 1'),
   prixVente: z.coerce.number().positive('Le prix doit être supérieur à 0'),
-  articleId: z.string().uuid('Article invalide').optional().or(z.literal('')),
+  articleId: z.string().min(1, 'Article requis'),
 });
 
 export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, metier = 'depot' }) {
@@ -117,16 +117,19 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
               {...field}
               className="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white rounded-xl px-4 py-2.5 text-sm outline-none"
             >
-              <option value="">Sans article</option>
+              <option value="" disabled>Choisir un article</option>
               {articles?.map(a => (
                 <option key={a.id} value={a.id}>{a.designation}</option>
               ))}
             </select>
+            <p className="text-slate-500 text-xs mt-1">
+              Le conditionnement est obligatoirement rattaché à un article (casier, pack, palette…).
+            </p>
             {errors.articleId && <span className="text-red-400 text-xs mt-1">{errors.articleId.message}</span>}
           </div>
         )}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 gap-4 mt-4">
         <Controller
           name="type"
           control={control}
@@ -148,6 +151,8 @@ export default function ConditionnementForm({ isOpen, onClose, onSuccess, edit, 
             />
           )}
         />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <Controller
           name="quantiteUnitaire"
           control={control}

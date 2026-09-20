@@ -14,6 +14,13 @@ import {
   AlertTriangle, Hash, Crown
 } from 'lucide-react';
 
+// §4/§23 — « Nouveau dépôt » : réservé au PATRON (le backend le refuse
+// pour tout autre rôle). Le GERANT peut consulter et éditer son établissement.
+const canCreateDepot = (role) => role === 'PATRON' || role === 'ADMIN';
+const canEditDepot = (role) =>
+  role === 'PATRON' || role === 'GERANT' || role === 'ADMIN';
+const canArchiveDepot = (role) => role === 'PATRON' || role === 'ADMIN';
+
 const depotSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom du dépôt est requis').max(120),
   adresse: z.string().trim().min(1, 'L’adresse est requise').max(255),
@@ -22,7 +29,8 @@ const depotSchema = z.object({
 });
 
 export default function DepotsPage() {
-  const { planType, refreshUser, tenantId } = useAuth();
+  const { planType, refreshUser, tenantId, user } = useAuth();
+  const role = user?.role;
   const { depotActif, changerDepot } = useDepot();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -118,6 +126,10 @@ export default function DepotsPage() {
   };
 
   const handleArchive = async (id) => {
+    if (!canArchiveDepot(role)) {
+      notifError('Seul le patron peut archiver un dépôt', 'Accès refusé');
+      return;
+    }
     if (!window.confirm('Archiver ce dépôt ? Son historique sera conservé.')) return;
 
     try {
@@ -158,18 +170,20 @@ export default function DepotsPage() {
           <p className="text-slate-500 text-sm mt-1">Configurez vos entrepôts de stockage et points de vente physiques.</p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => openModal()}
-          disabled={isLimitReached}
-          className={`font-black px-6 py-3 rounded-2xl transition-all shadow-lg flex items-center gap-2 ${
-            isLimitReached
-              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 shadow-none'
-              : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
-          }`}
-        >
-          <Plus size={20} /> Nouveau dépôt
-        </button>
+        {canCreateDepot(role) && (
+          <button
+            type="button"
+            onClick={() => openModal()}
+            disabled={isLimitReached}
+            className={`font-black px-6 py-3 rounded-2xl transition-all shadow-lg flex items-center gap-2 ${
+              isLimitReached
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 shadow-none'
+                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
+            }`}
+          >
+            <Plus size={20} /> Nouveau dépôt
+          </button>
+        )}
       </div>
 
       {isLimitReached && maxAllowedDepots !== Infinity && (
@@ -203,22 +217,26 @@ export default function DepotsPage() {
                 <MapPin size={24} />
               </div>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => openModal(depot)}
-                  aria-label={`Modifier ${depot.nom}`}
-                  className="p-2 bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl transition-all"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleArchive(depot.id)}
-                  aria-label={`Archiver ${depot.nom}`}
-                  className="p-2 bg-slate-900/50 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
-                >
-                  <Archive size={16} />
-                </button>
+                {canEditDepot(role) && (
+                  <button
+                    type="button"
+                    onClick={() => openModal(depot)}
+                    aria-label={`Modifier ${depot.nom}`}
+                    className="p-2 bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl transition-all"
+                  >
+                    <Edit size={16} />
+                  </button>
+                )}
+                {canArchiveDepot(role) && (
+                  <button
+                    type="button"
+                    onClick={() => handleArchive(depot.id)}
+                    aria-label={`Archiver ${depot.nom}`}
+                    className="p-2 bg-slate-900/50 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
+                  >
+                    <Archive size={16} />
+                  </button>
+                )}
               </div>
             </div>
 

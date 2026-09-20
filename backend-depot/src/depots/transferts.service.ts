@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { StatutTransfert, TypeMouvement } from '@prisma/client';
+import { RoleUser, StatutTransfert, TypeMouvement } from '@prisma/client';
 import { CreateTransfertDto } from './dto/create-transfert.dto';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions.constants';
@@ -12,10 +12,22 @@ export class TransfertsService {
     private readonly auditService: AuditService,
   ) {}
 
+  private isPatron(actor?: any): boolean {
+    return actor?.role === 'PATRON' || actor?.role === RoleUser.PATRON;
+  }
+
   /**
    * Crée un brouillon de transfert.
    */
-  async createTransfert(dto: CreateTransfertDto, tenantId: string) {
+  async createTransfert(dto: CreateTransfertDto, tenantId: string, actor?: any) {
+    if (!this.isPatron(actor)) {
+      if (!actor?.depotId || dto.sourceDepotId !== actor.depotId) {
+        throw new ForbiddenException(
+          'Un gérant ne peut initier un transfert que depuis son propre dépôt source.',
+        );
+      }
+    }
+
     return this.prisma.transfertStock.create({
       data: {
         reference: dto.reference,
@@ -43,6 +55,23 @@ export class TransfertsService {
    * Valide le transfert et impacte physiquement les stocks.
    */
   async validerTransfert(id: string, tenantId: string, actor: any) {
+    if (!this.isPatron(actor)) {
+      const existing = await this.prisma.transfertStock.findFirst({
+        where: { id, tenantId },
+        select: { sourceDepotId: true, destDepotId: true },
+      });
+      if (
+        !existing ||
+        !actor?.depotId ||
+        (existing.sourceDepotId !== actor.depotId &&
+          existing.destDepotId !== actor.depotId)
+      ) {
+        throw new ForbiddenException(
+          'Vous n’êtes pas autorisé à valider un transfert ne concernant pas votre dépôt.',
+        );
+      }
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const transfert = await tx.transfertStock.findFirst({
         where: { id, tenantId },
@@ -132,16 +161,27 @@ export class TransfertsService {
     return result;
   }
 
-  async findAll(tenantId: string) {
+  async findAll(tenantId: string, actor?: any) {
+    const where: any = { tenantId };
+    if (!this.isPatron(actor)) {
+      if (!actor?.depotId) {
+        return [];
+      }
+      where.OR = [
+        { sourceDepotId: actor.depotId },
+        { destDepotId: actor.depotId },
+      ];
+    }
+
     return this.prisma.transfertStock.findMany({
-      where: { tenantId },
+      where,
       include: { sourceDepot: true, destDepot: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findOne(id: string, tenantId: string) {
-    return this.prisma.transfertStock.findFirst({
+  async findOne(id: string, tenantId: string, actor?: any) {
+    const transfert = await this.prisma.transfertStock.findFirst({
       where: { id, tenantId },
       include: {
         lignes: { include: { article: true } },
@@ -149,5 +189,19 @@ export class TransfertsService {
         destDepot: true,
       },
     });
+
+    if (!transfert) return null;
+
+    if (!this.isPatron(actor)) {
+      if (
+        !actor?.depotId ||
+        (transfert.sourceDepotId !== actor.depotId &&
+          transfert.destDepotId !== actor.depotId)
+      ) {
+        throw new ForbiddenException('Accès refusé à ce transfert.');
+      }
+    }
+
+    return transfert;
   }
 }

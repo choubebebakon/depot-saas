@@ -61,11 +61,12 @@ export class ChannelDispatcher {
         promises.push(
           this.email
             .sendTemplate(user.email, notif.type as any, {
-              title: notif.title,
+              title: notif.title || '',
               message: notif.message,
             })
             .then((ok) => {
-              if (ok === false) throw new Error('Le canal email a refusé la livraison');
+              if (ok === false)
+                throw new Error('Le canal email a refusé la livraison');
               return ok;
             })
             .catch((e) => this.handleFailure(notif, 'EMAIL', e)),
@@ -86,12 +87,13 @@ export class ChannelDispatcher {
           new Error('Numéro de téléphone utilisateur absent'),
         );
       } else {
-        const message = `${notif.title}\n\n${notif.message}`;
+        const message = `${notif.title || ''}\n\n${notif.message || ''}`;
         promises.push(
           this.whatsapp
             .send(user.telephone, message)
             .then((ok) => {
-              if (ok === false) throw new Error('Le canal WhatsApp a refusé la livraison');
+              if (ok === false)
+                throw new Error('Le canal WhatsApp a refusé la livraison');
               return ok;
             })
             .catch((e) => this.handleFailure(notif, 'WHATSAPP', e)),
@@ -105,10 +107,15 @@ export class ChannelDispatcher {
         select: { preferences: true },
       });
       const preferences =
-        user?.preferences && typeof user.preferences === 'object' && !Array.isArray(user.preferences)
+        user?.preferences &&
+        typeof user.preferences === 'object' &&
+        !Array.isArray(user.preferences)
           ? (user.preferences as Record<string, unknown>)
           : {};
-      const token = typeof preferences.pushToken === 'string' ? preferences.pushToken.trim() : '';
+      const token =
+        typeof preferences.pushToken === 'string'
+          ? preferences.pushToken.trim()
+          : '';
 
       if (!token) {
         await this.handleFailure(
@@ -119,9 +126,10 @@ export class ChannelDispatcher {
       } else {
         promises.push(
           this.push
-            .sendToDevice(token, notif.title, notif.message || '')
+            .sendToDevice(token, notif.title || '', notif.message || '')
             .then((ok) => {
-              if (ok === false) throw new Error('Le canal push a refusé la livraison');
+              if (ok === false)
+                throw new Error('Le canal push a refusé la livraison');
               return ok;
             })
             .catch((e) => this.handleFailure(notif, 'PUSH', e)),

@@ -7,6 +7,7 @@ import { usePermission } from '../../../shared/hooks/usePermission';
 import { depotApi } from '../services/depotApi';
 import ClientForm from '../../../shared/forms/ClientForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
+import ClientFicheModal, { BadgeCanal, canauxClient } from '../../../components/ClientFicheModal';
 
 const LIMIT = 100;
 
@@ -18,17 +19,14 @@ export default function ClientsPage() {
 
   const [showModal, setShowModal] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
-  const [historique, setHistorique] = useState([]);
   const [search, setSearch] = useState('');
   const [filtreDebiteur, setFiltreDebiteur] = useState('');
   const [paiementData, setPaiementData] = useState({ montant: '', modePaiement: 'CASH' });
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-
-  if (metier !== 'DEPOT_BOISSONS') {
-    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
-  }
+  const [ficheClient, setFicheClient] = useState(null);
+  const [canalFiltre, setCanalFiltre] = useState('');
 
   const { data: clientsData, isLoading } = useQuery({
     queryKey: ['depot-clients', { search, filtreDebiteur }],
@@ -40,7 +38,12 @@ export default function ClientsPage() {
     enabled: metier === 'DEPOT_BOISSONS',
   });
 
-  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.data || []);
+  const clientsBruts = Array.isArray(clientsData) ? clientsData : (clientsData?.data || []);
+  // Filtre canal appliqué à l'écran : les identifiants de canal (Instagram /
+  // Messenger) sont des colonnes de la fiche, le serveur ne les filtre pas.
+  const clients = canalFiltre
+    ? clientsBruts.filter((c) => canauxClient(c).includes(canalFiltre))
+    : clientsBruts;
   const total = clients.length;
 
   const {
@@ -97,15 +100,12 @@ export default function ClientsPage() {
     });
   };
 
-  const handleVoirHistorique = async (client) => {
-    try {
-      const res = await depotApi.historiqueAchats(client.id);
-      setHistorique(res.data?.data || res.data || []);
-      setSelectedClient(client);
-    } catch (err) {
-      notif.error(err.response?.data?.message || "Erreur de chargement de l'historique");
-    }
-  };
+  // Contrôle d'accès rendu APRÈS tous les hooks : un retour anticipé placé
+  // avant eux ferait varier l'ordre d'appel des hooks selon le métier actif
+  // (violation des règles React). La requête reste neutralisée par `enabled`.
+  if (metier !== 'DEPOT_BOISSONS') {
+    return <div className="p-8 text-center text-red-400">Accès non autorisé</div>;
+  }
 
   if (isLoading && totalItems === 0) {
     return (
@@ -139,6 +139,14 @@ export default function ClientsPage() {
           <option value="">Tous les clients</option>
           <option value="true">Clients débiteurs</option>
         </select>
+        <div className="flex gap-1">
+          {[['', 'Tous'], ['WHATSAPP', 'WhatsApp'], ['INSTAGRAM', 'Instagram'], ['MESSENGER', 'Messenger']].map(([id, label]) => (
+            <button key={id || 'all'} type="button" onClick={() => { setCanalFiltre(id); setCurrentPage(1); }}
+              className={`px-3 py-2.5 rounded-xl text-xs font-bold border transition-all ${canalFiltre === id ? 'bg-blue-600/20 border-blue-500/50 text-blue-300' : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-700/50">
@@ -147,15 +155,16 @@ export default function ClientsPage() {
             <tr className="bg-slate-800/80 text-slate-400 text-xs uppercase tracking-wider">
               <th className="text-left p-4 font-semibold">Nom</th>
               <th className="text-left p-4 font-semibold">Téléphone</th>
+              <th className="text-left p-4 font-semibold">Canaux</th>
               <th className="text-left p-4 font-semibold">Adresse</th>
-              <th className="text-right p-4 font-semibold">Crédit / Dette</th>
+              <th className="text-right p-4 font-semibold">Plafond</th>
               <th className="text-right p-4 font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
             {totalItems === 0 ? (
               <tr>
-                <td colSpan="5" className="p-12 text-center text-slate-500">
+                <td colSpan="6" className="p-12 text-center text-slate-500">
                   <p className="text-lg mb-2">Aucun client</p>
                   <p className="text-sm">Ajoutez votre premier client</p>
                 </td>
@@ -164,15 +173,24 @@ export default function ClientsPage() {
               const soldeCredit = Number(c.soldeCredit || 0);
               return (
                 <tr key={c.id} className={`hover:bg-slate-800/40 transition-colors ${soldeCredit > 0 ? 'bg-red-500/5' : ''}`}>
-                  <td className="p-4 text-white font-medium">{c.nom}</td>
+                  <td className="p-4 text-white font-medium">
+                    <button type="button" onClick={() => setFicheClient(c)} title="Voir la fiche client"
+                      className="hover:text-emerald-400 transition-colors text-left font-medium">
+                      {c.nom}
+                    </button>
+                  </td>
                   <td className="p-4 text-slate-400">{c.telephone || '-'}</td>
+                  <td className="p-4">
+                    <div className="flex flex-wrap gap-1">
+                      {canauxClient(c).map((canal) => <BadgeCanal key={canal} canal={canal} />)}
+                      {!canauxClient(c).length && <span className="text-slate-600 text-xs">—</span>}
+                    </div>
+                  </td>
                   <td className="p-4 text-slate-400">{c.adresse || '-'}</td>
                   <td className="p-4 text-right">
-                    {soldeCredit > 0 ? (
-                      <span className="text-red-400 font-bold">Dette: {soldeCredit.toLocaleString('fr-FR')} FCFA</span>
-                    ) : (
-                      <span className="text-emerald-400 font-medium">Pas de dette</span>
-                    )}
+                    <span className="text-white font-bold">
+                      {Number(c.plafondCredit || 0).toLocaleString('fr-FR')} FCFA
+                    </span>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -180,8 +198,6 @@ export default function ClientsPage() {
                         <button onClick={() => { setSelectedClient(c); setShowModal('paiement'); }}
                           title="Paiement dette" className="px-2.5 py-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-xs">Régler</button>
                       )}
-                      <button onClick={() => handleVoirHistorique(c)}
-                        title="Historique achats" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 transition-all text-xs">Achats</button>
                       {canWrite && (
                         <button onClick={() => openEdit(c)} title="Modifier" className="px-2.5 py-1.5 hover:bg-orange-500/20 rounded-lg text-orange-400 hover:text-orange-300 transition-all text-xs">Modifier</button>
                       )}
@@ -201,32 +217,6 @@ export default function ClientsPage() {
           <span className="text-slate-400 text-sm">Page {currentPage} / {totalPages}</span>
           <button disabled={currentPage >= totalPages} onClick={nextPage}
             className="px-4 py-2 bg-slate-800 rounded-xl text-white text-sm disabled:opacity-40 hover:bg-slate-700 transition-all">Suivant</button>
-        </div>
-      )}
-
-      {selectedClient && showModal !== 'paiement' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedClient(null)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-white">Historique - {selectedClient.nom}</h2>
-              <button onClick={() => setSelectedClient(null)} className="text-slate-500 hover:text-white transition-all">Fermer</button>
-            </div>
-            {historique.length === 0 ? (
-              <p className="text-slate-500 text-center py-6">Aucun achat enregistré</p>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {historique.map((h, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-800 rounded-xl">
-                    <div>
-                      <p className="text-sm text-white">{new Date(h.date).toLocaleDateString('fr-FR')}</p>
-                      <p className="text-xs text-slate-500">{h.type || 'Vente'}</p>
-                    </div>
-                    <span className="text-white font-bold">{Number(h.montant || 0).toLocaleString('fr-FR')} FCFA</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
@@ -258,6 +248,17 @@ export default function ClientsPage() {
         </div>
       )}
 
+      {ficheClient && (
+        <ClientFicheModal
+          client={ficheClient}
+          onClose={() => setFicheClient(null)}
+          onEdit={canWrite ? (c) => { setFicheClient(null); openEdit(c); } : undefined}
+          // Historique du dépôt : endpoint métier (liste simple, bornée à 200
+          // par le serveur). La fiche reste agnostique du format de réponse.
+          historyEndpoint={(c) => `/depot-boissons/clients/${c.id}/historique-achats`}
+          historyMode="list"
+        />
+      )}
       <ClientForm isOpen={formOpen} onClose={() => setFormOpen(false)} edit={editItem} metier="depot-boissons" />
       <ConfirmModal isOpen={!!confirmDelete} onConfirm={() => setConfirmDelete(null)} onCancel={() => setConfirmDelete(null)}
         title="Supprimer" message="Supprimer ce client ? Cette action est irréversible." />

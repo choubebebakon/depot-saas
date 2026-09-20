@@ -28,6 +28,11 @@ export const boutiqueApi = {
 
   getStock: (params) =>
     api.get('/boutique/stock', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getStockHistory: (articleId, params = {}) =>
+    api.get(`/boutique/articles/${articleId}/stock-history`, { ...getTenantHeaders(), params: cleanParams(params) }),
+  entreStock: (data) => api.post('/boutique/stock/entree', data, getTenantHeaders()),
+  sortieStock: (data) => api.post('/boutique/stock/sortie', data, getTenantHeaders()),
+  transfertStock: (data) => api.post('/boutique/stock/transfert', data, getTenantHeaders()),
 
   getClients: (params) =>
     api.get('/boutique/clients', { ...getTenantHeaders(), params: cleanParams(params) }),
@@ -88,4 +93,11 @@ export const boutiqueApi = {
   getVente: (id) => api.get(`/boutique/ventes/${id}`, getTenantHeaders()),
   annulerVente: (id, motif) =>
     api.patch(`/boutique/ventes/${id}/annuler`, { motif }, getTenantHeaders()),
+
+  getReceptions: (params) =>
+    api.get('/boutique/receptions', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getReception: (id) => api.get(`/boutique/receptions/${id}`, getTenantHeaders()),
+  createReception: (data) => api.post('/boutique/receptions', data, getTenantHeaders()),
+  updateReception: (id, data) => api.patch(`/boutique/receptions/${id}`, data, getTenantHeaders()),
+  deleteReception: (id) => api.delete(`/boutique/receptions/${id}`, getTenantHeaders()),
 };

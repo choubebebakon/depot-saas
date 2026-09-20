@@ -17,14 +17,17 @@ export interface AuthenticatedUser {
   role: string;
   tenantId: string;
   depotId: string | null;
+  isSuperAdmin: boolean;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly prisma: PrismaService) {
-    const jwtSecret = process.env.JWT_SECRET?.trim() || (
-      process.env.NODE_ENV === 'production' ? undefined : 'dev-only-jwt-secret-change-me'
-    );
+    const jwtSecret =
+      process.env.JWT_SECRET?.trim() ||
+      (process.env.NODE_ENV === 'production'
+        ? undefined
+        : 'dev-only-jwt-secret-change-me');
 
     if (!jwtSecret) {
       throw new Error('JWT_SECRET est obligatoire en production.');
@@ -56,6 +59,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         tenantId: true,
         depotId: true,
         isActive: true,
+        isSuperAdmin: true,
         tenant: {
           select: { estActif: true },
         },
@@ -63,7 +67,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user || !user.isActive || !user.tenant.estActif) {
-      throw new UnauthorizedException('Session invalide ou compte indisponible.');
+      throw new UnauthorizedException(
+        'Session invalide ou compte indisponible.',
+      );
     }
 
     return {
@@ -72,6 +78,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: user.role,
       tenantId: user.tenantId,
       depotId: user.depotId ?? null,
+      isSuperAdmin: user.isSuperAdmin ?? false,
     };
   }
 }

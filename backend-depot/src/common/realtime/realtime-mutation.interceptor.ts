@@ -1,4 +1,9 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
 import { DepotScopeService } from '../depot-scope.service';
 import { RealtimeService } from './realtime.service';
@@ -22,13 +27,20 @@ export class RealtimeMutationInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const user = request.user;
-        const tenantId = typeof user?.tenantId === 'string' ? user.tenantId : this.depotScope.getTenantId();
+        const tenantId =
+          typeof user?.tenantId === 'string'
+            ? user.tenantId
+            : this.depotScope.getTenantId();
         if (!tenantId) return;
 
-        const path = this.normalizePath(request.originalUrl || request.url || '');
+        const path = this.normalizePath(
+          request.originalUrl || request.url || '',
+        );
         const resource = this.resourceFromPath(path);
         const action = this.actionFromMethod(method);
-        const depotId = this.depotScope.getDepotId() ?? (typeof user?.depotId === 'string' ? user.depotId : null);
+        const depotId =
+          this.depotScope.getDepotId() ??
+          (typeof user?.depotId === 'string' ? user.depotId : null);
 
         this.realtime.publish({
           type: 'api.mutation',
@@ -53,13 +65,28 @@ export class RealtimeMutationInterceptor implements NestInterceptor {
     const segments = path.split('/').filter(Boolean);
     if (segments.length === 0) return 'unknown';
 
+    // Les routes métier sont préfixées par un namespace (ex: /depot-boissons/
+    // consignes/sortie). Sans ce traitement, toutes les mutations du module
+    // émettraient la ressource "depot-boissons", qu'aucune query key frontend
+    // ne contient : aucune invalidation temps réel n'avait donc lieu.
+    const METIER_NAMESPACE_PREFIXES = new Set([
+      'depot-boissons',
+      'boutique',
+      'supermarche',
+    ]);
+    if (METIER_NAMESPACE_PREFIXES.has(segments[0]) && segments[1]) {
+      return segments[1].toLowerCase();
+    }
+
     // Le premier segment est la ressource métier stable. Inclure un identifiant
     // de route (ex: ventes:123) transformait ensuite la ressource en "123"
     // côté frontend et empêchait l'invalidation des requêtes concernées.
     return segments[0].toLowerCase();
   }
 
-  private actionFromMethod(method: string): 'created' | 'updated' | 'deleted' | 'changed' {
+  private actionFromMethod(
+    method: string,
+  ): 'created' | 'updated' | 'deleted' | 'changed' {
     if (method === 'POST') return 'created';
     if (method === 'DELETE') return 'deleted';
     if (method === 'PUT' || method === 'PATCH') return 'updated';

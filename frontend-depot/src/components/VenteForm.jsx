@@ -56,7 +56,7 @@ export default function VenteForm() {
   const { data: tenantConfig } = useQuery({
     queryKey: ['tenant-config', tenantId],
     queryFn: async () => {
-      const res = await api.get(`/tenants/${tenantId}`);
+      const res = await api.get(`/tenant/${tenantId}`);
       return res.data;
     },
     enabled: !!tenantId

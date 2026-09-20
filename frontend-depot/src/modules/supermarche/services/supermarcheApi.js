@@ -34,6 +34,23 @@ export const supermarcheApi = {
   deleteRayon: (id) => api.delete(`/supermarche/rayons/${id}`, getTenantHeaders()),
   assignArticleToRayon: (rayonId, articleId) => api.post(`/supermarche/rayons/${rayonId}/articles`, { articleId }, getTenantHeaders()),
   getStock: (params) => api.get('/supermarche/stock', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getDepots: () => api.get('/supermarche/depots', getTenantHeaders()),
+
+  // ── Mouvements de stock (temps réel) ─────────────────────────────────────
+  entreeStock: (data) => api.post('/supermarche/stock/entree', data, getTenantHeaders()),
+  sortieStock: (data) => api.post('/supermarche/stock/sortie', data, getTenantHeaders()),
+  transfertStock: (data) => api.post('/supermarche/stock/transfert', data, getTenantHeaders()),
+  getStockHistorique: (params) => api.get('/supermarche/stock/historique', { ...getTenantHeaders(), params: cleanParams(params) }),
+
+  // ── Ventes / Factures ────────────────────────────────────────────────────
+  getClients: (params) => api.get('/supermarche/clients', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getVentes: (params) => api.get('/supermarche/ventes', { ...getTenantHeaders(), params: cleanParams(params) }),
+  getVente: (id) => api.get(`/supermarche/ventes/${id}`, getTenantHeaders()),
+  annulerVente: (id, data) => api.patch(`/supermarche/ventes/${id}/annuler`, data, getTenantHeaders()),
+
+  // ── Paramètres ───────────────────────────────────────────────────────────
+  getParametres: () => api.get('/supermarche/parametres', getTenantHeaders()),
+
   createVente: (data) => api.post('/supermarche/ventes', data, getTenantHeaders()),
   getPromotions: () => api.get('/supermarche/promotions', getTenantHeaders()),
   createPromotion: (data) => api.post('/supermarche/promotions', data, getTenantHeaders()),
@@ -41,15 +58,20 @@ export const supermarcheApi = {
   deletePromotion: (id) => api.delete(`/supermarche/promotions/${id}`, getTenantHeaders()),
   scanCodeBarres: (code) => api.get(`/supermarche/codes-barres/scan/${encodeURIComponent(code)}`, getTenantHeaders()),
 
-  // POS/Caisse : le contexte actif fourni par la page est prioritaire.
-  getSessionCaisseActive: (tenantId, depotId) => api.get('/caisse/session-active', {
-    params: cleanParams({ tenantId, depotId }),
+  // POS/Caisse multi-poste : le poste actif (CAISSE_1, CAISSE_2…) est transmis
+  // à chaque appel pour cibler la session de caisse correspondante.
+  getSessionCaisseActive: (tenantId, depotId, posteId) => api.get('/caisse/session-active', {
+    params: cleanParams({ tenantId, depotId, posteId }),
     ...getScopedHeaders(tenantId, depotId),
   }),
   ouvrirCaisse: (data) => api.post('/caisse/ouvrir', data, getScopedHeaders(data?.tenantId, data?.depotId)),
   fermerCaisse: (data) => api.post('/caisse/fermer', data, getScopedHeaders(data?.tenantId, data?.depotId)),
-  getResumeCaisse: (tenantId, depotId) => api.get('/caisse/resume', {
+  getSessionsOuvertes: (tenantId, depotId) => api.get('/caisse/sessions-ouvertes', {
     params: cleanParams({ tenantId, depotId }),
+    ...getScopedHeaders(tenantId, depotId),
+  }),
+  getResumeCaisse: (tenantId, depotId, posteId) => api.get('/caisse/resume', {
+    params: cleanParams({ tenantId, depotId, posteId }),
     ...getScopedHeaders(tenantId, depotId),
   }),
 };

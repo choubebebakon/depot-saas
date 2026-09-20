@@ -8,7 +8,12 @@
 // 📁 src/modules/quincaillerie/dto/create-chantier.dto.ts
 // ─────────────────────────────────────────────────────────────────
 import {
-  IsString, IsOptional, IsNumber, IsDateString, IsEnum, Min,
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsDateString,
+  IsEnum,
+  Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -66,9 +71,7 @@ export class UpdateChantierDto {
 // 📁 src/modules/quincaillerie/dto/create-devis.dto.ts
 // ─────────────────────────────────────────────────────────────────
 import { Type } from 'class-transformer';
-import {
-  IsArray, ValidateNested, IsPositive,
-} from 'class-validator';
+import { IsArray, ValidateNested, IsPositive } from 'class-validator';
 
 export class LigneDevisDto {
   @IsString()
@@ -76,7 +79,7 @@ export class LigneDevisDto {
 
   @IsString()
   @IsOptional()
-  designation?: string;   // Si vide → utilise le nom de l'article
+  designation?: string; // Si vide → utilise le nom de l'article
 
   @IsNumber()
   @IsPositive()
@@ -84,7 +87,7 @@ export class LigneDevisDto {
 
   @IsString()
   @IsOptional()
-  unite?: string;         // kg, m², litre, barre... défaut: PIECE
+  unite?: string; // kg, m², litre, barre... défaut: PIECE
 
   @IsNumber()
   @IsPositive()
@@ -105,7 +108,7 @@ export class CreateDevisDto {
   chantierId?: string;
 
   @IsDateString()
-  dateExpiry: string;     // Validité du devis
+  dateExpiry: string; // Validité du devis
 
   @IsString()
   @IsOptional()
@@ -126,12 +129,16 @@ export class UpdateDevisStatutDto {
 // ─────────────────────────────────────────────────────────────────
 // 📁 src/modules/quincaillerie/services/chantier.service.ts
 // ─────────────────────────────────────────────────────────────────
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../prisma.service';
 
 @Injectable()
 export class ChantierService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateChantierDto) {
     // Vérifie que le client existe
@@ -194,7 +201,9 @@ export class ChantierService {
   }
 
   private async assertClientExists(tenantId: string, clientId: string) {
-    const c = await this.prisma.client.findFirst({ where: { id: clientId, tenantId } });
+    const c = await this.prisma.client.findFirst({
+      where: { id: clientId, tenantId },
+    });
     if (!c) throw new NotFoundException('Client introuvable');
   }
 }
@@ -204,7 +213,7 @@ export class ChantierService {
 // ─────────────────────────────────────────────────────────────────
 @Injectable()
 export class DevisService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateDevisDto) {
     // ── Calcul automatique des totaux ──────────────────────────
@@ -226,19 +235,17 @@ export class DevisService {
         tenantId,
         clientId: dto.clientId,
         chantierId: dto.chantierId,
-        reference,
         montantHT,
-        tva,
         montantTTC,
+        statut: 'EN_ATTENTE' as any,
         dateExpiry: new Date(dto.dateExpiry),
-        notes: dto.notes,
         lignes: {
           create: lignes.map((l) => ({
-            articleId: l.articleId,
+            article: { connect: { id: l.articleId } },
             designation: l.designation,
             quantite: l.quantite,
             unite: l.unite ?? 'PIECE',
-            prix: l.prix,
+            prixUnit: l.prix,
             remise: l.remise ?? 0,
             total: l.total,
           })),
@@ -256,7 +263,7 @@ export class DevisService {
     return this.prisma.devis.findMany({
       where: {
         tenantId,
-        ...(statut ? { statut } : {}),
+        ...(statut ? { statut: statut as any } : {}),
       },
       include: {
         client: { select: { nom: true } },
@@ -273,7 +280,11 @@ export class DevisService {
       include: {
         client: true,
         chantier: true,
-        lignes: { include: { article: { select: { designation: true, prixVente: true } } } },
+        lignes: {
+          include: {
+            article: { select: { designation: true, prixVente: true } },
+          },
+        },
       },
     });
     if (!devis) throw new NotFoundException('Devis introuvable');
@@ -285,7 +296,9 @@ export class DevisService {
     const devis = await this.findOne(tenantId, id);
 
     if (devis.statut !== 'ACCEPTE') {
-      throw new BadRequestException('Seuls les devis acceptés peuvent être convertis');
+      throw new BadRequestException(
+        'Seuls les devis acceptés peuvent être convertis',
+      );
     }
 
     // Marque le devis comme converti
@@ -294,7 +307,10 @@ export class DevisService {
       data: { statut: 'CONVERTI' },
     });
 
-    return { message: 'Devis converti — créer la facture avec les données ci-dessous', devis };
+    return {
+      message: 'Devis converti — créer la facture avec les données ci-dessous',
+      devis,
+    };
   }
 
   // ── Mettre à jour le statut ─────────────────────────────────
@@ -313,7 +329,7 @@ export class DevisService {
         statut: 'EN_ATTENTE',
         dateExpiry: { lt: new Date() },
       },
-      data: { statut: 'EXPIRE' },
+      data: { statut: 'EXPIRE' as any },
     });
   }
 }

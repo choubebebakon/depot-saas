@@ -15,7 +15,10 @@ function loadStoredUser() {
     try {
         const parsedUser = JSON.parse(savedUser);
         api.defaults.headers.common.Authorization = `Bearer ${token}`;
-        if (parsedUser?.metier) localStorage.setItem('gestock_metier', parsedUser.metier);
+        // Ne force pas le gestionnaire de métier si c'est un SuperAdmin
+        if (parsedUser?.metier && !parsedUser?.isSuperAdmin && parsedUser?.role !== 'ADMIN' && parsedUser?.role !== 'SUPERADMIN') {
+            localStorage.setItem('gestock_metier', parsedUser.metier);
+        }
         return parsedUser;
     } catch (e) {
         console.error('Erreur de parsing de l utilisateur sauvegarde:', e);
@@ -67,6 +70,20 @@ export function AuthProvider({ children }) {
             const { data } = await api.get('/auth/permissions');
             setPermissionsState(data);
             setLibellePoste(data?.libellePoste || null);
+            // §14 : actions fines (ventes.annuler, caisse.fermer, stock.ajuster…)
+            // exposées sur l'utilisateur pour le hook useActions().
+            if (Array.isArray(data?.actions) || data?.actionsFullAccess !== undefined) {
+                setUser((prev) => {
+                    if (!prev) return prev;
+                    const merged = {
+                        ...prev,
+                        actions: Array.isArray(data.actions) ? data.actions : [],
+                        actionsFullAccess: Boolean(data.actionsFullAccess),
+                    };
+                    localStorage.setItem('depot_user', JSON.stringify(merged));
+                    return merged;
+                });
+            }
             return data;
         } catch (error) {
             console.warn('[AuthContext] Permissions API indisponible, fallback matrice locale', error);
@@ -81,11 +98,22 @@ export function AuthProvider({ children }) {
         try {
             const response = await api.get('/auth/me');
             const userData = response.data;
-            localStorage.setItem('depot_user', JSON.stringify(userData));
-            if (userData?.metier) localStorage.setItem('gestock_metier', userData.metier);
-            setUser(userData);
+            
+            // Récupère l'ancien utilisateur stocké pour préserver le statut admin si le backend omet le champ
+            const existingUser = JSON.parse(localStorage.getItem('depot_user') || '{}');
+            const mergedUserData = {
+                ...userData,
+                isSuperAdmin: userData.isSuperAdmin ?? existingUser.isSuperAdmin,
+                role: userData.role || existingUser.role,
+            };
+
+            localStorage.setItem('depot_user', JSON.stringify(mergedUserData));
+            if (mergedUserData?.metier && !mergedUserData.isSuperAdmin && mergedUserData.role !== 'ADMIN' && mergedUserData.role !== 'SUPERADMIN') {
+                localStorage.setItem('gestock_metier', mergedUserData.metier);
+            }
+            setUser(mergedUserData);
             await loadPermissions();
-            return userData;
+            return mergedUserData;
         } catch (error) {
             console.error('[AuthContext] Échec du rafraîchissement du profil:', error);
             return null;

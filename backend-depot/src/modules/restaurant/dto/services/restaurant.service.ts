@@ -8,8 +8,12 @@
 // 📁 src/modules/restaurant/dto/create-plat.dto.ts
 // ─────────────────────────────────────────────────────────────────
 import {
-  IsString, IsNumber, IsBoolean, IsOptional,
-  IsPositive, IsEnum,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  IsPositive,
+  IsEnum,
 } from 'class-validator';
 
 export class CreatePlatDto {
@@ -25,7 +29,7 @@ export class CreatePlatDto {
   prix: number;
 
   @IsString()
-  categorie: string;  // Entrée, Plat, Dessert, Boisson...
+  categorie: string; // Entrée, Plat, Dessert, Boisson...
 
   @IsBoolean()
   @IsOptional()
@@ -33,7 +37,7 @@ export class CreatePlatDto {
 
   @IsNumber()
   @IsOptional()
-  tempsPrep?: number;  // Minutes
+  tempsPrep?: number; // Minutes
 
   @IsString()
   @IsOptional()
@@ -76,7 +80,7 @@ export class LigneCommandeDto {
 
   @IsString()
   @IsOptional()
-  notes?: string;  // "sans sel", "bien cuit"...
+  notes?: string; // "sans sel", "bien cuit"...
 }
 
 export class CreateCommandeDto {
@@ -142,21 +146,37 @@ export class CreateReservationDto {
 // ─────────────────────────────────────────────────────────────────
 // 📁 src/modules/restaurant/services/tables.service.ts
 // ─────────────────────────────────────────────────────────────────
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../prisma.service';
 
 @Injectable()
 export class TablesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(tenantId: string, data: { numero: number; capacite: number; nom?: string; etage?: string }) {
+  async create(
+    tenantId: string,
+    data: {
+      numero: number | string;
+      capacite: number;
+      nom?: string;
+      etage?: string;
+    },
+  ) {
     // Vérifie que le numéro n'existe pas déjà
     const existing = await this.prisma.table.findUnique({
-      where: { tenantId_numero: { tenantId, numero: data.numero } },
+      where: { tenantId_numero: { tenantId, numero: String(data.numero) } },
     });
-    if (existing) throw new ConflictException(`Table numéro ${data.numero} existe déjà`);
+    if (existing)
+      throw new ConflictException(`Table numéro ${data.numero} existe déjà`);
 
-    return this.prisma.table.create({ data: { ...data, tenantId } });
+    return this.prisma.table.create({
+      data: { ...data, numero: String(data.numero), tenantId },
+    });
   }
 
   // ── Plan de salle complet ─────────────────────────────────────
@@ -167,15 +187,6 @@ export class TablesService {
         commandes: {
           where: { statut: { notIn: ['ANNULE', 'PAYE'] } },
           select: { id: true, statut: true, total: true, createdAt: true },
-        },
-        reservations: {
-          where: {
-            statut: 'CONFIRMEE',
-            dateArrivee: { gte: new Date() },
-          },
-          select: { nomClient: true, dateArrivee: true, nbPersonnes: true },
-          take: 1,
-          orderBy: { dateArrivee: 'asc' },
         },
       },
       orderBy: { numero: 'asc' },
@@ -203,7 +214,7 @@ export class TablesService {
 // ─────────────────────────────────────────────────────────────────
 @Injectable()
 export class CommandesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCommandeDto, serveurId: string) {
     // ── Récupère les prix des plats ───────────────────────────
@@ -223,7 +234,9 @@ export class CommandesService {
     }
 
     // ── Calcul du total ───────────────────────────────────────
-    const platMap = new Map<string, typeof plats[0]>(plats.map((p) => [p.id, p]));
+    const platMap = new Map<string, (typeof plats)[0]>(
+      plats.map((p) => [p.id, p]),
+    );
     const lignes = dto.lignes.map((l) => ({
       ...l,
       prix: platMap.get(l.platId)!.prix,
@@ -251,7 +264,9 @@ export class CommandesService {
       },
       include: {
         table: { select: { numero: true, nom: true } },
-        lignes: { include: { plat: { select: { nom: true, categorie: true } } } },
+        lignes: {
+          include: { plat: { select: { nom: true, categorie: true } } },
+        },
       },
     });
 
@@ -277,7 +292,9 @@ export class CommandesService {
         table: { select: { numero: true } },
         lignes: {
           where: { statut: { not: 'ANNULE' } },
-          include: { plat: { select: { nom: true, tempsPrep: true, categorie: true } } },
+          include: {
+            plat: { select: { nom: true, tempsPrep: true, categorie: true } },
+          },
         },
       },
       orderBy: { createdAt: 'asc' },
@@ -285,8 +302,14 @@ export class CommandesService {
   }
 
   // ── Mettre à jour le statut d'une commande ────────────────────
-  async updateStatut(tenantId: string, id: string, dto: UpdateCommandeStatutDto) {
-    const commande = await this.prisma.commande.findFirst({ where: { id, tenantId } });
+  async updateStatut(
+    tenantId: string,
+    id: string,
+    dto: UpdateCommandeStatutDto,
+  ) {
+    const commande = await this.prisma.commande.findFirst({
+      where: { id, tenantId },
+    });
     if (!commande) throw new NotFoundException('Commande introuvable');
 
     const updated = await this.prisma.commande.update({
@@ -307,12 +330,18 @@ export class CommandesService {
 
   // ── Stats du jour ─────────────────────────────────────────────
   async statsJour(tenantId: string) {
-    const debut = new Date(); debut.setHours(0, 0, 0, 0);
-    const fin = new Date(); fin.setHours(23, 59, 59, 999);
+    const debut = new Date();
+    debut.setHours(0, 0, 0, 0);
+    const fin = new Date();
+    fin.setHours(23, 59, 59, 999);
 
     const [total, commandesJour, tablesOccupees] = await Promise.all([
       this.prisma.commande.aggregate({
-        where: { tenantId, statut: 'PAYE', createdAt: { gte: debut, lte: fin } },
+        where: {
+          tenantId,
+          statut: 'PAYE',
+          createdAt: { gte: debut, lte: fin },
+        },
         _sum: { total: true },
         _count: true,
       }),

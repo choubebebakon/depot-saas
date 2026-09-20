@@ -6,9 +6,9 @@ export const PERMISSIONS = {
     canDelete: ['*'],
   },
   GERANT: {
-    canView:   ['dashboard','ventes','stock','clients','caisse','promotions','factures','fournisseurs','rapports','depenses','parametres'],
-    canCreate: ['ventes','stock','clients','caisse','promotions','factures','fournisseurs','depenses'],
-    canEdit:   ['ventes','stock','clients','caisse','promotions','factures','fournisseurs','depenses'],
+    canView:   ['dashboard','ventes','stock','clients','caisse','promotions','factures','fournisseurs','rapports','depenses','parametres','receptions'],
+    canCreate: ['ventes','stock','clients','caisse','promotions','factures','fournisseurs','depenses','receptions'],
+    canEdit:   ['ventes','stock','clients','caisse','promotions','factures','fournisseurs','depenses','receptions'],
     canDelete: ['*'],
   },
   VENDEUR: {

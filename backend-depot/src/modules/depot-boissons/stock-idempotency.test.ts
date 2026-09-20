@@ -7,9 +7,17 @@ import {
 describe('stock idempotency helpers', () => {
   it('normalizes object key order recursively', () => {
     expect(
-      stockPayloadHash({ articleId: 'a', meta: { depotId: 'd', motif: 'x' }, quantite: 2 }),
+      stockPayloadHash({
+        articleId: 'a',
+        meta: { depotId: 'd', motif: 'x' },
+        quantite: 2,
+      }),
     ).toBe(
-      stockPayloadHash({ quantite: 2, meta: { motif: 'x', depotId: 'd' }, articleId: 'a' }),
+      stockPayloadHash({
+        quantite: 2,
+        meta: { motif: 'x', depotId: 'd' },
+        articleId: 'a',
+      }),
     );
   });
 
@@ -26,7 +34,9 @@ describe('stock idempotency helpers', () => {
 
   it('rejects empty and oversized keys', () => {
     expect(getIdempotencyKey({ idempotencyKey: '   ' })).toBeUndefined();
-    expect(getIdempotencyKey({ idempotencyKey: 'x'.repeat(201) })).toBeUndefined();
+    expect(
+      getIdempotencyKey({ idempotencyKey: 'x'.repeat(201) }),
+    ).toBeUndefined();
   });
 
   it('creates a stable UUID per tenant and key', () => {
@@ -34,6 +44,8 @@ describe('stock idempotency helpers', () => {
     expect(stockOperationId('tenant-a', 'operation-1')).toBe(first);
     expect(stockOperationId('tenant-a', 'operation-2')).not.toBe(first);
     expect(stockOperationId('tenant-b', 'operation-1')).not.toBe(first);
-    expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(first).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
   });
 });

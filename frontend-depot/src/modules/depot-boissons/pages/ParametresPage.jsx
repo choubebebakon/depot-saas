@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Settings, Receipt, ShoppingCart, Store } from 'lucide-react';
+import { Upload, Settings, Receipt, ShoppingCart, Store, FileText } from 'lucide-react';
 import api from '../../../api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { FACTURE_DEFAULTS, factureConfigKey } from '../components/FacturePrint';
+import MetaConnectCard from '../../../components/MetaConnectCard';
 
 const MAX_LOGO_BYTES = 350_000;
 const PHONE_RE = /^[0-9+().\s-]*$/;
@@ -11,22 +13,29 @@ function Section({ title, icon, children }) { return <div className="bg-slate-80
 function Field({ label, children }) { return <div><label className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 block">{label}</label>{children}</div>; }
 
 export default function ParametresPage() {
-  const { user, tenantId } = useAuth();
+  const { user, tenantId, role } = useAuth();
   const queryClient = useQueryClient();
+  const canEdit = role === 'PATRON' || role === 'GERANT';
   const [infos, setInfos] = useState({ nomEntreprise: '', telephone: '', email: '', adresse: '', devise: 'FCFA' });
   const [ticket, setTicket] = useState({ messageAccueil: '', messageFin: '', afficherLogo: true });
   const [caisse, setCaisse] = useState({ alerteStockFaible: 5, autoImpression: false, nomCaissiere: '' });
+  const [facture, setFacture] = useState(FACTURE_DEFAULTS);
   const [notif, setNotif] = useState(null);
   const [logoBase64, setLogoBase64] = useState(null);
   const inputClass = 'bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm outline-none w-full focus:ring-2 focus:ring-blue-500/50';
 
-  const { data: parametres } = useQuery({ queryKey: ['depot-parametres', tenantId], queryFn: async () => (await api.get('/depot/parametres')).data, enabled: !!tenantId });
+  const { data: parametres } = useQuery({ queryKey: ['depot-parametres', tenantId], queryFn: async () => (await api.get('/depot-boissons/parametres')).data, enabled: !!tenantId });
   const { data: tenant } = useQuery({ queryKey: ['tenant-config', tenantId], queryFn: async () => (await api.get('/tenant/info')).data?.tenant, enabled: !!tenantId });
 
   useEffect(() => {
     if (parametres?.infos) setInfos(prev => ({ ...prev, ...parametres.infos }));
     if (parametres?.ticket) setTicket(prev => ({ ...prev, ...parametres.ticket }));
     if (parametres?.caisse) setCaisse(prev => ({ ...prev, ...parametres.caisse }));
+    if (parametres?.facture) setFacture(prev => ({ ...prev, ...parametres.facture }));
+    try {
+      const raw = localStorage.getItem(factureConfigKey(tenantId));
+      if (raw) setFacture(prev => ({ ...prev, ...JSON.parse(raw) }));
+    } catch { /* configuration locale corrompue : on garde les valeurs par défaut */ }
     if (tenant?.logo) setLogoBase64(tenant.logo);
     if (tenant?.nomEntreprise) setInfos(prev => ({ ...prev, nomEntreprise: tenant.nomEntreprise }));
     if (tenant?.adresse) setInfos(prev => ({ ...prev, adresse: tenant.adresse }));
@@ -59,18 +68,55 @@ export default function ParametresPage() {
         const clean = validateInfos(data);
         await api.patch(`/tenant/${tenantId}`, { nomEntreprise: clean.nomEntreprise, adresse: clean.adresse, telephone: clean.telephone, logo: logoBase64 || undefined });
       }
-      return api.patch('/depot/parametres', { section, data });
+      return api.patch('/depot-boissons/parametres', { [section]: data });
     },
     onSuccess: async () => { await Promise.all([queryClient.invalidateQueries({ queryKey: ['depot-parametres', tenantId] }), queryClient.invalidateQueries({ queryKey: ['tenant-config', tenantId] }), queryClient.invalidateQueries({ queryKey: ['tenant-info'] })]); setNotif({ msg: 'Paramètres sauvegardés avec succès.', type: 'success' }); setTimeout(() => setNotif(null), 3000); },
     onError: err => { setNotif({ msg: err.response?.data?.message || err.message || 'Erreur lors de la sauvegarde', type: 'error' }); setTimeout(() => setNotif(null), 4000); }
   });
   const save = (section, data) => { try { if (section === 'ticket' && ((data.messageAccueil || '').length > 200 || (data.messageFin || '').length > 200)) throw new Error('Les messages du ticket sont limités à 200 caractères.'); if (section === 'caisse' && (!Number.isInteger(Number(data.alerteStockFaible)) || Number(data.alerteStockFaible) < 0 || Number(data.alerteStockFaible) > 1_000_000)) throw new Error('Seuil de stock invalide.'); saveMutation.mutate({ section, data }); } catch (err) { setNotif({ msg: err.message, type: 'error' }); } };
 
+  // Paramètres des factures A4 : persistés par tenant (localStorage, lecture
+  // instantanée à l'impression) + synchronisation backend best-effort.
+  const saveFacture = () => {
+    try {
+      const piedDePage = (facture.piedDePage || '').trim();
+      if (piedDePage.length > 300) throw new Error('Le pied de page de la facture est limité à 300 caractères.');
+      const clean = { ...FACTURE_DEFAULTS, piedDePage, afficherLogo: !!facture.afficherLogo, afficherModePaiement: !!facture.afficherModePaiement };
+      localStorage.setItem(factureConfigKey(tenantId), JSON.stringify(clean));
+      api.patch('/depot-boissons/parametres', { facture: clean }).catch(() => { /* best-effort */ });
+      queryClient.invalidateQueries({ queryKey: ['depot-facture-config', tenantId] });
+      setNotif({ msg: 'Paramètres des factures sauvegardés.', type: 'success' });
+      setTimeout(() => setNotif(null), 3000);
+    } catch (err) {
+      setNotif({ msg: err.message, type: 'error' });
+      setTimeout(() => setNotif(null), 4000);
+    }
+  };
+
   return <div className="p-6 space-y-6">
     {notif && <div className={`fixed top-4 right-4 z-[70] px-6 py-3 rounded-xl shadow-2xl text-white font-bold text-sm ${notif.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>{notif.msg}</div>}
     <div><h1 className="text-2xl font-black text-white flex items-center gap-2"><Settings className="w-6 h-6" /> Paramètres du Dépôt</h1><p className="text-slate-400 text-sm mt-1">Configuration sécurisée de votre dépôt de boissons</p></div>
     <Section title="Informations du Dépôt" icon={<Store className="w-5 h-5" />}><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="sm:col-span-2"><Field label="Nom du Dépôt"><input value={infos.nomEntreprise} onChange={e=>setInfos({...infos,nomEntreprise:e.target.value})} maxLength={160} className={inputClass}/></Field></div><Field label="Téléphone"><input value={infos.telephone} onChange={e=>setInfos({...infos,telephone:e.target.value})} maxLength={40} className={inputClass}/></Field><Field label="Email"><input type="email" value={infos.email} onChange={e=>setInfos({...infos,email:e.target.value})} maxLength={180} className={inputClass}/></Field><Field label="Devise"><select value={infos.devise} onChange={e=>setInfos({...infos,devise:e.target.value})} className={inputClass}><option value="FCFA">FCFA</option><option value="EUR">EUR</option><option value="USD">USD</option></select></Field><div className="sm:col-span-2"><Field label="Adresse"><input value={infos.adresse} onChange={e=>setInfos({...infos,adresse:e.target.value})} maxLength={255} className={inputClass}/></Field></div></div><div className="mt-6 border-t border-slate-700/50 pt-6"><h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><Upload className="w-4 h-4 text-cyan-400"/> Logo de l'entreprise</h3><div className="relative group w-48 h-48 rounded-2xl bg-slate-900 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden">{logoBase64?<img src={logoBase64} alt="Logo" className="w-full h-full object-contain p-4"/>:<p className="text-slate-500 text-xs text-center px-4">PNG, JPEG ou WebP — 350 Ko max</p>}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoChange} className="absolute inset-0 opacity-0 cursor-pointer"/></div></div><button disabled={saveMutation.isPending} onClick={()=>save('infos',infos)} className="mt-5 bg-blue-600 disabled:opacity-50 text-white font-bold px-6 py-2 rounded-xl text-sm">{saveMutation.isPending?'Sauvegarde...':'Sauvegarder'}</button></Section>
     <Section title="Ticket de caisse (80mm)" icon={<Receipt className="w-5 h-5"/>}><div className="space-y-4"><Field label="Message d'accueil"><input value={ticket.messageAccueil} onChange={e=>setTicket({...ticket,messageAccueil:e.target.value})} maxLength={200} className={inputClass}/></Field><Field label="Message de fin"><input value={ticket.messageFin} onChange={e=>setTicket({...ticket,messageFin:e.target.value})} maxLength={200} className={inputClass}/></Field></div><button disabled={saveMutation.isPending} onClick={()=>save('ticket',ticket)} className="mt-5 bg-blue-600 disabled:opacity-50 text-white font-bold px-6 py-2 rounded-xl text-sm">Sauvegarder</button></Section>
-    <Section title="Gestion de la Caisse" icon={<ShoppingCart className="w-5 h-5"/>}><div className="space-y-4"><Field label="Nom de la caissière"><input value={caisse.nomCaissiere} onChange={e=>setCaisse({...caisse,nomCaissiere:e.target.value})} maxLength={120} className={inputClass}/></Field><Field label="Seuil d'alerte stock faible"><input type="number" min="0" max="1000000" step="1" value={caisse.alerteStockFaible} onChange={e=>setCaisse({...caisse,alerteStockFaible:e.target.value})} className={inputClass}/></Field><label className="flex items-center gap-3 mt-4 cursor-pointer"><input type="checkbox" checked={caisse.autoImpression} onChange={e=>setCaisse({...caisse,autoImpression:e.target.checked})} className="w-5 h-5 accent-blue-500"/><span className="text-slate-300 text-sm">Impression automatique après chaque vente</span></label></div><button disabled={saveMutation.isPending} onClick={()=>save('caisse',caisse)} className="mt-5 bg-blue-600 disabled:opacity-50 text-white font-bold px-6 py-2 rounded-xl text-sm">Sauvegarder</button></Section>
-  </div>;
+    <Section title="Factures (A4)" icon={<FileText className="w-5 h-5" />}>
+      <div className="space-y-4">
+        <Field label="Pied de page / mentions de la facture">
+          <textarea value={facture.piedDePage} onChange={e => setFacture({ ...facture, piedDePage: e.target.value })} maxLength={300} rows={2} className={inputClass} />
+        </Field>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" checked={!!facture.afficherLogo} onChange={e => setFacture({ ...facture, afficherLogo: e.target.checked })} className="w-5 h-5 accent-blue-500" />
+          <span className="text-slate-300 text-sm">Afficher le logo de l’entreprise sur les factures</span>
+        </label>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" checked={!!facture.afficherModePaiement} onChange={e => setFacture({ ...facture, afficherModePaiement: e.target.checked })} className="w-5 h-5 accent-blue-500" />
+          <span className="text-slate-300 text-sm">Afficher le mode de paiement sur les factures</span>
+        </label>
+        <p className="text-xs text-slate-500">Ces réglages s’appliquent aux factures imprimées depuis le sous-module Factures et depuis Ventes (bouton « Facture »).</p>
+      </div>
+      <button onClick={saveFacture} className="mt-5 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2 rounded-xl text-sm">Sauvegarder</button>
+    </Section>
+<Section title="Gestion de la Caisse" icon={<ShoppingCart className="w-5 h-5"/>}><div className="space-y-4"><Field label="Nom de la caissière"><input value={caisse.nomCaissiere} onChange={e=>setCaisse({...caisse,nomCaissiere:e.target.value})} maxLength={120} className={inputClass}/></Field><Field label="Seuil d'alerte stock faible"><input type="number" min="0" max="1000000" step="1" value={caisse.alerteStockFaible} onChange={e=>setCaisse({...caisse,alerteStockFaible:e.target.value})} className={inputClass}/></Field><label className="flex items-center gap-3 mt-4 cursor-pointer"><input type="checkbox" checked={caisse.autoImpression} onChange={e=>setCaisse({...caisse,autoImpression:e.target.checked})} className="w-5 h-5 accent-blue-500"/><span className="text-slate-300 text-sm">Impression automatique après chaque vente</span></label></div><button disabled={saveMutation.isPending} onClick={()=>save('caisse',caisse)} className="mt-5 bg-blue-600 disabled:opacity-50 text-white font-bold px-6 py-2 rounded-xl text-sm">Sauvegarder</button></Section>
+
+      <MetaConnectCard canEdit={canEdit} />
+    </div>;
 }

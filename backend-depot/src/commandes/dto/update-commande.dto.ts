@@ -1,4 +1,10 @@
-import { IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { StatutCommande } from '@prisma/client';
 
 export class UpdateCommandeDto {

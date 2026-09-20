@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
@@ -118,7 +123,10 @@ export class PrismaService
             // Pour un upsert, un stock absent ou insuffisant ne doit surtout
             // pas être créé avec une quantité négative : on rejette donc le
             // chemin create lorsque sa quantité serait négative.
-            if (model === 'Stock' && ['update', 'updateMany', 'upsert'].includes(operation)) {
+            if (
+              model === 'Stock' &&
+              ['update', 'updateMany', 'upsert'].includes(operation)
+            ) {
               const decrement = Number(anyArgs.data?.quantite?.decrement ?? 0);
 
               if (Number.isFinite(decrement) && decrement > 0) {

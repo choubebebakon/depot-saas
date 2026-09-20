@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
-
-let socketInstance = null;
+import { acquireVenteSocket, releaseVenteSocket, destroyVenteSocket } from '../shared/realtime/venteSocket';
 
 export function useMagasinierAlerte() {
   const { user, tenantId, role } = useAuth();
@@ -77,23 +75,14 @@ export function useMagasinierAlerte() {
   }, [stopBeep]);
 
   useEffect(() => {
-    if (!user || role !== 'MAGASINIER' || !tenantId) { // FIX #4: Déconnexion de la socket si l'utilisateur change ou n'est plus magasinier
-      if (socketInstance) {
-        socketInstance.disconnect();
-        socketInstance.removeAllListeners();
-        socketInstance = null;
-      }
-      return;
+    if (!user || role !== 'MAGASINIER' || !tenantId) { // FIX #4: Perte d'identité (logout, plus magasinier) → destruction totale de la socket partagée
+      destroyVenteSocket();
+      return undefined;
     }
 
-    if (socketInstance?.connected) { // FIX #4: Si connecté, on rejoint la room du nouveau tenant
-      socketInstance.emit('join_alerts', { tenantId, role });
-    }
-
-    if (!socketInstance) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      socketInstance = io(apiUrl);
-    }
+    // Socket singleton partagée (VenteGateway) : on ne la déconnecte PAS au
+    // démontage (StrictMode double-mount) — on retire seulement nos écouteurs.
+    const socketInstance = acquireVenteSocket();
 
     const joinAlerts = () => {
       socketInstance?.emit('join_alerts', { tenantId, role });
@@ -127,11 +116,10 @@ export function useMagasinierAlerte() {
     socketInstance.on('vente_prise_en_charge', handleVentePriseEnCharge);
 
     return () => {
-      if (socketInstance) {
-        socketInstance.disconnect(); // FIX #4: Déconnexion de la socket au logout ou démontage
-        socketInstance.removeAllListeners(); // FIX #4: Nettoyage des écouteurs pour éviter les fuites mémoire
-        socketInstance = null; // FIX #4: Remise à null pour forcer la réinitialisation
-      }
+      socketInstance.off('connect', joinAlerts);
+      socketInstance.off('nouvelle_vente', handleNouvelleVente);
+      socketInstance.off('vente_prise_en_charge', handleVentePriseEnCharge);
+      releaseVenteSocket();
       stopBeep();
     };
   }, [user, tenantId, role, startBeep, stopBeep]);

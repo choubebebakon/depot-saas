@@ -40,7 +40,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
-import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { RequirePermission, RequireAction } from '../../auth/decorators/require-permission.decorator';
 import { buildAuditActor } from '../../audit/audit-actor.util';
 
 @Controller('supermarche')
@@ -194,7 +194,11 @@ export class SupermarcheController {
   @RequirePermission('stock', 'write')
   async deleteProduit(@Req() req: any, @Param('id') id: string) {
     this.checkTenantId(req);
-    return this.service.deleteArticle(id, req.user.tenantId, buildAuditActor(req));
+    return this.service.deleteArticle(
+      id,
+      req.user.tenantId,
+      buildAuditActor(req),
+    );
   }
 
   // ── Clients ───────────────────────────────────────────────────────────────
@@ -207,6 +211,7 @@ export class SupermarcheController {
       req.user.tenantId,
       query.search,
       query.limit,
+      (query as any).depotId,
     );
   }
 
@@ -232,7 +237,29 @@ export class SupermarcheController {
   @RequirePermission('clients', 'write')
   async deleteClient(@Req() req: any, @Param('id') id: string) {
     this.checkTenantId(req);
-    return this.service.deleteClient(id, req.user.tenantId, buildAuditActor(req));
+    return this.service.deleteClient(
+      id,
+      req.user.tenantId,
+      buildAuditActor(req),
+    );
+  }
+
+  /**
+   * Historique d'achats paginé du client (keyset). Le tenantId vient du JWT —
+   * jamais de la query (isolation multi-tenant appliquée à la session).
+   */
+  @Get('clients/:id/historique')
+  @RequirePermission('clients', 'read')
+  async historiqueClient(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query() query: any,
+  ) {
+    this.checkTenantId(req);
+    return this.service.historiqueClient(req.user.tenantId, id, {
+      limit: query?.limit,
+      cursor: query?.cursor,
+    });
   }
 
   // ── Fournisseurs ──────────────────────────────────────────────────────────
@@ -282,7 +309,11 @@ export class SupermarcheController {
   @RequirePermission('depenses', 'write')
   async createDepense(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.createDepense(req.user.tenantId, data, buildAuditActor(req));
+    return this.service.createDepense(
+      req.user.tenantId,
+      data,
+      buildAuditActor(req),
+    );
   }
 
   @Patch('depenses/:id')
@@ -361,17 +392,107 @@ export class SupermarcheController {
     );
   }
 
+  // ── Mouvements de stock (entrée / sortie / transfert / historique) ────
+
+  @Post('stock/entree')
+  @RequirePermission('stock', 'write')
+  async entreStock(@Req() req: any, @Body() data: any) {
+    this.checkTenantId(req);
+    return this.service.entreeStock(
+      req.user.tenantId,
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
+  }
+
+  @Post('stock/sortie')
+  @RequirePermission('stock', 'write')
+  async sortieStock(@Req() req: any, @Body() data: any) {
+    this.checkTenantId(req);
+    return this.service.sortieStock(
+      req.user.tenantId,
+      { ...data, depotId: data.depotId || req.headers['x-depot-id'] },
+      buildAuditActor(req),
+    );
+  }
+
+  @Post('stock/transfert')
+  @RequirePermission('stock', 'write')
+  async transfertStock(@Req() req: any, @Body() data: any) {
+    this.checkTenantId(req);
+    return this.service.transfertStock(req.user.tenantId, data, buildAuditActor(req));
+  }
+
+  @Get('stock/historique')
+  @RequirePermission('stock', 'read')
+  async getStockHistorique(
+    @Req() req: any,
+    @Query('depotId') depotId?: string,
+    @Query('articleId') articleId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    this.checkTenantId(req);
+    return this.service.getMouvementsStock(
+      req.user.tenantId,
+      depotId,
+      articleId,
+      limit ? Number(limit) : undefined,
+    );
+  }
+
+  @Get('articles/:id/stock-history')
+  @RequirePermission('stock', 'read')
+  async getStockHistory(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('depotId') depotId?: string,
+  ) {
+    this.checkTenantId(req);
+    return this.service.getStockHistory(
+      id,
+      req.user.tenantId,
+      depotId || req.headers['x-depot-id'],
+    );
+  }
+
   // ── Ventes ────────────────────────────────────────────────────────────────
+
+  @Get('ventes')
+  @RequirePermission('ventes', 'read')
+  async findAllVentes(
+    @Req() req: any,
+    @Query('limit') limit?: string,
+    @Query('depotId') depotId?: string,
+  ) {
+    this.checkTenantId(req);
+    return this.service.findAllVentes(
+      req.user.tenantId,
+      limit ? Number(limit) : undefined,
+      depotId,
+    );
+  }
+
+  @Get('ventes/:id')
+  @RequirePermission('ventes', 'read')
+  async findVenteById(@Req() req: any, @Param('id') id: string) {
+    this.checkTenantId(req);
+    return this.service.findVenteById(id, req.user.tenantId);
+  }
 
   @Post('ventes')
   @RequirePermission('pos_caisse', 'write')
   async createVente(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.createVente(req.user.tenantId, data, buildAuditActor(req));
+    return this.service.createVente(
+      req.user.tenantId,
+      data,
+      buildAuditActor(req),
+    );
   }
 
   @Patch('ventes/:id/annuler')
   @RequirePermission('pos_caisse', 'write')
+  @RequireAction('ventes.annuler')
   async annulerVente(
     @Req() req: any,
     @Param('id') id: string,
@@ -454,6 +575,7 @@ export class SupermarcheController {
     @Query('periode') periode?: string,
     @Query('dateDebut') dateDebut?: string,
     @Query('dateFin') dateFin?: string,
+    @Query('depotId') depotId?: string,
   ) {
     this.checkTenantId(req);
     return this.service.getRapports(
@@ -461,6 +583,7 @@ export class SupermarcheController {
       periode,
       dateDebut,
       dateFin,
+      depotId || req.headers['x-depot-id'],
     );
   }
 
@@ -514,14 +637,12 @@ export class SupermarcheController {
   @RequirePermission('pos_caisse', 'read')
   async getCaisseStatut(@Req() req: any, @Query('depotId') depotId?: string) {
     this.checkTenantId(req);
-    return this.service.getCaisseStatut(
-      req.user.tenantId,
-      depotId,
-    );
+    return this.service.getCaisseStatut(req.user.tenantId, depotId);
   }
 
   @Post('caisse/ouvrir')
   @RequirePermission('pos_caisse', 'write')
+  @RequireAction('caisse.ouvrir')
   async ouvrirCaisse(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
     const actor = buildAuditActor(req);
@@ -534,26 +655,33 @@ export class SupermarcheController {
 
   @Post('caisse/fermer')
   @RequirePermission('pos_caisse', 'write')
+  @RequireAction('caisse.fermer')
   async fermerCaisse(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.fermerCaisse(req.user.tenantId, data, buildAuditActor(req));
+    return this.service.fermerCaisse(
+      req.user.tenantId,
+      data,
+      buildAuditActor(req),
+    );
   }
 
   @Post('caisse/mouvement')
   @RequirePermission('pos_caisse', 'write')
+  @RequireAction('caisse.mouvement')
   async mouvementCaisse(@Req() req: any, @Body() data: any) {
     this.checkTenantId(req);
-    return this.service.mouvementCaisse(req.user.tenantId, data, buildAuditActor(req));
+    return this.service.mouvementCaisse(
+      req.user.tenantId,
+      data,
+      buildAuditActor(req),
+    );
   }
 
   @Get('caisse/rapport-journalier')
   @RequirePermission('pos_caisse', 'read')
   async rapportJournalier(@Req() req: any, @Query('depotId') depotId?: string) {
     this.checkTenantId(req);
-    return this.service.rapportJournalier(
-      req.user.tenantId,
-      depotId,
-    );
+    return this.service.rapportJournalier(req.user.tenantId, depotId);
   }
 
   // ── Helper Sécurité Multi-Tenant ──────────────────────────────────────────

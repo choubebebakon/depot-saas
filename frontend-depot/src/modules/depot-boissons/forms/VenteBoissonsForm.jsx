@@ -28,6 +28,7 @@ const venteSchema = z.object({
   montantCash: z.coerce.number().min(0).optional().or(z.literal('')),
   montantOM: z.coerce.number().min(0).optional().or(z.literal('')),
   montantMoMo: z.coerce.number().min(0).optional().or(z.literal('')),
+  montantRecu: z.coerce.number().min(0).optional().or(z.literal('')),
   panier: z.array(panierLigneSchema).min(1, 'Ajoutez au moins un article au panier'),
 });
 
@@ -48,6 +49,7 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
       montantCash: '',
       montantOM: '',
       montantMoMo: '',
+      montantRecu: '',
       panier: [],
     }
   });
@@ -67,6 +69,7 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
       montantCash: '',
       montantOM: '',
       montantMoMo: '',
+      montantRecu: '',
       panier: [],
     });
   }, [isOpen, depotId, reset]);
@@ -105,6 +108,14 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
 
   const isMixte = modePaiement === 'MIXTE';
 
+  // Montant reçu / monnaie : la part espèces dépend du mode (montant cash en
+  // mode MIXTE, total en mode CASH). Ces valeurs sont transmises à la vente
+  // et reprises sur le ticket 80mm et la facture A4.
+  const montantRecu = Number(watch('montantRecu')) || 0;
+  const partEspeces = isMixte ? (Number(watch('montantCash')) || 0) : total;
+  const monnaie = Math.max(0, montantRecu - partEspeces);
+  const montantInsuffisant = montantRecu > 0 && montantRecu + 0.01 < partEspeces;
+
   const mutation = useMutation({
     mutationFn: async ({ data, operationId }) => {
       const payload = {
@@ -116,6 +127,8 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
         montantCash: data.montantCash ? Number(data.montantCash) : undefined,
         montantOM: data.montantOM ? Number(data.montantOM) : undefined,
         montantMoMo: data.montantMoMo ? Number(data.montantMoMo) : undefined,
+        montantRecu: montantRecu > 0 ? montantRecu : undefined,
+        monnaie,
         total: Number(total),
         depotId: depotId || data.depotId,
         articles: data.panier.map(p => ({
@@ -143,7 +156,8 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
       } else {
         notif.success('Vente enregistrée avec succès');
       }
-      onSuccess?.();
+      // La page parente déclenche l'impression automatique du ticket 80mm.
+      onSuccess?.(result);
       onClose();
     },
     onError: (err) => {
@@ -320,6 +334,38 @@ export default function VenteBoissonsForm({ isOpen, onClose, onSuccess, edit, me
               />
             )}
           />
+        </div>
+      )}
+
+      {(modePaiement === 'CASH' || isMixte) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 animate-fadeIn">
+          <Controller
+            name="montantRecu"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="Montant reçu"
+                name="montantRecu"
+                type="number"
+                value={field.value}
+                onChange={field.onChange}
+                min={0}
+                unit="FCFA"
+                error={errors.montantRecu?.message}
+              />
+            )}
+          />
+          <div className="bg-slate-800 rounded-xl p-4 flex flex-col justify-center">
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Monnaie à rendre</span>
+              <span className={`font-bold ${montantInsuffisant ? 'text-red-400' : 'text-emerald-400'}`}>
+                {monnaie.toLocaleString('fr-FR')} FCFA
+              </span>
+            </div>
+            {montantInsuffisant && (
+              <p className="text-red-400 text-xs mt-1">Le montant reçu est inférieur au montant à encaisser.</p>
+            )}
+          </div>
         </div>
       )}
     </FormModal>

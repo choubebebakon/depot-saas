@@ -6,9 +6,11 @@ import { AuditService } from './audit.service';
 import { AuditGateway } from './audit.gateway';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 
-const jwtSecret = process.env.JWT_SECRET?.trim() || (
-  process.env.NODE_ENV === 'production' ? undefined : 'dev-only-jwt-secret-change-me'
-);
+const jwtSecret =
+  process.env.JWT_SECRET?.trim() ||
+  (process.env.NODE_ENV === 'production'
+    ? undefined
+    : 'dev-only-jwt-secret-change-me');
 
 if (!jwtSecret) {
   throw new Error('JWT_SECRET est obligatoire en production.');

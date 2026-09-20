@@ -24,8 +24,8 @@ import './AchatsReceptionsPage.css';
 const UNITS = ['PIECE', 'BOUTEILLE', 'CASIER', 'PACK', 'PALETTE', 'PLATEAU'];
 const PAYMENTS = [
   { value: 'CASH', label: 'Espèces' },
-  { value: 'OM', label: 'Orange Money' },
-  { value: 'MOMO', label: 'MTN MoMo' },
+  { value: 'ORANGE_MONEY', label: 'Orange Money' },
+  { value: 'MTN_MOMO', label: 'MTN MoMo' },
   { value: 'CREDIT', label: 'Crédit' },
 ];
 const STATUS = {
@@ -50,7 +50,16 @@ const list = (value) => {
 
 const money = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} FCFA`;
 const newKey = () => globalThis.crypto?.randomUUID?.() || `reception-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const newReference = () => `CMD-${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+const newReference = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `CMD-${year}${month}${day}${hours}${minutes}${seconds}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+};
 
 function Button({ children, icon: Icon, variant = 'secondary', ...props }) {
   const styles = {
@@ -150,8 +159,8 @@ export default function AchatsReceptionsPageV2() {
 
   const suppliers = useQuery({ queryKey: ['achats-fournisseurs', depotId], queryFn: achatsApi.getFournisseurs, enabled, staleTime: 30000 });
   const articles = useQuery({ queryKey: ['achats-articles', depotId], queryFn: achatsApi.getArticles, enabled, staleTime: 30000 });
-  const commands = useQuery({ queryKey: ['achats-commandes', depotId], queryFn: achatsApi.getCommandes, enabled: enabled && canManage, staleTime: 15000 });
-  const receptions = useQuery({ queryKey: ['achats-receptions', depotId], queryFn: achatsApi.getReceptions, enabled: enabled && canManage, staleTime: 15000 });
+  const commands = useQuery({ queryKey: ['achats-commandes', 'commandes', depotId], queryFn: achatsApi.getCommandes, enabled: enabled && canManage, staleTime: 10_000, refetchInterval: 15_000, refetchIntervalInBackground: false });
+  const receptions = useQuery({ queryKey: ['achats-receptions', 'fournisseurs', 'receptions', depotId], queryFn: achatsApi.getReceptions, enabled: enabled && canManage, staleTime: 10_000, refetchInterval: 15_000, refetchIntervalInBackground: false });
   const suggestions = useQuery({ queryKey: ['achats-suggestions', depotId], queryFn: achatsApi.getSuggestions, enabled: enabled && canManage, staleTime: 30000 });
 
   const fournisseurs = useMemo(() => list(suppliers.data), [suppliers.data]);

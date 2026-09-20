@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === 'object') {
-    return Object.keys(value as Record<string, unknown>)
+    return Object.keys(value)
       .sort()
       .reduce<Record<string, unknown>>((out, key) => {
         out[key] = canonicalize((value as Record<string, unknown>)[key]);
@@ -19,7 +19,9 @@ export function stockPayloadHash(payload: unknown): string {
     .digest('hex');
 }
 
-export function getIdempotencyKey(data: Record<string, unknown>): string | undefined {
+export function getIdempotencyKey(
+  data: Record<string, unknown>,
+): string | undefined {
   const raw = data.idempotencyKey ?? data.operationId;
   if (typeof raw !== 'string') return undefined;
   const key = raw.trim();
@@ -31,7 +33,10 @@ export function getIdempotencyKey(data: Record<string, unknown>): string | undef
  * It lets us enforce idempotency using the existing unique primary keys,
  * without introducing a second persistence table just for stock commands.
  */
-export function stockOperationId(tenantId: string, idempotencyKey: string): string {
+export function stockOperationId(
+  tenantId: string,
+  idempotencyKey: string,
+): string {
   const digest = createHash('sha256')
     .update(`${tenantId}\u0000${idempotencyKey}`)
     .digest();

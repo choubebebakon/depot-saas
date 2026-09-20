@@ -17,18 +17,19 @@ const AuditPage = lazy(() => import('../../pages/AuditPage'));
 const ProfilPage = lazy(() => import('../../pages/ProfilPage'));
 
 const DashboardBoutique = lazy(() => import('./pages/DashboardBoutique'));
-const VentesPage        = lazy(() => import('./pages/VentesPage'));
+const VenteCaissePage   = lazy(() => import('./pages/VenteCaissePage'));
 const StockPage         = lazy(() => import('./pages/StockPage'));
 const ClientsPage       = lazy(() => import('./pages/ClientsPage'));
-const CaissePage        = lazy(() => import('./pages/CaissePage'));
 const PromotionsPage    = lazy(() => import('./pages/PromotionsPage'));
 const FacturesPage      = lazy(() => import('./pages/FacturesPage'));
 const FournisseursPage  = lazy(() => import('./pages/FournisseursPage'));
 const DepensesPage      = lazy(() => import('./pages/DepensesPage'));
 const RapportsPage      = lazy(() => import('./pages/RapportsPage'));
+const PerformancePage   = lazy(() => import('../../shared/pages/PerformancePage'));
 const ParametresPage    = lazy(() => import('./pages/ParametresPage'));
 const CategoriesPage    = lazy(() => import('./pages/CategoriesPage'));
 const InventairePage    = lazy(() => import('../../shared/pages/InventaireProductionPage'));
+const ReceptionsPage    = lazy(() => import('./pages/ReceptionPage'));
 
 function Loader() { return <div className="flex items-center justify-center py-32"><div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>; }
 
@@ -101,18 +102,22 @@ export default function BoutiqueRoutes() {
         <Routes>
           <Route element={<BoutiqueLayout />}>
           <Route path="dashboard"    element={gate('dashboard', DashboardBoutique)} />
-          <Route path="ventes"       element={gate('ventes', VentesPage)} />
-          <Route path="stock"        element={gate('stock', StockPage)} />
+          <Route path="ventes-caisse" element={gate('ventes', VenteCaissePage)} />
+          <Route path="caisse"      element={<Navigate to="/boutique/ventes-caisse" replace />} />
+          <Route path="ventes"      element={<Navigate to="/boutique/ventes-caisse" replace />} />
+          <Route path="stock"       element={gate('stock', StockPage)} />
           <Route path="inventaire"   element={gate('inventaire', InventairePage)} />
           <Route path="clients"      element={gate('clients', ClientsPage)} />
-          <Route path="caisse"       element={gate('caisse', CaissePage)} />
           <Route path="promotions"   element={gate('promotions', PromotionsPage)} />
           <Route path="factures"     element={gate('factures', FacturesPage)} />
           <Route path="fournisseurs" element={gate('fournisseurs', FournisseursPage)} />
           <Route path="depenses"     element={gate('depenses', DepensesPage)} />
           <Route path="rapports"     element={gate('rapports', RapportsPage)} />
+          {/* §10 — « Mes performances » : gate par rapports_performance. */}
+          <Route path="performance"  element={gate('rapports_performance', PerformancePage)} />
           <Route path="parametres"   element={gate('parametres', ParametresPage)} />
           <Route path="categories"   element={gate('categories', CategoriesPage)} />
+          <Route path="receptions"   element={gate('receptions', ReceptionsPage)} />
           <Route path="utilisateurs" element={gate('utilisateurs', UtilisateursPage)} />
           <Route path="depots"       element={gate('depots', DepotsPage)} />
           <Route path="abonnement"   element={<Navigate to="/pricing" replace />} />

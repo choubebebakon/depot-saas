@@ -24,17 +24,21 @@ export function DepotProvider({ children }) {
                 const data = Array.isArray(res.data) ? res.data : [];
                 setDepots(data);
 
-                // Le Patron peut sélectionner un dépôt. Les autres rôles restent
-                // strictement attachés au depotId porté par leur profil.
-                if (user?.role !== 'PATRON' && user?.depotId) {
-                    const profileDepot = data.find((d) => d.id === user.depotId);
-                    setDepotActif(profileDepot || null);
-                } else if (user?.role === 'PATRON') {
+                // La liste est scopée serveur : PATRON = tous les dépôts du
+                // tenant, autres rôles = dépôt principal + affectations
+                // multi-établissements (§13 : comptable central, gérant
+                // multi-sites). Le dernier établissement actif est restauré.
+                if (data.length === 0) {
+                    setDepotActif(null);
+                } else if (user?.role !== 'PATRON' && data.length === 1) {
+                    // Utilisateur mono-établissement : verrouillé sur son dépôt.
+                    const profileDepot = data.find((d) => d.id === user.depotId) || data[0];
+                    setDepotActif(profileDepot);
+                    localStorage.setItem(ACTIVE_DEPOT_STORAGE_KEY, profileDepot.id);
+                } else {
                     const saved = localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY);
                     const found = saved ? data.find((depot) => depot.id === saved) : null;
-                    setDepotActif(found || data[0] || null);
-                } else {
-                    setDepotActif(null);
+                    setDepotActif(found || data.find((d) => d.id === user?.depotId) || data[0]);
                 }
             } catch (err) {
                 console.error('Erreur chargement dépôts:', err);
@@ -61,17 +65,16 @@ export function DepotProvider({ children }) {
 
         queryClient.invalidateQueries();
         previousDepotIdRef.current = currentDepotId;
+        localStorage.setItem(ACTIVE_DEPOT_STORAGE_KEY, currentDepotId);
     }, [depotActif?.id, queryClient]);
 
     const changerDepot = (depot) => {
-        if (user?.role !== 'PATRON') {
-            console.warn(`[SECURITY] Changement de dépôt refusé pour le rôle ${user?.role || 'inconnu'}.`);
-            return;
-        }
-
+        // La bascule est autorisée pour tous les rôles, mais uniquement vers
+        // un dépôt présent dans la liste scopée serveur (dépôts autorisés
+        // pour cet utilisateur). Toute tentative hors périmètre est refusée.
         const allowedDepot = depots.find((item) => item.id === depot?.id);
         if (!allowedDepot) {
-            console.warn('[SECURITY] Dépôt demandé absent du tenant authentifié.');
+            console.warn('[SECURITY] Dépôt demandé absent du périmètre autorisé.');
             return;
         }
 

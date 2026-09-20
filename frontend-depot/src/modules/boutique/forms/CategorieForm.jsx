@@ -120,7 +120,7 @@ export default function CategorieForm({ isOpen, onClose, onSuccess, edit }) {
         )}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <Controller
           name="icone"
           control={control}
@@ -157,6 +157,10 @@ export default function CategorieForm({ isOpen, onClose, onSuccess, edit }) {
             </div>
           )}
         />
+      </div>
+
+      {/* Ordre d'affichage : pleine largeur pour une saisie confortable */}
+      <div className="grid grid-cols-1 gap-4 mt-4 max-w-md">
         <Controller
           name="ordre"
           control={control}

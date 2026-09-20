@@ -19,6 +19,12 @@ import { PrismaService } from '../prisma.service';
 import { EmailService } from '../common/email/email.service';
 import { NotchPayService } from './notchpay.service';
 import { normalizePhone } from '../utils/phone.utils';
+import {
+  DEFAULT_COUNTRY_ISO2,
+  getChannelLimits,
+  normalizeMomoPhoneForCountry,
+} from '../common/config/notchpay-channels.config';
+import { canTransitionTo } from '../common/utils/payment-status.utils';
 import { NotificationsService } from '../core/notifications/notifications.service';
 
 interface CreatePendingPaymentInput {
@@ -31,6 +37,11 @@ interface CreatePendingPaymentInput {
   customerEmail: string;
   customerName?: string;
   momoPhoneNumber?: string | null;
+  /**
+   * PARTIE 2 (contrainte 8) : pays ISO 3166-1 alpha-2 du numéro Mobile Money.
+   * Optionnel — défaut CM (seul pays confirmé couvert par NotchPay à ce jour).
+   */
+  country?: string;
   customTotalAmount?: number;
   changeType?: string;
 }
@@ -70,12 +81,31 @@ export class PaymentsService {
     };
 
     const planPricing = PRICING[plan] || { monthly: 25000, annual: 249000 };
-    const amount = billingCycle === BillingCycle.MONTHLY ? planPricing.monthly : planPricing.annual;
+    const amount =
+      billingCycle === BillingCycle.MONTHLY
+        ? planPricing.monthly
+        : planPricing.annual;
     const tvaAmount = Math.round(amount * 0.1925);
     return { amount, tvaAmount, totalAmount: amount + tvaAmount };
   }
 
   public async createPendingPayment(input: CreatePendingPaymentInput) {
+    // ── DÉCOMMISSIONNEMENT STRIPE (PARTIE 1, phase 1 — contraintes 1 à 4) ──
+    // Aucun NOUVEAU paiement Stripe n'est créé à partir de cette bascule :
+    // - Les lignes Payment { method: STRIPE } historiques restent lisibles et
+    //   intactes (audit, facturation, litiges) — la valeur d'enum Prisma est
+    //   conservée (les enums Postgres ne se suppriment pas proprement).
+    // - Le webhook Stripe (StripeWebhookController) reste ACTIF pendant la
+    //   période de grâce pour laisser les paiements en vol se terminer.
+    // - Campay : CampayService.collect() n'est appelé par AUCUN flux de
+    //   création (vérifié PARTIE 0) — le service ne sert plus qu'à la
+    //   reconciliation des PENDING historiques (TasksService / AdminService).
+    if (input.method === PaymentMethod.STRIPE) {
+      throw new BadRequestException(
+        "Le paiement par Stripe n'est plus accepté. Utilisez Mobile Money ou la carte via NotchPay.",
+      );
+    }
+
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: input.tenantId },
       select: { id: true, name: true },
@@ -86,6 +116,23 @@ export class PaymentsService {
       input.planPurchased,
       input.billingCycle,
     );
+
+    // FAIT VALIDÉ n°6 (GET /channels, compte LIVE) : chaque canal impose des
+    // limites min/max (MTN/Orange CM : 10 → 500 000 XAF). Un plan annuel
+    // PME/ENTERPRISE dépasse le plafond MoMo → NotchPay rejetterait l'init
+    // en opaque ; on échoue vite avec un message actionnable. Fail-closed.
+    const channelLimits = getChannelLimits(
+      input.country ?? DEFAULT_COUNTRY_ISO2,
+      input.channel,
+    );
+    if (
+      channelLimits?.maxAmount !== undefined &&
+      amounts.totalAmount > channelLimits.maxAmount
+    ) {
+      throw new BadRequestException(
+        `Le montant ${amounts.totalAmount} XAF dépasse le plafond de ${channelLimits.maxAmount} XAF par transaction du canal ${input.channel} (limite NotchPay vérifiée via GET /channels). Choisissez le cycle mensuel ou contactez le support pour activer un canal adapté.`,
+      );
+    }
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -108,8 +155,14 @@ export class PaymentsService {
     });
 
     try {
+      // PARTIE 2/3 (contrainte 8) : normalisation pilotée par la couverture
+      // NotchPay réelle. Comportement inchangé pour le CM (défaut confirmé,
+      // format '+' legacy conservé) ; pays futur → config centralisée,
+      // fail-closed (undefined si pays non couvert).
       const phone = input.momoPhoneNumber
-        ? normalizePhone(input.momoPhoneNumber)
+        ? input.country && input.country.toUpperCase() !== DEFAULT_COUNTRY_ISO2
+          ? normalizeMomoPhoneForCountry(input.country, input.momoPhoneNumber)
+          : normalizePhone(input.momoPhoneNumber)
         : undefined;
 
       const notchPayResponse = await this.notchPayService.initializePayment({
@@ -121,14 +174,36 @@ export class PaymentsService {
         },
         phone: phone,
         channel: input.channel,
+        // Le verrouillage du canal sur la page hébergée est DÉSACTIVÉ par
+        // défaut (NOTCHPAY_LOCK_CHANNEL=false) : mesuré en réel, il fait
+        // échouer la page Collect de NotchPay (« Méthode de paiement
+        // indisponible ») pour MTN comme pour Orange. Le service ne l'envoie
+        // que si la variable vaut 'true'. `lockedCurrency` reste envoyé.
+        lockedChannel: input.channel,
+        lockedCountry: input.country,
+        lockedCurrency: 'XAF',
+        // URL de retour facultative (NOTCHPAY_CALLBACK_URL). Non configurée par
+        // défaut : sans elle, NotchPay affiche sa propre page de résultat.
+        callback: process.env.NOTCHPAY_CALLBACK_URL,
         reference,
         description: `Paiement ${input.planPurchased}`,
       });
 
+      // ── CHAMPS DE RÉPONSE RÉELS (vérifiés en LIVE : HTTP 201) ───────────
+      // { status, message, code, transaction: { reference: 'trx.…',
+      //   trxref: 'GST-…', status: 'pending' }, authorization_url }
+      // → l'URL de paiement est `authorization_url` (et NON `checkout_url`,
+      //   qui n'existe pas dans la réponse : le fallback frontend échouait).
+      // → l'identifiant NotchPay est `transaction.reference` (préfixe trx.),
+      //   utilisé pour rapprocher les webhooks ; `transaction.id` n'existe pas.
       const notchPayId =
-        notchPayResponse.notchPayId ?? notchPayResponse.transaction?.id;
+        notchPayResponse.transaction?.reference ??
+        notchPayResponse.notchPayId ??
+        notchPayResponse.transaction?.id;
       const checkoutUrl =
-        notchPayResponse.checkout_url ?? notchPayResponse.checkoutUrl;
+        notchPayResponse.authorization_url ??
+        notchPayResponse.checkout_url ??
+        notchPayResponse.checkoutUrl;
 
       await this.prisma.payment.update({
         where: { id: payment.id },
@@ -151,11 +226,28 @@ export class PaymentsService {
         },
       };
     } catch (error: any) {
-      this.logger.error(`Erreur NotchPay: ${error.message}`);
-      await this.markPaymentFailed(payment.id);
-      throw new InternalServerErrorException(
-        "Impossible d'initier le paiement.",
+      // DIAGNOSTIC PROD : message générique côté client, mais le détail
+      // provider (code HTTP + message NotchPay) est maintenant exposé dans
+      // `details` pour le support, et loggué côté serveur. Aucun secret
+      // (clé API) n'est jamais inclus — NotchPay ne les renvoie pas.
+      const providerMessage = String(error?.providerMessage ?? error?.message);
+      const providerStatusCode = error?.providerStatusCode;
+      this.logger.error(
+        `Erreur NotchPay (init, HTTP ${providerStatusCode ?? 'réseau'}): ${providerMessage}`,
       );
+      await this.markPaymentFailed(payment.id);
+      if (providerStatusCode === 401) {
+        throw new InternalServerErrorException({
+          errorCode: 'NOTCHPAY_CREDENTIALS_INVALID',
+          message:
+            "Identifiants API NotchPay invalides. Vérifiez NOTCHPAY_PUBLIC_KEY dans la configuration : l'Authorization des endpoints de paiement standard doit porter la CLÉ PUBLIQUE (la clé privée ne sert que le header X-Grant des endpoints à risque).",
+        });
+      }
+      throw new InternalServerErrorException({
+        errorCode: 'NOTCHPAY_INIT_FAILED',
+        message: "Impossible d'initier le paiement.",
+        details: providerMessage.slice(0, 300),
+      });
     }
   }
 
@@ -215,6 +307,16 @@ export class PaymentsService {
     tenantId?: unknown;
   }): Promise<Payment | null> {
     const status = input.status.toLowerCase();
+    // SÉCURITÉ PROD : si AUCUN identifiant n'est fourni, le findFirst Prisma
+    // ci-dessous deviendrait un filtre vide (les champs undefined sont ignorés)
+    // et pourrait matcher N'IMPORTE QUEL paiement de la table — risquant
+    // d'activer l'abonnement du mauvais tenant. Fail-closed obligatoire.
+    if (!input.paymentId && !input.reference && !input.notchPayId) {
+      this.logger.warn(
+        '[Webhook] markNotchPayComplete appelé sans identifiant — rejet fail-closed',
+      );
+      return null;
+    }
     const payment = await this.prisma.payment.findFirst({
       where: {
         OR: [
@@ -226,6 +328,20 @@ export class PaymentsService {
     });
 
     if (!payment) return null;
+
+    // IDEMPOTENCE STRICTE (contrainte 10) : vérifier le statut courant AVANT
+    // toute mutation. Un paiement déjà finalisé (SUCCESS, COMPLETED historique,
+    // REFUNDED) n'est jamais re-traité — un replay de webhook ne doit ni
+    // re-prolonger l'abonnement ni écraser un remboursement.
+    const targetStatus =
+      status === 'complete' ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
+    if (!canTransitionTo(payment.status, targetStatus)) {
+      this.logger.log(
+        `[Idempotence] Paiement ${payment.id} déjà finalisé (${payment.status}) — no-op webhook`,
+      );
+      return payment;
+    }
+
     if (status !== 'complete') return await this.markPaymentFailed(payment.id);
     return await this.markPaymentSuccess(
       payment.id,
@@ -233,18 +349,38 @@ export class PaymentsService {
     );
   }
 
- public async markPaymentFailed(paymentId: string): Promise<Payment> {
+  public async markPaymentFailed(paymentId: string): Promise<Payment> {
     const payment = await this.prisma.payment.update({
       where: { id: paymentId },
       data: { status: PaymentStatus.FAILED },
       include: {
         tenant: {
-          select: { name: true, emailPatron: true, subscriptionStatus: true },
+          select: {
+            name: true,
+            emailPatron: true,
+            subscriptionStatus: true,
+            currentPeriodEnd: true,
+            dateExpiration: true,
+          },
         },
       },
     });
 
-    if (payment.tenant?.subscriptionStatus === SubscriptionStatus.ACTIVE) {
+    // SYNCHRONISATION PROD : la bascule PAST_DUE ne doit toucher que les
+    // tenants dont la période est RÉELLEMENT échue. Un échec sur un paiement
+    // anticipé (renouvellement en avance) ou sur l'initialisation d'une
+    // transaction ne doit JAMAIS dégrader un abonnement encore valide —
+    // sinon un simple échec réseau NotchPay passerait des tenants payés en
+    // PAST_DUE (puis le dunning en CANCELED au bout de 3 retries).
+    const now = new Date();
+    const periodEnd =
+      payment.tenant?.currentPeriodEnd ?? payment.tenant?.dateExpiration;
+    const periodExpired = !periodEnd || periodEnd.getTime() < now.getTime();
+
+    if (
+      payment.tenant?.subscriptionStatus === SubscriptionStatus.ACTIVE &&
+      periodExpired
+    ) {
       await this.prisma.tenant.update({
         where: { id: payment.tenantId },
         data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
@@ -280,6 +416,29 @@ export class PaymentsService {
     paymentId: string,
     transactionId: string,
   ): Promise<Payment> {
+    // IDEMPOTENCE STRICTE (contrainte 10) : vérifier le statut courant AVANT
+    // toute mutation. Sans cette garde, chaque replay de webhook prolongerait
+    // à nouveau l'abonnement (double extension de dateExpiration) et
+    // renverrait un email de confirmation à chaque fois.
+    const existing = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: { status: true },
+    });
+    if (existing && !canTransitionTo(existing.status, PaymentStatus.SUCCESS)) {
+      // Déjà confirmé (SUCCESS / COMPLETED historique) ou remboursé : no-op.
+      this.logger.log(
+        `[Idempotence] Paiement ${paymentId} déjà finalisé (${existing.status}) — no-op activation`,
+      );
+      return this.prisma.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+        include: {
+          tenant: {
+            select: { name: true, emailPatron: true, dateExpiration: true },
+          },
+        },
+      });
+    }
+
     const payment = await this.prisma.payment.update({
       where: { id: paymentId },
       data: { status: PaymentStatus.SUCCESS, operatorTxId: transactionId },
@@ -304,7 +463,7 @@ export class PaymentsService {
       nextExp.setMonth(nextExp.getMonth() + 1); // Prolongation d'un mois
     }
 
-   await this.prisma.tenant.update({
+    await this.prisma.tenant.update({
       where: { id: payment.tenantId },
       data: {
         statutAbonnement: StatutAbonnement.ACTIVE,
@@ -361,7 +520,7 @@ export class PaymentsService {
   public async handleWebhookNotification(
     payload: any,
     signature?: string,
-  ): Promise<{ success: boolean }> {
+  ): Promise<{ success: boolean; status?: string }> {
     this.logger.log(
       `[Webhook] Notification NotchPay reçue. Événement: ${payload?.event}`,
     );
@@ -385,9 +544,6 @@ export class PaymentsService {
     const transaction = payload?.data || payload?.transaction;
     const reference = transaction?.reference;
     const notchPayId = transaction?.id;
-    const status = transaction?.status || payload?.status;
-
-    // Extract metadata from NotchPay
     const meta = transaction?.meta || payload?.meta || {};
     const tenantId = meta.tenantId;
     const plan = meta.plan;
@@ -399,12 +555,95 @@ export class PaymentsService {
       throw new BadRequestException('Référence ou tenantId manquant');
     }
 
-    const isSuccess = ['complete', 'accepted', 'approved', 'success'].includes(
-      status?.toLowerCase(),
-    );
+    // ── CONTRAINTE 14 — ÉVÉNEMENTS RÉELS NOTCHPAY (orthographe validée
+    // depuis le dashboard du compte LIVE, fait validé n°3) ──
+    // Terminaux succès  : payment.complete (jamais 'payment.success', qui
+    //                     n'existe pas côté NotchPay).
+    // Terminaux échec   : payment.failed, payment.cancelled (deux L),
+    //                     payment.expired.
+    // Intermédiaires    : payment.created, payment.processing,
+    //                     payment.partially_pay, payment.authorized,
+    //                     payment.captured → journalisés SANS mutater le
+    //                     Payment (marquer FAILED un paiement en cours de
+    //                     saisie PIN serait une course avec payment.complete).
+    // Inconnus          : log + 200 (jamais d'erreur) — contrainte 14.
+    const event = String(payload?.event ?? '').toLowerCase();
+    const status = String(
+      transaction?.status ?? payload?.status ?? '',
+    ).toLowerCase();
 
-    // If we have tenantId and plan from metadata, directly update tenant
+    const SUCCESS_STATUSES = new Set([
+      'complete',
+      'accepted',
+      'approved',
+      'success',
+    ]);
+    const TERMINAL_FAILURE_EVENTS = new Set([
+      'payment.failed',
+      'payment.cancelled',
+      'payment.expired',
+    ]);
+    const TERMINAL_FAILURE_STATUSES = new Set([
+      'failed',
+      'cancelled',
+      'canceled',
+      'expired',
+      'declined',
+    ]);
+    const INTERMEDIATE_EVENTS = new Set([
+      'payment.created',
+      'payment.processing',
+      'payment.partially_pay',
+      'payment.authorized',
+      'payment.captured',
+    ]);
+
+    const isSuccess =
+      SUCCESS_STATUSES.has(status) ||
+      (event === 'payment.complete' && !TERMINAL_FAILURE_STATUSES.has(status));
+    const isTerminalFailure =
+      TERMINAL_FAILURE_EVENTS.has(event) || TERMINAL_FAILURE_STATUSES.has(status);
+
+    // Événements intermédiaires ou inconnus : aucun effet sur le Payment ni
+    // sur l'abonnement (contrainte 14) — le 200 évite les retries NotchPay.
+    if (!isSuccess && !isTerminalFailure) {
+      this.logger.log(
+        `[Webhook] Événement '${event || status || 'inconnu'}' sans effet (intermédiaire ou non reconnu) — no-op`,
+      );
+      return { success: true, status: 'IGNORED_EVENT' };
+    }
+
+    // ── PARTIE 5 (contraintes 9/10/11) — CHEMIN CANONIQUE D'ACTIVATION ──
+    // L'activation d'abonnement est déclenchée UNIQUEMENT par ce webhook
+    // NotchPay signé (jamais par une réponse de formulaire ni un état client).
+    // Si une ligne Payment existe pour cette référence (créée par
+    // createPendingPayment), on délégue TOUT à markNotchPayComplete →
+    // markPaymentSuccess : prolongation selon le billingCycle réel (fix du
+    // bug "toujours +1 mois" du chemin direct), reset paymentRetryCount,
+    // email de confirmation, notification — le tout idempotent.
+    if (isSuccess && reference) {
+      const payment = await this.prisma.payment.findFirst({
+        where: { reference },
+        select: { id: true },
+      });
+      if (payment) {
+        await this.markNotchPayComplete({
+          reference,
+          notchPayId,
+          status: 'complete',
+        });
+        return { success: true };
+      }
+    }
+
+    // REPLI (paiements sans ligne Payment — ex. Site Vitrine public) :
+    // activation directe depuis les métadonnées NotchPay. Aucun paiement
+    // d'abonnement récent ne passe par ici (createPendingPayment crée
+    // toujours une ligne Payment référencée GST-…).
     if (tenantId && plan && isSuccess) {
+      this.logger.warn(
+        `[Webhook] Aucune ligne Payment pour la référence ${reference} — activation directe (repli Site Vitrine) du tenant ${tenantId}`,
+      );
       await this.updateTenantSubscription(tenantId, plan as PlanType);
       this.logger.log(
         `[Webhook] Tenant ${tenantId} mis à jour avec le plan ${plan}`,
@@ -412,25 +651,37 @@ export class PaymentsService {
       return { success: true };
     }
 
-    // Fallback to existing payment lookup logic
+    // Échec terminal (payment.failed / payment.cancelled / payment.expired) :
+    // mise à jour du Payment en FAILED. SÉCURITÉ ABONNEMENT (PARTIE 5) :
+    // markPaymentFailed ne dégrade JAMAIS un abonnement encore actif
+    // (PAST_DUE uniquement si la période est réellement échue) — un échec de
+    // paiement ne doit pas couper un merchant déjà à jour par ailleurs.
     const result = await this.markNotchPayComplete({
       reference,
       notchPayId,
-      status: isSuccess ? 'complete' : 'failed',
+      status: 'failed',
     });
 
     if (!result) {
+      // Paiement inconnu de GesTock (ex. transaction Site Vitrine sans ligne,
+      // ou référence externe) : on répond 200 pour arrêter les retries
+      // NotchPay — une 404 provoquerait une tempête de retries inutile.
       this.logger.warn(
-        `[Webhook] Aucun paiement trouvé pour la référence : ${reference}`,
+        `[Webhook] Aucun paiement trouvé pour la référence : ${reference} (échec terminal ignoré)`,
       );
-      throw new NotFoundException('Paiement non trouvé pour cette référence');
+      return { success: true, status: 'UNKNOWN_REFERENCE' };
     }
 
     return { success: true };
   }
 
   /**
-   * Update tenant subscription directly from webhook metadata
+   * REPLI Site Vitrine uniquement (PARTIE 5) : activation directe depuis les
+   * métadonnées NotchPay quand AUCUNE ligne Payment n'existe pour la
+   * référence. Aucun paiement d'abonnement récent ne passe par ici.
+   * Période fixe +1 mois : le Site Vitrine ne vend que du mensuel ; pour tout
+   * paiement avec ligne Payment, la prolongation respecte le billingCycle réel
+   * (markPaymentSuccess).
    */
   private async updateTenantSubscription(tenantId: string, plan: PlanType) {
     const now = new Date();
@@ -446,6 +697,14 @@ export class PaymentsService {
         subscriptionEnd: nextExp,
         estActif: true,
         graceUntil: null,
+        // SYNCHRONISATION (PARITÉ AVEC markPaymentSuccess) : le repli Site
+        // Vitrine doit mettre à jour LES MÊMES champs consolidés que le
+        // chemin canonique, sinon AccessStatusGuard (qui lit
+        // subscriptionStatus) laisserait un tenant "bloqué" alors que
+        // statutAbonnement/dateExpiration disent ACTIVE.
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        currentPeriodEnd: nextExp,
+        paymentRetryCount: 0,
       },
     });
   }

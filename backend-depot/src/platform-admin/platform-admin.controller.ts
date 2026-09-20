@@ -1,6 +1,6 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { PlatformAdminService } from './platform-admin.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { AUDIT_ACTIONS } from '../audit/audit-actions.constants';
 import { Audit } from '../audit/decorators/audit.decorator';

@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNotif } from '../../../context/NotifContext';
+import { useDepot } from '../../../contexts/DepotContext';
 import { boutiqueApi } from '../services/boutiqueApi';
 import FormField from '../../../shared/components/forms/FormField';
 import BarcodeScanner from '../../../shared/components/forms/BarcodeScanner';
@@ -11,8 +12,8 @@ import AutocompleteInput from '../../../shared/components/forms/AutocompleteInpu
 
 const panierLigneSchema = z.object({
   articleId: z.string().min(1, 'Article requis'),
-  designation: z.string().optional(),
-  codeBarres: z.string().optional(),
+  designation: z.string().nullish(),
+  codeBarres: z.string().nullish(),
   quantite: z.coerce.number().int().min(1, 'Minimum 1'),
   prixUnitaire: z.coerce.number().finite().min(0, 'Prix invalide'),
   remise: z.coerce.number().finite().min(0).max(100).default(0),
@@ -36,9 +37,30 @@ const emptyValues = (depotId) => ({
   panier: [],
 });
 
-export default function VenteBoutiqueForm({ onSuccess, depotId }) {
+export default function VenteBoutiqueForm({ onSuccess, depotId: depotIdProp }) {
   const queryClient = useQueryClient();
   const notif = useNotif();
+  const { depotId: contextDepotId } = useDepot();
+  const depotId = depotIdProp || contextDepotId;
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Polling fallback + real-time invalidation trigger.
+  // Query keys contain "clients" / "articles" so the global useRealtimeSync
+  // (which invalidates queries whose keys match resource aliases) will also
+  // invalidate them when a real-time event arrives.
+  useQuery({
+    queryKey: ['boutique-clients', 'realtime-refresh', depotId],
+    queryFn: () => boutiqueApi.getClients({ limit: 1, depotId }),
+    refetchInterval: 10000,
+    enabled: Boolean(depotId),
+  });
+
+  useQuery({
+    queryKey: ['boutique-articles', 'realtime-refresh'],
+    queryFn: () => boutiqueApi.getArticles({ limit: 1 }),
+    refetchInterval: 10000,
+  });
 
   const {
     control,
@@ -90,8 +112,8 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
 
     append({
       articleId: article.id,
-      designation: article.designation,
-      codeBarres: article.codeBarres,
+      designation: article.designation || undefined,
+      codeBarres: article.codeBarres || undefined,
       quantite: 1,
       prixUnitaire: Number(article.prixVente) || 0,
       remise: 0,
@@ -110,10 +132,33 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
   const monnaie = Math.max(0, montantRecu - total);
   const montantInsuffisant = modePaiement === 'CASH' && montantRecu < total;
 
+  // Pré-suggestion UNE SEULE FOIS du montant reçu (le caissier le saisit
+  // ensuite à la main — saisie manuelle obligatoire pour la monnaie réelle).
+  useEffect(() => {
+    if (modePaiement === 'CASH') {
+      const current = getValues('montantRecu');
+      if (current === '' || current === undefined || current === null) {
+        setValue('montantRecu', total > 0 ? String(Math.round(total)) : '', { shouldDirty: true, shouldValidate: true });
+      }
+    }
+    // Délibérément déclenché uniquement au changement de mode de paiement :
+    // ne JAMAIS réécraser la saisie manuelle du caissier.
+  }, [modePaiement, getValues, setValue]);
+
   const mutation = useMutation({
     mutationFn: async (data) => {
       if (!depotId) {
-        throw new Error('Aucun dépôt actif sélectionné.');
+        throw new Error('Aucun dépôt actif sélectionné. Veuillez sélectionner un dépôt.');
+      }
+
+      if (!Array.isArray(data.panier) || data.panier.length === 0) {
+        throw new Error('Le panier est vide. Ajoutez au moins un article.');
+      }
+
+      for (const line of data.panier) {
+        if (!line.articleId || Number(line.quantite) <= 0 || Number(line.prixUnitaire) < 0) {
+          throw new Error('Données du panier invalides. Vérifiez les articles.');
+        }
       }
 
       if (data.modePaiement === 'CASH' && Number(data.montantRecu) < total) {
@@ -121,7 +166,6 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
       }
 
       const payload = {
-        id: crypto.randomUUID(),
         depotId,
         clientId: data.clientId || undefined,
         modePaiement: data.modePaiement,
@@ -133,18 +177,32 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
           remise: Number(line.remise) || 0,
         })),
         total: Math.round(total * 100) / 100,
+        // Ticket 80mm : montant présenté par le client et monnaie restituée
+        // (recalculés côté serveur — autorité métier).
+        montantRecu: data.modePaiement === 'CASH'
+          ? Math.round((Number(data.montantRecu) || 0) * 100) / 100
+          : Math.round(total * 100) / 100,
+        monnaie: data.modePaiement === 'CASH'
+          ? Math.max(0, Math.round(((Number(data.montantRecu) || 0) - total) * 100) / 100)
+          : 0,
       };
 
       const response = await boutiqueApi.createVente(payload);
       return response.data;
     },
     onSuccess: (vente) => {
-      queryClient.invalidateQueries({ queryKey: ['boutique-ventes'] });
-      queryClient.invalidateQueries({ queryKey: ['boutique-stock'] });
-      queryClient.invalidateQueries({ queryKey: ['boutique-dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['boutique-caisse-statut', depotId] });
+      // Invalidation large : le prédicat couvre les clés de la page Factures
+      // (['boutique-factures','ventes',depotId]), du stock et du dashboard —
+      // la vente apparaît en temps réel partout, complément au WebSocket.
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = Array.isArray(query.queryKey) ? query.queryKey.join('|') : String(query.queryKey || '');
+          return ['boutique-', 'facture', 'vente', 'caisse', 'dashboard'].some((needle) => key.toLocaleLowerCase().includes(needle));
+        },
+      });
       notif.success(`Vente ${vente?.reference ? `#${vente.reference} ` : ''}enregistrée avec succès`);
       reset(emptyValues(depotId));
+      setRefreshTrigger((n) => n + 1);
       onSuccess?.(vente);
     },
     onError: (error) => {
@@ -156,8 +214,36 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
     },
   });
 
+  const canSubmit = panier.length > 0 && total > 0 && depotId && !mutation.isPending && !montantInsuffisant;
+  const submitDisabled = !canSubmit;
+
+  const handleValiderVente = (data) => {
+    if (!canSubmit) return;
+    mutation.mutate(data);
+  };
+
+  // Les erreurs de validation zod ne doivent jamais être silencieuses :
+  // c'était la cause d'un bouton « Valider la vente » muet.
+  const onInvalidSubmit = (errs) => {
+    const messages = [];
+    if (errs?.panier?.message) messages.push(errs.panier.message);
+    for (const key of ['modePaiement', 'remiseGlobale', 'montantRecu', 'depotId', 'clientId']) {
+      if (errs?.[key]?.message) messages.push(`${key} : ${errs[key].message}`);
+    }
+    if (Array.isArray(errs?.panier)) {
+      errs.panier.forEach((line, i) => {
+        if (line && typeof line === 'object') {
+          for (const field of Object.keys(line)) {
+            if (line[field]?.message) messages.push(`Article ${i + 1} — ${field} : ${line[field].message}`);
+          }
+        }
+      });
+    }
+    notif.error(messages[0] || 'Formulaire de vente invalide. Vérifiez le panier.');
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <form onSubmit={handleSubmit(handleValiderVente, onInvalidSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-6" noValidate>
       <div className="lg:col-span-2 space-y-4">
         {errors.panier?.message && (
           <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">
@@ -171,15 +257,30 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
             <AutocompleteInput
               label="Article"
               placeholder="Rechercher un article..."
-              fetchOptions={fetchArticles}
+              fetchSuggestions={fetchArticles}
               onSelect={ajouterAuPanier}
-              displayValue={(article) => article.designation}
+              displayKey="designation"
+              refreshKey={refreshTrigger}
             />
             <BarcodeScanner
               onScan={(code) => {
-                fetchArticles(code).then((articles) => {
-                  if (articles.length > 0) ajouterAuPanier(articles[0]);
-                });
+                fetchArticles(code)
+                  .then((articles) => {
+                    // Préférence : correspondance exacte du code-barres avant
+                    // tout résultat de recherche (un scan ne doit pas retomber
+                    // sur un article de désignation similaire).
+                    const normalized = String(code || '').trim();
+                    const exact = articles.find(
+                      (a) => String(a.codeBarres ?? '').trim() === normalized,
+                    );
+                    const target = exact || articles[0];
+                    if (target) {
+                      ajouterAuPanier(target);
+                    } else {
+                      notif.error(`Article introuvable pour le code-barres ${code}`);
+                    }
+                  })
+                  .catch(() => notif.error('Impossible de lire ce code-barres. Vérifiez la connexion.'))
               }}
             />
           </div>
@@ -237,11 +338,12 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
                 <AutocompleteInput
                   label="Client"
                   placeholder="Rechercher un client..."
-                  fetchOptions={fetchClients}
+                  fetchSuggestions={fetchClients}
                   value={field.value}
                   onChange={field.onChange}
                   onSelect={(client) => field.onChange(client?.id || '')}
-                  displayValue={(client) => client.nom}
+                  displayKey="nom"
+                  refreshKey={refreshTrigger}
                 />
               )}
             />
@@ -341,14 +443,29 @@ export default function VenteBoutiqueForm({ onSuccess, depotId }) {
         </div>
 
         <button
-          type="button"
-          onClick={handleSubmit((data) => mutation.mutate(data))}
-          disabled={mutation.isPending || panier.length === 0 || montantInsuffisant || total <= 0 || !depotId}
-          className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-600/20 transition-colors"
+          type="submit"
+          disabled={submitDisabled}
+          className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-600/20 transition-colors border border-transparent disabled:border-slate-600"
+          aria-busy={mutation.isPending}
         >
-          {mutation.isPending ? 'Traitement sécurisé...' : 'Valider la vente'}
+          {mutation.isPending ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Traitement sécurisé...
+            </>
+          ) : (
+            'Valider la vente'
+          )}
         </button>
+        {mutation.isError && (
+          <p className="text-red-400 text-xs text-center mt-2" role="alert">
+            {mutation.error?.message || 'Erreur lors de la validation'}
+          </p>
+        )}
       </div>
-    </div>
+    </form>
   );
 }

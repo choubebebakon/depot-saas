@@ -36,14 +36,16 @@ export default function LivraisonsPage() {
   const notif = useNotif();
   const [filtreStatut, setFiltreStatut] = useState('');
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['depot-livraisons', depotId],
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
+    queryKey: ['depot-livraisons', 'fournisseurs', 'receptions', depotId],
     queryFn: async () => {
       const res = await depotApi.getLivraisons();
       return Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
     },
     enabled: metier === 'DEPOT_BOISSONS' && Boolean(depotId),
-    staleTime: 15_000,
+    staleTime: 10_000,
+    refetchInterval: 12_000,
+    refetchIntervalInBackground: false,
   });
 
   const livraisons = useMemo(() => {
@@ -79,6 +81,27 @@ export default function LivraisonsPage() {
 
   if (!depotId) {
     return <div className="p-6 text-center text-red-400 font-bold">Dépôt non sélectionné</div>;
+  }
+
+  if (isError) {
+    const status = error?.response?.status;
+    const message = status === 403
+      ? 'Accès refusé : votre rôle ne permet pas de consulter les livraisons de ce dépôt.'
+      : status === 404
+        ? 'Service des livraisons introuvable. Contactez le support si le problème persiste.'
+        : 'Impossible de charger les livraisons. Vérifiez votre connexion puis réessayez.';
+    return (
+      <div className="p-6">
+        <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center">
+          <ClipboardCheck className="mx-auto text-red-400" size={36} />
+          <p className="font-bold text-red-300">{message}</p>
+          {status === 403 && <p className="text-xs text-slate-500">Code erreur : 403 — demandez au Patron d’ajuster vos permissions.</p>}
+          <button type="button" onClick={() => refetch()} className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700">
+            Réessayer
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

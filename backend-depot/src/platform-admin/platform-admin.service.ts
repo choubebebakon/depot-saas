@@ -90,7 +90,8 @@ export class PlatformAdminService {
     }
 
     const daysSinceFirstSnapshot = Math.floor(
-      (now.getTime() - oldestSnapshot.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - oldestSnapshot.createdAt.getTime()) /
+        (1000 * 60 * 60 * 24),
     );
 
     if (daysSinceFirstSnapshot < 30) {
@@ -101,7 +102,7 @@ export class PlatformAdminService {
     // Note: Comme le modèle Subscription n'a pas de champ updatedAt, on utilise une approximation
     // basée sur les paiements. Si une subscription a un paiement récent mais est maintenant CANCELLED/EXPIRED,
     // on considère qu'elle a churné récemment.
-    
+
     const cancelledOrExpiredSubs = await this.prisma.subscription.findMany({
       where: {
         status: { in: ['CANCELED', 'EXPIRED'] },
@@ -110,13 +111,14 @@ export class PlatformAdminService {
 
     // Filtrer celles qui ont eu une activité récente (paiement dans les 30 derniers jours avant d'être annulées)
     // C'est une approximation car on n'a pas l'historique des changements de statut
-    const recentlyChurned = cancelledOrExpiredSubs.filter(sub => {
+    const recentlyChurned = cancelledOrExpiredSubs.filter((sub) => {
       const payments = sub.payments as Array<{ createdAt: Date }> | null;
       if (!payments || payments.length === 0) return false;
       const lastPayment = payments[payments.length - 1];
       // Si le dernier paiement date de moins de 60 jours, on considère que le churn est récent
       const daysSinceLastPayment = Math.floor(
-        (now.getTime() - lastPayment.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+        (now.getTime() - lastPayment.createdAt.getTime()) /
+          (1000 * 60 * 60 * 24),
       );
       return daysSinceLastPayment <= 60;
     });
@@ -125,14 +127,15 @@ export class PlatformAdminService {
 
     // Nombre de subscriptions actives au début du mois (il y a 30 jours)
     // On utilise le snapshot d'il y a 30 jours si disponible
-    const snapshot30DaysAgo = await this.prisma.platformMetricSnapshot.findFirst({
-      where: {
-        createdAt: {
-          lte: thirtyDaysAgo,
+    const snapshot30DaysAgo =
+      await this.prisma.platformMetricSnapshot.findFirst({
+        where: {
+          createdAt: {
+            lte: thirtyDaysAgo,
+          },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      });
 
     const activeAtStartOfMonth = snapshot30DaysAgo?.activeTenants || 0;
 
@@ -154,8 +157,14 @@ export class PlatformAdminService {
     let currentMrr = 0;
     for (const sub of subs) {
       if (sub.plan) {
-        const plan = sub.plan as { billingCycle?: string; priceAmount?: number };
-        currentMrr += plan.billingCycle === 'ANNUEL' ? (plan.priceAmount ?? 0) / 12 : (plan.priceAmount ?? 0);
+        const plan = sub.plan as {
+          billingCycle?: string;
+          priceAmount?: number;
+        };
+        currentMrr +=
+          plan.billingCycle === 'ANNUEL'
+            ? (plan.priceAmount ?? 0) / 12
+            : (plan.priceAmount ?? 0);
       }
     }
 
@@ -163,13 +172,15 @@ export class PlatformAdminService {
 
     // ARPU: Average Revenue Per User (tenant actif payant)
     const activeTenantsCount = subs.length;
-    const arpu = activeTenantsCount > 0 ? currentMrr / activeTenantsCount : null;
+    const arpu =
+      activeTenantsCount > 0 ? currentMrr / activeTenantsCount : null;
 
     // 2) Churn rate réel
     const churnResult = await this.calculateChurnRate();
-    const ltv = churnResult.rate !== null && churnResult.rate > 0 && arpu !== null
-      ? arpu / (churnResult.rate / 100)
-      : null;
+    const ltv =
+      churnResult.rate !== null && churnResult.rate > 0 && arpu !== null
+        ? arpu / (churnResult.rate / 100)
+        : null;
 
     // 3) Tenants par secteur
     const tenants = await this.prisma.tenant.groupBy({
@@ -179,7 +190,7 @@ export class PlatformAdminService {
       },
     });
 
-    const sectorStats = tenants.map(t => ({
+    const sectorStats = tenants.map((t) => ({
       name: t.metier,
       status: t.subscriptionStatus,
       count: t._count.id ?? 0,
@@ -192,12 +203,16 @@ export class PlatformAdminService {
       take: 6,
     });
 
-    const evolution = snapshots.length > 0
-      ? snapshots.reverse().map(s => ({
-          month: s.createdAt.toLocaleString('default', { month: 'short', year: 'numeric' }),
-          mrr: s.totalMrr ?? 0,
-        }))
-      : []; // Tableau vide si pas d'historique - le frontend affichera un message approprié
+    const evolution =
+      snapshots.length > 0
+        ? snapshots.reverse().map((s) => ({
+            month: s.createdAt.toLocaleString('default', {
+              month: 'short',
+              year: 'numeric',
+            }),
+            mrr: s.totalMrr ?? 0,
+          }))
+        : []; // Tableau vide si pas d'historique - le frontend affichera un message approprié
 
     return {
       mrr: currentMrr, // 0 si aucune subscription active
@@ -211,4 +226,3 @@ export class PlatformAdminService {
     };
   }
 }
-

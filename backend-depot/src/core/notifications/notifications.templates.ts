@@ -204,6 +204,12 @@ export const TEMPLATES: Record<NotifType, TemplateDef> = {
     category: 'IA',
     priority: 'LOW',
   },
+  META_TOKEN_EXPIRING: {
+    title: 'Connexion WhatsApp — renouvellement requis',
+    message: 'Votre connexion WhatsApp expire dans {{jours}} jour(s).',
+    category: 'SYSTEM',
+    priority: 'HIGH',
+  },
 };
 
 export function interpolate(

@@ -1,13 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BillingCycle, PaymentMethod, PlanType } from '@prisma/client';
+import { BillingCycle, PlanType, PaymentMethod } from '@prisma/client';
 import { Transform } from 'class-transformer';
+import { IsEnum, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Matches,
-} from 'class-validator';
+  NOTCHPAY_PAYMENT_METHODS,
+  normalizeMomoPhoneForCountry,
+} from '../../common/config/notchpay-channels.config';
+import { MomoPhoneByCountry } from '../../common/validators/momo-phone.constraint';
 
 /**
  * DTO pour la création d'un paiement.
@@ -35,44 +34,67 @@ export class CreatePaymentDto {
   billingCycle: BillingCycle;
 
   @ApiProperty({
-    enum: [
-      PaymentMethod.ORANGE_MONEY,
-      PaymentMethod.MTN_MOMO,
-      PaymentMethod.VISA_CARD,
-      PaymentMethod.MASTERCARD,
-    ],
+    enum: NOTCHPAY_PAYMENT_METHODS,
     example: PaymentMethod.MTN_MOMO,
-    description: 'Methode de paiement NotchPay.',
+    description:
+      "Methode de paiement NotchPay. STRIPE est décommissionné (partie 1) et n'est plus accepté.",
   })
-  @IsEnum(PaymentMethod)
+  @IsIn(NOTCHPAY_PAYMENT_METHODS)
   method: PaymentMethod;
+
+  /**
+   * PARTIE 2 (contrainte 8) : pays ISO 3166-1 alpha-2 du numéro Mobile Money.
+   * Optionnel — défaut CM (seul pays confirmé couvert par NotchPay à ce jour).
+   * La validation du numéro se fait contre la config centralisée
+   * notchpay-channels.config.ts (fail-closed sur les pays non couverts).
+   */
+  @ApiPropertyOptional({
+    example: 'CM',
+    description:
+      'Pays du paiement (ISO 3166-1 alpha-2). Défaut : CM. Seuls les pays couverts par NotchPay sont acceptés.',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : value,
+  )
+  @IsOptional()
+  @IsString()
+  country?: string;
 
   @ApiPropertyOptional({
     example: '237670000000',
     description:
       'Numero Mobile Money au format international (237 + 9 chiffres).',
   })
-  @Transform(({ value }: { value: unknown }) => {
-    if (typeof value !== 'string') return value;
+  // PARTIE 3 (contrainte 8) : normalisation pilotée par la config centralisée
+  // (indicatif déduit du pays) — plus de '237' codé en dur. Fail-closed : si le
+  // pays n'est pas couvert par NotchPay, le numéro n'est pas normalisé et la
+  // validation @MomoPhoneByCountry le refuse juste après.
+  @Transform(
+    ({ value, obj }: { value: unknown; obj: { country?: string } }) => {
+      if (typeof value !== 'string') return value;
 
-    const phone = value.trim();
-    if (!phone) return undefined;
+      const phone = value.trim();
+      if (!phone) return undefined;
 
-    return /^6\d{8}$/.test(phone) ? `237${phone}` : phone;
-  })
+      const country =
+        typeof obj?.country === 'string'
+          ? obj.country.toUpperCase()
+          : undefined;
+      return normalizeMomoPhoneForCountry(country, phone) ?? phone;
+    },
+  )
   @IsOptional()
   @IsString()
-  // Regex assouplie : vérifie que ça commence par 2376 et possède 8 chiffres derrière
-  @Matches(/^2376\d{8}$/, {
-    message:
-      'Le numéro doit être au format international : 2376XXXXXXXX (ex: 237670000000).',
-  })
+  // PARTIE 3 (contrainte 8) : validation pilotée par la couverture NotchPay
+  // réelle (notchpay-channels.config.ts) au lieu de la regex Cameroun-only
+  // en dur. Fail-closed : pays non couvert → numéro refusé.
+  @MomoPhoneByCountry()
   momoPhoneNumber?: string;
 
   @ApiPropertyOptional({
-    example: 'mtn',
+    example: 'cm.mtn',
     description:
-      'Canal NotchPay souhaite pour ouvrir directement la methode choisie.',
+      'Canal NotchPay souhaite pour ouvrir directement la methode choisie (IDs reels de GET /channels : cm.mtn, cm.orange).',
   })
   @IsOptional()
   @IsString()

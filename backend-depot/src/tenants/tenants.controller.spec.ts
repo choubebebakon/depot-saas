@@ -1,12 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TenantsController } from './tenants.controller';
 import { TenantsService } from './tenants.service';
+import { AuditService } from '../audit/audit.service';
 
 const mockTenantsService = {
   create: jest.fn(),
   findAll: jest.fn(),
   findOne: jest.fn(),
   update: jest.fn(),
+};
+
+const mockAuditService = {
+  logEvent: jest.fn(),
 };
 
 describe('TenantsController', () => {
@@ -19,6 +24,10 @@ describe('TenantsController', () => {
         {
           provide: TenantsService,
           useValue: mockTenantsService,
+        },
+        {
+          provide: AuditService,
+          useValue: mockAuditService,
         },
       ],
     }).compile();

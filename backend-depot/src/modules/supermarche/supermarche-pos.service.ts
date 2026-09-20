@@ -1,7 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { AuditActor } from '../../audit/audit-actor.util';
+import { DepotScopeService } from '../../common/depot-scope.service';
 import { SupermarcheService } from './supermarche.service';
 
 /**
@@ -20,8 +25,15 @@ import { SupermarcheService } from './supermarche.service';
  */
 @Injectable()
 export class SupermarchePosService extends SupermarcheService {
-  constructor(prisma: PrismaService, auditService: AuditService) {
-    super(prisma, auditService);
+  protected readonly db: PrismaService;
+
+  constructor(
+    prisma: PrismaService,
+    auditService: AuditService,
+    depotScope: DepotScopeService,
+  ) {
+    super(prisma, auditService, depotScope);
+    this.db = prisma;
   }
 
   override async createVente(tenantId: string, data: any, actor: AuditActor) {
@@ -32,12 +44,16 @@ export class SupermarchePosService extends SupermarcheService {
       throw new BadRequestException('Le panier ne peut pas être vide.');
     }
 
-    const articleIds = [...new Set(data.panier.map((item: any) => item.articleId))];
-    if (articleIds.some((id) => typeof id !== 'string' || !id.trim())) {
+    const articleIds = [
+      ...new Set<string>(
+        data.panier.map((item: any) => String(item.articleId)),
+      ),
+    ];
+    if (articleIds.some((id) => !id || !id.trim())) {
       throw new BadRequestException('Article invalide dans le panier.');
     }
 
-    const articles = await this.prisma.article.findMany({
+    const articles = await this.db.article.findMany({
       where: {
         tenantId,
         id: { in: articleIds },
@@ -50,11 +66,15 @@ export class SupermarchePosService extends SupermarcheService {
     });
 
     if (articles.length !== articleIds.length) {
-      throw new NotFoundException('Un ou plusieurs articles ne sont pas autorisés pour ce tenant.');
+      throw new NotFoundException(
+        'Un ou plusieurs articles ne sont pas autorisés pour ce tenant.',
+      );
     }
 
-    const articleMap = new Map(articles.map((article) => [article.id, article]));
-    const stockRows = await this.prisma.stock.findMany({
+    const articleMap = new Map(
+      articles.map((article) => [article.id, article]),
+    );
+    const stockRows = await this.db.stock.findMany({
       where: {
         depotId: data.depotId,
         articleId: { in: articleIds },
@@ -62,7 +82,9 @@ export class SupermarchePosService extends SupermarcheService {
       },
       select: { articleId: true, quantite: true },
     });
-    const stockMap = new Map(stockRows.map((stock) => [stock.articleId, stock.quantite]));
+    const stockMap = new Map(
+      stockRows.map((stock) => [stock.articleId, stock.quantite]),
+    );
 
     const panier = data.panier.map((item: any) => {
       const article = articleMap.get(item.articleId);
@@ -72,7 +94,9 @@ export class SupermarchePosService extends SupermarcheService {
 
       const quantite = Number(item.quantite);
       if (!Number.isInteger(quantite) || quantite < 1) {
-        throw new BadRequestException(`Quantité invalide pour ${article.designation}.`);
+        throw new BadRequestException(
+          `Quantité invalide pour ${article.designation}.`,
+        );
       }
 
       const stockDisponible = stockMap.get(article.id) ?? 0;
@@ -84,8 +108,14 @@ export class SupermarchePosService extends SupermarcheService {
 
       const prix = Number(article.prixVente);
       const remisePourcentage = Number(item.remise ?? 0);
-      if (!Number.isFinite(remisePourcentage) || remisePourcentage < 0 || remisePourcentage > 100) {
-        throw new BadRequestException(`Remise invalide pour ${article.designation}.`);
+      if (
+        !Number.isFinite(remisePourcentage) ||
+        remisePourcentage < 0 ||
+        remisePourcentage > 100
+      ) {
+        throw new BadRequestException(
+          `Remise invalide pour ${article.designation}.`,
+        );
       }
 
       const sousTotal = quantite * prix;
@@ -112,7 +142,7 @@ export class SupermarchePosService extends SupermarcheService {
     }
 
     if (data.clientId) {
-      const client = await this.prisma.client.findFirst({
+      const client = await this.db.client.findFirst({
         where: { id: data.clientId, tenantId },
         select: { id: true },
       });
@@ -121,12 +151,31 @@ export class SupermarchePosService extends SupermarcheService {
       }
     }
 
+    // Montant reçu / monnaie restituée : calcul vulgarisé côté serveur,
+    // le client ne fournit que le montant présenté (CASH) ou rien (mobile).
+    const estCash = data.modePaiement === 'CASH';
+    const montantRecu = Number(data.montantRecu ?? 0);
+    const montantRecuFinal = Number.isFinite(montantRecu) && estCash
+      ? montantRecu
+      : Number(data.total);
+    if (estCash && Number.isFinite(montantRecu) && montantRecuFinal < Number(data.total)) {
+      throw new BadRequestException(
+        'Le montant reçu est inférieur au total de la vente.',
+      );
+    }
+    const monnaieFinal = Math.max(
+      0,
+      Number((montantRecuFinal - Number(data.total)).toFixed(2)),
+    );
+
     return super.createVente(
       tenantId,
       {
         ...data,
         total,
         panier,
+        montantRecu: montantRecuFinal,
+        monnaie: monnaieFinal,
       },
       actor,
     );

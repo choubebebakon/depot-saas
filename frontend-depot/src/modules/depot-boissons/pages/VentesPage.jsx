@@ -1,30 +1,33 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePagination } from '../../../hooks/usePagination';
-import api from '../../../api'; // Ajuste le chemin si besoin pour atteindre ton dossier api
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDepot } from '../../../contexts/DepotContext';
 import { useNotif } from '../../../context/NotifContext';
 import { usePermission } from '../../../shared/hooks/usePermission';
+import { useActions } from '../../../shared/hooks/useActions';
 import { depotApi } from '../services/depotApi';
 import VenteBoissonsForm from '../forms/VenteBoissonsForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
-import Receipt80mm from '../../../components/Receipt80mm';
+import { usePrintFacture } from '../components/FacturePrint';
+import { usePrintTicket } from '../components/Ticket80mm';
 import { DollarSign } from 'lucide-react';
 
 const LIMIT = 100;
 
 export default function VentesPage() {
-  const { metier, tenantId } = useAuth();
+  const { metier } = useAuth();
   const depot = useDepot();
   const depotId = depot?.depotId ?? depot?.depotActif?.id ?? null;
   const queryClient = useQueryClient();
   const notif = useNotif();
   const { canWrite } = usePermission('ventes');
+  const { hasAction } = useActions();
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [printData, setPrintData] = useState(null);
+  const { print: printFacture, printingId, factureNode } = usePrintFacture();
+  const { printTicket, ticketNode } = usePrintTicket();
 
   if (metier !== 'DEPOT_BOISSONS') {
     return <div className="p-8 text-center text-red-400">AccÃ¨s non autorisÃ©</div>;
@@ -74,42 +77,16 @@ export default function VentesPage() {
   };
 
 const handlePrint = async (id) => {
-    try {
-      const r = await depotApi.getVente(id);
-      const vente = r.data || r;
+    if (!id) return;
+    await printTicket(id);
+  };
 
-      let params = {};
-      try {
-        const response = await api.get('/depot/parametres');
-        params = response.data || {};
-      } catch (e) {
-        console.warn("Utilisation des paramÃ¨tres locaux...");
-      }
-      
-      let tenantConfig = {};
-      try {
-        const t = await api.get(`/tenants/${tenantId}`);
-        tenantConfig = t.data || {};
-      } catch(e) {}
-      
-      const config = {
-        nomEntreprise: tenantConfig.nomEntreprise || params?.infos?.nomEntreprise || localStorage.getItem('depot_nom') || "MON DÃ‰PÃ”T",
-        adresse: tenantConfig.adresse || params?.infos?.adresse || localStorage.getItem('depot_adresse') || "Douala",
-        telephone: tenantConfig.telephone || params?.infos?.telephone || localStorage.getItem('depot_telephone') || "",
-        messageFin: params?.ticket?.messageFin || localStorage.getItem('msg_fin') || "Ã€ bientÃ´t !",
-        logo: tenantConfig.logo,
-      };
-
-      setPrintData({ vente, config });
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => setPrintData(null), 1000);
-      }, 500);
-
-    } catch (err) {
-      console.error(err);
-      alert("Erreur impression: " + err.message);
-    }
+  // Impression automatique du ticket 80mm dès l'enregistrement de la vente :
+  // le formulaire renvoie la vente fraîchement créée (aucun aller-retour
+  // supplémentaire avant l'impression).
+  const handleVenteSuccess = (vente) => {
+    if (!vente?.reference) return; // vente hors ligne (mise en file) : pas de ticket imprimable
+    printTicket(vente);
   };
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -188,7 +165,11 @@ Nouvelle vente
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => handlePrint(v.id)}
                         title="Imprimer ticket" className="px-2.5 py-1.5 hover:bg-blue-500/20 rounded-lg text-slate-400 hover:text-blue-400 transition-all text-xs">Ticket</button>
-                      {canWrite && (v.statut !== 'ANNULEE' && v.statut !== 'ANNULE') && (
+                      {(v.statut !== 'ANNULEE' && v.statut !== 'ANNULE') && (
+                        <button onClick={() => printFacture(v.id)} disabled={printingId === v.id}
+                          title="Imprimer la facture A4" className="px-2.5 py-1.5 hover:bg-emerald-500/20 rounded-lg text-slate-400 hover:text-emerald-400 disabled:opacity-50 transition-all text-xs">Facture</button>
+                      )}
+                      {canWrite && hasAction('ventes.annuler') && (v.statut !== 'ANNULEE' && v.statut !== 'ANNULE') && (
                         <button onClick={() => setConfirmDelete(v)} title="Annuler"
                           className="px-2.5 py-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs">âœ• Annuler</button>
                       )}
@@ -214,9 +195,10 @@ Nouvelle vente
       <VenteBoissonsForm 
         isOpen={formOpen} 
         onClose={() => setFormOpen(false)} 
+        onSuccess={handleVenteSuccess}
         edit={editItem} 
         metier="depot-boissons" 
-        depotId={currentDepotId} 
+        depotId={depotId} 
       />
       
       <ConfirmModal 
@@ -228,7 +210,8 @@ Nouvelle vente
         message={`Annuler la vente de ${parseInt(confirmDelete?.total || 0).toLocaleString('fr-FR')} FCFA ? Cette action est irrÃ©versible.`} 
       />
 
-      <Receipt80mm vente={printData?.vente} config={printData?.config} />
+      {ticketNode}
+      {factureNode}
     </div>
   );
 }

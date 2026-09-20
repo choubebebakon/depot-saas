@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Prisma, StatutVente } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { DepotScopeService } from '../common/depot-scope.service';
@@ -30,12 +34,30 @@ export class CaisseService {
 
   // ── Sessions Caisse ──────────────────────────────────────
 
+  /**
+   * Normalise l'identifiant d'un poste de caisse (CAISSE_1, CAISSE_2…).
+   * Le multi-caisse est rétro-compatible : sans posteId explicite, le poste
+   * historique unique « CAISSE_1 » est utilisé.
+   */
+  private normalizePosteId(raw: unknown): string {
+    const posteId =
+      typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+    if (!posteId) return 'CAISSE_1';
+    if (!/^[A-Z0-9_-]{1,50}$/.test(posteId)) {
+      throw new BadRequestException(
+        'Identifiant de poste de caisse invalide (caractères autorisés : A-Z, 0-9, _ et -).',
+      );
+    }
+    return posteId;
+  }
+
   async ouvrirSession(dto: OuvrirCaisseDto) {
     if (!dto.depotId || !dto.tenantId || !dto.userId) {
       throw new BadRequestException('Contexte de caisse incomplet.');
     }
 
     this.assertScope(dto.tenantId, dto.depotId);
+    const posteId = this.normalizePosteId(dto.posteId);
 
     try {
       return await this.prisma.$transaction(
@@ -44,22 +66,24 @@ export class CaisseService {
             where: {
               depotId: dto.depotId,
               tenantId: dto.tenantId,
+              posteId,
               estOuverte: true,
             },
           });
 
           if (sessionExistante) {
             throw new BadRequestException(
-              'Une session de caisse est déjà ouverte sur ce Depot.',
+              `Une session de caisse est déjà ouverte sur le poste ${posteId} de ce dépôt.`,
             );
           }
 
           const session = await tx.sessionCaisse.create({
             data: {
               fondInitial: dto.fondInitial,
-              depotId: dto.depotId,
-              userId: dto.userId,
-              tenantId: dto.tenantId,
+              depotId: dto.depotId!,
+              userId: dto.userId!,
+              tenantId: dto.tenantId!,
+              posteId,
               estOuverte: true,
             },
           });
@@ -68,7 +92,7 @@ export class CaisseService {
             data: {
               type: 'FOND_INITIAL',
               montant: dto.fondInitial,
-              motif: 'Ouverture de caisse',
+              motif: `Ouverture de caisse (poste ${posteId})`,
               sessionId: session.id,
             },
           });
@@ -81,6 +105,14 @@ export class CaisseService {
       if ((error as any)?.code === 'P2034') {
         throw new BadRequestException(
           'Une autre ouverture de caisse est en cours. Réessayez.',
+        );
+      }
+      // Course perdue au niveau de l'index partiel unique
+      // (depotId, posteId) WHERE estOuverte : un autre poste a ouvert
+      // entre-temps côté concurrent.
+      if ((error as any)?.code === 'P2002') {
+        throw new BadRequestException(
+          `Une session de caisse vient d'être ouverte sur le poste ${posteId}.`,
         );
       }
       throw error;
@@ -122,12 +154,20 @@ export class CaisseService {
         )
         .reduce((acc, m) => acc + m.montant, 0);
 
+      // Réconciliation des encaissements cash :
+      //  - ventes rattachées à CETTE session (multi-caisse) ;
+      //  - repli legacy : ventes du dépôt sans session, ouvertes depuis
+      //    l'ouverture de la session (les ventes des autres postes, qui ont
+      //    leur propre sessionId, ne sont jamais comptabilisées deux fois).
       const ventesSession = await tx.vente.aggregate({
         where: {
           tenantId: dto.tenantId,
           depotId: dto.depotId,
           statut: StatutVente.PAYE,
-          date: { gte: session.dateOuverture },
+          OR: [
+            { sessionId: session.id },
+            { sessionId: null, date: { gte: session.dateOuverture } },
+          ],
         },
         _sum: { montantCash: true },
       });
@@ -170,14 +210,38 @@ export class CaisseService {
     });
   }
 
-  async getSessionActive(tenantId: string, depotId: string) {
+  async getSessionActive(tenantId: string, depotId: string, posteId?: string) {
     this.assertScope(tenantId, depotId);
     return this.prisma.sessionCaisse.findFirst({
-      where: { tenantId, depotId, estOuverte: true },
+      where: {
+        tenantId,
+        depotId,
+        estOuverte: true,
+        ...(posteId ? { posteId: this.normalizePosteId(posteId) } : {}),
+      },
       include: {
         mouvements: { orderBy: { createdAt: 'desc' } },
         user: { select: { email: true, role: true } },
       },
+    });
+  }
+
+  /**
+   * Liste des sessions actuellement ouvertes sur le dépôt (tous postes),
+   * utilisée par le sélecteur de poste du POS multi-caisse.
+   */
+  async getSessionsOuvertes(tenantId: string, depotId: string) {
+    this.assertScope(tenantId, depotId);
+    return this.prisma.sessionCaisse.findMany({
+      where: { tenantId, depotId, estOuverte: true },
+      select: {
+        id: true,
+        posteId: true,
+        dateOuverture: true,
+        fondInitial: true,
+        user: { select: { email: true } },
+      },
+      orderBy: { posteId: 'asc' },
     });
   }
 
@@ -196,7 +260,9 @@ export class CaisseService {
 
   // ── Dépenses ─────────────────────────────────────────────
 
-  async createDepense(dto: CreateDepenseDto & { tenantId: string; depotId: string }) {
+  async createDepense(
+    dto: CreateDepenseDto & { tenantId: string; depotId: string },
+  ) {
     this.assertScope(dto.tenantId, dto.depotId);
 
     try {
@@ -240,17 +306,25 @@ export class CaisseService {
             }
           }
 
+          // En multi-caisse, la dépense est débitée du poste qui l'exécute.
+          // Sans posteId (clients legacy), on retombe sur n'importe quelle
+          // session ouverte du dépôt (comportement historique conservé).
           const session = await tx.sessionCaisse.findFirst({
             where: {
               depotId: dto.depotId,
               tenantId: dto.tenantId,
               estOuverte: true,
+              ...(dto.posteId
+                ? { posteId: this.normalizePosteId(dto.posteId) }
+                : {}),
             },
           });
 
           if (!session) {
             throw new BadRequestException(
-              'Impossible d’enregistrer une dépense sans caisse ouverte sur ce dépôt.',
+              dto.posteId
+                ? `Impossible d'enregistrer une dépense : aucune caisse ouverte sur le poste ${this.normalizePosteId(dto.posteId)}.`
+                : 'Impossible d’enregistrer une dépense sans caisse ouverte sur ce dépôt.',
             );
           }
 
@@ -260,7 +334,13 @@ export class CaisseService {
           const entrees = await tx.mouvementCaisse.aggregate({
             where: {
               sessionId: session.id,
-              type: { in: ['FOND_INITIAL', 'ENCAISSEMENT_VENTE', 'ENCAISSEMENT_DETTE'] },
+              type: {
+                in: [
+                  'FOND_INITIAL',
+                  'ENCAISSEMENT_VENTE',
+                  'ENCAISSEMENT_DETTE',
+                ],
+              },
             },
             _sum: { montant: true },
           });
@@ -273,12 +353,17 @@ export class CaisseService {
             _sum: { montant: true },
           });
 
+          // Solde cash du poste uniquement (les ventes des autres postes
+          // ont leur propre sessionId et ne gonflent pas cette caisse).
           const cashVentes = await tx.vente.aggregate({
             where: {
               tenantId: dto.tenantId,
               depotId: dto.depotId,
               statut: StatutVente.PAYE,
-              date: { gte: session.dateOuverture },
+              OR: [
+                { sessionId: session.id },
+                { sessionId: null, date: { gte: session.dateOuverture } },
+              ],
             },
             _sum: { montantCash: true },
           });
@@ -377,7 +462,9 @@ export class CaisseService {
       }
 
       if (debut && fin && debut > fin) {
-        throw new BadRequestException('La dateDebut doit être antérieure à la dateFin.');
+        throw new BadRequestException(
+          'La dateDebut doit être antérieure à la dateFin.',
+        );
       }
     }
 
@@ -390,7 +477,7 @@ export class CaisseService {
 
   // ── Résumé caisse du jour ────────────────────────────────
 
-  async getResume(tenantId: string, depotId: string) {
+  async getResume(tenantId: string, depotId: string, posteId?: string) {
     this.assertScope(tenantId, depotId);
 
     const today = new Date();
@@ -419,7 +506,10 @@ export class CaisseService {
       _count: { _all: true },
     });
 
-    const sessionActive = await this.getSessionActive(tenantId, depotId);
+    // Session du poste demandé (défaut CAISSE_1) + vue consolidée de tous
+    // les postes ouverts du dépôt pour l'interface multi-caisse.
+    const sessionActive = await this.getSessionActive(tenantId, depotId, posteId);
+    const sessionsOuvertes = await this.getSessionsOuvertes(tenantId, depotId);
 
     return {
       ventesTotal: ventesJour._sum?.total || 0,
@@ -434,7 +524,9 @@ export class CaisseService {
         (ventesJour._sum?.montantCash || 0) - (depensesJour._sum?.montant || 0),
       sessionActive: !!sessionActive,
       sessionId: sessionActive?.id || null,
+      posteId: sessionActive?.posteId || null,
       fondInitial: sessionActive?.fondInitial || 0,
+      sessionsOuvertes,
     };
   }
 }

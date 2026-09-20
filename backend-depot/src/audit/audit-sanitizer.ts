@@ -17,7 +17,10 @@ const REDACTED_KEYS = new Set([
 ]);
 
 function normalizeKey(key: string): string {
-  return key.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  return key
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
 }
 
 /**
@@ -46,7 +49,9 @@ export function sanitizeAuditValue(
 
   try {
     if (Array.isArray(value)) {
-      return value.slice(0, 100).map((item) => sanitizeAuditValue(item, depth + 1, seen));
+      return value
+        .slice(0, 100)
+        .map((item) => sanitizeAuditValue(item, depth + 1, seen));
     }
 
     const entries = Object.entries(value as Record<string, unknown>);

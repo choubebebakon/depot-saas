@@ -16,7 +16,6 @@ interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
 }
 
-
 @Injectable()
 export class AccessStatusGuard implements CanActivate {
   constructor(

@@ -1,4 +1,9 @@
-import { ExecutionContext, ForbiddenException, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -21,7 +26,10 @@ function routePath(request: Request): string {
 
 function isLegacyTourneeRoute(request: Request): boolean {
   const path = routePath(request).toLowerCase();
-  return /\/depot-boissons\/tournees(?:\/|$)/.test(path) || /\/tournees(?:\/|$)/.test(path);
+  return (
+    /\/depot-boissons\/tournees(?:\/|$)/.test(path) ||
+    /\/tournees(?:\/|$)/.test(path)
+  );
 }
 
 function isTricycleRoute(request: Request): boolean {
@@ -32,7 +40,10 @@ function isTricycleRoute(request: Request): boolean {
 export class TourneeScopeInterceptor implements NestInterceptor {
   constructor(private readonly prisma: PrismaService) {}
 
-  intercept(context: ExecutionContext, next: import('@nestjs/common').CallHandler): Observable<unknown> {
+  intercept(
+    context: ExecutionContext,
+    next: import('@nestjs/common').CallHandler,
+  ): Observable<unknown> {
     const request = context.switchToHttp().getRequest<ScopedRequest>();
     const user = request.user;
 
@@ -40,7 +51,9 @@ export class TourneeScopeInterceptor implements NestInterceptor {
 
     const scope = request.depotScope;
     if (!scope?.tenantId || !scope.depotId) {
-      throw new ForbiddenException('Un dépôt actif est requis pour gérer les tournées.');
+      throw new ForbiddenException(
+        'Un dépôt actif est requis pour gérer les tournées.',
+      );
     }
 
     // Ne relit plus X-Depot-Id / query.depotId et ne résout plus un dépôt à
@@ -55,7 +68,11 @@ export class TourneeScopeInterceptor implements NestInterceptor {
     return from(targetCheck).pipe(switchMap(() => next.handle()));
   }
 
-  private forceAuthoritativeScope(request: ScopedRequest, tenantId: string, depotId: string): void {
+  private forceAuthoritativeScope(
+    request: ScopedRequest,
+    tenantId: string,
+    depotId: string,
+  ): void {
     const body = request.body as Record<string, unknown> | undefined;
     if (body) {
       body.tenantId = tenantId;
@@ -74,7 +91,7 @@ export class TourneeScopeInterceptor implements NestInterceptor {
     tenantId: string,
     depotId: string,
   ): Promise<void> {
-    const id = request.params?.id || (request.body as any)?.tourneeId;
+    const id = request.params?.id || request.body?.tourneeId;
     if (!id) return;
 
     const tournee = await this.prisma.tournee.findFirst({
@@ -83,7 +100,9 @@ export class TourneeScopeInterceptor implements NestInterceptor {
     });
 
     if (!tournee) {
-      throw new ForbiddenException('Accès refusé à cette tournée dans ce dépôt.');
+      throw new ForbiddenException(
+        'Accès refusé à cette tournée dans ce dépôt.',
+      );
     }
   }
 }
