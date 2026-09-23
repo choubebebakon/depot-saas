@@ -159,7 +159,7 @@ export default function DashboardSupermarche() {
               <p className="text-slate-500 text-sm text-center py-6">Aucune donnée disponible</p>
             ) : (
               ventesByRayon.map((r, i) => (
-                <MiniBar key={i} label={`Article ${r.articleId}`} value={r._sum?.prix || 0} max={maxRayon} color={COULEUR} />
+                <MiniBar key={i} label={r.article?.designation || `Article ${r.articleId}`} value={r._sum?.prix || 0} max={maxRayon} color={COULEUR} />
               ))
             )}
           </div>

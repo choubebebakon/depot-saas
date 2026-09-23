@@ -43,7 +43,7 @@ export const PERMISSION_MATRIX = {
       rayons: { canRead: true, canWrite: true },
       fournisseurs: { canRead: true, canWrite: false },
       ventes: { canRead: true, canWrite: false },
-      promotions: { canRead: true, canWrite: false },
+      promotions: { canRead: false, canWrite: false },
       receptions: { canRead: true, canWrite: true },
       inventaire: { canRead: true, canWrite: true },
       // §10 — « Rapports stock » seulement, jamais financier.
@@ -71,7 +71,11 @@ export const PERMISSION_MATRIX = {
       promotions: { canRead: true, canWrite: false },
       fournisseurs: { canRead: true, canWrite: true },
       depenses: { canRead: true, canWrite: true },
-      rapports: { canRead: true, canWrite: true },
+      // §10 — Rapports granulaires : ventes, stock, financier ✅
+      reports_sales: { canRead: true, canWrite: true },
+      reports_stock: { canRead: true, canWrite: true },
+      reports_financial: { canRead: true, canWrite: true },
+      reports_performance: { canRead: true, canWrite: false },
       // §23 — 'depots' est un sous-module d'ADMINISTRATION (réservé au
       // PATRON) : aucune ligne ici, conformément à ADMINISTRATION_SUBMODULES.
     },
@@ -82,7 +86,7 @@ export const PERMISSION_MATRIX = {
       clients: { canRead: true, canWrite: true },
       promotions: { canRead: true, canWrite: true },
       // §10 — « Mes performances » seulement.
-      rapports_performance: { canRead: true, canWrite: false },
+      reports_performance: { canRead: true, canWrite: false },
     },
   },
   boutique: {
@@ -138,10 +142,11 @@ export const PERMISSION_MATRIX = {
       inventaire: { canRead: true, canWrite: true },
       consignes: { canRead: true, canWrite: true },
       livraisons: { canRead: true, canWrite: true },
-      tournees: { canRead: true, canWrite: true },
+      tournees: { canRead: false, canWrite: false },
       fournisseurs: { canRead: true, canWrite: false },
       ventes: { canRead: true, canWrite: false },
-      rapports_stock: { canRead: true, canWrite: false },
+      // §10 — Rapports stock seulement
+      reports_stock: { canRead: true, canWrite: false },
     },
     CAISSIER: {
       dashboard: { canRead: true, canWrite: false },
@@ -166,7 +171,11 @@ export const PERMISSION_MATRIX = {
       factures: { canRead: true, canWrite: true },
       fournisseurs: { canRead: true, canWrite: true },
       depenses: { canRead: true, canWrite: true },
-      rapports: { canRead: true, canWrite: true },
+      // §10 — Rapports granulaires : ventes, stock, financier ✅
+      reports_sales: { canRead: true, canWrite: true },
+      reports_stock: { canRead: true, canWrite: true },
+      reports_financial: { canRead: true, canWrite: true },
+      reports_performance: { canRead: true, canWrite: false },
     },
     COMMERCIAL: {
       dashboard: { canRead: true, canWrite: false },
@@ -175,7 +184,8 @@ export const PERMISSION_MATRIX = {
       clients: { canRead: true, canWrite: true },
       tournees: { canRead: true, canWrite: true },
       livraisons: { canRead: true, canWrite: true },
-      rapports_performance: { canRead: true, canWrite: false },
+      // §10 — « Mes performances » seulement.
+      reports_performance: { canRead: true, canWrite: false },
     },
   },
 };
@@ -307,9 +317,11 @@ export function pathToSousModule(path, metierSlug) {
     'pos-caisse': 'pos_caisse',
     'ventes-caisse': 'caisse',
     'audit-patron': 'audit_patron',
-    'rapports-stock': 'rapports_stock',
-    performance: 'rapports_performance',
-    'mes-performances': 'rapports_performance',
+    'rapports-stock': 'reports_stock',
+    performance: 'reports_performance',
+    'mes-performances': 'reports_performance',
+    'rapports-ventes': 'reports_sales',
+    'rapports-financiers': 'reports_financial',
     articles: metierSlug === 'depot' ? 'stock_articles' : 'stock',
     stock: metierSlug === 'depot' ? 'stock_articles' : 'stock',
   };

@@ -39,13 +39,14 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
+import { EstablishmentScopeGuard } from '../../common/guards/establishment-scope.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
 import { RequirePermission, RequireAction } from '../../auth/decorators/require-permission.decorator';
 import { buildAuditActor } from '../../audit/audit-actor.util';
 
 @Controller('supermarche')
 @Metier(MetierType.SUPERMARCHE)
-@UseGuards(JwtAuthGuard, MetierGuard)
+@UseGuards(JwtAuthGuard, MetierGuard, EstablishmentScopeGuard)
 export class SupermarcheController {
   private readonly logger = new Logger(SupermarcheController.name);
 
@@ -568,8 +569,85 @@ export class SupermarcheController {
 
   // ── Rapports ──────────────────────────────────────────────────────────────
 
+  @Get('rapports/ventes')
+  @RequirePermission('reports_sales', 'read')
+  async getRapportsVentes(
+    @Req() req: any,
+    @Query('periode') periode?: string,
+    @Query('dateDebut') dateDebut?: string,
+    @Query('dateFin') dateFin?: string,
+    @Query('depotId') depotId?: string,
+  ) {
+    this.checkTenantId(req);
+    return this.service.getRapportsVentes(
+      req.user.tenantId,
+      periode,
+      dateDebut,
+      dateFin,
+      depotId || req.headers['x-depot-id'],
+    );
+  }
+
+  @Get('rapports/stock')
+  @RequirePermission('reports_stock', 'read')
+  async getRapportsStock(
+    @Req() req: any,
+    @Query('periode') periode?: string,
+    @Query('dateDebut') dateDebut?: string,
+    @Query('dateFin') dateFin?: string,
+    @Query('depotId') depotId?: string,
+  ) {
+    this.checkTenantId(req);
+    return this.service.getRapportsStock(
+      req.user.tenantId,
+      periode,
+      dateDebut,
+      dateFin,
+      depotId || req.headers['x-depot-id'],
+    );
+  }
+
+  @Get('rapports/financiers')
+  @RequirePermission('reports_financial', 'read')
+  async getRapportsFinanciers(
+    @Req() req: any,
+    @Query('periode') periode?: string,
+    @Query('dateDebut') dateDebut?: string,
+    @Query('dateFin') dateFin?: string,
+    @Query('depotId') depotId?: string,
+  ) {
+    this.checkTenantId(req);
+    return this.service.getRapportsFinanciers(
+      req.user.tenantId,
+      periode,
+      dateDebut,
+      dateFin,
+      depotId || req.headers['x-depot-id'],
+    );
+  }
+
+  @Get('rapports/performance')
+  @RequirePermission('reports_performance', 'read')
+  async getRapportsPerformance(
+    @Req() req: any,
+    @Query('periode') periode?: string,
+    @Query('dateDebut') dateDebut?: string,
+    @Query('dateFin') dateFin?: string,
+    @Query('depotId') depotId?: string,
+  ) {
+    this.checkTenantId(req);
+    return this.service.getRapportsPerformance(
+      req.user.tenantId,
+      periode,
+      dateDebut,
+      dateFin,
+      depotId || req.headers['x-depot-id'],
+    );
+  }
+
+  // Ancien endpoint monolithique — redirige vers ventes (pour compat)
   @Get('rapports')
-  @RequirePermission('rapports', 'read')
+  @RequirePermission('reports_sales', 'read')
   async getRapports(
     @Req() req: any,
     @Query('periode') periode?: string,
@@ -578,7 +656,7 @@ export class SupermarcheController {
     @Query('depotId') depotId?: string,
   ) {
     this.checkTenantId(req);
-    return this.service.getRapports(
+    return this.service.getRapportsVentes(
       req.user.tenantId,
       periode,
       dateDebut,

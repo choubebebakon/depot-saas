@@ -26,7 +26,6 @@ import {
   ArrowDown,
   ArrowUp,
   Box,
-  Store,
   Phone,
   MapPin,
   FileText,
@@ -914,8 +913,7 @@ const DepotBoissonsLandingPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
             {[
               { icon: Package, title: 'Dépôt pur', desc: 'Bières, sodas, eaux, jus.' },
-              { icon: ShoppingBag, title: 'Dépôt mixte', desc: 'Boissons + produits alimentaires associés.' },
-              { icon: Store, title: 'Glacier / Snack', desc: 'Gestion adaptée à la vente directe.' }
+              { icon: ShoppingBag, title: 'Dépôt mixte', desc: 'Boissons + produits alimentaires associés.' }
             ].map((item, idx) => (
               <div key={idx} style={{
                 background: 'linear-gradient(145deg, rgba(37,60,101,.58), rgba(7,18,38,.70))',

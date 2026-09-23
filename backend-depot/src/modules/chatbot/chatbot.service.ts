@@ -898,18 +898,6 @@ export class ChatbotService {
         'Quels produits sont rentables ?',
         'Comment optimiser mes promotions ?',
       ],
-      TELEPHONIE: [
-        'Quels produits sont en rupture de stock ?',
-        'Montre les ventes du jour',
-        'Quels produits sont rentables ?',
-        'Recommandations de réapprovisionnement',
-      ],
-      QUINCAILLERIE: [
-        'Quels produits sont en rupture de stock ?',
-        'Montre les ventes du jour',
-        'Recommandations de réapprovisionnement',
-        'Opportunités de croissance',
-      ],
     };
     return (
       suggestions[metier] ?? [

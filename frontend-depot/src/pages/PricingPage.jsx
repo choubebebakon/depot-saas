@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { redirectToNotchPayCheckout } from '../api/notchpayCheckout';
+import PaymentPushMonitor from '../components/PaymentPushMonitor';
 import Icon from '../shared/components/Icon';
 import mtnMomoLogo from '../assets/mtn-momo.png';
 import orangeMoneyLogo from '../assets/orange-money.png';
@@ -19,6 +20,16 @@ import {
   normalizeMomoPhoneForCountry,
   validateMomoPhoneForCountry,
 } from '../config/notchpayCountries';
+import {
+  storePendingPayment,
+  readPendingPayment,
+  clearPendingPayment,
+} from '../config/paymentPushFallback';
+
+// Statuts DB terminaux NÉGATIFS remontés par GET /payments/status/:reference
+// (PaymentStatus : PENDING / SUCCESS / COMPLETED / FAILED / REFUNDED —
+// COMPLETED est réinterprété côté backend si rencontré).
+const PAYMENT_FAILED_STATUSES = ['FAILED'];
 
 const TVA = 0.1925;
 
@@ -85,9 +96,62 @@ export default function PricingPage() {
   const [awaited, setAwaited] = useState(false); // en attente / redirection vers NotchPay
   const [redirecting, setRedirecting] = useState(false); // redirection vers la page hébergée
   const [step, setStep] = useState(1); // 1=method, 2=confirm
+  // Paiement mobile money en attente (retour depuis la page hébergée NotchPay) :
+  // affiche le moniteur push (décompte / relance / secours par opérateur).
+  const [pending, setPending] = useState(null);
 
   const price = (p) => cycle === 'MONTHLY' ? p.monthly : p.annual;
   const ttc = (ht) => ({ ht, tva: Math.round(ht * TVA), ttc: ht + Math.round(ht * TVA) });
+
+  // Au retour depuis la page hébergée NotchPay (bouton retour, ou redirection
+  // callback configurée), on reprend le suivi du paiement mobile money encore
+  // en attente : le push a été déclenché côté opérateur — décompte, relance
+  // (même canal) et secours spécifique s'affichent via PaymentPushMonitor.
+  useEffect(() => {
+    const stored = readPendingPayment();
+    if (stored?.phone) setPending(stored);
+  }, []);
+
+  // Scrutation du statut (lecture seule) : dès que le webhook signé NotchPay a
+  // confirmé/échoué le paiement en base, le moniteur se ferme avec le verdict.
+  useEffect(() => {
+    if (!pending) return undefined;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await api.get(
+          `/payments/status/${encodeURIComponent(pending.reference)}`,
+        );
+        if (cancelled) return;
+        const status = String(res.data?.status ?? '').toUpperCase();
+        if (status === 'SUCCESS' || status === 'COMPLETED') {
+          clearPendingPayment();
+          setPending(null);
+          setError('');
+          setSuccess(
+            'Paiement confirmé. Votre abonnement est actif — un email de confirmation vous a été envoyé.',
+          );
+        } else if (PAYMENT_FAILED_STATUSES.includes(status)) {
+          clearPendingPayment();
+          setPending(null);
+          setError(
+            "Le paiement n'a pas abouti (push non validé ou expiré). Vous pouvez relancer un paiement avec le même moyen.",
+          );
+        }
+        // PENDING (ou statut inconnu) : on continue d'attendre — la
+        // confirmation canonique reste le webhook signé (contrainte 9).
+      } catch {
+        /* 404/erreur réseau : le paiement n'existe pas encore côté API ou le
+           serveur est injoignable — on retente à la prochaine itération. */
+      }
+    };
+    check();
+    const id = setInterval(check, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [pending]);
 
   const openModal = (plan, method) => {
     setModal({ plan, method });
@@ -141,6 +205,24 @@ export default function PricingPage() {
         channel,
       };
 
+      // ── MONITEUR PUSH (conduite confirmée par le support NotchPay, 2026-09)
+      // : le push mobile money est déclenché par l'opérateur après la
+      // confirmation sur la page hébergée. On mémorise le paiement en attente
+      // AVANT la redirection : au retour sur GesTock, le commerçant voit le
+      // décompte (2-3 min), le bouton « Relancer » (même canal) et, passé le
+      // délai seulement, le secours spécifique à l'opérateur détecté.
+      storePendingPayment({
+        reference: checkout.reference ?? res.data?.reference,
+        channel,
+        methodId: method.id,
+        phone: method.requiresPhone
+          ? normalizeMomoPhoneForCountry(country, phoneNumber)
+          : null,
+        planId: plan.id,
+        cycle,
+        country,
+      });
+
       // PARTIE 1 : plus de branche Stripe (stripeClientSecret) — Stripe est
       // décommissionné, tous les canaux cartes passent par NotchPay.
       //
@@ -178,8 +260,37 @@ export default function PricingPage() {
     // la page hébergée NotchPay : on ne prétend donc pas qu'il est « déjà
     // envoyé ». Aucune attente bloquante côté serveur (contrainte 12) ;
     // l'activation reste pilotée par le webhook signé (contrainte 9).
+    // Le suivi après retour est assuré par le moniteur push (PaymentPushMonitor)
+    // : décompte 2-3 min, relance même canal, secours par opérateur après délai.
     setAwaited(true);
     await handleDirectPayment(modal.plan, m, phone);
+  };
+
+  // ── Relance du push (même canal) après expiration du décompte (conduite
+  // confirmée support NotchPay) : ré-initie le paiement avec le MÊME moyen /
+  // canal / numéro, puis redirige à nouveau vers la page hébergée NotchPay.
+  const handlePushRetry = async () => {
+    if (!pending || loading) return;
+    const plan = PLANS.find((pl) => pl.id === pending.planId);
+    const method = PAYMENT_METHODS.find((mt) => mt.id === pending.methodId);
+    if (!plan || !method) {
+      clearPendingPayment();
+      setPending(null);
+      return;
+    }
+    if (pending.country) setCountry(pending.country);
+    if (pending.cycle) setCycle(pending.cycle);
+    setError('');
+    await handleDirectPayment(plan, method, pending.phone ?? '');
+  };
+
+  // ── Annulation depuis le moniteur : abandonne le suivi du paiement en
+  // attente (le cron d'expiration fera basculer la ligne PENDING orpheline
+  // en FAILED côté serveur — aucune activation sans confirmation webhook).
+  const handlePushCancel = () => {
+    clearPendingPayment();
+    setPending(null);
+    setError('');
   };
 
   const planColors = { slate: '#64748b', blue: '#3b82f6', amber: '#f59e0b', purple: '#8b5cf6' };
@@ -633,6 +744,35 @@ export default function PricingPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Moniteur push Mobile Money (conduite confirmée support NotchPay,
+          2026-09) : affiché au retour depuis la page hébergée NotchPay quand
+          un paiement mobile money est encore en attente. Décompte 2-3 min
+          invitant à vérifier le téléphone, bouton « Relancer » (même canal)
+          après délai, instruction de secours spécifique à l'opérateur
+          uniquement après délai (MTN confirmé ; Orange et autres : message
+          neutre tant que le support NotchPay n'a pas confirmé la procédure). */}
+      {pending?.phone && (() => {
+        const pm = PAYMENT_METHODS.find((x) => x.id === pending.methodId);
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,10,0.85)', backdropFilter: 'blur(12px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <div className="modal-overlay" style={{
+              background: 'linear-gradient(160deg, rgba(15,15,30,0.99) 0%, rgba(10,10,20,0.99) 100%)',
+              border: `1px solid ${pm?.border ?? 'rgba(56,189,248,0.4)'}`,
+              borderRadius: 28, padding: 36, maxWidth: 440, width: '100%',
+              boxShadow: pm?.bg ? `0 0 80px ${pm.bg}` : 'none',
+            }}>
+              <PaymentPushMonitor
+                channelId={pending.channel}
+                phone={pending.phone}
+                retrying={loading}
+                onRetry={handlePushRetry}
+                onCancel={handlePushCancel}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Payment Modal */}
       {modal && (() => {

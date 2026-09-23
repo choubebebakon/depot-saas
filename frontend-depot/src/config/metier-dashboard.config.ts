@@ -7,20 +7,14 @@
 export type MetierType =
   | 'DEPOT_BOISSONS'
   | 'BOUTIQUE'
-  | 'QUINCAILLERIE'
   | 'PHARMACIE'
   | 'RESTAURANT'
-  | 'TELEPHONIE'
   | 'SUPERMARCHE'
   | 'CIMENT_BTP'
   | 'PRESSING'
   | 'GARAGE_AUTOMOBILE'
   | 'ELEVAGE'
-  | 'SALON_BEAUTE'
-  | 'PARFUMERIE'
   | 'BOULANGERIE'
-  | 'GLACIER_SNACK'
-  | 'LIBRAIRIE'
   | 'CLINIQUE'
   | 'TRANSPORT'
   | 'IMMOBILIER'
@@ -112,28 +106,6 @@ export const METIER_DASHBOARD: Record<MetierType, MetierDashboardConfig> = {
     ],
   },
 
-  // ── QUINCAILLERIE ─────────────────────────────────────────────
-  QUINCAILLERIE: {
-    label:       'Quincaillerie / BTP',
-    icon:        'Wrench',
-    couleur:     '#b45309',
-    description: 'Stock, devis, chantiers et livraisons',
-    menus: [
-      { label: 'Tableau de bord',  icon: 'BarChart3', path: '/dashboard' },
-      { label: 'Produits',         icon: 'Wrench', path: '/produits' },
-      { label: 'Catégories',       icon: 'FolderOpen', path: '/categories' },
-      { label: 'Stock',            icon: 'Package', path: '/stock' },
-      { label: 'Clients',          icon: 'Users', path: '/clients' },
-      { label: 'Fournisseurs',     icon: 'Factory', path: '/fournisseurs' },
-      { label: 'Ventes',           icon: 'DollarSign', path: '/ventes' },
-      { label: 'Chantiers',        icon: 'HardHat',  path: '/chantiers' },
-      { label: 'Devis',            icon: 'Clipboard', path: '/devis' },
-      { label: 'Dépenses',         icon: 'TrendingUp', path: '/depenses' },
-      { label: 'Rapports',         icon: 'TrendingUp', path: '/rapports' },
-      { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
-    ],
-  },
-
   // ── PHARMACIE ─────────────────────────────────────────────────
   PHARMACIE: {
     label:       'Pharmacie',
@@ -182,28 +154,6 @@ export const METIER_DASHBOARD: Record<MetierType, MetierDashboardConfig> = {
       { id: 'commandes_encours',  label: 'Commandes en cours',    icon: 'Clipboard', color: '#f59e0b', apiPath: '/stats/commandes-cours' },
       { id: 'recettes_jour',      label: 'Recettes du jour',      icon: 'DollarSign', color: '#10b981', apiPath: '/stats/recettes-jour' },
       { id: 'reservations_jour',  label: 'Réservations du jour',  icon: 'Calendar', color: '#3b82f6', apiPath: '/stats/reservations-jour' },
-    ],
-  },
-
-  // ── TELEPHONIE ────────────────────────────────────────────────
-  TELEPHONIE: {
-    label:       'Téléphonie',
-    icon:        'Smartphone',
-    couleur:     '#7c3aed',
-    description: 'Ventes, réparations, IMEI et garanties',
-    menus: [
-      { label: 'Tableau de bord',  icon: 'BarChart3', path: '/dashboard' },
-      { label: 'Téléphones',       icon: 'Smartphone', path: '/telephones' },
-      { label: 'Accessoires',      icon: 'Headphones', path: '/accessoires' },
-      { label: 'Réparations',      icon: 'Wrench', path: '/reparations' },
-      { label: 'Clients',          icon: 'Users', path: '/clients' },
-      { label: 'Fournisseurs',     icon: 'Factory', path: '/fournisseurs' },
-      { label: 'Ventes',           icon: 'DollarSign', path: '/ventes' },
-      { label: 'Recharges',        icon: 'Battery', path: '/recharges' },
-      { label: 'Stock',            icon: 'Package', path: '/stock' },
-      { label: 'Dépenses',         icon: 'TrendingUp', path: '/depenses' },
-      { label: 'Rapports',         icon: 'TrendingUp', path: '/rapports' },
-      { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
     ],
   },
 
@@ -311,48 +261,6 @@ export const METIER_DASHBOARD: Record<MetierType, MetierDashboardConfig> = {
       { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
     ],
   },
-  // ── SALON DE COIFFURE / BEAUTE ────────────────────────────────
-  SALON_BEAUTE: {
-    label:       'Salon de Coiffure / Beauté',
-    icon:        'Scissors',
-    couleur:     '#ec4899',
-    description: 'Rendez-vous, prestations et gestion clientèle',
-    menus: [
-      { label: 'Tableau de bord',  icon: 'BarChart3', path: '/dashboard' },
-      { label: 'Rendez-vous',      icon: 'Clipboard', path: '/rendez-vous' },
-      { label: 'Agenda',           icon: 'Calendar', path: '/agenda' },
-      { label: 'Prestations',      icon: 'Scissors', path: '/prestations' },
-      { label: 'Clients',          icon: 'Users', path: '/clients' },
-      { label: 'Stock produits',   icon: 'SprayCan', path: '/stock' },
-      { label: 'Ventes',           icon: 'DollarSign', path: '/ventes' },
-      { label: 'Dépenses',         icon: 'TrendingUp', path: '/depenses' },
-      { label: 'Rapports',         icon: 'TrendingUp', path: '/rapports' },
-      { label: 'Personnel',        icon: 'Users', path: '/personnel' },
-      { label: 'Fidélité',         icon: 'Gift', path: '/abonnements' },
-      { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
-    ],
-  },
-  // ── PARFUMERIE / COSMETIQUE ────────────────────────────────────
-  PARFUMERIE: {
-    label:       'Parfumerie / Cosmétique',
-    icon:        'SprayCan',
-    couleur:     '#d946ef',
-    description: 'Ventes, fidélité et catalogue produits',
-    menus: [
-      { label: 'Tableau de bord',  icon: 'BarChart3', path: '/dashboard' },
-      { label: 'Produits',         icon: 'SprayCan', path: '/produits' },
-      { label: 'Catégories',       icon: 'FolderOpen', path: '/categories' },
-      { label: 'Stock',            icon: 'Package', path: '/stock' },
-      { label: 'Clients',          icon: 'Users', path: '/clients' },
-      { label: 'Ventes',           icon: 'DollarSign', path: '/ventes' },
-      { label: 'Fidélité',         icon: 'Gift', path: '/fidelite' },
-      { label: 'Fournisseurs',     icon: 'Factory', path: '/fournisseurs' },
-      { label: 'Dépenses',         icon: 'TrendingUp', path: '/depenses' },
-      { label: 'Rapports',         icon: 'TrendingUp', path: '/rapports' },
-      { label: 'Personnel',        icon: 'Users', path: '/personnel' },
-      { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
-    ],
-  },
   // ── BOULANGERIE / PATISSERIE ───────────────────────────────────
   BOULANGERIE: {
     label:       'Boulangerie / Pâtisserie',
@@ -374,55 +282,7 @@ export const METIER_DASHBOARD: Record<MetierType, MetierDashboardConfig> = {
       { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
     ],
   },
-  // ── GLACIER / SNACK ───────────────────────────────────────────
-  GLACIER_SNACK: {
-    label:       'Glacier / Snack',
-    icon:        'IceCream',
-    couleur:     '#06b6d4',
-    description: 'Compositions, commandes rapides et caisse',
-    menus: [
-      { label: 'Tableau de bord',  icon: 'BarChart3', path: '/dashboard' },
-      { label: 'Commandes',        icon: 'Clipboard', path: '/commandes' },
-      { label: 'Menu',             icon: 'BookOpen', path: '/menu' },
-      { label: 'Ventes',           icon: 'DollarSign', path: '/ventes' },
-      { label: 'Stock',            icon: 'Package', path: '/stock' },
-      { label: 'Caisse',           icon: 'Wallet', path: '/caisse' },
-      { label: 'Clients',          icon: 'Users', path: '/clients' },
-      { label: 'Fournisseurs',     icon: 'Factory', path: '/fournisseurs' },
-      { label: 'Dépenses',         icon: 'TrendingUp', path: '/depenses' },
-      { label: 'Rapports',         icon: 'TrendingUp', path: '/rapports' },
-      { label: 'Personnel',        icon: 'Users', path: '/personnel' },
-      { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
-    ],
-  },
-  // ── LIBRAIRIE / PAPETERIE ──────────────────────────────────────
-  LIBRAIRIE: {
-    label:       'Librairie / Papeterie',
-    icon:        'Library',
-    couleur:     '#6366f1',
-    description: 'Catalogue livres, papeterie et commandes spéciales',
-    menus: [
-      { label: 'Tableau de bord',  icon: 'BarChart3', path: '/dashboard' },
-      { label: 'Catalogue',        icon: 'Library', path: '/catalogue' },
-      { label: 'Ventes',           icon: 'DollarSign', path: '/ventes' },
-      { label: 'Commandes spé.',   icon: 'Clipboard', path: '/commandes' },
-      { label: 'Stock',            icon: 'Package', path: '/stock' },
-      { label: 'Caisse',           icon: 'Wallet', path: '/caisse' },
-      { label: 'Clients',          icon: 'Users', path: '/clients' },
-      { label: 'Fournisseurs',     icon: 'Factory', path: '/fournisseurs' },
-      { label: 'Dépenses',         icon: 'TrendingUp', path: '/depenses' },
-      { label: 'Rapports',         icon: 'TrendingUp', path: '/rapports' },
-      { label: 'Personnel',        icon: 'Users', path: '/personnel' },
-      { label: 'Paramètres',       icon: 'Cog', path: '/parametres' },
-    ],
-    widgets: [
-      { id: 'ventes_jour',        label: 'Ventes du jour',        icon: 'DollarSign', color: '#10b981', apiPath: '/stats/ventes-jour' },
-      { id: 'commandes_attente',  label: 'Commandes en attente',  icon: 'Clipboard', color: '#f59e0b', apiPath: '/librairie/stats' },
-      { id: 'stock_critique',     label: 'Stock critique',       icon: 'AlertTriangle',  color: '#ef4444', apiPath: '/stats/stock-critique' },
-      { id: 'caisse_jour',        label: 'Caisse du jour',        icon: 'Wallet', color: '#6366f1', apiPath: '/stats/caisse-jour' },
-    ],
-  },
-  // ── CLINIQUE ───────────────────────────────────────────────────
+  // ── CLINIQUE ─────────────────────────────────────────────────
   CLINIQUE: {
     label:       'Clinique / Médical',
     icon:        'Hospital',

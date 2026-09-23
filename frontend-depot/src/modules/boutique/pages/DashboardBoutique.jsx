@@ -117,7 +117,7 @@ export default function DashboardBoutique() {
                         #{i + 1}
                       </span>
                     </td>
-                    <td className="py-3 text-white font-semibold text-sm">Article #{p.articleId}</td>
+                    <td className="py-3 text-white font-semibold text-sm">{p.nom}</td>
                     <td className="py-3 text-right text-slate-300 text-sm font-mono">{p._sum?.quantite || 0}</td>
                     <td className="py-3 pr-2 text-right text-emerald-400 text-sm font-bold">{(p._sum?.total || 0).toLocaleString('fr-FR')} F</td>
                   </tr>

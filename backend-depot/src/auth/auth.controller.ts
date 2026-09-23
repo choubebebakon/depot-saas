@@ -23,6 +23,8 @@ import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { PreferencesDto } from './dto/preferences.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
@@ -71,6 +73,31 @@ export class AuthController {
         error: 'Registration Failed',
       });
     }
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 300000 } })
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: any) {
+    return this.authService.forgotPassword(dto.email, {
+      ip: req.ip ?? null,
+      userAgent: req.headers?.['user-agent'] ?? null,
+    });
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 300000 } })
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() req: any) {
+    return this.authService.resetPassword(
+      dto.token,
+      dto.newPassword,
+      dto.confirmPassword,
+      {
+        ip: req.ip ?? null,
+        userAgent: req.headers?.['user-agent'] ?? null,
+      },
+    );
   }
 
   @Public()

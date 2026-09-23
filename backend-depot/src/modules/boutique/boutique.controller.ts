@@ -20,6 +20,7 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
+import { EstablishmentScopeGuard } from '../../common/guards/establishment-scope.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
 import { RequirePermission, RequireAction } from '../../auth/decorators/require-permission.decorator';
 import { buildAuditActor } from '../../audit/audit-actor.util';
@@ -39,7 +40,7 @@ import { StockQueryDto } from './dto/stock-query.dto';
 
 @Controller('boutique')
 @Metier(MetierType.BOUTIQUE)
-@UseGuards(JwtAuthGuard, MetierGuard)
+@UseGuards(JwtAuthGuard, MetierGuard, EstablishmentScopeGuard)
 export class BoutiqueController {
   constructor(
     private promotionsService: PromotionsService,

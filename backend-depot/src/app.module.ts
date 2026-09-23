@@ -1,4 +1,4 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -8,7 +8,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { CommonModule } from './common/common.module';
-import { ContextMiddleware } from './common/middleware/context.middleware';
 import { DepotScopeInterceptor } from './common/interceptors/depot-scope.interceptor';
 import { ClientDepotScopeInterceptor } from './common/interceptors/client-depot-scope.interceptor';
 import { ClientCreditSafetyInterceptor } from './common/interceptors/client-credit-safety.interceptor';
@@ -136,16 +135,8 @@ import { RealtimeMutationInterceptor } from './common/realtime/realtime-mutation
     { provide: APP_INTERCEPTOR, useClass: RealtimeMutationInterceptor },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    // ── Compat NestJS 11 / Express 5 (path-to-regexp v8) ──────────────────
-    // Le joker NON NOMMÉ '*' n'est plus supporté depuis path-to-regexp v8 :
-    // il déclenchait 5 warnings « LegacyRouteConverter — Unsupported route
-    // path: "/api/v1/*" » au démarrage (Nest convertissait implicitement, mais
-    // cette conversion silencieuse disparaîtra dans une prochaine version).
-    // '{*path}' est la syntaxe officielle équivalente : elle matche '/api/v1'
-    // ET '/api/v1/...' (vérifié : /^(?:\/api\/v1\/([^]+)|\/api\/v1\/)(?:\/)?$/i),
-    // donc le ContextMiddleware continue de s'appliquer à TOUTES les routes.
-    consumer.apply(ContextMiddleware).forRoutes('{*path}');
-  }
-}
+// NB : le middleware de contexte global est désormais branché dans main.ts
+// (app.use(contextMiddleware)) — un middleware « toutes les routes » via
+// forRoutes('{*path}') déclenchait des warnings LegacyRouteConverter
+// (path-to-regexp v8 + global prefix « api/v1 »).
+export class AppModule {}

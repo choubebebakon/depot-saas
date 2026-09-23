@@ -24,7 +24,7 @@ const ROLE_COLORS = {
 };
 
 const METIER_LABELS = {
-  DEPOT_BOISSONS: 'Dépôt Boissons', SUPERMARCHE: 'Supermarché', BOUTIQUE: 'Boutique', PHARMACIE: 'Pharmacie', HOTEL: 'Hôtel', RESTAURANT: 'Restaurant', CLINIQUE: 'Clinique', ELEVAGE: 'Élevage', GARAGE_AUTOMOBILE: 'Garage', QUINCAILLERIE: 'Quincaillerie', IMMOBILIER: 'Immobilier', LIBRAIRIE: 'Librairie', TRANSPORT: 'Transport', BOULANGERIE: 'Boulangerie', PARFUMERIE: 'Parfumerie', SALON_BEAUTE: 'Salon Beauté', TELEPHONIE: 'Téléphonie', PRESSING: 'Pressing', CIMENT_BTP: 'Ciment BTP', GLACIER_SNACK: 'Glacier Snack',
+  DEPOT_BOISSONS: 'Dépôt Boissons', SUPERMARCHE: 'Supermarché', BOUTIQUE: 'Boutique', PHARMACIE: 'Pharmacie', HOTEL: 'Hôtel', RESTAURANT: 'Restaurant', CLINIQUE: 'Clinique', ELEVAGE: 'Élevage', GARAGE_AUTOMOBILE: 'Garage', IMMOBILIER: 'Immobilier', TRANSPORT: 'Transport', BOULANGERIE: 'Boulangerie', PRESSING: 'Pressing', CIMENT_BTP: 'Ciment BTP',
 };
 
 const getErrorMessage = (error, fallback) => error?.response?.data?.message || fallback;

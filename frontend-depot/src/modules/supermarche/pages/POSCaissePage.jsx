@@ -7,10 +7,8 @@ import { useNotif } from '../../../context/NotifContext';
 import { supermarcheApi } from '../services/supermarcheApi';
 import { acquireVenteSocket, releaseVenteSocket } from '../../../shared/realtime/venteSocket';
 import POSSupermarcheForm from '../forms/POSSupermarcheForm';
-import Receipt80mm from '../../../components/Receipt80mm';
-import { useFactureConfig } from '../components/FacturePrintSupermarche';
+import { useFactureConfig, usePrintFacture } from '../components/FacturePrintSupermarche';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
-import api from '../../../api/axios';
 import { useActions } from '../../../shared/hooks/useActions';
 import {
   Store, Lock, Unlock, ArrowDownToLine, ArrowUpFromLine,
@@ -81,6 +79,13 @@ function OuvrirCaisseModal({ isOpen, onClose, onOpen, isPending }) {
 
 // ─── Multi-caisse : postes disponibles ──────────────────────────────────────
 const POSTES_CAISSE = Array.from({ length: 10 }, (_, i) => `CAISSE_${i + 1}`);
+
+// Génère un posteId unique par utilisateur pour le mode multi-cashier par défaut
+// Format: CAISSE_USER_{userId} (tronqué si trop long)
+function getUserPosteId(userId) {
+  if (!userId) return 'CAISSE_1';
+  return `CAISSE_USER_${userId.slice(0, 8).toUpperCase()}`;
+}
 
 // ─── Modale : Fermeture de caisse ──────────────────────────────────────────
 function FermerCaisseModal({ isOpen, onClose, onFermer, isPending }) {
@@ -154,16 +159,20 @@ export default function POSCaissePage() {
 
   const [modal, setModal] = useState(null); // 'ouvrir' | 'fermer' | 'rapport'
   const { hasAction } = useActions();
-  const [printData, setPrintData] = useState(null);
   const [rapportData, setRapportData] = useState(null);
   const [fetchingRapport, setFetchingRapport] = useState(false);
 
-  // ── Multi-caisse : poste de caisse actif ────────────────────
-  // Chaque terminal POS choisit son poste (CAISSE_1…CAISSE_10) ; le choix est
-  // mémorisé localement pour que la page rouvre sur le même poste.
-  const [posteId, setPosteId] = useState(
-    () => localStorage.getItem('gestock_poste_caisse') || 'CAISSE_1',
-  );
+  // ── Multi-caisse : poste de caisse actif ───────────────────────────────────
+  // Par défaut : poste unique par utilisateur (multi-cashier).
+  // L'utilisateur peut forcer un poste physique (CAISSE_1…CAISSE_10) via le sélecteur.
+  const userPosteId = user?.id ? getUserPosteId(user.id) : 'CAISSE_1';
+  const [posteId, setPosteId] = useState(() => {
+    const stored = localStorage.getItem('gestock_poste_caisse');
+    // Si le stockage local contient un poste physique explicite (CAISSE_1..10),
+    // on le respecte. Sinon on utilise le poste utilisateur.
+    if (stored && POSTES_CAISSE.includes(stored)) return stored;
+    return userPosteId;
+  });
 
   useEffect(() => {
     localStorage.setItem('gestock_poste_caisse', posteId);
@@ -172,6 +181,7 @@ export default function POSCaissePage() {
   // Configuration du ticket 80mm : synchronisée avec le sous-module Paramètres
   // (nom de l'entreprise, adresse, téléphone, logo, devise, caissière, messages).
   const { data: factureConfig } = useFactureConfig();
+  const { print: printTicket, factureNode } = usePrintFacture();
 
   useEffect(() => {
     if (!tenantId) return undefined;
@@ -281,7 +291,7 @@ export default function POSCaissePage() {
     }
   }
 
-  // ── Après vente ENCAISSÉE ──────────────────────────────────
+// ── Après vente ENCAISSÉE ──────────────────────────────────
   // ENCAISSER crée la vente (visible temps réel dans le sous-module Factures)
   // ET génère/imprime automatiquement le ticket de caisse 80mm.
   const handlePOSSuccess = async (createdVente) => {
@@ -290,37 +300,10 @@ export default function POSCaissePage() {
     queryClient.invalidateQueries({ queryKey: ['supermarche-caisse-resume'], exact: false });
     queryClient.invalidateQueries({ queryKey: ['supermarche-factures'], exact: false });
 
-    // Config du ticket : valeur issue de la page Paramètres (synchronisée),
-    // avec repli sur le tenant pour le logo si besoin.
-    let config = { ...(factureConfig || {}) };
-    if (!config.logo && tenantId) {
-      try {
-        const t = await api.get(`/tenant/${tenantId}`);
-        const tc = t.data || {};
-        if (tc.logo) config.logo = tc.logo;
-        if (!config.nomEntreprise && (tc.nomEntreprise || tc.name)) config.nomEntreprise = tc.nomEntreprise || tc.name;
-        if (tc.adresse) config.adresse = config.adresse || tc.adresse;
-        if (tc.telephone) config.telephone = config.telephone || tc.telephone;
-      } catch (_) { /* silencieux */ }
+    // Imprimer le ticket via le hook d'impression supermarché (config complète depuis Paramètres)
+    if (createdVente?.id) {
+      await printTicket(createdVente.id);
     }
-
-    setPrintData({
-      vente: createdVente,
-      config: {
-        nomEntreprise: config.nomEntreprise || 'SUPERMARCHÉ',
-        adresse: config.adresse || '',
-        telephone: config.telephone || '',
-        devise: config.devise || 'FCFA',
-        messageFin: config.messageFin || 'Merci de votre visite !',
-        nomCaissiere: config.nomCaissiere || user?.nom || '',
-        logo: config.logo,
-        ...config,
-      },
-    });
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrintData(null), 1000);
-    }, 500);
   };
 
   // ── Gardes ─────────────────────────────────────────────────
@@ -376,6 +359,9 @@ export default function POSCaissePage() {
                 — Solde net : {(resume.soldeNet || 0).toLocaleString('fr-FR')} FCFA
               </span>
             )}
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 bg-slate-800 border border-slate-600 text-white font-bold text-xs rounded-md">
+              {POSTES_CAISSE.includes(posteId) ? '🖥️ Poste physique' : '👤 Caisse perso'}
+            </span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -387,8 +373,17 @@ export default function POSCaissePage() {
             title={estOuverte ? 'Fermez la caisse pour changer de poste' : 'Choisir le poste de caisse de ce terminal'}
             className="px-3 py-2.5 bg-slate-800 border border-slate-700 disabled:opacity-60 text-white font-bold rounded-xl text-sm transition-all cursor-pointer"
           >
+            {/* Option perso (par défaut multi-cashier) */}
+            {user?.id && (
+              <option key={userPosteId} value={userPosteId}>
+                👤 Ma caisse ({user?.nom || user?.email || 'Moi'})
+              </option>
+            )}
+            {/* Séparateur visuel */}
+            <option disabled className="text-slate-500" value="">────────────</option>
+            {/* Postes physiques (multi-terminaux) */}
             {POSTES_CAISSE.map((p) => (
-              <option key={p} value={p}>{p}</option>
+              <option key={p} value={p}>🖥️ {p}</option>
             ))}
           </select>
           {!estOuverte ? (
@@ -501,7 +496,7 @@ export default function POSCaissePage() {
       )}
 
       {/* ── Ticket impression auto après ENCAISSER ───────────── */}
-      <Receipt80mm vente={printData?.vente} config={printData?.config} />
+      {factureNode}
 
       {/* ── Modales ──────────────────────────────────────────── */}
       <OuvrirCaisseModal

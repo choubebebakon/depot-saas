@@ -79,12 +79,6 @@ export class ChatbotController {
         'Produits les plus rentables',
         'Optimiser mes promotions',
       ],
-      QUINCAILLERIE: [
-        'Prévoir les ventes du mois',
-        'Détecter les anomalies',
-        'Recommandations de réapprovisionnement',
-        'Opportunités de croissance',
-      ],
       PHARMACIE: [
         'Prévoir les ventes du mois',
         'Détecter les anomalies',
@@ -96,12 +90,6 @@ export class ChatbotController {
         'Prévoir les ventes du mois',
         'Produits les plus rentables',
         'Optimiser mes promotions',
-      ],
-      TELEPHONIE: [
-        'Prévoir les ventes du mois',
-        'Détecter les anomalies',
-        'Produits les plus rentables',
-        'Recommandations de réapprovisionnement',
       ],
       SUPERMARCHE: [
         'Prévoir les ventes du mois',
@@ -133,35 +121,11 @@ export class ChatbotController {
         'Opportunités de croissance',
         'Générer un rapport automatique',
       ],
-      SALON_BEAUTE: [
-        "Anticiper les pics d'activité",
-        'Prévoir les ventes du mois',
-        'Produits les plus rentables',
-        'Optimiser mes promotions',
-      ],
-      PARFUMERIE: [
-        'Prévoir les ventes du mois',
-        'Détecter les anomalies',
-        'Produits les plus rentables',
-        'Optimiser mes promotions',
-      ],
       BOULANGERIE: [
         "Anticiper les pics d'activité",
         'Prévoir les ventes du mois',
         'Produits les plus rentables',
         'Générer un rapport automatique',
-      ],
-      GLACIER_SNACK: [
-        "Anticiper les pics d'activité",
-        'Prévoir les ventes du mois',
-        'Produits les plus rentables',
-        'Optimiser mes promotions',
-      ],
-      LIBRAIRIE: [
-        'Prévoir les ventes du mois',
-        'Détecter les anomalies',
-        'Produits les plus rentables',
-        'Opportunités de croissance',
       ],
       CLINIQUE: [
         "Anticiper les pics d'activité",

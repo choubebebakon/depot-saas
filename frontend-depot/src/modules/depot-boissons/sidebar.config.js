@@ -12,11 +12,10 @@ export const SIDEBAR_MENUS = [
   { label: 'Fournisseurs', icon: 'Factory', path: '/depot/fournisseurs' },
   { label: 'Inventaire', icon: 'Clipboard', path: '/depot/inventaire' },
   { label: 'Dépenses', icon: 'TrendingUp', path: '/depot/depenses' },
-  { label: 'Rapports', icon: 'TrendingUp', path: '/depot/rapports' },
-  // §10 — granularité des rapports : entrées dédiées, masquées
-  // automatiquement pour les rôles sans la permission correspondante.
-  { label: 'Rapports stock', icon: 'Package', path: '/depot/rapports-stock' },
-  { label: 'Mes performances', icon: 'BarChart3', path: '/depot/performance' },
+  { label: 'Rapports Ventes', icon: 'TrendingUp', path: '/depot/rapports-ventes' },
+  { label: 'Rapports Stock', icon: 'Package', path: '/depot/rapports-stock' },
+  { label: 'Rapports Financiers', icon: 'DollarSign', path: '/depot/rapports-financiers' },
+  { label: 'Mes Performances', icon: 'BarChart3', path: '/depot/performance' },
   { label: 'Paramètres', icon: 'Settings', path: '/depot/parametres' },
 ];
 

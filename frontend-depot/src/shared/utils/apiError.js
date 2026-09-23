@@ -44,7 +44,15 @@ export function normalizeApiError(error) {
     userMessage = message || 'Les données fournies sont invalides. Vérifiez le formulaire.';
   } else if (status >= 500) {
     kind = API_ERROR_KIND.SERVER;
-    userMessage = 'Le serveur rencontre un problème. Réessayez dans quelques instants.';
+    // NE PAS écraser un message serveur explicite : le backend renvoie, pour les
+    // échecs de paiement, des messages MÉTIER déjà « client-safe » et mappés par
+    // catégorie (503 PAYMENT_PROVIDER_UNAVAILABLE, 502 PAYMENT_PROVIDER_ERROR,
+    // 400 PAYMENT_INVALID_PHONE / PAYMENT_INSUFFICIENT_FUNDS /
+    // PAYMENT_NOT_FINALIZED). Les remplacer par un générique détruirait le
+    // message honnête promis au commerçant. Le message technique brut de
+    // l'agrégateur n'arrive jamais jusqu'ici : il reste dans les logs serveur.
+    userMessage =
+      message || 'Le serveur rencontre un problème. Réessayez dans quelques instants.';
   }
 
   return {

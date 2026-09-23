@@ -4,7 +4,6 @@ import logo from '../assets/logo-neon.png';
 
 const metierNames = {
   'pharmacie': 'Pharmacie',
-  'quincaillerie': 'Quincaillerie',
   'restaurant': 'Restaurant',
   'hotel': 'Hôtel',
   'ciment-btp': 'Ciment / BTP',

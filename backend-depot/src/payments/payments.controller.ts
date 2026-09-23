@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Get,
+  Param,
   Post,
   UseGuards,
   HttpCode,
@@ -76,6 +78,27 @@ export class PaymentsController {
       customerEmail: user.email,
       momoPhoneNumber: createPaymentDto.momoPhoneNumber || null,
     });
+  }
+
+  /**
+   * Statut d'un paiement (scrutation du moniteur push Mobile Money).
+   * Protégé par JWT et scopé au tenant : lecture seule, aucune mutation —
+   * la confirmation reste pilotée par le webhook signé (contrainte 9).
+   */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('status/:reference')
+  @ApiOperation({
+    summary:
+      "Statut d'un paiement (moniteur push Mobile Money — lecture seule)",
+  })
+  @ApiResponse({ status: 200, description: 'Statut du paiement.' })
+  @ApiResponse({ status: 404, description: 'Paiement introuvable.' })
+  async getStatus(
+    @Param('reference') reference: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentsService.getPaymentStatus(reference, user.tenantId);
   }
 
   // ==========================================

@@ -34,7 +34,39 @@ function RealtimeSessionBridge() {
     const [activeDepotId, setActiveDepotId] = useState(
         () => localStorage.getItem(ACTIVE_DEPOT_STORAGE_KEY) || user?.depotId || null,
     );
-    const token = isAuthenticated ? localStorage.getItem('depot_token') : null;
+
+    // Le jeton d'accès doit être un ÉTAT React, pas une simple lecture de
+    // localStorage : après un refresh silencieux (intercepteur axios : 401 →
+    // /auth/refresh → « gestock:token-refreshed »), aucun re-rendu n'avait lieu et
+    // le socket continuait à s'authentifier avec le jeton expiré, ce qui produisait
+    // des rafales de « Socket refusée … jwt expired » côté serveur.
+    const [token, setToken] = useState(
+        () => (localStorage.getItem('depot_token') || null),
+    );
+
+    useEffect(() => {
+        const syncFromStorage = () => setToken(localStorage.getItem('depot_token') || null);
+        const applyRefreshedToken = (event) => {
+            setToken(event?.detail?.token || localStorage.getItem('depot_token') || null);
+        };
+        const clearToken = () => setToken(null);
+
+        window.addEventListener('gestock:token-refreshed', applyRefreshedToken);
+        window.addEventListener('gestock:token-cleared', clearToken);
+        window.addEventListener('storage', syncFromStorage);
+        syncFromStorage();
+
+        return () => {
+            window.removeEventListener('gestock:token-refreshed', applyRefreshedToken);
+            window.removeEventListener('gestock:token-cleared', clearToken);
+            window.removeEventListener('storage', syncFromStorage);
+        };
+    }, []);
+
+    // Connexion / déconnexion et changement d'utilisateur : resynchronise le jeton.
+    useEffect(() => {
+        setToken(isAuthenticated ? localStorage.getItem('depot_token') || null : null);
+    }, [isAuthenticated, user?.id]);
 
     useEffect(() => {
         const syncActiveDepot = () => setActiveDepotId(
@@ -49,7 +81,14 @@ function RealtimeSessionBridge() {
         };
     }, [user?.depotId]);
 
-    useRealtimeSync({ token, tenantId, depotId: activeDepotId, queryClient, enabled: isAuthenticated });
+    // `enabled` dépend aussi du jeton : sans jeton frais, on ne tente pas de connexion.
+    useRealtimeSync({
+        token,
+        tenantId,
+        depotId: activeDepotId,
+        queryClient,
+        enabled: isAuthenticated && !!token,
+    });
     return null;
 }
 

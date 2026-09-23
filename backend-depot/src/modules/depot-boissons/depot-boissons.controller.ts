@@ -19,6 +19,7 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Metier } from '../../auth/decorators/metier.decorator';
 import { MetierGuard } from '../../common/guards/metier.guard';
+import { EstablishmentScopeGuard } from '../../common/guards/establishment-scope.guard';
 import { MetierType } from '../../common/config/metier-roles.config';
 import { RequirePermission, RequireAction } from '../../auth/decorators/require-permission.decorator';
 import { PermissionService } from '../../auth/permission.service';
@@ -27,7 +28,7 @@ import { buildAuditActor } from '../../audit/audit-actor.util';
 
 @Controller('depot-boissons')
 @Metier(MetierType.DEPOT_BOISSONS)
-@UseGuards(JwtAuthGuard, MetierGuard)
+@UseGuards(JwtAuthGuard, MetierGuard, EstablishmentScopeGuard)
 export class DepotBoissonsController {
   constructor(
     private service: DepotBoissonsService,

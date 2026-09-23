@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import {
+  classifyNotchPayFailure,
+  retryTransient,
+} from './notchpay-failure-policy';
 
 @Injectable()
 export class NotchPayService {
@@ -97,32 +101,50 @@ export class NotchPayService {
       // La clé privée (X-Grant) ne sert QUE pour les endpoints à risque
       // (transferts). Envoyer la clé privée ici provoquait le 401
       // "Invalid API credentials" constaté en production.
-      const response = await axios.post(notchPayUrl, payload, {
-        headers: {
-          Authorization: process.env.NOTCHPAY_PUBLIC_KEY,
-          'Content-Type': 'application/json',
-        },
-        timeout: 20000,
-      });
+      // ── ENVOI AVEC RETRY TRANSITOIRE (échec transitoire vs définitif) ──
+      // NotchPay documente des erreurs réseau/opérateur intermittentes
+      // (ex. « Service Unavailable » sur le champ phone) : échecs TEMPORAIRES
+      // à distinguer d'un échec DÉFINITIF (numéro invalide, solde insuffisant).
+      // → retry automatique avec backoff croissant (0.5s / 1.5s / 4s) AVANT de
+      //   remonter quoi que ce soit au commerçant. La classification et le
+      //   mapping des messages sont centralisés dans notchpay-failure-policy.ts.
+      const response = await retryTransient(
+        () =>
+          axios.post(notchPayUrl, payload, {
+            headers: {
+              Authorization: process.env.NOTCHPAY_PUBLIC_KEY,
+              'Content-Type': 'application/json',
+            },
+            timeout: 20000,
+          }),
+        (err: any) =>
+          classifyNotchPayFailure(
+            err?.response?.status,
+            err?.response?.data?.message ?? err?.message,
+          ).retryable,
+      );
       return response.data;
     } catch (error: any) {
-      // DIAGNOSTIC PROD : ne plus avaler l'erreur provider — la remonter
-      // structurée (code HTTP + message NotchPay) sans jamais exposer la clé.
-      const providerMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message;
-      const providerStatusCode = error.response?.status;
+      // Le message technique brut de NotchPay reste STRICTEMENT dans les logs
+      // serveur (jamais exposé au commerçant — le mapping par catégorie se
+      // fait dans PaymentsService via notchpay-failure-policy.ts).
+      const rawMessage = String(
+        error?.response?.data?.message ?? error?.message,
+      );
+      const providerStatusCode: number | undefined = error?.response?.status;
+      const mapped = classifyNotchPayFailure(providerStatusCode, rawMessage);
       this.logger.error(
-        `Erreur NotchPay detaillee (HTTP ${providerStatusCode ?? 'réseau'}): ${JSON.stringify(
+        `Erreur NotchPay detaillee (HTTP ${providerStatusCode ?? 'réseau'}, catégorie ${mapped.category}): ${JSON.stringify(
           error.response?.data || error.response?.body || error.message,
         )}`,
       );
       const enriched = new Error(
-        `Erreur API NotchPay (${providerStatusCode ?? 'réseau'}): ${providerMessage}`,
+        `Erreur API NotchPay (${mapped.category}): ${rawMessage}`,
       );
+      (enriched as any).failureCategory = mapped.category;
+      (enriched as any).clientMessage = mapped.clientMessage;
       (enriched as any).providerStatusCode = providerStatusCode;
-      (enriched as any).providerMessage = providerMessage;
+      (enriched as any).providerMessage = rawMessage;
       throw enriched;
     }
   }

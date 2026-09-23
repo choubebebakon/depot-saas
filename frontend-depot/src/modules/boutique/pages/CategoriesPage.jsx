@@ -5,14 +5,10 @@ import { useSectorQuery } from '../../../hooks/useSectorQuery';
 import { boutiqueApi } from '../services/boutiqueApi';
 import CategorieForm from '../forms/CategorieForm';
 import ConfirmModal from '../../../shared/components/forms/ConfirmModal';
-import { Flower2, BookOpen, Smartphone, Sparkles, IceCreamCone, Sprout, Tag, AlertTriangle, Edit, Trash2 } from 'lucide-react';
+import { Sprout, Tag, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 
 const TYPES_BOUTIQUE = [
-  { key: 'parfumerie', label: 'Parfumerie', icone: Flower2 },
-  { key: 'librairie', label: 'Librairie', icone: BookOpen },
-  { key: 'telephonie', label: 'Téléphonie', icone: Smartphone },
-  { key: 'salon_beaute', label: 'Salon de beauté', icone: Sparkles },
-  { key: 'glacier', label: 'Glacier / Snack', icone: IceCreamCone },
+  { key: 'generique', label: 'Boutique générique', icone: Sprout },
 ];
 
 export default function CategoriesPage() {

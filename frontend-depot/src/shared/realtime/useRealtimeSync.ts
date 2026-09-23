@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { connectRealtime, disconnectRealtime } from './realtimeClient.ts'; 
 import { useAuth } from '../../contexts/AuthContext';
+import api from '../../api/axios';
 
 
 const RESOURCE_QUERY_ALIASES = {
@@ -51,6 +52,10 @@ export function useRealtimeSync({ tenantId = null, depotId = null, queryClient, 
   const { token: authToken } = useAuth();
   const token = tokenProp ?? authToken;
 
+  // Une seule tentative de récupération de jeton par valeur de token : évite une
+  // boucle requête → refus → requête si le refus n'est pas dû à l'expiration.
+  const authRecoveryTokenRef = useRef<string | null>(null);
+
   // 1. STABILISATION DU CALLBACK
   // On stocke onStatus dans une ref pour toujours avoir la dernière version 
   // sans jamais déclencher de re-rendu ou de reconnexion WebSocket.
@@ -68,6 +73,19 @@ export function useRealtimeSync({ tenantId = null, depotId = null, queryClient, 
     connectRealtime({
       token,
       depotId,
+      onError: (error) => {
+        // Socket refusée (jeton expiré) : on force un passage par l'intercepteur
+        // axios qui rafraîchit l'access token (401 → /auth/refresh) et notifie
+        // AuthContext ; le nouveau token rejoue cet effet et rouvre le socket.
+        if (!token || authRecoveryTokenRef.current === token) return;
+        const refused =
+          error?.code === 'UNAUTHORIZED' ||
+          error?.code === 'TOKEN_EXPIRED' ||
+          /jwt|token|unauthor/i.test(String(error?.message ?? ''));
+        if (!refused) return;
+        authRecoveryTokenRef.current = token;
+        api.get('/auth/me').catch(() => undefined);
+      },
       onStatus: (status, error) => {
         if (onStatusRef.current) {
           onStatusRef.current(status, error);

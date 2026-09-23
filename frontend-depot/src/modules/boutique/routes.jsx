@@ -24,12 +24,15 @@ const PromotionsPage    = lazy(() => import('./pages/PromotionsPage'));
 const FacturesPage      = lazy(() => import('./pages/FacturesPage'));
 const FournisseursPage  = lazy(() => import('./pages/FournisseursPage'));
 const DepensesPage      = lazy(() => import('./pages/DepensesPage'));
-const RapportsPage      = lazy(() => import('./pages/RapportsPage'));
-const PerformancePage   = lazy(() => import('../../shared/pages/PerformancePage'));
 const ParametresPage    = lazy(() => import('./pages/ParametresPage'));
 const CategoriesPage    = lazy(() => import('./pages/CategoriesPage'));
 const InventairePage    = lazy(() => import('../../shared/pages/InventaireProductionPage'));
 const ReceptionsPage    = lazy(() => import('./pages/ReceptionPage'));
+
+const RapportsVentesPage    = lazy(() => import('./pages/RapportsVentesPage'));
+const RapportsStockPage     = lazy(() => import('./pages/RapportsStockPage'));
+const RapportsFinanciersPage = lazy(() => import('./pages/RapportsFinanciersPage'));
+const PerformancePage       = lazy(() => import('../../shared/pages/PerformancePage'));
 
 function Loader() { return <div className="flex items-center justify-center py-32"><div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>; }
 
@@ -112,9 +115,10 @@ export default function BoutiqueRoutes() {
           <Route path="factures"     element={gate('factures', FacturesPage)} />
           <Route path="fournisseurs" element={gate('fournisseurs', FournisseursPage)} />
           <Route path="depenses"     element={gate('depenses', DepensesPage)} />
-          <Route path="rapports"     element={gate('rapports', RapportsPage)} />
-          {/* §10 — « Mes performances » : gate par rapports_performance. */}
-          <Route path="performance"  element={gate('rapports_performance', PerformancePage)} />
+          <Route path="rapports-ventes" element={gate('reports_sales', RapportsVentesPage)} />
+          <Route path="rapports-stock" element={gate('reports_stock', RapportsStockPage)} />
+          <Route path="rapports-financiers" element={gate('reports_financial', RapportsFinanciersPage)} />
+          <Route path="performance" element={gate('reports_performance', PerformancePage)} />
           <Route path="parametres"   element={gate('parametres', ParametresPage)} />
           <Route path="categories"   element={gate('categories', CategoriesPage)} />
           <Route path="receptions"   element={gate('receptions', ReceptionsPage)} />

@@ -1075,7 +1075,7 @@ export class VentesService {
         : periode === 'annee'
           ? new Date(end.getFullYear(), 0, 1)
           : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const [ventes, depenses, totalVentes, totalDepenses, topArticles] =
+    const [ventes, depenses, totalVentes, totalDepenses, topArticlesRaw] =
       await Promise.all([
         this.db.vente.findMany({
           where: { tenantId, date: { gte: start, lte: end }, statut: 'PAYE' },
@@ -1104,6 +1104,24 @@ export class VentesService {
           take: 10,
         }),
       ]);
+
+    // Enrichir topArticles avec les désignations d'articles (comme supermarche)
+    // NB : sur le modèle Prisma `Article`, le libellé est `designation` ; l'API
+    // expose volontairement la clé `nom` consommée par le frontend (p.nom).
+    const articleIds = topArticlesRaw.map((l) => l.articleId);
+    const articles = await this.db.article.findMany({
+      where: { id: { in: articleIds } },
+      select: { id: true, designation: true },
+    });
+    const articleNameMap = new Map(
+      articles.map((a) => [a.id, a.designation]),
+    );
+
+    const topArticles = topArticlesRaw.map((l) => ({
+      articleId: l.articleId,
+      nom: articleNameMap.get(l.articleId) || 'Inconnu',
+      _sum: { quantite: l._sum.quantite || 0, total: l._sum.total || 0 },
+    }));
     const chiffreAffaires = totalVentes._sum.total ?? 0;
     const totalDep = totalDepenses._sum.montant ?? 0;
     return {

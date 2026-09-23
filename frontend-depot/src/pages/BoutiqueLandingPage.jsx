@@ -38,11 +38,9 @@ import {
   LayoutGrid,
   Receipt,
   Shirt,
-  Smartphone,
   Sparkles as SparklesIcon,
   Home,
   Laptop,
-  BookOpen,
   Coffee,
   Droplets,
   Sofa,
@@ -50,7 +48,6 @@ import {
   Gem,
   Gamepad2,
   Trophy,
-  Wrench,
   Car,
   Gift,
   Building2,
@@ -62,19 +59,16 @@ import Footer from '../components/Footer';
 const boutiqueTypes = [
   { id: 'mode', icon: Shirt, name: 'Mode', subtypes: ['Vêtements', 'Prêt-à-porter', 'Mode homme', 'Mode femme', 'Mode enfant', 'Accessoires'], message: 'Organisez vos collections et catégories, suivez vos articles, vos ventes, vos stocks et vos promotions.' },
   { id: 'chaussures', icon: Footprints, name: 'Chaussures', subtypes: ['Chaussures homme', 'Chaussures femme', 'Chaussures enfant', 'Sneakers', 'Sandales', 'Sport'], message: 'Du catalogue à la vente, gardez une vision claire de vos articles et de vos stocks.' },
-  { id: 'telephonie', icon: Smartphone, name: 'Téléphonie', subtypes: ['Smartphones', 'Accessoires', 'Chargeurs', 'Écouteurs', 'Coques', 'Câbles', 'High-tech'], message: 'Gérez facilement vos références et gardez le contrôle sur votre catalogue et vos ventes.' },
-  { id: 'beaute', icon: SparklesIcon, name: 'Beauté', subtypes: ['Parfumerie', 'Cosmétiques', 'Maquillage', 'Soins', 'Cheveux', 'Accessoires'], message: 'Organisez votre catalogue beauté, gérez vos promotions et suivez vos ventes simplement.' },
+  { id: 'beaute', icon: SparklesIcon, name: 'Beauté', subtypes: ['Cosmétiques', 'Maquillage', 'Soins', 'Cheveux', 'Accessoires'], message: 'Organisez votre catalogue beauté, gérez vos promotions et suivez vos ventes simplement.' },
   { id: 'electromenager', icon: Home, name: 'Électroménager', subtypes: ['Réfrigérateurs', 'Téléviseurs', 'Cuisinières', 'Micro-ondes', 'Lave-linge', 'Petits appareils'], message: 'Gardez une vision claire de vos articles, de vos stocks et de vos ventes.' },
   { id: 'informatique', icon: Laptop, name: 'Informatique', subtypes: ['Ordinateurs', 'PC portables', 'Imprimantes', 'Écrans', 'Claviers', 'Composants'], message: 'Centralisez votre catalogue et facilitez le suivi de vos références.' },
   { id: 'alimentaire', icon: Coffee, name: 'Alimentaire', subtypes: ['Épicerie', 'Produits alimentaires', 'Produits secs', 'Supérettes', 'Commerce spécialisé'], message: 'Suivez vos articles, vos ventes et vos stocks au même endroit.' },
-  { id: 'librairie', icon: BookOpen, name: 'Librairie', subtypes: ['Livres', 'Papeterie', 'Fournitures scolaires', 'Fournitures de bureau', 'Cahiers'], message: 'Organisez votre catalogue et retrouvez rapidement vos articles.' },
   { id: 'entretien', icon: Droplets, name: 'Entretien', subtypes: ['Produits ménagers', 'Lessives', 'Nettoyage', 'Accessoires ménagers'], message: 'Un catalogue organisé pour une gestion plus simple au quotidien.' },
   { id: 'maison', icon: Sofa, name: 'Maison', subtypes: ['Décoration', 'Articles de maison', 'Ustensiles', 'Petit mobilier'], message: 'Gérez facilement un catalogue varié et gardez une vision globale de votre activité.' },
   { id: 'maroquinerie', icon: Briefcase, name: 'Maroquinerie', subtypes: ['Sacs', 'Portefeuilles', 'Ceintures', 'Bagagerie', 'Articles de voyage'], message: 'Gérez vos articles de maroquinerie avec précision.' },
   { id: 'bijouterie', icon: Gem, name: 'Bijouterie', subtypes: ['Bijoux', 'Montres', 'Accessoires', 'Articles fantaisie'], message: 'Suivez vos articles précieux et vos ventes avec soin.' },
   { id: 'jouets', icon: Gamepad2, name: 'Jouets', subtypes: ['Jouets', 'Jeux', 'Articles enfants', 'Accessoires bébé', 'Puériculture'], message: 'Gérez votre catalogue de jouets et articles pour enfants.' },
   { id: 'sport', icon: Trophy, name: 'Sport', subtypes: ['Articles de sport', 'Vêtements sportifs', 'Chaussures de sport', 'Accessoires', 'Loisirs'], message: 'Organisez vos articles sportifs et suivez vos ventes.' },
-  { id: 'quincaillerie', icon: Wrench, name: 'Quincaillerie', subtypes: ['Outils', 'Matériel bricolage', 'Accessoires', 'Produits quincaillerie'], message: 'Gérez votre quincaillerie avec une vision claire de vos stocks.' },
   { id: 'automobile', icon: Car, name: 'Automobile', subtypes: ['Accessoires auto', 'Pièces', 'Entretien', 'Accessoires véhicules'], message: 'Suivez vos articles automobiles et vos ventes facilement.' },
   { id: 'cadeaux', icon: Gift, name: 'Cadeaux', subtypes: ['Cadeaux', 'Articles décoratifs', 'Souvenirs', 'Produits personnalisés'], message: 'Gérez votre catalogue de cadeaux et articles divers.' },
   { id: 'general', icon: Building2, name: 'Commerce général', subtypes: ['Multi-catégories', 'Produits variés', 'Commerce mixte'], message: 'Configurez votre boutique selon votre activité multi-catégories.' }
@@ -219,7 +213,7 @@ const BoutiqueLandingPage = () => {
             maxWidth: '600px',
             margin: '0 auto 2rem'
           }}>
-            Mode, chaussures, téléphonie, parfumerie, électroménager, beauté, alimentation, librairie et bien plus : gérez vos articles, ventes, stocks, promotions et clients depuis une seule plateforme intelligente.
+            Mode, chaussures, électroménager, beauté, alimentation, maroquinerie, bijouterie et bien plus : gérez vos articles, ventes, stocks, promotions et clients depuis une seule plateforme intelligente.
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
@@ -288,9 +282,9 @@ const BoutiqueLandingPage = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
             {[
-              'Une boutique de vêtements ne fonctionne pas exactement comme une boutique de téléphonie.',
-              'Une parfumerie n\'a pas les mêmes produits qu\'une boutique de chaussures.',
-              'Un commerce d\'électroménager n\'a pas le même catalogue qu\'une librairie.'
+              'Une boutique de vêtements ne fonctionne pas exactement comme une boutique de chaussures.',
+              'Une bijouterie n\'a pas les mêmes produits qu\'une boutique de jouets.',
+              'Un commerce d\'électroménager n\'a pas le même catalogue qu\'une maroquinerie.'
             ].map((item, idx) => (
               <div key={idx} style={{
                 background: 'linear-gradient(145deg, rgba(37,60,101,.58), rgba(7,18,38,.70))',
@@ -471,7 +465,7 @@ const BoutiqueLandingPage = () => {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-              {['MODE', 'BEAUTÉ', 'TÉLÉPHONIE', 'CHAUSSURES', 'PARFUM', 'HIGH-TECH', 'ÉLECTROMÉNAGER', 'ALIMENTAIRE', 'LIBRAIRIE', '+ BIEN D\'AUTRES'].map((item, idx) => (
+              {['MODE', 'BEAUTÉ', 'CHAUSSURES', 'ÉLECTROMÉNAGER', 'MAROQUINERIE', 'BIJOUTERIE', 'ALIMENTAIRE', 'JOUETS', '+ BIEN D\'AUTRES'].map((item, idx) => (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0891b2' }} />
                   <span style={{ color: '#f4f8ff', fontSize: '1.125rem', fontWeight: 600 }}>{item}</span>
@@ -597,7 +591,7 @@ const BoutiqueLandingPage = () => {
                 { title: 'Mode', items: 'Hommes → Femmes → Enfants → Accessoires' },
                 { title: 'Téléphonie', items: 'Smartphones → Accessoires → Chargeurs → Audio' },
                 { title: 'Beauté', items: 'Parfums → Maquillage → Soins → Cheveux' },
-                { title: 'Librairie', items: 'Livres → Papeterie → Scolaire → Bureau' },
+                { title: 'Papeterie', items: 'Fournitures → Scolaire → Bureau → Cahiers' },
                 { title: 'Électroménager', items: 'Cuisine → Froid → Lavage → Petit électro' }
               ].map((cat, idx) => (
                 <div key={idx} style={{
@@ -963,12 +957,9 @@ const BoutiqueLandingPage = () => {
             {[
               { icon: Shirt, name: 'Vêtements' },
               { icon: Footprints, name: 'Chaussures' },
-              { icon: Smartphone, name: 'Téléphonie' },
-              { icon: SparklesIcon, name: 'Parfumerie' },
               { icon: SparklesIcon, name: 'Beauté & cosmétiques' },
               { icon: Home, name: 'Électroménager' },
               { icon: Laptop, name: 'Informatique' },
-              { icon: BookOpen, name: 'Librairie' },
               { icon: FileText, name: 'Papeterie' },
               { icon: Coffee, name: 'Alimentaire' },
               { icon: Droplets, name: 'Produits d\'entretien' },
@@ -977,7 +968,6 @@ const BoutiqueLandingPage = () => {
               { icon: Gem, name: 'Bijouterie' },
               { icon: Gamepad2, name: 'Jouets' },
               { icon: Trophy, name: 'Sport & loisirs' },
-              { icon: Wrench, name: 'Quincaillerie' },
               { icon: Car, name: 'Accessoires automobile' },
               { icon: Gift, name: 'Cadeaux' },
               { icon: Building2, name: 'Commerce général' }
@@ -1067,7 +1057,7 @@ const BoutiqueLandingPage = () => {
               lineHeight: 1.7,
               marginBottom: 0
             }}>
-              Que vous vendiez des vêtements, des chaussures, des smartphones, des parfums, des appareils électroménagers, des produits alimentaires ou des centaines d'autres références, GesTock vous offre une base de gestion flexible pour organiser vos articles, vos stocks, vos ventes, vos promotions et vos clients.
+              Que vous vendiez des vêtements, des chaussures, des appareils électroménagers, des cosmétiques, des produits alimentaires ou des centaines d'autres références, GesTock vous offre une base de gestion flexible pour organiser vos articles, vos stocks, vos ventes, vos promotions et vos clients.
             </p>
           </div>
         </div>

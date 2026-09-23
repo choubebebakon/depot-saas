@@ -37,19 +37,11 @@ import CataloguePage from '../pages/CataloguePage';
 import BoutiquePage from '../pages/boutique/BoutiquePage';
 import PharmaciePage from '../pages/pharmacie/PharmaciePage';
 import RestaurantPage from '../pages/restaurant/RestaurantPage';
-import TelephoniePage from '../pages/telephonie/TelephoniePage';
-import QuincailleriePage from '../pages/quincaillerie/QuincailleriePage';
 import HotelleriePage from '../pages/hotellerie/HotelleriePage';
 import ImmobilierPage from '../pages/immobilier/ImmobilierPage';
 import TransportPage from '../pages/transport/TransportPage';
 import CliniquePage from '../pages/clinique/CliniquePage';
-import LibrairiePage from '../pages/librairie/LibrairiePage';
-import GlacierPage from '../pages/glacier/GlacierPage';
 import ProductionPage from '../pages/boulangerie/ProductionPage';
-import FidelitePage from '../pages/parfumerie/FidelitePage';
-import ProduitsPage from '../pages/parfumerie/ProduitsPage';
-import AgendaPage from '../pages/salon/AgendaPage';
-import PrestationsPage from '../pages/salon/PrestationsPage';
 import TroupeauxPage from '../pages/elevage/TroupeauxPage';
 import EvenementsPage from '../pages/elevage/EvenementsPage';
 import TicketsPage from '../pages/pressing/TicketsPage';
@@ -129,12 +121,6 @@ const PAGE_REGISTRY = {
   '/menu': <RestaurantPage />,
   '/cuisine': <RestaurantPage />,
   '/reservations': <RestaurantPage />,
-  '/telephones': <TelephoniePage />,
-  '/reparations': <TelephoniePage />,
-  '/accessoires': <TelephoniePage />,
-  '/garanties': <TelephoniePage />,
-  '/devis': <QuincailleriePage />,
-  '/chantiers': <QuincailleriePage />,
   '/hotel/chambres': <HotelleriePage />,
   '/hotel/reservations': <HotelleriePage />,
   '/hotel/sejours': <HotelleriePage />,
@@ -149,17 +135,8 @@ const PAGE_REGISTRY = {
   '/clinique/patients': <CliniquePage />,
   '/clinique/consultations': <CliniquePage />,
   '/clinique/prescriptions': <CliniquePage />,
-  '/librairie/catalogue': <LibrairiePage />,
-  '/librairie/commandes': <LibrairiePage />,
-  '/glacier/commande': <GlacierPage />,
-  '/glacier/menu': <GlacierPage />,
   '/boulangerie/production': <ProductionPage />,
   '/boulangerie/recettes': <ProductionPage />,
-  '/parfumerie/produits': <ProduitsPage />,
-  '/parfumerie/fidelite': <FidelitePage />,
-  '/salon/agenda': <AgendaPage />,
-  '/salon/rendez-vous': <AgendaPage />,
-  '/salon/prestations': <PrestationsPage />,
   '/elevage/troupeaux': <TroupeauxPage />,
   '/elevage/evenements': <EvenementsPage />,
   '/elevage/alimentation': <TroupeauxPage />,

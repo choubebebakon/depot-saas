@@ -104,6 +104,15 @@ export default function LoginPage() {
                 onFocus={(e) => { e.target.style.borderColor = 'rgba(34,211,238,0.5)'; e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.1)'; }}
                 onBlur={(e) => { e.target.style.borderColor = 'rgba(171,202,255,.17)'; e.target.style.boxShadow = 'none'; }}
               />
+              <Link
+                to="/forgot-password"
+                className="block text-right mt-2"
+                style={{ color: '#22d3ee', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s ease' }}
+                onMouseEnter={(e) => { e.target.style.color = '#06b6d4'; e.target.style.textDecoration = 'underline'; }}
+                onMouseLeave={(e) => { e.target.style.color = '#22d3ee'; e.target.style.textDecoration = 'none'; }}
+              >
+                Mot de passe oublié ?
+              </Link>
             </div>
 
             <button

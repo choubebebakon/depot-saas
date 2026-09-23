@@ -357,10 +357,8 @@ export class EmailService {
       DEPOT_BOISSONS: 'Dépôt de Boissons',
       SUPERMARCHE: 'Supermarché',
       BOUTIQUE: 'Boutique',
-      QUINCAILLERIE: 'Quincaillerie',
       PHARMACIE: 'Pharmacie',
       RESTAURANT: 'Restaurant',
-      TELEPHONIE: 'Téléphonie',
       PRESSING: 'Pressing',
       CIMENT_BTP: 'Ciment & BTP',
       GARAGE: 'Garage',
@@ -369,11 +367,7 @@ export class EmailService {
       TRANSPORT: 'Transport',
       IMMOBILIER: 'Immobilier',
       HOTEL: 'Hôtel',
-      SALON: 'Salon de Coiffure',
-      COSMETIQUE: 'Parfumerie/Cosmétique',
       BOULANGERIE: 'Boulangerie',
-      GLACIER: 'Glacier/Snack',
-      LIBRAIRIE: 'Librairie/Papeterie',
     };
     const label = metierLabels[metier] || metier;
     const html = this.buildTemplate({
@@ -398,6 +392,35 @@ export class EmailService {
     await this.sendEmail({
       to,
       subject: `🎉 Configuration ${label} terminée !`,
+      html,
+    });
+  }
+
+  async sendPasswordResetEmail(
+    to: string,
+    token: string,
+  ): Promise<void> {
+    const appName = this.getAppName();
+    const resetUrl = `${this.getFrontendUrl()}/reset-password?token=${token}`;
+    const html = this.buildTemplate({
+      title: `Réinitialisation de votre mot de passe`,
+      preheader: `Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe.`,
+      content: `
+        <h1 style="color:#1e293b;font-size:24px;margin:0 0 16px">𔐡 Réinitialisation de mot de passe</h1>
+        <p style="color:#475569;font-size:16px;line-height:1.6">Vous avez demandé la réinitialisation de votre mot de passe sur <strong>${appName}</strong>.</p>
+        <p style="color:#475569;font-size:16px;line-height:1.6">Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe :</p>
+        <div style="text-align:center;margin:32px 0">
+          <a href="${resetUrl}" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600">Réinitialiser mon mot de passe</a>
+        </div>
+        <p style="color:#64748b;font-size:14px;line-height:1.6">Ce lien expire dans <strong>30 minutes</strong> et ne peut être utilisé qu'une seule fois.</p>
+        <p style="color:#64748b;font-size:14px;line-height:1.6">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email ou contactez le support si vous pensez qu'il s'agit d'une erreur.</p>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">
+        <p style="color:#94a3b8;font-size:12px;margin:0">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="${resetUrl}" style="color:#3b82f6;word-break:break-all">${resetUrl}</a></p>
+      `,
+    });
+    await this.sendEmail({
+      to,
+      subject: `🔐 Réinitialisation de votre mot de passe - ${appName}`,
       html,
     });
   }

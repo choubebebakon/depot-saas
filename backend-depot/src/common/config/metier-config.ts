@@ -71,18 +71,6 @@ export const METIER_CONFIG: Record<string, MetierConfig> = {
     questionCritique: "Quel est mon taux d'occupation pour ce week-end ?",
   },
   // ... (Garde tes autres métiers ici, la structure est valide)
-  QUINCAILLERIE: {
-    keywords: [
-      'quincaillerie',
-      'devis',
-      'chantier',
-      'matériel',
-      'outillage',
-      'btp',
-    ],
-    tableSpecifique: null,
-    questionCritique: 'Quels chantiers ont le plus gros retard de livraison ?',
-  },
   SUPERMARCHE: {
     keywords: ['supermarché', 'rayon', 'caisse', 'stock', 'rupture', 'client'],
     tableSpecifique: null,
@@ -159,41 +147,6 @@ export const METIER_CONFIG: Record<string, MetierConfig> = {
     tableSpecifique: null,
     questionCritique: 'Quel est le délai moyen de traitement des vêtements ?',
   },
-  SALON_BEAUTE: {
-    keywords: ['salon', 'beauté', 'rdv', 'prestation', 'coiffure', 'soin'],
-    tableSpecifique: null,
-    questionCritique:
-      "Quelles prestations ont le plus fort taux d'annulation ?",
-  },
-  PARFUMERIE: {
-    keywords: [
-      'parfumerie',
-      'parfum',
-      'cosmétique',
-      'fidélité',
-      'client',
-      'promotion',
-    ],
-    tableSpecifique: null,
-    questionCritique: 'Quels clients ont le programme fidélité le plus actif ?',
-  },
-  LIBRAIRIE: {
-    keywords: [
-      'librairie',
-      'livre',
-      'nouveauté',
-      'commande',
-      'auteur',
-      'éditeur',
-    ],
-    tableSpecifique: null,
-    questionCritique: 'Quels livres ont le plus fort taux de rotation ?',
-  },
-  GLACIER_SNACK: {
-    keywords: ['glacier', 'snack', 'glace', 'table', 'commande', 'menu'],
-    tableSpecifique: null,
-    questionCritique: 'Quels glaciers ont le plus fort taux de vente ?',
-  },
   CIMENT_BTP: {
     keywords: [
       'ciment',
@@ -205,18 +158,6 @@ export const METIER_CONFIG: Record<string, MetierConfig> = {
     ],
     tableSpecifique: null,
     questionCritique: 'Quels chantiers ont le plus gros retard de livraison ?',
-  },
-  TELEPHONIE: {
-    keywords: [
-      'téléphonie',
-      'téléphone',
-      'réparation',
-      'imei',
-      'samsung',
-      'iphone',
-    ],
-    tableSpecifique: null,
-    questionCritique: 'Quels modèles ont le plus fort taux de retour SAV ?',
   },
 };
 

@@ -78,10 +78,10 @@ export default function RapportsPage() {
   );
 
   const cards = stats ? [
-    { icon: DollarSign, label: 'CA', value: (stats.chiffreAffaires || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-green-400', bg: 'bg-gradient-to-br from-green-500 to-green-600' },
-    { icon: Receipt, label: 'Ventes', value: stats.ventes?.length || 0, unit: '', color: 'text-blue-400', bg: 'bg-gradient-to-br from-blue-500 to-blue-600' },
-    { icon: TrendingDown, label: 'Dépenses', value: (stats.totalDepenses || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-red-400', bg: 'bg-gradient-to-br from-red-500 to-red-600' },
-    { icon: TrendingUp, label: 'Bénéfice', value: (stats.benefice || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-orange-400', bg: 'bg-gradient-to-br from-orange-500 to-orange-600' },
+    { icon: DollarSign, label: 'CA', value: (stats.chiffreAffaires || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-black font-black', bg: 'bg-gradient-to-br from-green-500 to-green-600' },
+    { icon: Receipt, label: 'Ventes', value: stats.ventes?.length || 0, unit: '', color: 'text-black font-black', bg: 'bg-gradient-to-br from-blue-500 to-blue-600' },
+    { icon: TrendingDown, label: 'Dépenses', value: (stats.totalDepenses || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-black font-black', bg: 'bg-gradient-to-br from-red-500 to-red-600' },
+    { icon: TrendingUp, label: 'Bénéfice', value: (stats.benefice || 0).toLocaleString('fr-FR'), unit: 'F', color: 'text-black font-black', bg: 'bg-gradient-to-br from-orange-500 to-orange-600' },
   ] : [];
 
   return (
@@ -142,10 +142,10 @@ export default function RapportsPage() {
           <div key={i} className={`${c.bg} p-5 rounded-2xl`}>
             <div className="flex items-start justify-between mb-3">
               <span className="text-2xl">{c.icon && <c.icon className="w-6 h-6" />}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{c.label}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-black">{c.label}</span>
             </div>
             <p className={`font-black text-3xl ${c.color}`}>
-              {c.value} <span className="text-base text-slate-500">{c.unit}</span>
+              {c.value} <span className="text-base font-black text-black">{c.unit}</span>
             </p>
           </div>
         ))}
@@ -159,18 +159,18 @@ export default function RapportsPage() {
             <Trophy className="w-5 h-5" /> Top Articles
           </h3>
           {(!stats?.topArticles || stats.topArticles.length === 0)
-            ? <p className="text-slate-500 py-6 text-center">Aucune donnée</p>
+            ? <p className="text-slate-400 py-6 text-center">Aucune donnée</p>
             : (
               <div className="space-y-3">
                 {stats.topArticles.slice(0, 5).map((p, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl">
                     <div className="flex items-center gap-3">
-                      <span className="text-slate-500 text-sm font-bold w-5">{i + 1}.</span>
-                      <span className="text-white text-sm font-semibold">Article #{p.articleId}</span>
+                      <span className="text-slate-300 text-sm font-bold w-5">{i + 1}.</span>
+                      <span className="text-white text-sm font-semibold">{p.nom}</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-cyan-400 font-bold text-sm">{p._sum?.quantite || 0} vendus</p>
-                      <p className="text-slate-400 text-[10px]">{(p._sum?.total || 0).toLocaleString('fr-FR')} F</p>
+                      <p className="text-cyan-300 font-bold text-sm">{p._sum?.quantite || 0} vendus</p>
+                      <p className="text-slate-300 text-[10px]">{(p._sum?.total || 0).toLocaleString('fr-FR')} F</p>
                     </div>
                   </div>
                 ))}
@@ -184,13 +184,13 @@ export default function RapportsPage() {
             <FileText className="w-5 h-5" /> Dernières Ventes
           </h3>
           {(!stats?.ventes || stats.ventes.length === 0)
-            ? <p className="text-slate-500 py-6 text-center">Aucune donnée</p>
+            ? <p className="text-slate-400 py-6 text-center">Aucune donnée</p>
             : (
               <div className="space-y-3">
                 {stats.ventes.slice(0, 5).map((v, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl">
                     <span className="text-white text-sm font-semibold">#{v.reference || v.id}</span>
-                    <span className="text-green-400 font-bold text-sm">{(v.total || 0).toLocaleString('fr-FR')} F</span>
+                    <span className="text-green-300 font-bold text-sm">{(v.total || 0).toLocaleString('fr-FR')} F</span>
                   </div>
                 ))}
               </div>

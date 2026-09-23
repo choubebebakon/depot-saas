@@ -7,20 +7,14 @@
 export enum MetierType {
   DEPOT_BOISSONS = 'DEPOT_BOISSONS', // Existant — ne pas recréer
   BOUTIQUE = 'BOUTIQUE',
-  QUINCAILLERIE = 'QUINCAILLERIE',
   PHARMACIE = 'PHARMACIE',
   RESTAURANT = 'RESTAURANT',
-  TELEPHONIE = 'TELEPHONIE',
   SUPERMARCHE = 'SUPERMARCHE',
   CIMENT_BTP = 'CIMENT_BTP',
   PRESSING = 'PRESSING',
   GARAGE_AUTOMOBILE = 'GARAGE_AUTOMOBILE',
   ELEVAGE = 'ELEVAGE',
-  SALON_BEAUTE = 'SALON_BEAUTE',
-  PARFUMERIE = 'PARFUMERIE',
   BOULANGERIE = 'BOULANGERIE',
-  GLACIER_SNACK = 'GLACIER_SNACK',
-  LIBRAIRIE = 'LIBRAIRIE',
   CLINIQUE = 'CLINIQUE',
   TRANSPORT = 'TRANSPORT',
   IMMOBILIER = 'IMMOBILIER',
@@ -75,7 +69,7 @@ export type Permission =
   | 'PROMOTIONS_WRITE'
   | 'CREDIT_CLIENT_READ'
   | 'CREDIT_CLIENT_WRITE'
-  // Métier Quincaillerie
+  // Métier Ciment / BTP
   | 'DEVIS_READ'
   | 'DEVIS_WRITE'
   | 'DEVIS_EXPORT'
@@ -226,73 +220,6 @@ export const METIER_ROLES: Partial<Record<MetierType, RoleConfig[]>> = {
     },
   ],
 
-  // ── QUINCAILLERIE ─────────────────────────────────────────────
-  [MetierType.QUINCAILLERIE]: [
-    {
-      nom: 'GERANT',
-      label: 'Gérant',
-      permissions: GERANT_PERMISSIONS,
-      isAdmin: true,
-    },
-    {
-      nom: 'VENDEUR',
-      label: 'Vendeur',
-      permissions: [
-        'STOCK_READ',
-        'VENTES_READ',
-        'VENTES_WRITE',
-        'CLIENTS_READ',
-        'CLIENTS_WRITE',
-        'DEVIS_READ',
-        'DEVIS_WRITE',
-        'DEVIS_EXPORT',
-        'CHANTIERS_READ',
-        'CHANTIERS_WRITE',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'FOURNISSEURS_READ',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'CAISSIER',
-      label: 'Caissier',
-      permissions: [
-        'CAISSE_READ',
-        'CAISSE_WRITE',
-        'CAISSE_OPEN_CLOSE',
-        'VENTES_READ',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'CLIENTS_READ',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'MAGASINIER',
-      label: 'Magasinier',
-      permissions: [
-        'STOCK_READ',
-        'STOCK_WRITE',
-        'LIVRAISONS_READ',
-        'LIVRAISONS_WRITE',
-        'FOURNISSEURS_READ',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'TECHNICIEN',
-      label: 'Technicien',
-      permissions: [
-        'STOCK_READ',
-        'DEVIS_READ',
-        'DEVIS_WRITE',
-        'CHANTIERS_READ',
-      ],
-      isAdmin: false,
-    },
-  ],
-
   // ── PHARMACIE ─────────────────────────────────────────────────
   [MetierType.PHARMACIE]: [
     {
@@ -412,61 +339,6 @@ export const METIER_ROLES: Partial<Record<MetierType, RoleConfig[]>> = {
     },
   ],
 
-  // ── TELEPHONIE ────────────────────────────────────────────────
-  [MetierType.TELEPHONIE]: [
-    {
-      nom: 'GERANT',
-      label: 'Gérant',
-      permissions: GERANT_PERMISSIONS,
-      isAdmin: true,
-    },
-    {
-      nom: 'VENDEUR',
-      label: 'Vendeur',
-      permissions: [
-        'STOCK_READ',
-        'VENTES_READ',
-        'VENTES_WRITE',
-        'CLIENTS_READ',
-        'CLIENTS_WRITE',
-        'TELEPHONES_READ',
-        'TELEPHONES_WRITE',
-        'IMEI_READ',
-        'GARANTIES_READ',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'TECHNICIEN',
-      label: 'Technicien',
-      permissions: [
-        'REPARATIONS_READ',
-        'REPARATIONS_WRITE',
-        'STOCK_READ',
-        'CLIENTS_READ',
-        'TELEPHONES_READ',
-        'IMEI_READ',
-        'GARANTIES_READ',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'CAISSIER',
-      label: 'Caissier',
-      permissions: [
-        'CAISSE_READ',
-        'CAISSE_WRITE',
-        'CAISSE_OPEN_CLOSE',
-        'VENTES_READ',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'CLIENTS_READ',
-      ],
-      isAdmin: false,
-    },
-  ],
   // ── SUPERMARCHE ───────────────────────────────────────────────
   [MetierType.SUPERMARCHE]: [
     {
@@ -738,87 +610,6 @@ export const METIER_ROLES: Partial<Record<MetierType, RoleConfig[]>> = {
     },
   ],
 
-  // ── SALON DE COIFFURE / BEAUTE ───────────────────────────────
-  [MetierType.SALON_BEAUTE]: [
-    {
-      nom: 'GERANT',
-      label: 'Gérant',
-      permissions: GERANT_PERMISSIONS,
-      isAdmin: true,
-    },
-    {
-      nom: 'COIFFEUR',
-      label: 'Coiffeur',
-      permissions: ['CLIENTS_READ', 'CLIENTS_WRITE', 'STOCK_READ'],
-      isAdmin: false,
-    },
-    {
-      nom: 'RECEPTIONNISTE',
-      label: 'Réceptionniste',
-      permissions: ['CLIENTS_READ', 'CLIENTS_WRITE'],
-      isAdmin: false,
-    },
-    {
-      nom: 'CAISSIER',
-      label: 'Caissier',
-      permissions: [
-        'VENTES_READ',
-        'CAISSE_READ',
-        'CAISSE_WRITE',
-        'CAISSE_OPEN_CLOSE',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'CLIENTS_READ',
-      ],
-      isAdmin: false,
-    },
-  ],
-
-  // ── PARFUMERIE / COSMETIQUE ──────────────────────────────────
-  [MetierType.PARFUMERIE]: [
-    {
-      nom: 'GERANT',
-      label: 'Gérant',
-      permissions: GERANT_PERMISSIONS,
-      isAdmin: true,
-    },
-    {
-      nom: 'VENDEUR',
-      label: 'Vendeur',
-      permissions: [
-        'STOCK_READ',
-        'VENTES_READ',
-        'VENTES_WRITE',
-        'CLIENTS_READ',
-        'CLIENTS_WRITE',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'PROMOTIONS_READ',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'CONSEILLER',
-      label: 'Conseiller(ère)',
-      permissions: ['STOCK_READ', 'CLIENTS_READ', 'CLIENTS_WRITE'],
-      isAdmin: false,
-    },
-    {
-      nom: 'CAISSIER',
-      label: 'Caissier',
-      permissions: [
-        'VENTES_READ',
-        'CAISSE_READ',
-        'CAISSE_WRITE',
-        'CAISSE_OPEN_CLOSE',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'CLIENTS_READ',
-      ],
-      isAdmin: false,
-    },
-  ],
-
   // ── BOULANGERIE / PATISSERIE ─────────────────────────────────
   [MetierType.BOULANGERIE]: [
     {
@@ -848,79 +639,6 @@ export const METIER_ROLES: Partial<Record<MetierType, RoleConfig[]>> = {
         'VENTES_WRITE',
         'CLIENTS_READ',
         'CLIENTS_WRITE',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'CAISSIER',
-      label: 'Caissier',
-      permissions: [
-        'VENTES_READ',
-        'CAISSE_READ',
-        'CAISSE_WRITE',
-        'CAISSE_OPEN_CLOSE',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'CLIENTS_READ',
-      ],
-      isAdmin: false,
-    },
-  ],
-
-  // ── GLACIER / SNACK ──────────────────────────────────────────
-  [MetierType.GLACIER_SNACK]: [
-    {
-      nom: 'GERANT',
-      label: 'Gérant',
-      permissions: GERANT_PERMISSIONS,
-      isAdmin: true,
-    },
-    {
-      nom: 'SERVEUR',
-      label: 'Serveur',
-      permissions: [
-        'COMMANDES_READ',
-        'COMMANDES_WRITE',
-        'CLIENTS_READ',
-        'CLIENTS_WRITE',
-      ],
-      isAdmin: false,
-    },
-    {
-      nom: 'CAISSIER',
-      label: 'Caissier',
-      permissions: [
-        'VENTES_READ',
-        'CAISSE_READ',
-        'CAISSE_WRITE',
-        'CAISSE_OPEN_CLOSE',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
-        'CLIENTS_READ',
-      ],
-      isAdmin: false,
-    },
-  ],
-
-  // ── LIBRAIRIE / PAPETERIE ────────────────────────────────────
-  [MetierType.LIBRAIRIE]: [
-    {
-      nom: 'GERANT',
-      label: 'Gérant',
-      permissions: GERANT_PERMISSIONS,
-      isAdmin: true,
-    },
-    {
-      nom: 'VENDEUR',
-      label: 'Vendeur',
-      permissions: [
-        'STOCK_READ',
-        'VENTES_READ',
-        'VENTES_WRITE',
-        'CLIENTS_READ',
-        'CLIENTS_WRITE',
-        'FACTURES_READ',
-        'FACTURES_WRITE',
       ],
       isAdmin: false,
     },

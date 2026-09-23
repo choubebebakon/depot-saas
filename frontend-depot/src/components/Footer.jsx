@@ -124,9 +124,6 @@ export default function Footer() {
                   <Link to="/metier/pharmacie">Pharmacie</Link>
                 </li>
                 <li>
-                  <Link to="/metier/quincaillerie">Quincaillerie</Link>
-                </li>
-                <li>
                   <Link to="/metier/restaurant">Restaurant</Link>
                 </li>
                 <li>

@@ -1896,6 +1896,73 @@ export class SupermarcheService {
     };
   }
 
+  // ── Rapports granulaires (wrap getRapports avec filtre) ───────────────────
+
+  async getRapportsVentes(
+    tenantId: string,
+    periode?: string,
+    dateDebut?: string,
+    dateFin?: string,
+    depotId?: string,
+  ) {
+    return this.getRapports(tenantId, periode, dateDebut, dateFin, depotId);
+  }
+
+  async getRapportsStock(
+    tenantId: string,
+    periode?: string,
+    dateDebut?: string,
+    dateFin?: string,
+    depotId?: string,
+  ) {
+    const full = await this.getRapports(tenantId, periode, dateDebut, dateFin, depotId);
+    return {
+      periode: full.periode,
+      topArticles: full.topArticles,
+      topProduits: full.topProduits,
+      rayons: full.rayons,
+    };
+  }
+
+  async getRapportsFinanciers(
+    tenantId: string,
+    periode?: string,
+    dateDebut?: string,
+    dateFin?: string,
+    depotId?: string,
+  ) {
+    const full = await this.getRapports(tenantId, periode, dateDebut, dateFin, depotId);
+    return {
+      periode: full.periode,
+      chiffreAffaires: full.chiffreAffaires,
+      totalDepenses: full.totalDepenses,
+      benefice: full.benefice,
+      depensesDetails: full.depensesDetails,
+      depenses: full.depenses,
+      marge: full.marge,
+      caTotal: full.caTotal,
+      depensesTotal: full.depensesTotal,
+    };
+  }
+
+  async getRapportsPerformance(
+    tenantId: string,
+    periode?: string,
+    dateDebut?: string,
+    dateFin?: string,
+    depotId?: string,
+  ) {
+    const full = await this.getRapports(tenantId, periode, dateDebut, dateFin, depotId);
+    return {
+      periode: full.periode,
+      chiffreAffaires: full.chiffreAffaires,
+      benefice: full.benefice,
+      topProduits: full.topProduits,
+      topArticles: full.topArticles,
+      rayons: full.rayons,
+    };
+  }
+
   // ── Dépôts ──────────────────────────────────────────────────────────────────
 
   async findAllDepots(tenantId: string) {

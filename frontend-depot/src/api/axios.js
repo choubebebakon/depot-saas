@@ -188,6 +188,12 @@ api.interceptors.response.use(
         const token = data.access_token || data.accessToken;
         if (!token) throw new Error('Refresh token response did not contain an access token');
         localStorage.setItem('depot_token', token);
+        // Notifie les consommateurs du token (pont Realtime, hooks…) : sans cet
+        // événement, React n'est pas re-rendu après un refresh silencieux et le
+        // socket continuait de s'authentifier avec le jeton expiré (« jwt expired »).
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('gestock:token-refreshed', { detail: { token } }));
+        }
         originalRequest.headers.Authorization = `Bearer ${token}`;
         onRefreshed(token);
         isRefreshing = false;
@@ -197,6 +203,9 @@ api.interceptors.response.use(
         localStorage.removeItem('depot_token');
         localStorage.removeItem('depot_user');
         onRefreshed(null);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('gestock:token-cleared'));
+        }
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

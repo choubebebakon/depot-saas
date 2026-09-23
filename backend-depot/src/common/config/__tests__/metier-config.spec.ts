@@ -12,7 +12,6 @@ describe('METIER_CONFIG Validation', () => {
     'PHARMACIE',
     'RESTAURANT',
     'HOTEL',
-    'QUINCAILLERIE',
     'SUPERMARCHE',
     'GARAGE_AUTOMOBILE',
     'CLINIQUE',
@@ -21,16 +20,11 @@ describe('METIER_CONFIG Validation', () => {
     'ELEVAGE',
     'BOULANGERIE',
     'PRESSING',
-    'SALON_BEAUTE',
-    'PARFUMERIE',
-    'LIBRAIRIE',
-    'GLACIER_SNACK',
     'CIMENT_BTP',
-    'TELEPHONIE',
   ];
 
   describe('Validation de la configuration globale', () => {
-    it('devrait avoir tous les 21 métiers configurés', () => {
+    it('devrait avoir tous les métiers configurés', () => {
       METIERS_ATTENDUS.forEach((metier) => {
         expect(METIER_CONFIG[metier]).toBeDefined();
         expect(METIER_CONFIG[metier]).not.toBeNull();

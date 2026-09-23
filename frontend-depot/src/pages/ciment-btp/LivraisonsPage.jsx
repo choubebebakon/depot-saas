@@ -20,7 +20,7 @@ function ModalLivraison({ onClose, onSuccess }) {
   const [erreur, setErreur] = useState('');
 
   useEffect(() => {
-    api.get(`/quincaillerie/chantiers?tenantId=${user?.tenantId}`).then(res => setChantiers(res.data?.data || res.data || [])).catch(() => {});
+    api.get(`/ciment-btp/chantiers?tenantId=${user?.tenantId}`).then(res => setChantiers(res.data?.data || res.data || [])).catch(() => {});
     api.get('/ciment-btp/vehicules').then(res => setVehicules(res.data.data || [])).catch(() => {});
   }, [user]);
 

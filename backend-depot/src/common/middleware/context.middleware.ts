@@ -1,4 +1,3 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'node:crypto';
 
@@ -19,11 +18,22 @@ function extractMetierFromPath(path: string): string | null {
  * L'identité authentifiée et le scope tenant/dépôt sont établis plus tard,
  * après JwtAuthGuard, par les interceptors de scope.
  */
-@Injectable()
-export class ContextMiddleware implements NestMiddleware {
-  use(req: Request, _res: Response, next: NextFunction) {
-    (req as any).auditRequestId = randomUUID();
-    (req as any).auditMetier = extractMetierFromPath(req.path);
-    next();
-  }
+function handleContext(req: Request, _res: Response, next: NextFunction) {
+  (req as any).auditRequestId = randomUUID();
+  (req as any).auditMetier = extractMetierFromPath(req.path);
+  next();
 }
+
+/**
+ * Middleware Express global : appliqué via `app.use()` dans main.ts.
+ * (Un middleware « pour toutes les routes » via `forRoutes('{*path}')` déclenchait
+ * des warnings LegacyRouteConverter de NestJS 11 avec un global prefix.)
+ */
+export function contextMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  handleContext(req, res, next);
+}
+

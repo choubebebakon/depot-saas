@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { metierSlugMiddleware } from './common/middleware/metier-slug.middleware';
+import { contextMiddleware } from './common/middleware/context.middleware';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
 
@@ -87,6 +88,7 @@ async function bootstrap() {
   });
 
   app.use(metierSlugMiddleware);
+  app.use(contextMiddleware);
 
   // Headers de sécurité HTTP (HSTS, X-Content-Type-Options, X-Frame-Options,
   // no-sniff…). contentSecurityPolicy est désactivé car l'API ne sert pas de

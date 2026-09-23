@@ -51,12 +51,11 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['inventaire', true, true],
     ['fournisseurs', true, false],
     ['ventes', true, false],
-    ['rapports_stock', true, false],
-    ['promotions', true, false],
+    ['reports.stock', true, false],
   ]),
   // CAISSIER : POS/caisse ✅, ventes ✅ — produits/promotions 👁️ — depenses ❌
   // rapports.* ❌ (aucune ligne rapports) — §10
-  ...R(Role.CAISSIER, 'supermarche', [
+...R(Role.CAISSIER, 'supermarche', [
     ['dashboard', true, false],
     ['pos_caisse', true, true],
     ['ventes', true, true],
@@ -73,7 +72,7 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['ventes', true, true],
     ['clients', true, true],
     ['promotions', true, true],
-    ['rapports_performance', true, false],
+    ['reports.performance', true, false],
   ]),
   // COMPTABLE : vision financiere 👁️, depenses/fournisseurs/rapports ✅
   ...R(Role.COMPTABLE, 'supermarche', [
@@ -88,7 +87,10 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['promotions', true, false],
     ['fournisseurs', true, true],
     ['depenses', true, true],
-    ['rapports', true, true],
+    ['reports.sales', true, true],
+    ['reports.stock', true, true],
+    ['reports.financial', true, true],
+    ['reports.performance', true, false],
   ]),
 
   // BOUTIQUE (§7)
@@ -100,8 +102,7 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['receptions', true, true],
     ['inventaire', true, true],
     ['categories', true, true],
-    ['clients', true, false],
-    ['rapports_stock', true, false],
+    ['reports.stock', true, false],
   ]),
   // CAISSIER : ventes/caisse/factures ✅ — produits/promotions 👁️
   ...R(Role.CAISSIER, 'boutique', [
@@ -122,7 +123,7 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['clients', true, true],
     ['promotions', true, true],
     ['factures', true, false],
-    ['rapports_performance', true, false],
+    ['reports.performance', true, false],
   ]),
   // COMPTABLE : finance 👁️ + clotures — jamais d'ecriture stock
   ...R(Role.COMPTABLE, 'boutique', [
@@ -138,7 +139,10 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['factures', true, true],
     ['fournisseurs', true, true],
     ['depenses', true, true],
-    ['rapports', true, true],
+    ['reports.sales', true, true],
+    ['reports.stock', true, true],
+    ['reports.financial', true, true],
+    ['reports.performance', true, false],
   ]),
 
   // DEPOT DE BOISSONS (§9)
@@ -149,13 +153,13 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['inventaire', true, true],
     ['consignes', true, true],
     ['livraisons', true, true],
-    ['tournees', true, true],
+    ['tournees', true, false],
     ['fournisseurs', true, false],
     ['ventes', true, false],
-    ['rapports_stock', true, false],
+    ['reports.stock', true, false],
   ]),
   // CAISSIER : ventes/caisse/clients ✅ — consigne/stock/factures 👁️ — tournees ❌
-  ...R(Role.CAISSIER, 'depot', [
+...R(Role.CAISSIER, 'depot', [
     ['dashboard', true, false],
     ['ventes', true, true],
     ['caisse', true, true],
@@ -172,7 +176,7 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['clients', true, true],
     ['tournees', true, true],
     ['livraisons', true, true],
-    ['rapports_performance', true, false],
+    ['reports.performance', true, false],
   ]),
   // COMPTABLE : finance 👁️, depenses/fournisseurs/rapports ✅ — stock ❌ ecriture
   ...R(Role.COMPTABLE, 'depot', [
@@ -188,7 +192,10 @@ export const PERMISSION_SEED: PermissionSeedRow[] = [
     ['factures', true, true],
     ['fournisseurs', true, true],
     ['depenses', true, true],
-    ['rapports', true, true],
+    ['reports.sales', true, true],
+    ['reports.stock', true, true],
+    ['reports.financial', true, true],
+    ['reports.performance', true, false],
   ]),
 ];
 

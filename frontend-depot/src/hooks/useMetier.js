@@ -16,30 +16,18 @@ import { SIDEBAR_CONFIG as ELEVAGE_SIDEBAR } from '../modules/elevage/sidebar.co
 import { DASHBOARD_WIDGETS as ELEVAGE_WIDGETS } from '../modules/elevage/dashboard.config';
 import { SIDEBAR_CONFIG as GARAGE_SIDEBAR } from '../modules/garage_automobile/sidebar.config';
 import { DASHBOARD_WIDGETS as GARAGE_WIDGETS } from '../modules/garage_automobile/dashboard.config';
-import { SIDEBAR_CONFIG as QUINCAILLERIE_SIDEBAR } from '../modules/quincaillerie/sidebar.config';
-import { DASHBOARD_WIDGETS as QUINCAILLERIE_WIDGETS } from '../modules/quincaillerie/dashboard.config';
 import { SIDEBAR_CONFIG as IMMOBILIER_SIDEBAR } from '../modules/immobilier/sidebar.config';
 import { DASHBOARD_WIDGETS as IMMOBILIER_WIDGETS } from '../modules/immobilier/dashboard.config';
-import { SIDEBAR_CONFIG as LIBRAIRIE_SIDEBAR } from '../modules/librairie/sidebar.config';
-import { DASHBOARD_WIDGETS as LIBRAIRIE_WIDGETS } from '../modules/librairie/dashboard.config';
 import { SIDEBAR_CONFIG as BOUTIQUE_SIDEBAR } from '../modules/boutique/sidebar.config';
 import { DASHBOARD_WIDGETS as BOUTIQUE_WIDGETS } from '../modules/boutique/dashboard.config';
 import { SIDEBAR_CONFIG as TRANSPORT_SIDEBAR } from '../modules/transport/sidebar.config';
 import { DASHBOARD_WIDGETS as TRANSPORT_WIDGETS } from '../modules/transport/dashboard.config';
 import { SIDEBAR_CONFIG as BOULANGERIE_SIDEBAR } from '../modules/boulangerie/sidebar.config';
 import { DASHBOARD_WIDGETS as BOULANGERIE_WIDGETS } from '../modules/boulangerie/dashboard.config';
-import { SIDEBAR_CONFIG as PARFUMERIE_SIDEBAR } from '../modules/parfumerie/sidebar.config';
-import { DASHBOARD_WIDGETS as PARFUMERIE_WIDGETS } from '../modules/parfumerie/dashboard.config';
-import { SIDEBAR_CONFIG as SALON_BEAUTE_SIDEBAR } from '../modules/salon_beaute/sidebar.config';
-import { DASHBOARD_WIDGETS as SALON_BEAUTE_WIDGETS } from '../modules/salon_beaute/dashboard.config';
-import { SIDEBAR_CONFIG as TELEPHONIE_SIDEBAR } from '../modules/telephonie/sidebar.config';
-import { DASHBOARD_WIDGETS as TELEPHONIE_WIDGETS } from '../modules/telephonie/dashboard.config';
 import { SIDEBAR_CONFIG as PRESSING_SIDEBAR } from '../modules/pressing/sidebar.config';
 import { DASHBOARD_WIDGETS as PRESSING_WIDGETS } from '../modules/pressing/dashboard.config';
 import { SIDEBAR_CONFIG as CIMENT_BTP_SIDEBAR } from '../modules/ciment_btp/sidebar.config';
 import { DASHBOARD_WIDGETS as CIMENT_BTP_WIDGETS } from '../modules/ciment_btp/dashboard.config';
-import { SIDEBAR_CONFIG as GLACIER_SNACK_SIDEBAR } from '../modules/glacier_snack/sidebar.config';
-import { DASHBOARD_WIDGETS as GLACIER_SNACK_WIDGETS } from '../modules/glacier_snack/dashboard.config';
 
 const MODULE_CONFIGS = {
   DEPOT_BOISSONS: {
@@ -74,17 +62,9 @@ const MODULE_CONFIGS = {
     sidebar: GARAGE_SIDEBAR.GARAGE_AUTOMOBILE,
     widgets: GARAGE_WIDGETS,
   },
-  QUINCAILLERIE: {
-    sidebar: QUINCAILLERIE_SIDEBAR.QUINCAILLERIE,
-    widgets: QUINCAILLERIE_WIDGETS,
-  },
   IMMOBILIER: {
     sidebar: IMMOBILIER_SIDEBAR.IMMOBILIER,
     widgets: IMMOBILIER_WIDGETS,
-  },
-  LIBRAIRIE: {
-    sidebar: LIBRAIRIE_SIDEBAR.LIBRAIRIE,
-    widgets: LIBRAIRIE_WIDGETS,
   },
   BOUTIQUE: {
     sidebar: BOUTIQUE_SIDEBAR.BOUTIQUE,
@@ -98,18 +78,6 @@ const MODULE_CONFIGS = {
     sidebar: BOULANGERIE_SIDEBAR.BOULANGERIE,
     widgets: BOULANGERIE_WIDGETS,
   },
-  PARFUMERIE: {
-    sidebar: PARFUMERIE_SIDEBAR.PARFUMERIE,
-    widgets: PARFUMERIE_WIDGETS,
-  },
-  SALON_BEAUTE: {
-    sidebar: SALON_BEAUTE_SIDEBAR.SALON_BEAUTE,
-    widgets: SALON_BEAUTE_WIDGETS,
-  },
-  TELEPHONIE: {
-    sidebar: TELEPHONIE_SIDEBAR.TELEPHONIE,
-    widgets: TELEPHONIE_WIDGETS,
-  },
   PRESSING: {
     sidebar: PRESSING_SIDEBAR.PRESSING,
     widgets: PRESSING_WIDGETS,
@@ -117,10 +85,6 @@ const MODULE_CONFIGS = {
   CIMENT_BTP: {
     sidebar: CIMENT_BTP_SIDEBAR.CIMENT_BTP,
     widgets: CIMENT_BTP_WIDGETS,
-  },
-  GLACIER_SNACK: {
-    sidebar: GLACIER_SNACK_SIDEBAR.GLACIER_SNACK,
-    widgets: GLACIER_SNACK_WIDGETS,
   },
 };
 

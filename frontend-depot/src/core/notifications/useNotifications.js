@@ -81,8 +81,27 @@ export function useNotifications() {
     }
 
     const token = localStorage.getItem('depot_token');
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    // Utilise VITE_REALTIME_URL pour la connexion socket.io (sans /api/v1)
+    // VITE_API_URL inclut /api/v1 ce qui casse la connexion au namespace /notifications
+    const apiUrl = import.meta.env.VITE_REALTIME_URL || import.meta.env.VITE_API_URL?.replace(/\/api\/v1$/, '') || 'http://localhost:3000';
     const existingToken = reg.socket?.auth?.token;
+
+    // Vérifie si le token est valide (pas expiré) avant de connecter
+    const isTokenValid = (jwt) => {
+      if (!jwt) return false;
+      try {
+        const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return payload.exp * 1000 > Date.now();
+      } catch {
+        return false;
+      }
+    };
+
+    if (!isTokenValid(token)) {
+      console.warn('[useNotifications] Token invalide ou expiré, tentative de reconnexion différée');
+      setConnected(false);
+      return undefined;
+    }
 
     // Recrée la socket si l'identité/token change (logout, changement de tenant,
     // renouvellement de session), afin de ne jamais conserver une connexion d'un ancien utilisateur.
@@ -95,15 +114,7 @@ export function useNotifications() {
     if (!reg.socket) {
       reg.socket = io(`${apiUrl}/notifications`, {
         auth: { token },
-        // forceNew : ce namespace doit posséder sa propre session engine.io.
-        // Par défaut socket.io multiplexe tous les namespaces d'une même origine
-        // sur UNE connexion partagée : la déconnexion de /realtime (dans le
-        // cleanup de useRealtimeSync) ou du namespace racine fermait alors la
-        // session commune, et ce client repartait avec un sid devenu inconnu
-        // côté serveur ("Session ID unknown" → 400 sur /socket.io).
         forceNew: true,
-        // Ordre [polling, websocket] obligatoire (cf. realtimeClient) : le
-        // websocket d'abord casse la poignée de main sous double-rendu React.
         transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: 8,
@@ -115,7 +126,14 @@ export function useNotifications() {
 
     const socket = reg.socket;
     const onConnect = () => setConnected(true);
-    const onDisconnect = () => setConnected(false);
+    const onDisconnect = (reason) => {
+      setConnected(false);
+      console.warn('[useNotifications] Déconnecté:', reason);
+    };
+    const onConnectError = (err) => {
+      console.error('[useNotifications] Erreur de connexion:', err.message);
+      setConnected(false);
+    };
     const onNewNotification = (notif) => {
       if (!notif?.id) return;
       setNotifications((prev) => {
@@ -154,6 +172,7 @@ export function useNotifications() {
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onConnectError);
     socket.on('notification:new', onNewNotification);
     socket.on('notification:read', onRead);
     socket.on('notification:deleted', onDeleted);
@@ -164,6 +183,7 @@ export function useNotifications() {
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onConnectError);
       socket.off('notification:new', onNewNotification);
       socket.off('notification:read', onRead);
       socket.off('notification:deleted', onDeleted);

@@ -23,14 +23,7 @@ import {
 } from "../shared/permissions/matrix";
 import Icon from "../shared/components/Icon";
 
-const ADMIN_MENUS = [
-  { label: "Utilisateurs",  icon: User, path: "utilisateurs" },
-  { label: "D\u00E9p\u00F4ts",      icon: Building2, path: "depots" },
-  { label: "Param\u00E8tres",    icon: Settings, path: "parametres" },
-  { label: "Abonnement",    icon: CreditCard, path: "abonnement" },
-];
-
-const ADMIN_ROLES = ["PATRON", "GERANT", "ADMIN", "PHARMACIEN"];
+const ADMIN_ROLES = ["PATRON", "ADMIN", "PHARMACIEN"];
 const GRANULAR_METIERS = new Set(["supermarche", "boutique", "depot"]);
 const ABONNEMENT_URL = import.meta.env.VITE_ABONNEMENT_URL || 'https://gestock.app/tarifs';
 
@@ -89,16 +82,8 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
   // §3/§23 — le GERANT est un gérant d'ÉTABLISSEMENT : il ne voit que
   // Utilisateurs (employés de son établissement) et Paramètres établissement.
   // Utilisateurs/Dépôts/Abonnement restent réservés au PATRON/ADMIN.
-  const staticAdminMenus = useMemo(() => {
-    if (user?.role === 'GERANT' && useGranular) {
-      return ADMIN_MENUS.filter((item) =>
-        ['utilisateurs', 'parametres'].includes(
-          pathToSousModule(`/${item.path}`, metierSlug),
-        ),
-      );
-    }
-    return ADMIN_MENUS;
-  }, [user?.role, useGranular, metierSlug]);
+  // La logique de permission dans visibleAdminMenus gère déjà correctement cela
+  // via resolvePermission qui refuse ADMINISTRATION_SUBMODULES pour non-PATRON.
 
   const menus = useMemo(() => {
     const mapped = rawMenus.map(m => ({
@@ -149,31 +134,6 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
   const handleNavClick = useCallback((path) => {
     navigate(path);
   }, [navigate]);
-
-  const adminLinkStyle = useCallback(
-    ({ isActive: a }) => ({
-      ...styles.navItem,
-      backgroundColor: a ? "#f59e0b18" : "transparent",
-      borderLeft: a ? "3px solid #f59e0b" : "3px solid transparent",
-      color: a ? "#f59e0b" : "#64748b",
-      textDecoration: "none",
-      display: "flex",
-      alignItems: "center",
-      gap: "10px",
-      padding: "9px 10px",
-      borderRadius: "8px",
-      border: "none",
-      cursor: "pointer",
-      transition: "all 0.15s ease",
-      width: "100%",
-      fontFamily: "'DM Sans', sans-serif",
-      fontSize: "13.5px",
-      fontWeight: 500,
-      whiteSpace: "nowrap",
-      overflow: "hidden",
-    }),
-    []
-  );
 
   return (
     <aside
@@ -288,26 +248,6 @@ export default function DynamicSidebar({ user, tenant, onLogout }) {
               </span>
             )}
             {collapsed && <div style={styles.divider} />}
-
-            {staticAdminMenus.map((item) => {
-              const adminPath = `${prefix}/${item.path}`;
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.label}
-                  to={adminPath}
-                  title={collapsed ? item.label : undefined}
-                  style={adminLinkStyle}
-                >
-                  <span style={styles.navIcon}>
-                    <Icon className="w-5 h-5" />
-                  </span>
-                  {!collapsed && (
-                    <span style={styles.navLabel}>{item.label}</span>
-                  )}
-                </NavLink>
-              );
-            })}
 
             {visibleAdminMenus.map((item) => {
               const adminPath = item.path.startsWith(prefix) ? item.path : prefix + (item.path.startsWith('/') ? '' : '/') + item.path;

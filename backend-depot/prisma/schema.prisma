@@ -932,6 +932,7 @@ model User {
   notifications    Notification[]
   notifPreference  NotificationPreference?
   refreshTokens    RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   sessionsCaisse   SessionCaisse[]
   tourneesOuvertes Tournee[]
   supportMessages  SupportMessage[]
@@ -1065,6 +1066,19 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }
 
 /// @deprecated Utilisé uniquement par le module legacy `platform-admin` (lecture). Ne pas utiliser pour de nouvelles écritures.
@@ -2380,20 +2394,14 @@ enum PaymentMethod {
 enum MetierType {
   DEPOT_BOISSONS
   BOUTIQUE
-  QUINCAILLERIE
   PHARMACIE
   RESTAURANT
-  TELEPHONIE
   SUPERMARCHE
   CIMENT_BTP
   PRESSING
   GARAGE_AUTOMOBILE
   ELEVAGE
-  SALON_BEAUTE
-  PARFUMERIE
   BOULANGERIE
-  GLACIER_SNACK
-  LIBRAIRIE
   CLINIQUE
   TRANSPORT
   IMMOBILIER

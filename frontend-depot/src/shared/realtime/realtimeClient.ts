@@ -54,6 +54,27 @@ const safeInvoke = <K extends keyof RealtimeHandlers>(
   }
 };
 
+// Un refus d'authentification (jeton expiré, session close…) ne se règle pas par
+// une nouvelle tentative : socket.io réessaierait indéfiniment avec le même jeton,
+// ce qui produisait des rafales de « Socket refusée … jwt expired » côté serveur.
+// On coupe la reconnexion automatique ; useRealtimeSync relance la connexion dès
+// qu'un nouveau jeton est disponible (cf. récupération via l'intercepteur axios).
+const AUTH_ERROR_HINTS = ['jwt', 'token', 'unauthor', 'forbidden'];
+
+function isAuthError(error: any): boolean {
+  if (!error) return false;
+  if (typeof error === 'object' && (error.code === 'UNAUTHORIZED' || error.code === 'TOKEN_EXPIRED')) {
+    return true;
+  }
+  const message = typeof error === 'string' ? error : String(error.message ?? '');
+  return AUTH_ERROR_HINTS.some((hint) => message.toLowerCase().includes(hint));
+}
+
+function stopReconnectOnAuthFailure(currentSocket: Socket, error: any): void {
+  if (!isAuthError(error)) return;
+  currentSocket.disconnect();
+}
+
 export interface ConnectRealtimeOptions extends Partial<RealtimeHandlers> {
   token?: string | null;
   depotId?: string | null;
@@ -111,9 +132,13 @@ export function connectRealtime({ token, depotId = null, onEvent, onReady, onErr
   socket.on('connect_error', (error) => {
     safeInvoke('onStatus', 'error', error);
     safeInvoke('onError', error);
+    stopReconnectOnAuthFailure(socket as Socket, error);
   });
   socket.on('realtime:ready', (event) => safeInvoke('onReady', event));
-  socket.on('realtime:error', (error) => safeInvoke('onError', error));
+  socket.on('realtime:error', (error) => {
+    safeInvoke('onError', error);
+    stopReconnectOnAuthFailure(socket as Socket, error);
+  });
   socket.on('realtime:event', (event) => safeInvoke('onEvent', event));
 
   return socket;

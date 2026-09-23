@@ -28,7 +28,9 @@ const ClientsPage = lazy(() => import('./pages/ClientsPage'));
 const FournisseursPage = lazy(() => import('./pages/FournisseursPage'));
 const CaissePage = lazy(() => import('./pages/CaissePage'));
 const FacturesPage = lazy(() => import('./pages/FacturesPage'));
-const RapportsPage = lazy(() => import('./pages/RapportsPage'));
+const RapportsVentesPage    = lazy(() => import('./pages/RapportsVentesPage'));
+const RapportsStockPage     = lazy(() => import('./pages/RapportsStockPage'));
+const RapportsFinanciersPage = lazy(() => import('./pages/RapportsFinanciersPage'));
 const PerformancePage = lazy(() => import('../../shared/pages/PerformancePage'));
 const DepensesPage = lazy(() => import('./pages/DepensesPage'));
 const ParametresPage = lazy(() => import('./pages/ParametresPage'));
@@ -62,11 +64,10 @@ export default function DepotBoissonsRoutes() {
     <Route path="caisse" element={gate('caisse', CaissePage)} />
     <Route path="factures" element={gate('ventes', FacturesPage)} />
     <Route path="depenses" element={gate('depenses', DepensesPage)} />
-    <Route path="rapports" element={gate('rapports', RapportsPage)} />
-    {/* §10 — granularité des rapports : « Rapports stock » (MAGASINIER)
-         et « Mes performances » (COMMERCIAL), gate par sous-module dédié. */}
-    <Route path="rapports-stock" element={gate('rapports_stock', () => <RapportsPage preset="stock" />)} />
-    <Route path="performance" element={gate('rapports_performance', PerformancePage)} />
+    <Route path="rapports-ventes" element={gate('reports_sales', RapportsVentesPage)} />
+    <Route path="rapports-stock" element={gate('reports_stock', RapportsStockPage)} />
+    <Route path="rapports-financiers" element={gate('reports_financial', RapportsFinanciersPage)} />
+    <Route path="performance" element={gate('reports_performance', PerformancePage)} />
     <Route path="parametres" element={gate('parametres', ParametresPage)} />
     <Route path="lots" element={gate('stock', () => <LotsPage metier="depot" />)} />
     <Route path="utilisateurs" element={gate('utilisateurs', UtilisateursPage)} />

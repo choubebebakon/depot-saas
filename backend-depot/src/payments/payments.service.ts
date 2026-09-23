@@ -1,9 +1,11 @@
 import {
+  BadGatewayException,
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import {
   BillingCycle,
@@ -18,13 +20,13 @@ import {
 import { PrismaService } from '../prisma.service';
 import { EmailService } from '../common/email/email.service';
 import { NotchPayService } from './notchpay.service';
-import { normalizePhone } from '../utils/phone.utils';
 import {
   DEFAULT_COUNTRY_ISO2,
   getChannelLimits,
-  normalizeMomoPhoneForCountry,
+  toE164MomoPhone,
 } from '../common/config/notchpay-channels.config';
 import { canTransitionTo } from '../common/utils/payment-status.utils';
+import { NOTCHPAY_CLIENT_MESSAGES } from './notchpay-failure-policy';
 import { NotificationsService } from '../core/notifications/notifications.service';
 
 interface CreatePendingPaymentInput {
@@ -155,14 +157,14 @@ export class PaymentsService {
     });
 
     try {
-      // PARTIE 2/3 (contrainte 8) : normalisation pilotée par la couverture
-      // NotchPay réelle. Comportement inchangé pour le CM (défaut confirmé,
-      // format '+' legacy conservé) ; pays futur → config centralisée,
-      // fail-closed (undefined si pays non couvert).
+      // ── FORMAT TÉLÉPHONE STRICT (fait validé par le support NotchPay,
+      // 2026-09) : le numéro transmis à NotchPay est TOUJOURS en E.164 avec
+      // '+', selon l'opérateur/pays (CM : +2376XXXXXXXX). Unifié pour tous
+      // les pays (l'ancien chemin CM-only `normalizePhone` et le chemin
+      // "autres pays sans '+'" sont remplacés par un seul format strict).
+      // Fail-closed : pays non couvert ou numéro vide → undefined.
       const phone = input.momoPhoneNumber
-        ? input.country && input.country.toUpperCase() !== DEFAULT_COUNTRY_ISO2
-          ? normalizeMomoPhoneForCountry(input.country, input.momoPhoneNumber)
-          : normalizePhone(input.momoPhoneNumber)
+        ? toE164MomoPhone(input.country, input.momoPhoneNumber)
         : undefined;
 
       const notchPayResponse = await this.notchPayService.initializePayment({
@@ -226,29 +228,101 @@ export class PaymentsService {
         },
       };
     } catch (error: any) {
-      // DIAGNOSTIC PROD : message générique côté client, mais le détail
-      // provider (code HTTP + message NotchPay) est maintenant exposé dans
-      // `details` pour le support, et loggué côté serveur. Aucun secret
-      // (clé API) n'est jamais inclus — NotchPay ne les renvoie pas.
+      // ── SÉCURITÉ MESSAGE (message honnête par catégorie) ─────────────────
+      // Le message technique brut de NotchPay reste STRICTEMENT dans les logs
+      // serveur (ci-dessous + initializePayment). Le commerçant ne reçoit QUE
+      // le message mappé par catégorie via notchpay-failure-policy.ts —
+      // JAMAIS le brut (l'ancien champ `details` qui l'exposait est supprimé).
+      const category = error?.failureCategory ?? 'UNKNOWN';
       const providerMessage = String(error?.providerMessage ?? error?.message);
-      const providerStatusCode = error?.providerStatusCode;
       this.logger.error(
-        `Erreur NotchPay (init, HTTP ${providerStatusCode ?? 'réseau'}): ${providerMessage}`,
+        `Init paiement échoué [catégorie=${category}] : ${providerMessage}`,
       );
       await this.markPaymentFailed(payment.id);
-      if (providerStatusCode === 401) {
-        throw new InternalServerErrorException({
-          errorCode: 'NOTCHPAY_CREDENTIALS_INVALID',
-          message:
-            "Identifiants API NotchPay invalides. Vérifiez NOTCHPAY_PUBLIC_KEY dans la configuration : l'Authorization des endpoints de paiement standard doit porter la CLÉ PUBLIQUE (la clé privée ne sert que le header X-Grant des endpoints à risque).",
-        });
-      }
+      this.throwMappedNotchPayInitError(error);
+    }
+  }
+
+  /**
+   * Mappe un échec NotchPay vers une HttpException avec un message CLAIR par
+   * catégorie réelle de l'échec (transitoire / numéro invalide / solde
+   * insuffisant / annulé-expiré / non catégorisé). Le détail technique brut
+   * n'est JAMAIS inclus dans la réponse — il reste en logs serveur.
+   * Cas particulier 401 : erreur de configuration (clés) — message dédié.
+   */
+  private throwMappedNotchPayInitError(error: any): never {
+    const category = error?.failureCategory ?? 'UNKNOWN';
+    const clientMessage = String(
+      error?.clientMessage ?? NOTCHPAY_CLIENT_MESSAGES.UNKNOWN,
+    );
+
+    if (error?.providerStatusCode === 401) {
       throw new InternalServerErrorException({
-        errorCode: 'NOTCHPAY_INIT_FAILED',
-        message: "Impossible d'initier le paiement.",
-        details: providerMessage.slice(0, 300),
+        errorCode: 'NOTCHPAY_CREDENTIALS_INVALID',
+        message:
+          "Identifiants API NotchPay invalides. Vérifiez NOTCHPAY_PUBLIC_KEY dans la configuration : l'Authorization des endpoints de paiement standard doit porter la CLÉ PUBLIQUE (la clé privée ne sert que le header X-Grant des endpoints à risque).",
       });
     }
+
+    switch (category) {
+      case 'TRANSIENT':
+        // 503 : l'agrégateur est momentanément indisponible — le commerçant
+        // peut réessayer dans quelques minutes (les tentatives auto ont déjà
+        // été épuisées côté service).
+        throw new ServiceUnavailableException({
+          errorCode: 'PAYMENT_PROVIDER_UNAVAILABLE',
+          message: clientMessage,
+        });
+      case 'INVALID_NUMBER':
+        throw new BadRequestException({
+          errorCode: 'PAYMENT_INVALID_PHONE',
+          message: clientMessage,
+        });
+      case 'INSUFFICIENT_FUNDS':
+        throw new BadRequestException({
+          errorCode: 'PAYMENT_INSUFFICIENT_FUNDS',
+          message: clientMessage,
+        });
+      case 'ABANDONED':
+        throw new BadRequestException({
+          errorCode: 'PAYMENT_NOT_FINALIZED',
+          message: clientMessage,
+        });
+      default:
+        // Non catégorisé : 502 (échec provider) + message neutre — jamais le brut.
+        throw new BadGatewayException({
+          errorCode: 'PAYMENT_PROVIDER_ERROR',
+          message: clientMessage,
+        });
+    }
+  }
+
+  /**
+   * Statut d'un paiement pour le moniteur push Mobile Money (frontend).
+   *
+   * Rôle : le moniteur d'attente (décompte + relance) scrute ce statut pour
+   * détecter la confirmation/échec pendant que le webhook signé NotchPay
+   * arrive. Lecture seule : AUCUNE transition d'état ici — l'activation et
+   * les changements de statut restent pilotés exclusivement par le webhook
+   * signé (contrainte 9) et le cron de reconciliation (pull de sécurité).
+   *
+   * SÉCURITÉ : appelé avec JWT ; la recherche est scopée au tenant de
+   * l'utilisateur (contrainte n°1 d'isolation) — un tenant ne peut pas sonder
+   * la référence d'un autre.
+   */
+  public async getPaymentStatus(reference: string, tenantId: string) {
+    const payment = await this.prisma.payment.findFirst({
+      where: { reference, tenantId },
+      select: { reference: true, status: true, method: true },
+    });
+    if (!payment) {
+      throw new NotFoundException('Paiement introuvable.');
+    }
+    return {
+      reference: payment.reference,
+      status: payment.status,
+      method: payment.method,
+    };
   }
 
   /**
@@ -292,10 +366,12 @@ export class PaymentsService {
         currency: input.currency,
       };
     } catch (error: any) {
-      this.logger.error(`Erreur NotchPay: ${error.message}`);
-      throw new InternalServerErrorException(
-        "Impossible d'initier le paiement.",
+      // Même politique que createPendingPayment : le brut reste en logs
+      // serveur, le commerçant ne reçoit que le message mappé par catégorie.
+      this.logger.error(
+        `Init vitrine échoué [catégorie=${error?.failureCategory ?? 'UNKNOWN'}] : ${error?.providerMessage ?? error?.message}`,
       );
+      this.throwMappedNotchPayInitError(error);
     }
   }
 
@@ -602,7 +678,8 @@ export class PaymentsService {
       SUCCESS_STATUSES.has(status) ||
       (event === 'payment.complete' && !TERMINAL_FAILURE_STATUSES.has(status));
     const isTerminalFailure =
-      TERMINAL_FAILURE_EVENTS.has(event) || TERMINAL_FAILURE_STATUSES.has(status);
+      TERMINAL_FAILURE_EVENTS.has(event) ||
+      TERMINAL_FAILURE_STATUSES.has(status);
 
     // Événements intermédiaires ou inconnus : aucun effet sur le Payment ni
     // sur l'abonnement (contrainte 14) — le 200 évite les retries NotchPay.

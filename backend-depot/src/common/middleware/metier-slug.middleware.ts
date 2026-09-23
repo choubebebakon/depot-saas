@@ -3,7 +3,7 @@ import { METIER_SLUG_ALIASES } from '../config/metier-slug.config';
 
 /**
  * Réécrit /api/v1/{slug-metier}/… vers le slug canonique du backend
- * avant le routage NestJS (ex: glacier_snack → glacier, hotel → hotellerie).
+ * avant le routage NestJS (ex: garage_automobile → garage, hotel → hotellerie).
  */
 export function metierSlugMiddleware(
   req: Request,

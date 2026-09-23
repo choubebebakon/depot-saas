@@ -45,7 +45,7 @@ export function useFactureConfig() {
     queryFn: async () => {
       let params = {};
       let tenant = {};
-      try { params = (await supermarcheApi.getParametres()).data || {}; } catch { try { params = (await api.get('/depot/parametres')).data || {}; } catch { /* fallback local */ } }
+      try { params = (await supermarcheApi.getParametres()).data || {}; } catch { /* fallback local */ }
       try { tenant = (await api.get('/tenant/info')).data?.tenant || {}; } catch { /* fallback local */ }
       // Valeurs fraîches écrites par ParametresPage (les plus récentes gagnent).
       const local = readFactureConfigLocal(tenantId);

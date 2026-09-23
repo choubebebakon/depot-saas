@@ -86,6 +86,30 @@
    échoue-t-il alors que `/channels` déclare `cm.mtn`/`cm.orange`
    `active: true, live: true, collect: 1` ? Vérifier aussi que le compte est
    habilité LIVE pour l'encaissement (vérification business terminée).
+17. **POLITIQUE D'ÉCHEC APPLIQUÉE** (transitoire vs définitif) — module
+   `src/payments/notchpay-failure-policy.ts` (+ spec) :
+   - **Classification** par code HTTP + message brut : `TRANSIENT`
+     (500/502/503/504/429/408, « Service Unavailable », timeout, réseau,
+     indisponibilité), `INVALID_NUMBER` (numéro/format invalide — définitif),
+     `INSUFFICIENT_FUNDS` (solde insuffisant — définitif), `ABANDONED`
+     (cancelled/expired sans validation — définitif), `UNKNOWN` (neutre).
+   - **Retry automatique** avec backoff croissant (0.5 s / 1.5 s / 4 s, ~6 s max)
+     pour les SEULS échecs TRANSITOIRES, avant de remonter quoi que ce soit ;
+     les échecs définitifs remontent immédiatement.
+   - **Messages marchands dédiés** (jamais le brut NotchPay, qui reste en logs
+     serveur) : transitoire → « Le service mobile money semble temporairement
+     indisponible. Merci de réessayer dans quelques minutes. » ; numéro
+     invalide → « Le numéro saisi ne semble pas valide pour ce moyen de
+     paiement. Vérifiez-le et réessayez. » ; solde insuffisant → « Le paiement
+     a été refusé, probablement en raison d'un solde insuffisant sur le compte
+     mobile money. » ; annulé/expiré → « Le paiement n'a pas été finalisé à
+     temps. Vous pouvez réessayer quand vous êtes prêt. » ; non catégorisé →
+     message neutre + réessai/support.
+   - **Codes HTTP renvoyés au frontend** : 503 (transitoire épuisé), 400
+     (numéro invalide / solde insuffisant / non finalisé), 502 (provider non
+     catégorisé), 500 (clés invalides). Le champ `details` (qui exposait
+     autrefois le brut) a été supprimé de la réponse.
+
 
 
 **Couverture réelle** (réponse `GET /channels` archivée :
@@ -364,9 +388,16 @@ pas « corriger » en supprimant la contrainte (perte de traçabilité).
 - **Fail-closed** : pays non couvert → validation refusée (aucune exception
   « on suppose que c'est couvert »).
 - Normalisation : `normalizeMomoPhoneForCountry()` préfixe l'indicatif du pays
-  configuré ; le comportement historique CM (`+237` legacy via
-  `normalizePhone`) est conservé à l'identique pour ne pas casser les paiements
-  Cameroun existants.
+  configuré (chiffres purs, sans `+`) — sert à la validation et au transport
+  frontend → backend.
+- **Format envoyé à NotchPay (fait validé par le support NotchPay, 2026-09)** :
+  E.164 strict AVEC `+`, unifié pour tous les pays via
+  `toE164MomoPhone(country, phone)` (`notchpay-channels.config.ts`) appelé
+  dans `PaymentsService.createPendingPayment` — Cameroun : `+2376XXXXXXXX`
+  (ex. `+237670000000`), autres pays couverts : `+<indicatif><national>`.
+  L'ancien double chemin (CM legacy `normalizePhone` / autres pays sans `+`)
+  a été remplacé par ce format unique, fail-closed (pays non couvert ou
+  numéro vide → aucun champ `phone` envoyé).
 
 
 ---
@@ -391,10 +422,13 @@ pas « corriger » en supprimant la contrainte (perte de traçabilité).
    bordure proviennent de la config (`phonePlaceholder`, `phoneRegex`).
    Le pays est envoyé au backend (`country`) et le numéro normalisé par
    `normalizeMomoPhoneForCountry` (plus de `'237'` en dur).
-3. **État d'attente** — bandeau « En attente de votre validation sur le
-   téléphone... » affiché dès l'envoi de la demande (mobile money). **Aucune
-   attente bloquante côté serveur** (contrainte 12) : le serveur répond à
-   l'initialisation, la confirmation arrive par webhook.
+3. **État d'attente** — remplacé par le **moniteur push Mobile Money**
+   (PARTIE 7) : au retour depuis la page hébergée NotchPay, un écran affiche
+   un décompte de 2 min 30 invitant le commerçant à vérifier son téléphone,
+   un bouton de relance (même canal) passé le délai, et une instruction de
+   secours spécifique à l'opérateur — uniquement après le délai. **Aucune
+   attente bloquante côté serveur** (contrainte 12) : la confirmation arrive
+   par webhook (le moniteur ne fait que scruter le statut en lecture seule).
 4. **Succès / échec** — `onSuccess` NotchPay affiche un message **honnête** :
    *« Paiement reçu. L'abonnement s'active dès la confirmation de l'agrégateur
    (quelques instants). »* → l'activation réelle est pilotée **par le webhook
@@ -610,3 +644,59 @@ n'expose plus Stripe.
    (champ `status` : valeurs exactes) sur le compte GesTock avant de compter
    sur le rattrapage cron en production. Fail-safe en attendant : erreur API =
    paiement laissé `PENDING`, webhook signé reste le déclencheur canonique.
+8. **Procédure de secours Orange Money (et autres opérateurs mobile money)**
+   — ❓ **NON CONFIRMÉE.** Seule la procédure MTN MoMo (`*126#` → menu de
+   validation des transactions en attente, ou application MTN MoMo) est
+   confirmée par le support NotchPay (2026-09). Le code/la procédure
+   équivalente pour Orange et les autres opérateurs doit être obtenu auprès
+   du support NotchPay **avant** tout affichage client : le frontend affiche
+   un message strictement neutre tant que ce n'est pas fait
+   (`confirmed: false` dans `frontend-depot/src/config/paymentPushFallback.js`).
+
+---
+
+## PARTIE 7 — Moniteur push Mobile Money (conduite confirmée par le support NotchPay, 2026-09)
+
+### 7.1 Faits confirmés par le support NotchPay
+
+1. **Push automatique par défaut** : les canaux mobile money (`cm.mtn`,
+   `cm.orange`, et tout canal du même type) déclenchent par défaut un **vrai
+   push automatique** (pop-up PIN sur le téléphone du client). Le client n'a
+   normalement **rien à composer manuellement**.
+2. **Causes possibles de non-affichage** (hors du contrôle de
+   GesTock/NotchPay) : timeout réseau opérateur, session USSD déjà active sur
+   l'appareil, écran verrouillé/en veille au moment de l'envoi.
+3. **Aucun moyen technique** ne permet de forcer l'affichage si l'opérateur
+   ne distribue pas le push. Ce comportement **n'est pas spécifique à MTN** :
+   il concerne **tout push mobile money**.
+
+### 7.2 Conduite à tenir implémentée (identique quel que soit l'opérateur)
+
+| # | Exigence | Implémentation |
+|---|---|---|
+| 1 | Décompte visuel 2-3 min invitant à vérifier le téléphone | `PUSH_WAIT_SECONDS = 150` (2 min 30) — `frontend-depot/src/config/paymentPushFallback.js`, affiché par `PaymentPushMonitor.jsx` |
+| 2 | Bouton de relance (même canal) passé le délai | `handlePushRetry` (`PricingPage.jsx`) : ré-initie via `POST /payments/init` avec le MÊME moyen/canal/numéro puis redirige à nouveau vers la page hébergée ; bouton « Relancer la demande de paiement » du moniteur (visible après expiration) |
+| 3 | Instruction de secours SEULEMENT après le délai, spécifique à l'opérateur | `getPushFallback(channelId)` : `cm.mtn` → `*126#` → menu de validation des transactions en attente, ou app MTN MoMo (confirmé) ; `cm.orange` et autres → `confirmed: false`, message strictement neutre (jamais de code deviné — voir §6.4 point 8) |
+| 4 | Détection de la confirmation/échec | Scrutation en lecture seule `GET /payments/status/:reference` (JWT, scopée tenant, AUCUNE mutation) ajoutée à `PaymentsController`/`PaymentsService.getPaymentStatus` ; l'activation reste pilotée par le webhook signé (contrainte 9) |
+
+### 7.3 Déclenchement du moniteur
+
+Le push est déclenché par l'opérateur **après la confirmation du client sur
+la page hébergée NotchPay** (« Collect ») — jamais par GesTock. Le parcours :
+
+1. `POST /payments/init` → mémorisation du contexte du paiement en attente en
+   `sessionStorage` (`gestock.pendingPayment.v1`, clé TTL 30 min) →
+   redirection vers `authorization_url` (flux officiel inchangé).
+2. Le client confirme sur la page NotchPay → l'opérateur envoie le push.
+3. Au retour sur GesTock (bouton retour ou redirection callback), la page
+   relit le paiement en attente et affiche `PaymentPushMonitor` : décompte,
+   relance même canal, secours par opérateur après délai.
+4. Le statut DB (mis à jour par le webhook signé) est scruté toutes les 8 s :
+   `SUCCESS` → moniteur fermé avec message de confirmation ; `FAILED` →
+   message d'échec actionnable ; sinon le décompte continue.
+
+### 7.4 Format strict du numéro transmis à NotchPay
+
+Fait validé par le support NotchPay (2026-09), voir §3.4 : E.164 **avec `+`**
+(`+2376XXXXXXXX` pour le CM), unifié pour tous les pays via
+`toE164MomoPhone()`. Tests : `backend-depot/src/common/config/notchpay-phone-e164.spec.ts`.

@@ -221,8 +221,13 @@ export function validateMomoPhoneForCountry(
 }
 
 /**
- * Normalise un numéro Mobile Money au format attendu par NotchPay
- * (indicatif international sans '+', ex. 237670000000).
+ * Normalise un numéro Mobile Money en chiffres purs avec indicatif du pays
+ * (SANS '+', ex. 237670000000). Sert à la VALIDATION (regex du pays) et au
+ * transport frontend → backend.
+ *
+ * ⚠️ Ce N'EST PAS le format envoyé à NotchPay : voir `toE164MomoPhone()`
+ * (format international strict AVEC '+', confirmé par le support NotchPay,
+ * 2026-09) qui s'appuie sur cette fonction puis préfixe '+'.
  * Fail-closed : pays non couvert → undefined.
  */
 export function normalizeMomoPhoneForCountry(
@@ -240,4 +245,25 @@ export function normalizeMomoPhoneForCountry(
     return country.dialCode + cleaned;
   }
   return cleaned;
+}
+
+/**
+ * ── FORMAT STRICT DU NUMÉRO ENVOYÉ À NOTCHPAY (fait validé par le support
+ * NotchPay, 2026-09) ─────────────────────────────────────────────────────────
+ * Le champ `phone` du payload `POST /payments` (initialize) doit être au
+ * format international strict E.164 AVEC '+', selon l'opérateur/pays :
+ *   - Cameroun (CM) : `+2376XXXXXXXX` (ex. +237670000000) ;
+ *   - autres pays couverts : `+<indicatif><numéro national>`.
+ *
+ * Accepte volontairement toutes les saisies déjà tolérées en amont
+ * (`670000000`, `237670000000`, `+237670000000`, espaces/tirets) : la
+ * normalisation passe par `normalizeMomoPhoneForCountry` puis préfixe '+'.
+ * Fail-closed : pays non couvert ou numéro vide → undefined (aucun guess).
+ */
+export function toE164MomoPhone(
+  iso2: string | undefined | null,
+  phone: string | undefined | null,
+): string | undefined {
+  const normalized = normalizeMomoPhoneForCountry(iso2, phone);
+  return normalized ? `+${normalized}` : undefined;
 }

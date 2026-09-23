@@ -23,6 +23,8 @@ import DevModeBanner from './components/DevModeBanner';
 // Pages Publiques
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const CguPage = lazy(() => import('./pages/CguPage'));
@@ -57,18 +59,12 @@ const RestaurantRoutes    = lazy(() => import('./modules/restaurant/routes'));
 const CliniqueRoutes      = lazy(() => import('./modules/clinique/routes'));
 const ElevageRoutes       = lazy(() => import('./modules/elevage/routes'));
 const GarageAutomobileRoutes   = lazy(() => import('./modules/garage_automobile/routes'));
-const QuincaillerieRoutes      = lazy(() => import('./modules/quincaillerie/routes'));
 const ImmobilierRoutes         = lazy(() => import('./modules/immobilier/routes'));
-const LibrairieRoutes          = lazy(() => import('./modules/librairie/routes'));
 const BoutiqueRoutes           = lazy(() => import('./modules/boutique/routes'));
 const TransportRoutes          = lazy(() => import('./modules/transport/routes'));
 const BoulangerieRoutes        = lazy(() => import('./modules/boulangerie/routes'));
-const ParfumerieRoutes         = lazy(() => import('./modules/parfumerie/routes'));
-const SalonBeauteRoutes        = lazy(() => import('./modules/salon_beaute/routes'));
-const TelephonieRoutes         = lazy(() => import('./modules/telephonie/routes'));
 const PressingRoutes           = lazy(() => import('./modules/pressing/routes'));
 const CimentBtpRoutes          = lazy(() => import('./modules/ciment_btp/routes'));
-const GlacierSnackRoutes       = lazy(() => import('./modules/glacier_snack/routes'));
 
 function AppLoader() {
   return (
@@ -146,6 +142,8 @@ function AppRoutes() {
           <Route path="/metier/:metierKey" element={<MetierComingSoonPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/onboarding/metier" element={<OnboardingMetierPage />} />
           <Route path="/bientot-disponible" element={<BientotDisponible />} />
@@ -307,22 +305,6 @@ function AppRoutes() {
             } 
           />
 
-          {/* 🔨 9. OFFRE QUINCAILLERIE */}
-          <Route 
-            path="/quincaillerie/*" 
-            element={
-              <SectorGuard allowedSectors={['QUINCAILLERIE']}>
-                <PrivateRoute>
-                  <DepotProvider>
-                    <Suspense fallback={<AppLoader />}>
-                      <QuincaillerieRoutes />
-                    </Suspense>
-                  </DepotProvider>
-                </PrivateRoute>
-              </SectorGuard>
-            } 
-          />
-
           {/* 🏢 10. OFFRE IMMOBILIER */}
           <Route 
             path="/immobilier/*" 
@@ -332,22 +314,6 @@ function AppRoutes() {
                   <DepotProvider>
                     <Suspense fallback={<AppLoader />}>
                       <ImmobilierRoutes />
-                    </Suspense>
-                  </DepotProvider>
-                </PrivateRoute>
-              </SectorGuard>
-            } 
-          />
-
-          {/* 📚 11. OFFRE LIBRAIRIE */}
-          <Route 
-            path="/librairie/*" 
-            element={
-              <SectorGuard allowedSectors={['LIBRAIRIE']}>
-                <PrivateRoute>
-                  <DepotProvider>
-                    <Suspense fallback={<AppLoader />}>
-                      <LibrairieRoutes />
                     </Suspense>
                   </DepotProvider>
                 </PrivateRoute>
@@ -403,54 +369,6 @@ function AppRoutes() {
             } 
           />
 
-          {/* 🧪 15. OFFRE PARFUMERIE */}
-          <Route 
-            path="/parfumerie/*" 
-            element={
-              <SectorGuard allowedSectors={['PARFUMERIE']}>
-                <PrivateRoute>
-                  <DepotProvider>
-                    <Suspense fallback={<AppLoader />}>
-                      <ParfumerieRoutes />
-                    </Suspense>
-                  </DepotProvider>
-                </PrivateRoute>
-              </SectorGuard>
-            } 
-          />
-
-          {/* 💇 16. OFFRE SALON DE BEAUTÉ */}
-          <Route 
-            path="/salon-beaute/*" 
-            element={
-              <SectorGuard allowedSectors={['SALON_BEAUTE']}>
-                <PrivateRoute>
-                  <DepotProvider>
-                    <Suspense fallback={<AppLoader />}>
-                      <SalonBeauteRoutes />
-                    </Suspense>
-                  </DepotProvider>
-                </PrivateRoute>
-              </SectorGuard>
-            } 
-          />
-
-          {/* 📱 17. OFFRE TÉLÉPHONIE */}
-          <Route 
-            path="/telephonie/*" 
-            element={
-              <SectorGuard allowedSectors={['TELEPHONIE']}>
-                <PrivateRoute>
-                  <DepotProvider>
-                    <Suspense fallback={<AppLoader />}>
-                      <TelephonieRoutes />
-                    </Suspense>
-                  </DepotProvider>
-                </PrivateRoute>
-              </SectorGuard>
-            } 
-          />
-
           {/* 🧺 18. OFFRE PRESSING */}
           <Route 
             path="/pressing/*" 
@@ -476,22 +394,6 @@ function AppRoutes() {
                   <DepotProvider>
                     <Suspense fallback={<AppLoader />}>
                       <CimentBtpRoutes />
-                    </Suspense>
-                  </DepotProvider>
-                </PrivateRoute>
-              </SectorGuard>
-            } 
-          />
-
-          {/* 🍦 20. OFFRE GLACIER SNACK */}
-          <Route 
-            path="/glacier-snack/*" 
-            element={
-              <SectorGuard allowedSectors={['GLACIER_SNACK']}>
-                <PrivateRoute>
-                  <DepotProvider>
-                    <Suspense fallback={<AppLoader />}>
-                      <GlacierSnackRoutes />
                     </Suspense>
                   </DepotProvider>
                 </PrivateRoute>

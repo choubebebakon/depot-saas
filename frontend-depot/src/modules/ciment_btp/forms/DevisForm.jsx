@@ -66,7 +66,7 @@ if (typeof window !== 'undefined') {
 }
 
 
-export default function DevisForm({ isOpen, onClose, onSuccess, edit, metier = 'quincaillerie' }) {
+export default function DevisForm({ isOpen, onClose, onSuccess, edit, metier = 'ciment-btp' }) {
   const [form, setForm] = useState({ clientId: '', chantierId: '', dateExpiry: '', notes: '', remiseGlobale: 0 });
   const [lignes, setLignes] = useState([{ articleId: '', designation: '', quantite: 1, unite: 'PIECE', prixUnitaire: '', remise: 0 }]);
   const [loading, setLoading] = useState(false);

@@ -95,8 +95,15 @@ export function channelForMethod(iso2, method) {
 }
 
 /**
- * Normalise un numéro Mobile Money au format attendu par NotchPay
- * (indicatif international sans '+', ex. 237670000000).
+ * Normalise un numéro Mobile Money pour le transport frontend → backend :
+ * chiffres purs avec indicatif du pays, SANS '+', ex. 237670000000.
+ *
+ * ⚠️ Format ENVOYÉ À NOTCHPAY (fait validé par le support NotchPay, 2026-09) :
+ * le backend convertit ce numéro en E.164 STRICT AVEC '+' avant l'appel API
+ * (backend-depot : toE164MomoPhone → +237670000000 pour le CM). La chaîne
+ * complète est donc : saisie (locale ou internationale) → normalisation ici
+ * (sans '+') → validation regex pays → E.164 '+' strict côté backend → API
+ * NotchPay.
  * Fail-closed : pays non couvert ou numéro vide → null.
  */
 export function normalizeMomoPhoneForCountry(iso2, phone) {

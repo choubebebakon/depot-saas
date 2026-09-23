@@ -10,9 +10,10 @@ export const SIDEBAR_MENUS = [
   { label: 'Fournisseurs',    icon: 'Factory', path: '/boutique/fournisseurs' },
   { label: 'Réceptions',      icon: 'Package', path: '/boutique/receptions' },
   { label: 'Dépenses',        icon: 'TrendingUp', path: '/boutique/depenses' },
-  { label: 'Rapports',        icon: 'TrendingUp', path: '/boutique/rapports' },
-  // §10 — « Mes performances » (masqué pour les rôles sans rapports_performance).
-  { label: 'Mes performances', icon: 'BarChart3', path: '/boutique/performance' },
+  { label: 'Rapports Ventes', icon: 'TrendingUp', path: '/boutique/rapports-ventes' },
+  { label: 'Rapports Stock',  icon: 'Package', path: '/boutique/rapports-stock' },
+  { label: 'Rapports Financiers', icon: 'DollarSign', path: '/boutique/rapports-financiers' },
+  { label: 'Mes Performances', icon: 'BarChart3', path: '/boutique/performance' },
   { label: 'Paramètres',      icon: 'Settings', path: '/boutique/parametres' },
 ];
 

@@ -407,6 +407,151 @@ export class AuthService {
     return { message: 'Mot de passe changé avec succès' };
   }
 
+  async forgotPassword(email: string, meta?: RequestMeta) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    const genericMessage = 'Si cette adresse est associée à un compte, un lien de réinitialisation vous a été envoyé.';
+
+    if (!user) {
+      await this.auditService
+        .logEvent({
+          tenantId: '',
+          depotId: null,
+          actorUserId: null,
+          actorEmail: email,
+          actorRole: null,
+          action: AUDIT_ACTIONS.DEMANDE_RESET_MDP,
+          severite: AuditSeverite.INFO,
+          targetType: 'User',
+          targetId: null,
+          reference: email,
+          description: `Demande de réinitialisation pour email inexistant: ${email}`,
+          ipAddress: meta?.ip ?? null,
+          userAgent: meta?.userAgent ?? null,
+        })
+        .catch((err) => console.error('[Audit] Échec log DEMANDE_RESET_MDP (email inexistant):', err));
+      return { message: genericMessage };
+    }
+
+    await this.prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id, used: false },
+    });
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+
+    await this.prisma.passwordResetToken.create({
+      data: { token, userId: user.id, expiresAt },
+    });
+
+    await this.emailService.sendPasswordResetEmail(user.email, token).catch((err) => {
+      console.error('Erreur envoi email reset password:', err.message);
+    });
+
+    await this.auditService
+      .logEvent({
+        tenantId: user.tenantId,
+        depotId: user.depotId ?? null,
+        actorUserId: user.id,
+        actorEmail: user.email,
+        actorRole: user.role,
+        action: AUDIT_ACTIONS.DEMANDE_RESET_MDP,
+        severite: AuditSeverite.INFO,
+        targetType: 'User',
+        targetId: user.id,
+        reference: user.email,
+        description: `Demande de réinitialisation de mot de passe pour ${user.email}`,
+        ipAddress: meta?.ip ?? null,
+        userAgent: meta?.userAgent ?? null,
+      })
+      .catch((err) => console.error('[Audit] Échec log DEMANDE_RESET_MDP:', err));
+
+    return { message: genericMessage };
+  }
+
+  async resetPassword(token: string, newPassword: string, confirmPassword: string, meta?: RequestMeta) {
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('Les mots de passe ne correspondent pas.');
+    }
+
+    const passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordStrengthRegex.test(newPassword)) {
+      throw new BadRequestException(
+        'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.',
+      );
+    }
+
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      await this.auditService
+        .logEvent({
+          tenantId: '',
+          depotId: null,
+          actorUserId: null,
+          actorEmail: 'unknown',
+          actorRole: null,
+          action: AUDIT_ACTIONS.ECHEC_RESET_MDP,
+          severite: AuditSeverite.ATTENTION,
+          targetType: 'PasswordResetToken',
+          targetId: null,
+          reference: token,
+          description: `Tentative de réinitialisation avec token invalide: ${token}`,
+          ipAddress: meta?.ip ?? null,
+          userAgent: meta?.userAgent ?? null,
+        })
+        .catch((err) => console.error('[Audit] Échec log ECHEC_RESET_MDP (token invalide):', err));
+      throw new BadRequestException('Token invalide ou expiré.');
+    }
+
+    if (resetToken.used) {
+      throw new BadRequestException('Ce token a déjà été utilisé.');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Ce token a expiré. Veuillez refaire une demande.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword, refreshTokenHash: null },
+      }),
+      this.prisma.refreshToken.deleteMany({ where: { userId: resetToken.userId } }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+    ]);
+
+    const user = resetToken.user;
+    await this.auditService
+      .logEvent({
+        tenantId: user.tenantId,
+        depotId: user.depotId ?? null,
+        actorUserId: user.id,
+        actorEmail: user.email,
+        actorRole: user.role,
+        action: AUDIT_ACTIONS.RESET_MDP,
+        severite: AuditSeverite.ATTENTION,
+        targetType: 'User',
+        targetId: user.id,
+        reference: user.email,
+        description: `Mot de passe réinitialisé pour ${user.email}`,
+        ipAddress: meta?.ip ?? null,
+        userAgent: meta?.userAgent ?? null,
+      })
+      .catch((err) => console.error('[Audit] Échec log RESET_MDP:', err));
+
+    return { message: 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.' };
+  }
+
   async toggle2FA(userId: string, enabled: boolean) {
     const user = await this.prisma.user.update({
       where: { id: userId },

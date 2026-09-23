@@ -50,6 +50,7 @@ export const supermarcheApi = {
 
   // ── Paramètres ───────────────────────────────────────────────────────────
   getParametres: () => api.get('/supermarche/parametres', getTenantHeaders()),
+  updateParametres: (data) => api.patch('/supermarche/parametres', data, getTenantHeaders()),
 
   createVente: (data) => api.post('/supermarche/ventes', data, getTenantHeaders()),
   getPromotions: () => api.get('/supermarche/promotions', getTenantHeaders()),
